@@ -1,19 +1,19 @@
 go:	wordhist
 
 strange_vec:	
-	java -cp ../src guru.Main strange_vec.g
+	java -cp .. guru.Main strange_vec.g
 
 pml_proofs:
-	java -cp ../src guru.Main pml_proofs.g
+	java -cp .. guru.Main pml_proofs.g
 
 llambda:
-	java -cp ../src guru.Main llambda.g
+	java -cp .. guru.Main llambda.g
 
 append:
-	java -cp ../src guru.Main append.g
+	java -cp .. guru.Main append.g
 
-compiletest:	compiletest.g ../src/guru/Main.class
-	java -cp ../src guru.Main compiletest.g
+compiletest:	compiletest.g ../guru/Main.class
+	java -cp .. guru.Main compiletest.g
 	$(MAKE) c
 
 c:
@@ -45,8 +45,8 @@ bpc:	bpc.ml
 
 
 bp:	bp.g ../lib/stdio.g ../lib/bool.g ../lib/nat.g \
-	../src/guru/Main.class ../src/guru/compiler/Compiler.class
-	java -cp ../src guru.Main bp.g
+	../guru/Main.class ../guru/compiler/Compiler.class
+	java -cp .. guru.Main bp.g
 	$(MAKE) B
 
 histh:	histh.hs
@@ -63,14 +63,14 @@ H:
 	gcc -O4 hist.c -o hist
 
 hist:	hist.g
-	java -cp ../src guru.Main hist.g
+	java -cp .. guru.Main hist.g
 	$(MAKE) H
 
 hist-test1c:	hist-test1c.ml
 	ocamlopt -unsafe -noassert hist-test1c.ml -o hist-test1c
 
 hist-test1:	hist-test1.g
-	java -cp ../src guru.Main hist-test1.g
+	java -cp .. guru.Main hist-test1.g
 	gcc -O4 hist-test1.c -o hist-test1
 
 hist-test1h:	hist-test1h.hs
@@ -81,7 +81,7 @@ hist-test2c:	hist-test2c.ml
 	ocamlopt -unsafe -noassert hist-test2c.ml -o hist-test2c
 
 hist-test2:	hist-test2.g
-	java -cp ../src guru.Main hist-test2.g
+	java -cp .. guru.Main hist-test2.g
 	gcc -O4 hist-test2.c -o hist-test2
 
 hist-test2h:	hist-test2h.hs
@@ -95,7 +95,7 @@ W:
 #	gcc -O0 -ggdb wordhist.c -o wordhist
 
 wordhist:	wordhist.g
-	java -cp ../src guru.Main wordhist.g
+	java -cp .. guru.Main wordhist.g
 	$(MAKE) W
 
 W1:	
@@ -103,7 +103,7 @@ W1:
 #	gcc -O0 -ggdb wordhist1.c -o wordhist1
 
 wordhist1:	wordhist1.g
-	java -cp ../src guru.Main wordhist1.g
+	java -cp .. guru.Main wordhist1.g
 	$(MAKE) W1
 
 W2:	
@@ -111,7 +111,7 @@ W2:
 #	gcc -O0 -ggdb wordhist1.c -o wordhist1
 
 wordhist2:	wordhist2.g
-	java -cp ../src guru.Main wordhist2.g
+	java -cp .. guru.Main wordhist2.g
 	$(MAKE) W2
 
 wordhistc-int: wordhistc-int.ml
@@ -135,7 +135,7 @@ C:
 	gcc -O4 cat.c -o cat
 
 cat:	cat.g
-	java -cp ../src guru.Main cat.g
+	java -cp .. guru.Main cat.g
 	$(MAKE) C
 
 catc:	catc.ml
@@ -153,7 +153,7 @@ R:
 	gcc -O4 read.c -o read
 
 read:	read.g
-	java -cp ../src guru.Main read.g
+	java -cp .. guru.Main read.g
 	$(MAKE) R
 
 readc:	readc.ml
@@ -167,12 +167,12 @@ p:
 	gcc -O0 -ggdb -o polyfun polyfun.o
 
 polyfun:	polyfun.g ../lib/stdio.g ../lib/list.g \
-	../src/guru/Main.class
-	java -cp ../src guru.Main polyfun.g
+	../guru/Main.class
+	java -cp .. guru.Main polyfun.g
 	$(MAKE) p
 
 xmlcr:	xmlcr.g
-	java -cp ../src guru.Main xmlcr.g
+	java -cp .. guru.Main xmlcr.g
 	$(MAKE) X
 
 X:
