@@ -1,0 +1,8 @@
+(declare-type nat type)
+(declare-term Z nat)
+(declare-term S (! y nat nat))
+(declare-type vec (! x nat type))
+(declare-term vecn (vec Z))
+(declare-term vecc (! x nat (! l nat (! v (vec l) (vec (S l))))))
+(check-term (vec (S Z)) (((vecc Z) Z) vecn))
+

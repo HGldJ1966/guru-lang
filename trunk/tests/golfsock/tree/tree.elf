@@ -1,0 +1,8 @@
+nat : type .
+z : nat .
+s : nat -> nat .
+tree : nat -> type .
+leaf : (tree z) .
+node : {x:nat}{l:(tree x)}{r: (tree x)} (tree (s x)).
+
+
