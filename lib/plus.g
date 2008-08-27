@@ -112,6 +112,11 @@ Define plus_eq_Z1 : Forall(n m: nat)(u:{(plus n m) = Z}).{n = Z} :=
               { n = Z }
   end.
 
+Define plus_eq_Z2 : Forall(n m: nat)(u:{(plus n m) = Z}).{m = Z} :=
+  foralli(n m: nat)(u:{(plus n m) = Z}).
+    hypjoin m Z 
+    by u [plus_eq_Z1 n m u] end.
+
 Define P_add : Forall(x:nat)(u:{x != Z}).{(plus (P x) (P x)) = (P (P (plus x x)))} :=
 	induction(x:nat) by x1 x2 IH return Forall(u:{x != Z}). {(plus (P x) (P x)) = (P (P (plus x x)))} with
 	Z => foralli(u:{x != Z}).

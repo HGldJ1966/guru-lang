@@ -50,8 +50,65 @@ Define initial_symbols :=
 Define first_id := match (word_inc tp) with
                    mk_word_inc_t n carry => n end.
 
-Define trusted initial_symbols_ok 
-  : @<symbols_ok first_id (initial_symbols unit)> := truei.
+%Set "debug_def_eq".
+
+Define initial_symbols_ok 
+  : @<symbols_ok first_id (initial_symbols unit)> := 
+  abbrev G = (gs_ctxt (initial_symbols unit)) in
+  abbrev V = (cons (mkpair tp (sym knd)) nil) in
+  abbrev G_eq = join G V in
+  abbrev P = 
+    foralli(G1 G2:ctxt)
+           (n:var)(T:trm)
+           (u:{ G = (append G1 (ctxtc n T G2)) }).
+    existse 
+    [singleton_eq_append <pair word trm> (mkpair word trm tp (sym knd))
+      (mkpair word trm n T) G1 G2
+      trans symm G_eq 
+          trans u
+                cong (append G1 *) join (ctxtc n T G2) (cons (mkpair n T) G2)]
+    foralli(u1:{G1 = nil})
+           (u2:{ (mkpair tp (sym knd)) = (mkpair n T)})
+           (u3:{G2 = nil}).
+    andi symm inj (mkpair * **) u2
+         symm inj (mkpair ** *) u2
+   in
+ andi foralli(G1 G2:ctxt)
+             (n:var)(T:trm)
+             (u:{ G = (append G1 (ctxtc n T G2)) }).
+      existse [P G1 G2 n T u]
+      foralli(n_eq:{ n = tp })
+             (T_eq:{ T = (sym knd) }).
+      trans cong (lookup * G) n_eq
+      trans cong (lookup tp *) G_eq
+      trans join (lookup tp V) (something (sym knd))
+            cong (something *) symm T_eq 
+ andi foralli(n:var)(T:trm)(G1 G2:ctxt)
+             (u:{ G = (append G1 (ctxtc n T G2)) }).
+      existse [P G1 G2 n T u]
+      foralli(n_eq:{ n = tp })
+             (T_eq:{ T = (sym knd) }).
+      hypjoin (vlt n first_id) tt by n_eq end
+ andi foralli(n:var)(T:trm)(G1 G2:ctxt)
+             (u:{ G = (append G1 (ctxtc n T G2)) }).
+      existse [P G1 G2 n T u]
+      foralli(n_eq:{ n = tp })
+             (T_eq:{ T = (sym knd) }).
+      hypjoin (bndtrm first_id T) tt by T_eq end
+ andi foralli(n:var)(T:trm)(G1 G2:ctxt)
+             (u:{ G = (append G1 (ctxtc n T G2)) })
+             (u2 : { T != (sym knd) }).
+      existse [P G1 G2 n T u]
+      foralli(n_eq:{ n = tp })
+             (T_eq:{ T = (sym knd) }).
+      contra
+          trans symm T_eq u2
+      Exists(b:bool)(x:<deriv (append ctxte G1 G2) T
+                          (sym (tpknd b))>). True
+ andi
+      join (bndtrm first_id (sym tp)) tt
+ truei
+.
 
 Define trusted symbols_ok_vle
   : Forall(n n':var)(symbols:symbols_t)

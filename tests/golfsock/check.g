@@ -130,7 +130,10 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                               symm create_eq
                  | tt => 
                      % get the derivation for G |- n : T
-                       existse_term [I4 n T l1 l2 ud]
+                     match (eqtrm T knde) by nT ign with
+                     ff =>
+                       abbrev nTa = [neqtrmNeq T (sym knd) nT] in
+                       existse_term [I4 n T l1 l2 ud nTa]
                          fun(spec b:bool)
                             (spec x:<deriv G' T (sym (tpknd b))>)
                             (ign : True).
@@ -150,6 +153,15 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                           bndn)
                      by cong <tcheck_t nextid symbols * T>
                               symm create_eq
+                     | tt => 
+                       abbrev nTa = [eqtrmEq T (sym knd) nT] in
+                       cast
+                       (tcheck_tt nextid symbols T (sym n) 
+                          (dknd G n T [I1 l1 l2 n T ud] nTa)
+                          bndn)
+                     by cong <tcheck_t nextid symbols * T>
+                              symm create_eq
+                     end
                   end in
 
                   let K = 

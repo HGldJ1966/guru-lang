@@ -6,9 +6,9 @@ for f in mini cnt01e tree-exa2-10 cnt01re toilet_a_02_01.2 1qbf-5cnf-20var-160cl
 
 echo "-------------------------------------------------"
 
-echo "cat logic.sc.elf bench/${f}.scparens.plf | ~/research/sc2/opt/sc --no-tail-calls"
-time cat logic.sc.elf bench/${f}.scparens.plf | ~/research/sc2/opt/sc --no-tail-calls
-time cat logic.sc.elf bench/${f}.scparens.plf | ~/research/sc2/opt/sc --no-tail-calls
-time cat logic.sc.elf bench/${f}.scparens.plf | ~/research/sc2/opt/sc --no-tail-calls
+echo "cat logic.sc.elf bench/${f}.scparens.plf | ~/wu/research/sc2/opt/sc --no-tail-calls"
+time cat logic.sc.elf bench/${f}.scparens.plf | ~/wu/research/sc2/opt/sc --no-tail-calls
+time cat logic.sc.elf bench/${f}.scparens.plf | ~/wu/research/sc2/opt/sc --no-tail-calls
+time cat logic.sc.elf bench/${f}.scparens.plf | ~/wu/research/sc2/opt/sc --no-tail-calls
 
 done

@@ -224,6 +224,96 @@ Define append_nil : Forall(A:type)(l:<list A>).{ (append l nil) = l } :=
               symm lp
     end.
 
+Define length : Fun(A: type)(owned l : <list A>).nat :=
+	fun length (A: type)(owned l : <list A>) : nat.
+	(foldr A nat Unit unit fun(cookie:Unit)(owned a:A)(b:nat).(S b) Z l). 
+
+Define length_tot 
+  : Forall(A: type)(l : <list A>).Exists(n:nat). {(length A l) = n} :=
+  foralli(A: type)(l : <list A>).
+    existse 
+      [foldrTot A nat Unit unit fun(cookie:Unit)(a:A)(b:nat).(S b) 
+       foralli(a:A)(b:nat).
+         existsi (S b) 
+           { (fun(cookie:Unit)(owned a:A)(b:nat).(S b) unit a b) = *}
+           join (fun(cookie:Unit)(owned a:A)(b:nat).(S b) unit a b) (S b)
+       Z l]
+    foralli(n:nat)(u:{(foldr unit fun(cookie:Unit)(a:A)(b:nat).(S b) Z l) = n}).
+    existsi n {(length A l) = *}
+      trans join (length l)
+                 (foldr unit fun(cookie:Unit)(owned a:A)(b:nat).(S b) Z l)
+            u.
+
+Define length_append
+  : Forall(A:type)(l1 l2:<list A>).
+     { (length (append l1 l2)) = (plus (length l1) (length l2)) } :=
+  foralli(A:type)(l1 l2:<list A>).
+    [induction(l1:<list A>) 
+     return { (length (append l1 l2)) = (plus (length l1) (length l2)) }
+     with
+       nil ign => hypjoin (length (append l1 l2)) 
+                          (plus (length l1) (length l2))
+                  by l1_eq end
+     | cons ign a l1' => 
+       hypjoin (length (append l1 l2)) 
+               (plus (length l1) (length l2))
+       by l1_eq [l1_IH l1'] end
+     end l1].
+
+Define length_eq_Z 
+  : Forall(A:type)(l:<list A>)
+          (u:{ (length l) = Z}).
+     { l = nil } :=
+  foralli(A:type)(l:<list A>)
+         (u:{ (length l) = Z}).
+  case l with
+    nil ign => l_eq
+  | cons ign a l' => 
+    contra
+      trans
+        hypjoin (S (length l')) (length l) 
+        by l_eq end
+      trans u
+      clash Z (S terminates (length l') by length_tot)
+    { l = nil }
+  end.
+
+Define singleton_eq_append 
+ : Forall(A:type)(a1 a2:A)(l1 l2:<list A>)
+         (u:{(cons a1 nil) = (append l1 (cons a2 l2)) }).
+    Exists(u1:{ l1 = nil })
+          (u2:{ a1 = a2 }).
+      { l2 = nil } :=
+ foralli(A:type)(a1 a2:A)(l1 l2:<list A>)
+        (u:{(cons a1 nil) = (append l1 (cons a2 l2)) }).
+ abbrev tl1 = terminates (length A l1) by length_tot in
+ abbrev tl2 = terminates (length A l2) by length_tot in
+
+ %- Z = sum of lengths l1, l2 -%
+ abbrev P = 
+     symm
+     inj (S *)
+       trans join (S Z) (length (cons a1 nil))
+       trans cong (length *) u
+       trans [length_append A l1 (cons A a2 l2)]
+       trans cong (plus (length l1) *)
+               join (length (cons a2 l2)) (S (length l2))
+             [plusS tl1 tl2] in
+ abbrev l1nil = 
+   [length_eq_Z A l1
+   [plus_eq_Z1 tl1 tl2 P]] in
+ abbrev l2nil =
+   [length_eq_Z A l2
+   [plus_eq_Z2 tl1 tl2 P]] in
+
+  andi l1nil 
+  andi inj (cons * **)
+       trans u
+       trans cong (append * (cons a2 l2)) l1nil
+         join (append nil (cons a2 l2)) (cons a2 l2)
+  l2nil.
+          
+
 Define eqlist : Fun(A:type)(eqA:Fun(owned x1 x2:A).bool)
                    (owned l1 l2:<list A>)
                    .bool :=
