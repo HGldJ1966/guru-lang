@@ -63,7 +63,7 @@ Define geZ : Forall(n : nat)(a1 : {(ge Z n) = T}). {n = Z} :=
     Z => foralli(a1 : {(ge Z n) = T}).x1
   | S n' => foralli(a1 : {(ge Z n) = T}).
               contra
-                trans hypjoin T F by symm a1 x1 end
+                trans trans trans symm a1 cong (ge Z *) x1 join (ge Z (S n')) F
                   clash F T
                 {n = Z}
   end.
