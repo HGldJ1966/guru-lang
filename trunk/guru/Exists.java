@@ -31,6 +31,13 @@ public class Exists extends Abstraction {
 	return this;
     }
 
+    public Expr next() {
+	Expr ret = super.next();
+	if (ret.construct == ABSTRACTION)
+	    return new Exists((Abstraction)ret);
+	return ret;
+    }
+
     public Expr dropAnnos(Context ctxt) {
 	Expr ret = super.dropAnnos(ctxt);
 	if (ret.construct == ABSTRACTION)

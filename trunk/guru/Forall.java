@@ -38,7 +38,7 @@ public class Forall extends Abstraction {
 	return ctxt.formula;
     }
 
-    public Expr body() {
+    public Expr next() {
 	Expr ret = super.next();
 	if (ret.construct == ABSTRACTION)
 	    return new Forall((Abstraction)ret);

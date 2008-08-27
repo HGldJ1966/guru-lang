@@ -128,6 +128,18 @@ public class Abstraction extends VarListExpr{
 
 	Abstraction e = null; // we assume iend > 0, so e does get assigned
 
+	
+	if (ctxt.getFlag("debug_def_eq")) {
+	    ctxt.w.println("Abstraction testing def. eq. of: ");
+	    ctxt.w.print("1. ");
+	    print(ctxt.w,ctxt);
+	    ctxt.w.println("");
+	    ctxt.w.print("2. ");
+	    ee.print(ctxt.w,ctxt);
+	    ctxt.w.println(" {");
+	    ctxt.w.flush();
+	}
+
 	// chew through e using e.next()
 	for (int i = 0, iend = vars.length; i < iend; i++) {
 	    if (ee.construct != construct && ee.construct != ABSTRACTION) {
@@ -150,9 +162,14 @@ public class Abstraction extends VarListExpr{
 	}
 	
 	// e is now just the substituted body of the original e.
-	if (approx)
-	    return body.defEqNoAnnoApprox(ctxt, ee, spec);
-	return body.defEqNoAnno(ctxt, ee, spec);
+	boolean ret = (approx 
+		       ? body.defEqNoAnnoApprox(ctxt, ee, spec)
+		       : body.defEqNoAnno(ctxt, ee, spec));
+	if (ctxt.getFlag("debug_def_eq")) {
+	    ctxt.w.println("} " + (new Boolean(ret)).toString());
+	    ctxt.w.flush();
+	}
+	return ret;
     }
 
     public boolean defEqNoAnno(Context ctxt, Expr ee, boolean spec) {

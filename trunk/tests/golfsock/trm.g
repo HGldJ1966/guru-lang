@@ -13,6 +13,8 @@ Define knd := word0.
 Define tp := match (word_inc knd) with
              mk_word_inc_t n carry => n end.
 
+Define knde := (sym knd).
+
 Define issym :=
   fun(n:var)(owned t:trm). 
     match t with
@@ -146,6 +148,9 @@ Define eqtrm :=
 
 Define trusted eqtrmEq : Forall(t1 t2:trm)(u:{(eqtrm t1 t2) = tt}).
                           { t1 = t2 } := truei.
+
+Define trusted neqtrmNeq : Forall(t1 t2:trm)(u:{(eqtrm t1 t2) = ff}).
+                          { t1 != t2 } := truei.
 
 Define sym_to_string :=
   fun(v:var). "sym".

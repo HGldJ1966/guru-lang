@@ -119,7 +119,7 @@ public class Existse extends Expr{
 			+"2. hypothesis of universal: "
 			+a2a.types[0].toString(ctxt) );
 
-	Expr body2a = a2a.body();
+	Expr body2a = a2a.next();
 
 	int cnt = body2a.numOcc(a2a.vars[0]);
 	for (int j=0; j < a1.vars.length;j++)

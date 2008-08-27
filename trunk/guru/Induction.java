@@ -127,6 +127,9 @@ public class Induction extends Expr{
 	    assump2.do_print(System.out,ctxt);
 	    */
 
+	    if (!C[i].refine(ctxt, last_type, NO_APPROX, true)) 
+		continue;
+
 	    Expr form = C[i].body.classify(ctxt);
 	    if (!F.defEq(ctxt, form))
 		C[i].handleError

@@ -30,11 +30,26 @@ public class Main {
 	    ctxt.w.print("Trusting "+(new Integer(trusted.size())).toString()
 			 +":");
 	    java.util.Iterator it = trusted.iterator();
-	    while(it.hasNext()) {
-		Const c = (Const)it.next();
-		ctxt.w.print(" "+c.name);
+	    if (ctxt.getFlag("print_trusted_details")) {
+		boolean first = true;
+		while(it.hasNext()) {
+		    Const c = (Const)it.next();
+		    if (first)
+			first = false;
+		    else
+			ctxt.w.println("");
+		    ctxt.w.print(c.name + " : ");
+		    ctxt.getClassifier(c).print(ctxt.w,ctxt);
+		    ctxt.w.println(".");
+		}
 	    }
-	    ctxt.w.println("");
+	    else {
+		while(it.hasNext()) {
+		    Const c = (Const)it.next();
+		    ctxt.w.print(" "+c.name);
+		}
+		ctxt.w.println("");
+	    }
 	    ctxt.w.flush();
 	}
     }

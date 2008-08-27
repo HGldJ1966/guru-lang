@@ -35,12 +35,7 @@ public class FunTerm extends FunAbstraction {
     public boolean defEqNoAnno(Context ctxt, Expr ee, boolean spec) {
 	Expr orig_ee = ee;
 	ee = ee.defExpandTop(ctxt,true,spec);
-	if (ctxt.getFlag("debug_def_eq")) {
-	    ctxt.w.println("FunTerm: "+toString(ctxt) + "  with  " 
-			   + ee.toString(ctxt) + " (was  " 
-			   + orig_ee.toString(ctxt) + ")");
-	    ctxt.w.flush();
-	}
+
 	if (ee.construct != construct)
 	    return super.defEqNoAnno(ctxt, ee, spec);
 

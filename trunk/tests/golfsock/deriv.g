@@ -198,8 +198,11 @@ Define free_in :=
 
 % well-formedness of the context is enforced using predicates defined below.
 Inductive deriv : Fun(G:ctxt)(t T:trm).type :=
-  dsym : Fun(G:ctxt)(n:var)(T:trm)(u:{ (lookup n G) = T })(b:bool)
-            (d1 : <deriv G T (sym (tpknd b))>).
+  dsym : Fun(G:ctxt)(n:var)(T:trm)(u:{ (lookup n G) = (something T) })(b:bool)
+            (d1 : <deriv G T (sym (tpknd b))>). 
+            <deriv G (sym n) T>
+| dknd : Fun(G:ctxt)(n:var)(T:trm)(u:{ (lookup n G) = (something T) })
+            (u1 : { T = (sym knd)}). 
             <deriv G (sym n) T>
 | dapp : Fun(G:ctxt)(t1 t2:trm)(n:var)(T1 T2:trm)(m:var)
             (d1 : <deriv G t1 (pi n T1 T2)>)
@@ -225,7 +228,7 @@ Define predicate diffids := fun(G:ctxt).
     Forall(G1 G2:ctxt)
           (n:var)(T:trm)
           (u:{ G = (append G1 (ctxtc n T G2)) }).
-          { (lookup n G) = T }.
+          { (lookup n G) = (something T) }.
 
 Define predicate idsbnd1 := 
   fun(n:var)(G:ctxt).
@@ -243,7 +246,8 @@ Define predicate idsbnd2 :=
 Define predicate decsderiv :=
   fun(G:ctxt).
     Forall(n:var)(T:trm)(G1 G2:ctxt)
-          (u : { G = (append G1 (ctxtc n T G2)) }).
+          (u : { G = (append G1 (ctxtc n T G2)) })
+          (u2 : { T != (sym knd)}).
       Exists(b:bool)(x:<deriv (append ctxte G1 G2) T
                           (sym (tpknd b))>).
         True.    

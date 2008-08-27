@@ -194,8 +194,29 @@ public class App extends Expr{
 	    return false;
 	}
 	
+	if (ctxt.getFlag("debug_def_eq")) {
+	    ctxt.w.println("App testing def. eq. of: ");
+	    ctxt.w.print("1. ");
+	    print(ctxt.w,ctxt);
+	    ctxt.w.println("");
+	    ctxt.w.print("2. ");
+	    ee.print(ctxt.w,ctxt);
+	    ctxt.w.println("");
+	}
+
 	App e1 = spineForm(ctxt, true, spec, true);
 	App e2 = ((App)ee).spineForm(ctxt, true, spec, true);
+
+	if (ctxt.getFlag("debug_def_eq")) {
+	    ctxt.w.println("Spine forms: ");
+	    ctxt.w.print("1. ");
+	    e1.print(ctxt.w,ctxt);
+	    ctxt.w.println("");
+	    ctxt.w.print("2. ");
+	    e2.print(ctxt.w,ctxt);
+	    ctxt.w.println("");
+	    ctxt.w.println("------------------------------------------------- {");
+	}
 
 	int iend = e1.X.length;
 	if (iend != e2.X.length) {
@@ -208,7 +229,14 @@ public class App extends Expr{
 		return false;
 	    }
 	}
-	return e1.head.defEqNoAnno(ctxt, e2.head, spec);
+	boolean ret = e1.head.defEqNoAnno(ctxt, e2.head, spec);
+
+	if (ctxt.getFlag("debug_def_eq")) {
+	    ctxt.w.println("} " + (new Boolean(ret)).toString());
+	    ctxt.w.flush();
+	}
+
+	return ret;
     }
 
     public Expr dropAnnos(Context ctxt) {
