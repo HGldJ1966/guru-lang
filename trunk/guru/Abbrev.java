@@ -22,7 +22,7 @@ public class Abbrev extends Expr{
 	    w.print("eabbrev ");
 	else
 	    w.print("abbrev ");
-	x.print(w,ctxt);
+	x.abbrev_print(w,ctxt);
 	w.print(" = ");
 	U.print(w,ctxt);
 	w.print(" in ");
@@ -95,8 +95,8 @@ public class Abbrev extends Expr{
 	return G.defEqNoAnno(ctxt,e,spec);
     }
 
-    public boolean termTerminates(Context ctxt) {
-        return subst().termTerminates(ctxt);
+    public void checkTermination(Context ctxt) {
+        subst().checkTermination(ctxt);
     }
 
     public void getFreeVarsComputational(Context ctxt,

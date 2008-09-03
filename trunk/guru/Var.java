@@ -22,6 +22,14 @@ public class Var extends Expr{
 	    print_pos_comment(w);
     }    
 
+    /* special method for the benefit of Abbrev, because the binding occurrence
+       in an abbrev is a very special case. */
+    public void abbrev_print(java.io.PrintStream w, Context ctxt) {
+	w.print(name);
+	if (ctxt.getFlag("comment_vars")) 
+	    print_pos_comment(w);
+    }
+
     public int numOcc(Expr e) {
 	return (this == e) ? 1 : 0;
     }
@@ -115,8 +123,9 @@ public class Var extends Expr{
 	vars.add(this);
     }
 
-    public boolean termTerminates(Context ctxt) {
-        return true;
+    public void checkTermination(Context ctxt) {
+	if (ctxt.isMacroDefined(this))
+	    ctxt.getDefBody(this).checkTermination(ctxt);
     }
 
     public void checkSpec(Context ctxt, boolean in_type){

@@ -2,14 +2,17 @@ Include "../../lib/word.g".
 
 Define var := word.
 Define eqvar := eqword.
-Define eqvarEq := eqword_eq.
-Define eqvarTot := eqword_tot.
+Define eqvar_eq := eqword_eq.
+Define eqvar_tot := eqword_tot.
+Total eqvar eqvar_tot.
+Define eqvar_refl := eqword_refl.
 Define v2n := word_to_nat.
 Define v2n_tot := word_to_nat_tot.
 Define spec vlt := fun(n m:var).(lt (v2n n) (v2n m)).
 Define spec vle := fun(n m:var).(le (v2n n) (v2n m)).
 Define vS := word_inc.
 Define vS_tot := word_inc_tot.
+
 
 Define vlt_total := 
   foralli(a b:var).
@@ -18,6 +21,8 @@ Define vlt_total :=
                     terminates (v2n b) by v2n_tot)
               by lt_total in
   existsi r {(vlt a b) = *} join (vlt a b) r.
+
+Total vlt vlt_total.
 
 Define vltle_trans := 
   foralli(a b c:var)

@@ -70,29 +70,28 @@ public abstract class Expr {
     public static final int EABBREV = 54;
     
     public static final int TRUE = 55;
-    public static final int TRUEI = 56;
 
     // some extra items:
 
-    public static final int TERMINATES = 57;//term
 
+    public static final int TRUEI = 57;
     public static final int CASE_PROOF = 58; //proof
     public static final int EVAL = 59;//proof
     public static final int SHOW = 60; // proof
+    public static final int ANDI = 61; // proof, like existsi
+    public static final int EVALTO = 62; // proof
+    public static final int DISEQI = 63; // proof
 
-    public static final int IMPOSSIBLE = 61; //term
+    public static final int TERMINATES = 70;//term
+    public static final int IMPOSSIBLE = 71; //term
+    public static final int STRING_EXPR = 73; //term
+    public static final int EXISTSE_TERM = 74; // term
+    public static final int SIZE = 75; // term
 
-    public static final int PRED_APP = 62; //formula
+    public static final int PRED_APP = 80; //formula
+    public static final int FALSE = 81; // formula
 
-    public static final int STRING_EXPR = 63; //term
-    public static final int EXISTSE_TERM = 64; // term
-    public static final int SIZE = 65; // term
-
-    public static final int ANDI = 66; // proof, like existsi
-
-    public static final int EVALTO = 67; // proof
-
-    public static final int LAST = 100;
+    public static final int LAST = 200;
 
     public int construct;
     boolean result; /* true iff we reached this Expr as the result
@@ -414,6 +413,7 @@ public abstract class Expr {
 	case ATOM:
 	case PRED_APP:
 	case TRUE:
+	case FALSE:
 	    return true;
 	}
 	return false;
@@ -450,6 +450,7 @@ public abstract class Expr {
 	case CONTRA:
 	case INDUCTION:
 	case TRUEI:
+	case DISEQI:
 	case CIND:
 	    return true;
 	}
@@ -648,11 +649,18 @@ public abstract class Expr {
 	return new isInstC(defEq(ctxt, e));
     }
 
+    // for termination checking of proofs, allowing induction
     public void checkTermination(Context ctxt, Expr IH, int arg, Var[] vars) {
 	if (isProof(construct))
 	    handleError(ctxt,"Internal error: termination checking for "
 			+"this construct unimplemented: "
 			+(new Integer(construct)));
+    }
+
+    // for termination checking of terms
+    public void checkTermination(Context ctxt) {
+        if (isTerm(ctxt))
+	    handleError(ctxt, "term termination judgment unimplemented for this construct: "+construct);
     }
 
     /* Return the set of free variables that will appear in
@@ -665,14 +673,6 @@ public abstract class Expr {
 		    + (new Integer(construct)));
     }
 
-    // this is true iff expr is injective or a use of the
-    // "terminates" keyword (with all subterms also known to
-    // terminate); overridden in class Terminates
-    public boolean termTerminates(Context ctxt) {
-        if(isTerm(ctxt))
-            handleError(ctxt, "term termination judgment unimplemented for this construct: "+construct);
-        return true;
-    }
 
     public void checkSpec(Context ctxt, boolean in_type) {
 	handleError(ctxt, "Internal error: checkSpec() is "

@@ -136,6 +136,8 @@ Define appendTot : Forall(A : type)(l1 l2: <list A>).Exists(l : <list A>).
                  (foldr cookie append_h l2 l1)
             u.
 
+Total append appendTot.
+
 Define foldr_append
   : Forall(A B C : type)(cookie:C)
           (f:Fun(cookie:C)(a:A)(b:B).B)(b:B)
@@ -383,7 +385,7 @@ Define eqlist_total
               abbrev t2cast = cast t2 by cong <list *> symm inj <list *> l2t in
               existse [IHl1 t1cast t2cast]
                 foralli(o2:bool)(o2pf:{ (eqlist eqA t1 t2) = o2 }).
-                  existse [and_total terminates (eqA h1cast h2cast) by eqA_total o2]
+                  existse [and_tot terminates (eqA h1cast h2cast) by eqA_total o2]
                     foralli(o:bool)(opf:{ (and (eqA h1 h2) o2) = o }).
                       existsi o
                               { (eqlist eqA l1 l2) = * }

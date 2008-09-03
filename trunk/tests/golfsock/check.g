@@ -1,5 +1,6 @@
 Include "symbols_thm.g".
-Include trusted "bndtrm_thm.g".
+%Include trusted "bndtrm_thm.g".
+Include "bndtrm_thm.g".
 Include "deriv_thm.g".
 Include "gs_io.g".
 Include "checkh.g".
@@ -64,14 +65,14 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
            (bndexpected:{(bndopttrm nextid expected) = tt})
            (owned where:string)
          :unique <check_t nextid symbols create expected>.
+  abbrev G = terminates (gs_ctxt symbols) by gs_ctxt_tot in
   existse_term symok
-  fun(I1 : @<diffids (gs_ctxt symbols)>)
-     (I2 : @<idsbnd1 nextid (gs_ctxt symbols)>)
-     (I3 : @<idsbnd2 nextid (gs_ctxt symbols)>)
-     (I4 : @<decsderiv (gs_ctxt symbols)>)
+  fun(I1 : @<diffids G>)
+     (I2 : @<idsbnd1 nextid G>)
+     (I3 : @<idsbnd2 nextid G>)
+     (I4 : @<decsderiv G>)
      (I5 : { (bndtrm nextid (sym tp)) = tt})
      (ign : True).
-  abbrev G = terminates (gs_ctxt symbols) by gs_ctxt_tot in
     match (gs_char pb_stdin) with
       getc_none ign pb_stdin => 
          dec pb_stdin dec expected 
@@ -116,8 +117,7 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                        trans ls_eq
                              cong (something *) e_eq]
                  fun(spec l1 l2:ctxt)
-                    (ud : {G = 
-                              (append l1 (ctxtc n T l2)) }).
+                    (ud : {G = (append l1 (ctxtc n T l2)) }).
                  abbrev G' = (append ctxte l1 l2) in
                  abbrev G'' = (append ctxte l1 (ctxtc n T l2)) in
                  abbrev bndT = [I3 n T l1 l2 ud] in
@@ -132,14 +132,14 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                      % get the derivation for G |- n : T
                      match (eqtrm T knde) by nT ign with
                      ff =>
-                       abbrev nTa = [neqtrmNeq T (sym knd) nT] in
+                       abbrev nTa = [neqtrm_neq T (sym knd) nT] in
                        existse_term [I4 n T l1 l2 ud nTa]
                          fun(spec b:bool)
                             (spec x:<deriv G' T (sym (tpknd b))>)
                             (ign : True).
                        existse_term
                          [deriv_wk l1 l2 n T T 
-                           (sym terminates (tpknd b) by tpknd_tot)
+                           (sym (tpknd b))
                            [cong_diffids G G'' I1 hypjoin G G'' by ud end]
                            x]
                          fun(spec x':<deriv G'' T (sym (tpknd b))>)
@@ -154,7 +154,7 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                      by cong <tcheck_t nextid symbols * T>
                               symm create_eq
                      | tt => 
-                       abbrev nTa = [eqtrmEq T (sym knd) nT] in
+                       abbrev nTa = [eqtrm_eq T (sym knd) nT] in
                        cast
                        (tcheck_tt nextid symbols T (sym n) 
                           (dknd G n T [I1 l1 l2 n T ud] nTa)
@@ -290,15 +290,18 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
 
                          % pull back to original ctxt, and cast to dom.
                          abbrev get_d2 = 
-                           fun(t2:trm)(d2:<deriv (gs_ctxt symbols') t2 T2>).
-                              (dconv G t2 T2 dom aid
-                                 cast d2 
-                                   by cong <deriv * t2 T2>
-                                        symm 
-                                        [gs_ctxt_interp symbols 
-                                          symbols' U1]
-                                 [bndtrm_vle nextid'' aid dom ale bdom'']
-                                 aeT2dom) in
+                           foralli(t2:trm)(d2:<deriv (gs_ctxt symbols') t2 T2>).
+                             abbrev ret = 
+                               (dconv G t2 T2 dom aid
+                                  cast d2 
+                                    by cong <deriv * t2 T2>
+                                         symm 
+                                         [gs_ctxt_interp symbols 
+                                           symbols' U1]
+                                  [bndtrm_vle nextid'' aid dom ale bdom'']
+                                  aeT2dom) in
+                             existsi ret True truei
+                         in
                          let tmp =
                          match dep_ran with
                            ff => 
@@ -329,7 +332,8 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                                 trans symm inj <tcheck_t ** ** * **> k2_Eq
                                 trans cong (or create *) dep_ran_eq
                                            [or_def2ff create] in
-                             abbrev d2 = (get_d2 t2 d2) in
+                             existse_term [get_d2 t2 d2]
+                             fun(spec d2:<deriv G t2 dom>)(ign:True).
 
                              let K = (Tcheck_nothing nextid'' ran bran'') in
                              let k = 
@@ -378,7 +382,8 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                                <check_t nextid symbols create (nothing trm)>
                            | tcheck_tt ign1 ign2 ign3 t2 d2 bt2 =>
 
-                             abbrev d2 = (get_d2 t2 d2) in
+                             existse_term [get_d2 t2 d2]
+                             fun(spec d2:<deriv G t2 dom>)(ign:True).
                              let sG = (mctxtc n1 inc t2 inc mctxtn) in
                              abbrev bsG = trans cong (bndmctxt nextid'' *) 
                                                    sG_eq
@@ -579,12 +584,12 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                    terminates (map <pair string symbols_e> symbols_e
                                  Unit unit
                                  fun(u:Unit).(snd string symbols_e) L1)
-                   by [map_total string symbols_e L1 snd sndTot] in
+                   by trie_range_map_tot in
                   abbrev G2 = 
                    terminates (map <pair string symbols_e> symbols_e
                                  Unit unit 
                                  fun(u:Unit).(snd string symbols_e) L2)
-                   by [map_total string symbols_e L2 snd sndTot] in
+                   by trie_range_map_tot in
                   abbrev inssymr = [trie_interp_range2 symbols_e inssymbols
                                      s (mkpair var trm nextid' t1) L1 L2
                                      inssymi] in
@@ -660,15 +665,16 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                        abbrev Pnextid = [vlelt_trans nextid nextid' nextid''
                                            nle1 
                                            Pnextid'] in
-                       abbrev d2 = (dconv (gs_ctxt inssymbols)
-                                     t2 T2 eT aid d2 
-                                     [bndtrm_vle nextid aid eT
-                                       [vlt_implies_vle nextid aid
-                                         [vltle_trans nextid nextid'' aid
-                                           Pnextid ale]]
-                                       hypjoin (bndtrm nextid eT) tt 
-                                         by bndexpected expected_eq end]
-                                     acT2eT) in
+                       abbrev d2 = 
+                         (dconv terminates (gs_ctxt inssymbols) by gs_ctxt_tot
+                            t2 T2 eT aid d2 
+                            [bndtrm_vle nextid aid eT
+                              [vlt_implies_vle nextid aid
+                                 [vltle_trans nextid nextid'' aid
+                                    Pnextid ale]]
+                                    hypjoin (bndtrm nextid eT) tt 
+                                    by bndexpected expected_eq end]
+                             acT2eT) in
 
                     existse_term 
                       [deriv_perm 
@@ -738,7 +744,8 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                           by cong <deriv (ctxtc nextid' t1 *) t2 eT>
                                symm symctxt_nothing
                       | something ign prev => 
-                           abbrev G1' = (ctxtc nextid' t1 G1) in
+                           abbrev G1' = terminates (ctxtc nextid' t1 G1) 
+                                        by ctxtc_tot in
                            abbrev GG = (append ctxte G1' (cons ctxte prev G2)) in
                            abbrev origG = (append ctxte G1 (cons ctxte prev G2)) in
                            abbrev GG' = (ctxtc nextid' t1 origG) in
@@ -908,12 +915,12 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                    terminates (map <pair string symbols_e> symbols_e
                                  Unit unit
                                  fun(u:Unit).(snd string symbols_e) L1)
-                   by [map_total string symbols_e L1 snd sndTot] in
+                   by trie_range_map_tot in
                   abbrev G2 = 
                    terminates (map <pair string symbols_e> symbols_e
                                  Unit unit 
                                  fun(u:Unit).(snd string symbols_e) L2)
-                   by [map_total string symbols_e L2 snd sndTot] in
+                   by trie_range_map_tot in
                   abbrev inssymr = [trie_interp_range2 symbols_e inssymbols
                                      s (mkpair var trm nextid dom) L1 L2
                                      inssymi] in

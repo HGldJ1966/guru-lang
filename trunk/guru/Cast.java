@@ -101,8 +101,8 @@ public class Cast extends Expr{
     public Expr dropAnnos(Context ctxt) {
 	return t.dropAnnos(ctxt);
     }
-    public boolean termTerminates(Context ctxt) {
-        return t.termTerminates(ctxt);
+    public void checkTermination(Context ctxt) {
+        t.checkTermination(ctxt);
     }
 
     public java.util.Set getDependences() {

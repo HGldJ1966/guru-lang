@@ -172,5 +172,10 @@ public class ExistseTerm extends Expr{
     public void checkSpec(Context ctxt, boolean in_type) {
 	t.checkSpec(ctxt, in_type);
     }
+
+    public void checkTermination(Context ctxt) {
+	t.checkTermination(ctxt);
+    }
+
 }
 

@@ -81,8 +81,8 @@ public class Abort extends Expr{
 					 java.util.Collection vars) { }
     
 
-    public boolean termTerminates(Context ctxt) {
-        return false;
+    public void checkTermination(Context ctxt) {
+	handleError(ctxt,"Abort-terms do not terminate.");
     }
 
     public java.util.Set getDependences() {

@@ -228,7 +228,7 @@ Define char_inc_notfull
   foralli(c d:char)(carry:bool)
          (u1: { (lt (which_char c) (to_nat CLast)) = tt})
          (u2: { (char_inc c) = (mk_char_inc_t d carry) }).
-  abbrev r = terminates (bv_inc charlen c) by bv_inc_tot in
+  abbrev r = terminates (bv_inc spec charlen c) by bv_inc_tot in
   case r with
     mk_bv_inc_t l' v' carry' =>
     abbrev P = 
@@ -267,7 +267,7 @@ Define to_nat_char_inc : Forall(c d:char)(carry:bool)
                                                   (to_nat d)) } :=
    foralli(c d:char)(carry:bool)
           (u: { (char_inc c) = (mk_char_inc_t d carry) }).
-   abbrev r = terminates (bv_inc charlen c) by bv_inc_tot in
+   abbrev r = terminates (bv_inc spec charlen c) by bv_inc_tot in
      case r with
        mk_bv_inc_t l' v' carry' =>
        abbrev P = trans hypjoin (mk_char_inc_t v' carry') (char_inc c)

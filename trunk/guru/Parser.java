@@ -321,8 +321,14 @@ public class Parser {
 	    case Expr.TRUE:
 	    	e = readTrue();
 		break;
+	    case Expr.FALSE:
+	    	e = readFalse();
+		break;
 	    case Expr.TRUEI:
 	    	e = readTruei();
+		break;
+	    case Expr.DISEQI:
+	    	e = readDiseqi();
 		break;
 	    case Expr.CUTOFF:
 		e = readCutoff();
@@ -375,6 +381,8 @@ public class Parser {
 	    c = readUntracked();
         else if (tryToEat("DumpDependence"))
             c = readDumpDependence();
+        else if (tryToEat("Total"))
+            c = readTotal();
 	else
 	    handleError("Unexpected start of a command.");
 	c.pos = pos;
@@ -394,9 +402,33 @@ public class Parser {
 	return s;
     }
 
+    protected Total readTotal() throws IOException
+    {
+	Total s = new Total();
+	if (!eat_ws())
+	    handleError("Unexpected end of input reading a Total-command.");
+
+	s.c = readConst();
+
+	if (!eat_ws())
+	    handleError("Unexpected end of input reading a Total-command.");
+	s.P = readProof();
+
+	eat(".", "Total");
+
+	return s;
+    }
+
     protected True readTrue() throws IOException
     {
     	True t = new True();
+	return t;
+	
+    }
+    
+    protected False readFalse() throws IOException
+    {
+    	False t = new False();
 	return t;
 	
     }
@@ -1387,14 +1419,50 @@ public class Parser {
     // the ones for a single datatype, in that order.
     protected Case[] readCases(boolean in_match) throws IOException {
         ArrayList cList = new ArrayList();
-	String where = in_match ? "match term" : "induction proof";
+	String where = in_match ? "match term" : "induction or case proof";
 
 	eat("with", where);
         
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing "+where+".");
+
+	Expr adefault = null;
+	Const tp = null;
 	
 	boolean first = true;
+	if (tryToEat("default")) {
+	    /* special case construct where we have a default value
+	       for all cases not given subsequently */
+	    
+	    if (!eat_ws())
+		handleError("Unexpected end of input parsing "+where+".");
+	    
+	    if (!tryToEat("=>")) {
+		// read the type, so we know which constructors should be used.
+		tp = readConst();
+		if (!ctxt.isTypeCtor(tp)) 
+		    handleError("A default clause in a "+where+" lists an expression"
+				+"\nfor a type or type family, which is not actually such.\n"
+				+"1. The expression: "+tp.toString(ctxt));
+		if (!eat_ws())
+		    handleError("Unexpected end of input parsing "+where+".");
+
+		eat("=>", where);
+	    }
+
+	    if (in_match)
+		adefault = readTerm();
+	    else
+		adefault = readProof();
+
+	    if (!eat_ws())
+		handleError("Unexpected end of input parsing "+where+".");
+
+	    first = false;
+	}
+
+	// now read any other cases given
+
         while(!tryToEat("end"))
         {
 	    if (first)
@@ -1412,16 +1480,63 @@ public class Parser {
 		handleError("Unexpected end of input parsing "+where+".");
         }
 
-	Case[] cases = toCaseArray(cList);
-	int iend = cases.length;
-	Const[] cs = new Const[iend];
-	for (int i = 0; i < iend; i++) {
-	    cs[i] = cases[i].c;
+	if (tp == null) {
+	    if (cList.size() == 0) 
+		handleError("A "+where+" has no cases, and the default does not list"
+			    +"\na type or type family.  Use the syntax \"default <tp> =>\".");
+	    Case fst_case = (Case)cList.get(0);
+	    tp = (Const)ctxt.getTypeCtor(fst_case.c);
 	}
 
-	if (cs.length == 0)
-	    handleError("A "+where+" has no cases.");
+	/* fill in the array "cases" with cases, using adefault if we
+	   are missing a case.  Cases must be given in order by ctor. */
 
+	Collection ctors = ctxt.getTermCtors(tp);
+	Iterator it = ctors.iterator();
+
+	int num_ctors = ctors.size();
+	int num_actual = cList.size();
+	Case[] cases = new Case[num_ctors];
+	int j = 0;
+	for (int i = 0; i < num_ctors; i++) {
+	    Const expected_ctor = (Const)it.next();
+
+	    if (j < num_actual) {
+		Case actual_case = (Case)cList.get(j);
+		
+		if (expected_ctor == actual_case.c) {
+		    cases[i] = actual_case;
+		    j++;
+		    continue; // around for loop
+		}
+	    }
+
+	    /* either we are out of actual cases or the current actual
+	       case has a different ctor than expected (in which case
+	       we must insert the default). */ 
+
+	    if (j >= num_ctors)
+		handleError("A "+where+" appears not to be listing the constructors for"
+			    +"\ndatatype \""+tp.toString(ctxt)+"\" in order.");
+	    if (adefault == null)
+		handleError("A "+where+" appears not to be listing the constructors for"
+			    +"\ndatatype \""+tp.toString(ctxt)+"\" in order, or else"
+			    +"\na default clause should be used.");
+	    Expr ctor_tp = ctxt.getClassifier(expected_ctor);
+	    Var[] v = null;
+	    if (ctor_tp.construct == Expr.CONST
+		|| ctor_tp.construct == Expr.TYPE_APP)
+		v = new Var[0];
+	    else {
+		FunType f = (FunType)ctor_tp;
+		v = f.vars;
+	    }
+	    
+	    cases[i] = new Case(expected_ctor, v, adefault, 
+				false /* default for impossible */);
+	}
+
+	/*
 	String msg = ("A "+where+" does not list all the constructors, in"
 		      +" the order in which they\nare declared in their"
 		      +" datatype, as the patterns of the cases.\n");
@@ -1448,6 +1563,7 @@ public class Parser {
 			((Expr)((List)ctxt.typeCtorsTermCtors.get
 				(ctxt.getTypeCtor(cs[0]))).get(s))
 			.toString(ctxt));
+	*/
 
 	return cases;
     }
@@ -2144,6 +2260,15 @@ public class Parser {
         
         return e;
     }
+
+    protected Diseqi readDiseqi() throws IOException
+    {              
+        Diseqi e = new Diseqi();
+        
+        e.P = readProof();
+        
+        return e;
+    }
     
     protected Clash readClash() throws IOException
     {              
@@ -2411,8 +2536,12 @@ public class Parser {
 	    return Expr.EXISTSE;
 	if (tryToEat("truei"))
 	    return Expr.TRUEI;
+	if (tryToEat("diseqi"))
+	    return Expr.DISEQI;
 	if (tryToEat("True"))
 	    return Expr.TRUE;
+	if (tryToEat("False"))
+	    return Expr.FALSE;
 	if (tryToEat("join"))
 	    return Expr.JOIN;
 	if (tryToEat("evalto"))

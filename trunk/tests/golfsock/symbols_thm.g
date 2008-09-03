@@ -11,12 +11,15 @@ Define symbols_lookup_dec :
     foralli(L1 L2:<list <pair string symbols_e>>)
            (ut : { (trie_interp symbols) = 
                    (append L1 (cons (mkpair s (mkpair n T)) L2))}).
-    abbrev l1 = (map <pair string symbols_e> symbols_e
-                   Unit unit
-                   fun(u:Unit).(snd string symbols_e) L1) in
-    abbrev l2 = (map <pair string symbols_e> symbols_e
-                   Unit unit
-                   fun(u:Unit).(snd string symbols_e) L2) in
+    abbrev hf = fun(u:Unit).(snd string symbols_e) in
+    abbrev l1 = terminates 
+                (map <pair string symbols_e> symbols_e
+                   Unit unit hf L1)
+                by trie_range_map_tot in
+    abbrev l2 = terminates
+                (map <pair string symbols_e> symbols_e
+                   Unit unit hf L2)
+                by trie_range_map_tot in
     abbrev ut = [trie_interp_range2 symbols_e symbols s (mkpair var trm n T) L1 L2
                    ut] in
     existsi l1
@@ -28,8 +31,12 @@ Define symbols_lookup_dec :
     trans ut
           cong (append l1 *) join (cons (mkpair n T) l2) (ctxtc n T l2).
 
-Define trusted gs_ctxt_tot : Forall(symbols:symbols_t).Exists(G:ctxt).
-                              { (gs_ctxt symbols) = G} := truei.
+Define gs_ctxt_tot : Forall(symbols:symbols_t).Exists(G:ctxt).
+                        { (gs_ctxt symbols) = G} := 
+  foralli(symbols:symbols_t).
+    abbrev G = terminates (trie_range ctxte symbols) by trie_range_tot in
+    existsi G { (gs_ctxt symbols) = *}
+      join (gs_ctxt symbols) G.
 
 Define trusted symbols_ok_insert_next
  : Forall(n:var)(symbols symbols':symbols_t)

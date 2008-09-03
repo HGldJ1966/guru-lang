@@ -66,9 +66,12 @@ public class Contra extends Expr {
 			    +"1. The proof's classifier: "+ cP.toString(ctxt));
 	    }
 	}
+	if (cP.construct == FALSE)
+	    return F;
+
 	handleError(ctxt,
 		    "A contra-proof has not been given a proof of a"
-		    +" contradictory disequation.\n"
+		    +" contradictory disequation or of False.\n"
 		    +"1. The proof it is given proves: "
 		    +cP.toString(ctxt));
 	return null;

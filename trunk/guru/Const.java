@@ -89,9 +89,7 @@ public class Const extends Expr implements Comparable {
     
     public void getFreeVarsComputational(Context ctxt, Collection vars) { }
 
-    public boolean termTerminates(Context ctxt) {
-        return true;
-    }
+    public void checkTermination(Context ctxt) { }
 
     public java.util.Set getDependences() {
         // We model constants as depending on themselves; this way

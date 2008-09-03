@@ -11,7 +11,12 @@ Define bv_get := (vec_get bool).
 Define bv_append := (vec_append bool).
 Define eqbv := (eqvec bool iff).
 Define eqbv_eq := [eqvec_eq bool iff iff_eq].
-Define eqbv_tot := [eqvec_tot bool iff iff_tot].
+Define eqbv_tot 
+ : Forall(l:nat)(v1 v2:<bv l>). 
+    Exists(b:bool). { (eqbv v1 v2) = b }
+ := [eqvec_tot bool iff iff_tot].
+Total eqbv eqbv_tot.
+Define eqbv_refl := [eqvec_refl bool iff iff_refl].
 
 % the least significant bit is first.
 
@@ -211,7 +216,7 @@ Define to_nat_eq_Z2 : Forall(l:nat)(v:<bv l>)
      foralli(u: { (normalize v) = (mk_to_bv_t bvn) }).
      abbrev P = symm inj <vec * **> v_Eq in
      abbrev cv' = cast v' by cong <vec * l'> P in
-     abbrev nv' = terminates (normalize l' cv') by normalize_tot in
+     abbrev nv' = terminates (normalize spec l' cv') by normalize_tot in
      case nv' with
         mk_to_bv_t l2 v2 =>
         case v2 with
@@ -278,7 +283,7 @@ Define to_bv_nat : Forall(l:nat)(v:<bv l>).
          Z => trans cong (to_bv *) iv_eq
               trans join (to_bv Z) (mk_to_bv_t bvn) 
                     symm [to_nat_eq_Z1 l v trans P1 iv_eq]
-       | S n => abbrev nv' = terminates (normalize l' cv') by normalize_tot in
+       | S n => abbrev nv' = terminates (normalize spec l' cv') by normalize_tot in
                 case nv' with
                  mk_to_bv_t rl rv =>
                    trans cong (to_bv *) iv_eq
@@ -501,7 +506,7 @@ Define bv_inc_tot : Forall(l:nat)(v:<bv l>).Exists(r:<bv_inc_t l>).
                 hypjoin (bv_inc v) (mk_bv_inc_t (bvc tt v') ff)
                 by v_eq ca'_eq end
       | tt => 
-        abbrev r = terminates (bv_inc l' cv') by [v_IH l' cv'] in
+        abbrev r = terminates (bv_inc spec l' cv') by [v_IH l' cv'] in
         case r with
           mk_bv_inc_t l'' v'' carry => 
           existsi cast (mk_bv_inc_t (S l'') (bvc l'' ff v'') carry)
@@ -554,7 +559,7 @@ Define to_nat_bv_inc : Forall(l:nat)(v:<bv l>)(v2:<bv l>)(carry:bool)
          end
       | tt => 
         abbrev cv' = cast v' by cong <vec * l'> P in
-        abbrev r = terminates (bv_inc l' cv') by bv_inc_tot in
+        abbrev r = terminates (bv_inc spec l' cv') by bv_inc_tot in
         case r with
           mk_bv_inc_t l'' v2'' carry'' => 
 
