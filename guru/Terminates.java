@@ -57,18 +57,8 @@ public class Terminates extends Expr{
 	return t.dropAnnos(ctxt);
     }
 
-    public boolean termTerminates(Context ctxt) {
+    public void checkTermination(Context ctxt) {
         boolean dbg = ctxt.getFlag("debug_terminates");
-
-        if(dbg) {
-            ctxt.w.println("========== terminate-checking a "
-                               +"terminates-casting expression: ==========");
-            ctxt.w.println("term : "+t.toString(ctxt));
-            ctxt.w.println("Ptype: "+P.classify(ctxt).toString(ctxt));
-            ctxt.w.println("================================"
-                               +"=========================================");
-	    ctxt.w.flush();
-        }
 
         /* We implement the terminating judgments:
          *
@@ -110,6 +100,16 @@ public class Terminates extends Expr{
         Expr p = P;
         p = p.classify(ctxt);
         Expr pclass = p;
+
+        if(dbg) {
+            ctxt.w.println("========== terminate-checking a "
+                               +"terminates-casting expression: ==========");
+            ctxt.w.println("term : "+t.toString(ctxt));
+            ctxt.w.println("Ptype: "+pclass.toString(ctxt));
+            ctxt.w.println("================================"
+                               +"=========================================");
+	    ctxt.w.flush();
+        }
 
         /* now get xs */
         if(p.construct == FORALL) {
@@ -190,7 +190,7 @@ public class Terminates extends Expr{
 
 	if (x1.construct == CONST || x1.construct == FUN_TERM)
 	    /* dropping annotations reduced this to a value. */
-	    return true;
+	    return;
 
         if(dbg) {
             ctxt.w.println("with annotations dropped we have: "
@@ -232,60 +232,52 @@ public class Terminates extends Expr{
                         +"The proof application: "+x2.toString(ctxt)+"\n"
                         +"The proof's full classifier: "+pclass.toString(ctxt));
 
-        if(xs == null) {
-            /* 4. ts in p must be the same as ts in t */
-
-            if(dbg) {
-                ctxt.w.println("checking (4)... application equality");
-		ctxt.w.flush();
-	    }
-            for(int i = 0; i < ((App)x1).X.length; ++i) {
-                if(((App)x2).X[i].construct != BANG &&
-                   !((App)x1).X[i].defEq(ctxt, ((App)x2).X[i]))
-                    handleError(ctxt, "terminates...by proof doesn't match "
-                                +"the cast; a proof application argument "
-                                +"doesn't match a casted term application "
-                                +"argument\n"
-                                +"Argument position: "+i+"\n"
-                                +"Casted term application argument: "
-                                +((App)x1).X[i].toString(ctxt)+"\n"
-                                +"Proof term application argument: "
-                                +((App)x2).X[i].toString(ctxt)+"\n"
-                                +"The full casted application: "
-                                +x1.toString(ctxt)+"\n"
-                                +"The full proof application: "
-                                +x2.toString(ctxt)+"\n"
-                                +"The proof's full classifier: "
-                                +pclass.toString(ctxt));
-            }
-        } else {
-            /* 4. The arguments of the lhs term application must
-	          be distinct universally quantified variables. */
-
-            if(dbg) {
-                ctxt.w.println("checking (4)... lhs term app uses "
-                                   +"distinct quantified vars...");
-		ctxt.w.flush();
-	    }
-	    ArrayList S = new ArrayList();
-            Iterator it = xs.iterator();
-	    for (int i = 0, iend = ((App)x2).X.length; i < iend; i++)
-		S.add(((App)x2).X[i]);
+	if(dbg) {
+	    ctxt.w.println("checking (4)... application equality, lhs proof "
+			   +"term using distinct universal variables.");
+	    ctxt.w.flush();
+	}
+	ArrayList S = new ArrayList();
+	for(int i = 0; i < ((App)x1).X.length; ++i) {
+	    Expr tmp = ((App)x2).X[i];  // proof term argument
+	    if (tmp.construct == VAR &&
+		xs != null && xs.contains(tmp))
+		S.add(tmp);
+	    else
+	    if(tmp.construct != BANG && !((App)x1).X[i].defEq(ctxt, tmp))
+		handleError(ctxt, "terminates...by proof doesn't match "
+			    +"the cast; a proof application argument "
+			    +"doesn't match a casted term application "
+			    +"argument\n"
+			    +"Argument position: "+i+"\n"
+			    +"Casted term application argument: "
+			    +((App)x1).X[i].toString(ctxt)+"\n"
+			    +"Proof term application argument: "
+			    +((App)x2).X[i].toString(ctxt)+"\n"
+			    +"The full casted application: "
+			    +x1.toString(ctxt)+"\n"
+			    +"The full proof application: "
+			    +x2.toString(ctxt)+"\n"
+			    +"The proof's full classifier: "
+			    +pclass.toString(ctxt));
+	}
+	if (xs != null) {
+	    Iterator it = xs.iterator();
 	    while(it.hasNext()) {
-                Var e = (Var)it.next();
+		Var e = (Var)it.next();
 		S.remove(e);
-            }
-	    if (S.size() != 0)
-		handleError(ctxt, "A termination proof proves the wrong"
-			    +" form of equation.  The lhs of\nthe equation"
-			    +" should apply a function to distinct"
-			    +" universally\nquantified variables, but\n"
-			    +" it does not."
-			    +" \n1. the formula proved: "
-			    +pclass.toString(ctxt)
-			    +" \n2. a disallowed argument: "
-			    +((Expr)S.get(0)).toString(ctxt));
-        }
+	    }
+	}
+	if (S.size() != 0)
+	    handleError(ctxt, "A termination proof proves the wrong"
+			+" form of equation.  The lhs of\nthe equation"
+			+" should apply a function to distinct"
+			+" universally\nquantified variables, but"
+			+" it does not."
+			+" \n1. the formula proved: "
+			+pclass.toString(ctxt)
+			+" \n2. a disallowed argument: "
+			+((Expr)S.get(0)).toString(ctxt));
 
         /* All done. */
         if(dbg) {
@@ -301,7 +293,9 @@ public class Terminates extends Expr{
 	   to get rid of specificational arguments.  But t is still the
 	   original typed term, so any terminates...by-terms it contains
 	   are still there (they would get erased by dropAnnos()). */
-        return ((TermApp)t).headAndArgsTerminate(ctxt, true);
+        TermApp t1 = ((TermApp)t);
+	for (int i = 0, iend = t1.X.length; i < iend; i++)
+	    t1.X[i].checkTermination(ctxt);
     }
 
     public java.util.Set getDependences() {

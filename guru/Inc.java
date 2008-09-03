@@ -44,8 +44,8 @@ public class Inc extends IncDec {
 	t.checkSpec(ctxt, in_type);
     }
 
-    public boolean termTerminates(Context ctxt) {
-        return t.termTerminates(ctxt);
+    public void checkTermination(Context ctxt) {
+        t.checkTermination(ctxt);
     }
     public void getFreeVarsComputational(Context ctxt, 
 					 java.util.Collection vars) {

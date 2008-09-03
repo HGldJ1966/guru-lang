@@ -40,10 +40,8 @@ public class ProofApp extends App{
 	Expr ret = apply_classifier(FORALL, 0, true, ctxt, cl, 0);
 
 	App e = spineForm(ctxt, false, true, false);
-        for (int i = 0, iend = e.X.length; i < iend; i++) {
-            if (!e.X[i].termTerminates(ctxt))
-                handleError(ctxt, "Argument "+i+" is not a terminating term: "+e.X[i].toString(ctxt));
-        }
+        for (int i = 0, iend = e.X.length; i < iend; i++) 
+            e.X[i].checkTermination(ctxt);
 	return ret;
     }
 

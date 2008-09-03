@@ -229,13 +229,10 @@ public class CasesExpr extends Expr {
 	return retT;
     }
 
-    public boolean termTerminates(Context ctxt) {
+    public void checkTermination(Context ctxt) {
         for (int i = 0, iend = C.length; i < iend; i++)
-            if(!C[i].termTerminates(ctxt))
-                return false;
-	if (!t.termTerminates(ctxt))
-	    return false;
-        return true;
+            C[i].checkTermination(ctxt);
+	t.checkTermination(ctxt);
     }
 
     public void getFreeVarsComputational(Context ctxt, Collection vars){

@@ -143,11 +143,6 @@ public class Match extends CasesExpr{
 	return T;
     }
 
-    public boolean termTerminates(Context ctxt) {
-        // check t and cases
-        return t.termTerminates(ctxt) && super.termTerminates(ctxt);
-    }
-
     public java.util.Set getDependences() {
         java.util.Set s = super.getDependences();
         if (T != null)

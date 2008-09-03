@@ -15,6 +15,8 @@ Define ctxtc_tot := foralli(n:var)(T:trm)(l:ctxt).
                       { (ctxtc n T l) = *}
                       join (ctxtc n T l) (cons (mkpair n T) l).
 
+Total ctxtc ctxtc_tot.
+
 Define lookup := 
   fun lookup(x:var)(owned G:ctxt):<option trm>.
     match G with

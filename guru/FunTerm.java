@@ -248,8 +248,18 @@ public class FunTerm extends FunAbstraction {
 	    v.remove(r);
     }
 
-    public boolean termTerminates(Context ctxt) {
-        return true;
+    public void checkTermination(Context ctxt) {
+	for (int i = 0, iend = vars.length; i < iend; i++) {
+	    if (owned[i].status == Ownership.SPEC || 
+		types[i].isTypeOrKind(ctxt) ||
+		types[i].isFormula(ctxt))
+		continue;
+	    /* we have reached a non-spec argument.  The fun-term will
+	       definitely not turn into a non-fun-term when we drop
+	       annotations. */
+	    return;
+	}
+	body.checkTermination(ctxt);
     }
 
     public java.util.Set getDependences() {

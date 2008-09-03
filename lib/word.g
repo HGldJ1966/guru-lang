@@ -10,6 +10,8 @@ Define spec word0 : word := (mkvec bool ff wordlen).
 Define spec eqword : Fun(w1 w2:word).bool := (eqbv wordlen).
 Define eqword_eq := [eqbv_eq wordlen].
 Define eqword_tot := [eqbv_tot wordlen].
+Total eqword eqword_tot.
+Define eqword_refl := [eqbv_refl wordlen].
 
 Inductive word_inc_t : type :=
   mk_word_inc_t : Fun(b:word)(carry:bool).word_inc_t.
@@ -25,7 +27,7 @@ Define spec word_inc :=
 
 Define word_inc_tot :=
   foralli(b:word).
-    abbrev r = terminates (bv_inc wordlen b) by bv_inc_tot in
+    abbrev r = terminates (bv_inc spec wordlen b) by bv_inc_tot in
     case r with
       mk_bv_inc_t l' v' carry =>
         existsi (mk_word_inc_t cast v' by cong <bv *> symm inj <bv_inc_t *> r_Eq 

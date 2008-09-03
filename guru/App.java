@@ -170,10 +170,12 @@ public class App extends Expr{
 	    return (App)((new App(construct, e.head, X2))
 			 .doBeta(ctxt,drop_annos, spec, expand_defs));
 	}
-	if (h == head)
+	return (App)doBeta(ctxt,drop_annos,spec,expand_defs);
+	/*	if (h == head)
 	    return (App)doBeta(ctxt,drop_annos,spec,expand_defs);
 	return (App)((new App(construct, h, X)).doBeta(ctxt,drop_annos,
 						       spec, expand_defs));
+	*/
     }
 
     /* do beta-reduction as appropriate, leaving the result in spine form */

@@ -47,10 +47,7 @@ public class Existsi extends Expr{
     }
 
     public Expr classify(Context ctxt) {
-        if (!I.termTerminates(ctxt))
-            handleError(ctxt,
-                        "Expression given to existsi must be terminating; "
-                        +"perhaps you need a terminates...by cast?");
+        I.checkTermination(ctxt);
 	Expr cI = I.classify(ctxt);
 	if (!cI.isB(ctxt) && !Expr.isFormula(cI.construct))
 	    handleError(ctxt,

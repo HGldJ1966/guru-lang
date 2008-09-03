@@ -18,6 +18,7 @@ public class Context {
     protected HashMap termCtorsWhich;
     protected HashMap termCtorsType;
     protected HashMap termCtorsTypeCtor;
+    protected HashMap totalityThms;
     protected HashMap defs;
     protected HashMap defsBody;
     protected HashMap defsBodyNoAnnos;
@@ -51,6 +52,7 @@ public class Context {
 	termCtorsType = new HashMap(1024);
 	termCtorsWhich = new HashMap(1024);
 	termCtorsTypeCtor = new HashMap(1024);
+	totalityThms = new HashMap(256);
 	defs = new HashMap(2048);
 	defsBody = new HashMap(2048);
 	defsBodyNoAnnos = new HashMap(2048);
@@ -90,6 +92,7 @@ public class Context {
 	termCtorsType = new HashMap(prev.termCtorsType);
 	termCtorsWhich = prev.termCtorsWhich;
 	termCtorsTypeCtor = prev.termCtorsTypeCtor;
+	totalityThms = prev.totalityThms;
 	star = prev.star;
 	starstar = prev.starstar;
 	type = prev.type;
@@ -321,8 +324,27 @@ public class Context {
 
     // return the type constructor for the given term constructor (or
     // null if there is none).
-    public Expr getTypeCtor(Const c) {
-	return (Expr)termCtorsTypeCtor.get(c);
+    public Const getTypeCtor(Const c) {
+	return (Const)termCtorsTypeCtor.get(c);
+    }
+
+    /* register a constant as a total function.  This assumes that 
+       the given formula is a Forall-Exists equation with lhs a TermApp. */
+    public void registerTotal(Const c, Forall thm) {
+	LinkedList l = (LinkedList)totalityThms.get(c);
+	if (l == null) {
+	    l = new LinkedList();
+	    totalityThms.put(c,l);
+	}
+	l.add(thm);
+    }
+
+    public boolean isTotal(Const c) {
+	return totalityThms.containsKey(c);
+    }
+
+    public Collection getTotalityTheorems(Const c) {
+	return (Collection)totalityThms.get(c);
     }
 
     public boolean isTermCtor(Const c) {

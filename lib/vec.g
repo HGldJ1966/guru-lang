@@ -381,6 +381,22 @@ Define eqvec_tot
       end
   end.
 
+Define eqvec_refl 
+  : Forall(A:type)
+          (eqA:Fun(x y:A).bool)
+          (eqA_refl : Forall(x:A). {(eqA x x) = tt})
+          (n:nat)
+          (x:<vec A n>).
+      { (eqvec eqA x x) = tt } :=
+  foralli(A:type)
+         (eqA:Fun(x y:A).bool)
+         (eqA_refl : Forall(x:A). {(eqA x x) = tt}).
+  induction(n:nat)(x:<vec A n>) return {(eqvec eqA x x) = tt} with
+    vecn ign => hypjoin (eqvec eqA x x) tt by x_eq end
+  | vecc ign1 n' a x' => hypjoin (eqvec eqA x x) tt 
+                         by x_eq [x_IH n' x'] [eqA_refl a] end
+  end.
+
 Define eqvec_eq 
   : Forall(A:type)
           (eqA:Fun(x y:A).bool)

@@ -645,7 +645,7 @@ Define trie_lookup_interp :
     abbrev F = Exists(l1 l2:<list <pair string A>>).
                  { (trie_interp t) = (append l1 (cons (mkpair s a) l2)) } in
     abbrev iseq = terminates (stringeq s s') 
-                  by [eqlist_total char s s'] in
+                  by [stringeqTot s s'] in
      case iseq with
        ff => 
          contra
@@ -911,6 +911,25 @@ Define trie_range :=
   fun(A:type)(unique_owned t:<trie A>) : <list A> .
     (map <pair string A> A Unit unit fun(u:Unit).(snd string A) 
        (trie_interp A t)).
+
+% the map function used in trie_range is total.
+Define trie_range_map_tot 
+  : Forall(A:type)(l1:<list <pair string A>>).
+    Exists(l2:<list A>).
+     { (map <pair string A> A Unit unit fun(u:Unit).(snd string A) l1) = l2 } :=
+   foralli(A:type).
+   abbrev hf = fun(u:Unit).(snd string A) in
+   [map_total <pair string A> A
+     Unit unit hf
+     foralli(a : <pair string A>).
+       existsi terminates (snd string A a)
+               by [sndTot string A]
+       { (hf unit a) = *}
+          join (hf unit a) (snd a)].
+
+Define trusted trie_range_tot
+ : Forall(A:type)(t:<trie A>).
+   Exists(l:<list A>). { (trie_range t) = l} := truei.
 
 Define trie_interp_range1
  : Forall(A:type)(t1 t2:<trie A>)

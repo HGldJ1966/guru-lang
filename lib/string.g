@@ -15,6 +15,9 @@ Define stringeqEq : Forall(s1 s2:string)(u: {(stringeq s1 s2) = tt}).
   foralli(s1 s2:string).
     [eqlistEq char s1 s2 eqchar eqchar_tot eqchar_eq].
 
+Define stringeqTot := 
+  foralli(s1 s2:string).[eqlist_total char eqchar eqchar_tot s1 s2].
+
 Define bv_to_string :=
   fun bv_to_string(spec l:nat)(c:<bv l>):string.
     match c with

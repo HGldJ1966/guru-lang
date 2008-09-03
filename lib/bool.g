@@ -169,19 +169,16 @@ Define not_total : Forall(x:bool).Exists(z:bool).{ (not x) = z } :=
                         join (not tt) ff
   end.
 
-Define and_total : Forall(x y:bool).Exists(z:bool).{ (and x y) = z } :=
-  induction(x:bool) by xp xt IHx return Forall(y:bool).Exists(z:bool).{ (and x y) = z } with
-    ff =>
-      foralli(y:bool).
-        existsi ff { (and x y) = * }
-          trans cong (and * y) xp
-                join (and ff y) ff
-  | tt =>
-      foralli(y:bool).
-        existsi y { (and x y) = * }
-          trans cong (and * y) xp
-                join (and tt y) y
+Define and_tot : Forall(x y:bool).Exists(z:bool). {(and x y) = z} :=
+  induction(x:bool) by ux ign ign 
+  return Forall(y:bool).Exists(z:bool). {(and x y) = z} with
+    ff => foralli(y:bool).
+          existsi ff {(and x y) = *} hypjoin (and x y) ff by ux end
+  | tt => foralli(y:bool).
+          existsi y {(and x y) = *} hypjoin (and x y) y by ux end
   end.
+    
+Total and and_tot.
 
 Define andtt_e1 : Forall(x y:bool)(u:{ (and x y) = tt }).{ x = tt } :=
   induction(x:bool) by xp xt IHx return Forall(y:bool)(u:{ (and x y) = tt }).{ x = tt } with
@@ -244,9 +241,9 @@ Define andff_i2 : Forall(x y:bool)(u:{ y = ff }).{ (and x y) = ff } :=
 
 Define and3_total : Forall(x y z:bool).Exists(zz:bool).{ (and3 x y z) = zz } :=
   foralli(x y z:bool).
-    existse [and_total y z]
+    existse [and_tot y z]
       foralli(z2:bool)(z2pf:{ (and y z) = z2 }).
-        existse [and_total x z2]
+        existse [and_tot x z2]
           foralli(zz:bool)(zzpf:{ (and x z2) = zz }).
             existsi zz
                     { (and3 x y z) = * }
@@ -258,17 +255,17 @@ Define and3_total : Forall(x y z:bool).Exists(zz:bool).{ (and3 x y z) = zz } :=
 Define and3tt_e1 : Forall(x y z:bool)(u:{ (and3 x y z) = tt }).{ x = tt } :=
   foralli(x y z:bool)(u:{ (and3 x y z) = tt }).
     [andtt_e1 x
-              terminates (and y z) by and_total
+              terminates (and y z) by and_tot
               symm trans symm u join (and3 x y z) (and x (and y z))].
 
 Define and3tt_e2 : Forall(x y z:bool)(u:{ (and3 x y z) = tt }).{ y = tt } :=
   foralli(x y z:bool)(u:{ (and3 x y z) = tt }).
-    [andtt_e1 y z [andtt_e2 x terminates (and y z) by and_total
+    [andtt_e1 y z [andtt_e2 x (and y z)
                             symm trans symm u join (and3 x y z) (and x (and y z))]].
 
 Define and3tt_e3 : Forall(x y z:bool)(u:{ (and3 x y z) = tt }).{ z = tt } :=
   foralli(x y z:bool)(u:{ (and3 x y z) = tt }).
-    [andtt_e2 y z [andtt_e2 x terminates (and y z) by and_total
+    [andtt_e2 y z [andtt_e2 x (and y z)
                             symm trans symm u join (and3 x y z) (and x (and y z))]].
 
 Define and3tt_i : Forall(x y z:bool)(xpf:{ x = tt })(ypf:{ y = tt })(zpf:{ z = tt }).{ (and3 x y z) = tt } :=
@@ -287,13 +284,13 @@ Define and3ff_i2 : Forall(x y z:bool)(u:{ y = ff }).{ (and3 x y z) = ff } :=
   foralli(x y z:bool)(u:{ y = ff }).
     trans join (and3 x y z)
                (and x (and y z))
-          [andff_i2 x terminates (and y z) by and_total [andff_i1 y z u]].
+          [andff_i2 x (and y z) [andff_i1 y z u]].
 
 Define and3ff_i3 : Forall(x y z:bool)(u:{ z = ff }).{ (and3 x y z) = ff } :=
   foralli(x y z:bool)(u:{ z = ff }).
     trans join (and3 x y z)
                (and x (and y z))
-          [andff_i2 x terminates (and y z) by and_total [andff_i2 y z u]].
+          [andff_i2 x (and y z) [andff_i2 y z u]].
 
 Define iff :=
   fun(a b:bool).
@@ -334,15 +331,6 @@ Define iff_tot : Forall(x y:bool).Exists(z:bool). {(iff x y) = z} :=
           existsi y {(iff x y) = *} hypjoin (iff x y) y by ux end
   end.
 
-Define and_tot : Forall(x y:bool).Exists(z:bool). {(and x y) = z} :=
-  induction(x:bool) by ux ign ign 
-  return Forall(y:bool).Exists(z:bool). {(and x y) = z} with
-    ff => foralli(y:bool).
-          existsi ff {(and x y) = *} hypjoin (and x y) ff by ux end
-  | tt => foralli(y:bool).
-          existsi y {(and x y) = *} hypjoin (and x y) y by ux end
-  end.
-    
 Define not_tt : Forall(x:bool)(u:{(not x) = tt}). {x = ff} :=
   induction(x:bool) by ux ign ign
   return Forall(u:{(not x) = tt}). {x = ff} with
@@ -370,6 +358,12 @@ Define iff_eq : Forall(x y : bool)(u:{(iff x y) = tt}). { x = y } :=
                 trans symm u
                       hypjoin (iff x y) y by ux end
   end.                
+
+Define iff_refl : Forall(x:bool). {(iff x x) = tt} :=
+  foralli(x:bool).
+  case x with
+    default bool => hypjoin (iff x x) tt by x_eq end
+  end.
 
 Define and_eq_tt1 : Forall(x y:bool)(u:{(and x y) = tt}).{x = tt} :=
   induction(x:bool) by ux ign ign 

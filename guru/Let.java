@@ -145,8 +145,9 @@ public class Let extends Expr{
 	vars.remove(x1);
     }
 
-    public boolean termTerminates(Context ctxt) {
-        return t1.termTerminates(ctxt) && t2.termTerminates(ctxt);
+    public void checkTermination(Context ctxt) {
+        t1.checkTermination(ctxt);
+	t2.checkTermination(ctxt);
     }
 
     public java.util.Set getDependences() {

@@ -269,8 +269,8 @@ public class Case extends Expr{
 	    vars.remove(x[j]);
     }
 
-    public boolean termTerminates(Context ctxt) {
-        return body.termTerminates(ctxt);
+    public void checkTermination(Context ctxt) {
+        body.checkTermination(ctxt);
     }
 
     public java.util.Set getDependences() {
@@ -384,7 +384,8 @@ public class Case extends Expr{
 	    if (scruttp.construct == TERM_APP) {
 		TermApp scruttp1 = (TermApp)(((TermApp)scruttp)
 					     .spineForm(ctxt,true,spec,true));
-		if (scruttp1.head.construct == CONST)
+		if (scruttp1.head.construct == CONST
+		    && ctxt.isTermCtor((Const)scruttp1.head))
 		    // different constructors
 		    return false;
 	    }
@@ -414,8 +415,9 @@ public class Case extends Expr{
 	case TERM_APP: {
 	    TermApp pattp1 = (TermApp)(((TermApp)pattp)
 				       .spineForm(ctxt,true,spec,true));
-	    if (pattp1.head.construct == CONST &&
-		scruttp.construct == CONST)
+	    if (pattp1.head.construct == CONST 
+		&& ctxt.isTermCtor((Const)pattp1.head)
+		&& scruttp.construct == CONST)
 		// different constructors
 		return false;
 

@@ -1,6 +1,7 @@
 %Set "show_includes".
 Set "check_spec_terminates".
-Include trusted "../../lib/trie.g".
+%Include trusted "../../lib/trie.g".
+Include "../../lib/trie.g".
 
 Include "gs_io.g".
 Include "check.g".
@@ -261,4 +262,4 @@ Unset "check_spec_terminates". %- not behaving properly during compilation -%
 
 Set "print_trusted_details".
 
-Compile main to "golfsock.c".
+%Compile main to "golfsock.c".

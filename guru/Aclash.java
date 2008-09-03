@@ -31,11 +31,7 @@ public class Aclash extends Expr{
     }
 
     public Expr classify(Context ctxt) {
-        if(!t.termTerminates(ctxt))
-            handleError(ctxt,
-                        "The term given to aclash must terminate; it "
-                        +"may need a terminates cast:\n"
-                        +"The term: "+t.toString(ctxt));
+        t.checkTermination(ctxt);
 	return new Atom(false, new Abort(new Bang()), t);
     }
 

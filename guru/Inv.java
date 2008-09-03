@@ -53,11 +53,7 @@ public class Inv extends Expr{
 	
 	Atom a = (Atom)cP;
 
-	if (!a.Y2.termTerminates(ctxt))
-	    handleError(ctxt,"The RHS of the equation proved by the "
-			+"subproof given\nto an inv-proof is not  "
-			+"injective.\n"
-			+"1. The equation: "+cP.toString(ctxt));
+	a.Y2.checkTermination(ctxt);
 
 	Expr T = t.classify(ctxt);
 

@@ -32,7 +32,7 @@ Define issym_tot : Forall(n:var)(t:trm).Exists(b:bool).{(issym n t) = b} :=
   foralli(n:var).
   induction(t:trm) return Exists(b:bool).{(issym n t) = b} with
     sym n' => 
-    abbrev r = terminates (eqvar n' n) by eqvarTot in
+    abbrev r = (eqvar n' n) in
       existsi r { (issym n t) = * }
         hypjoin (issym n t) r
         by t_eq end
@@ -47,21 +47,21 @@ Define issym_tot : Forall(n:var)(t:trm).Exists(b:bool).{(issym n t) = b} :=
       hypjoin (issym n t) ff by t_eq end
   end.
 
+Total issym issym_tot.
+
 Define istp_tot := 
   foralli(t:trm). 
-    existse [issym_tot tp t]
-    foralli(b:bool)(ub:{(issym tp t) = b}).
-      existsi b { (istp t) = * }
-        trans join (istp t) (issym tp t)
-              ub.
+    existsi (issym tp t) { (istp t) = *}
+    join (istp t) (issym tp t).
+
+Total istp istp_tot.
 
 Define isknd_tot := 
   foralli(t:trm). 
-    existse [issym_tot knd t]
-    foralli(b:bool)(ub:{(issym knd t) = b}).
-      existsi b { (isknd t) = * }
-        trans join (isknd t) (issym knd t)
-              ub.
+    existsi (issym knd t) { (isknd t) = *}
+    join (isknd t) (issym knd t).
+
+Total isknd isknd_tot.
 
 %Set "debug_def_eq".
 Define issymEq : Forall(n:var)(t:trm)(u:{(issym n t) = tt}).{t = (sym n)} :=
@@ -71,7 +71,7 @@ Define issymEq : Forall(n:var)(t:trm)(u:{(issym n t) = tt}).{t = (sym n)} :=
     foralli(u:{(issym n t) = tt}).
       trans t_eq 
             cong (sym *)
-             [eqvarEq n' n
+             [eqvar_eq n' n
                symm
                trans symm u
                      hypjoin (issym n t) (eqvar n' n)
@@ -117,40 +117,208 @@ Define eqtrm :=
   match t1 with
     sym n1 => 
     match t2 with
-      sym n2 => (eqvar n1 n2)
-    | app t2a t2b => ff
-    | lam n2 t2a => ff
-    | pi n2 t2a t2b => ff
+      default => ff
+    | sym n2 => (eqvar n1 n2)
     end
   | app t1a t1b =>
     match t2 with
-      sym n2 => ff
+      default => ff
     | app t2a t2b => (and (eqtrm t1a t2a) (eqtrm t1b t2b))
-    | lam n2 t2a => ff
-    | pi n2 t2a t2b => ff
     end
   | lam n1 t1a =>
     match t2 with
-      sym n2 => ff
-    | app t2a t2b => ff
+      default => ff
     | lam n2 t2a => (and (eqtrm t1a t2a) (eqvar n1 n2))
-    | pi n2 t2a t2b => ff
     end
   | pi n1 t1a t1b =>
     match t2 with
-      sym n2 => ff
-    | app t2a t2b => ff
-    | lam n2 t2a => ff
+      default => ff
     | pi n2 t2a t2b => (and (and (eqtrm t1a t2a) (eqtrm t1b t2b))  
                             (eqvar n1 n2))
     end
   end.
 
-Define trusted eqtrmEq : Forall(t1 t2:trm)(u:{(eqtrm t1 t2) = tt}).
-                          { t1 = t2 } := truei.
+Define eqtrm_tot : Forall(t1 t2:trm). Exists(b:bool). { (eqtrm t1 t2) = b } :=
+  induction(t1:trm)
+  return Forall(t2:trm). Exists(b:bool). { (eqtrm t1 t2) = b }
+  with
+    sym n1 =>
+    foralli(t2:trm).
+      case t2 with
+        default => 
+        existsi ff { (eqtrm t1 t2) = *}
+          hypjoin (eqtrm t1 t2) ff by t1_eq t2_eq end
+      | sym n2 =>
+        abbrev ret = (eqvar n1 n2) in
+        existsi ret { (eqtrm t1 t2) = *}
+        hypjoin (eqtrm t1 t2) ret by t1_eq t2_eq end
+     end
+  | app t1a t1b => 
+    foralli(t2:trm).
+      case t2 with
+        default => 
+        existsi ff { (eqtrm t1 t2) = *}
+        hypjoin (eqtrm t1 t2) ff by t1_eq t2_eq end
+      | app t2a t2b =>
+        abbrev ret = 
+          terminates
+            (and terminates (eqtrm t1a t2a) by [t1_IH t1a t2a]
+                 terminates (eqtrm t1b t2b) by [t1_IH t1b t2b])
+          by and_tot in
+               
+        existsi ret { (eqtrm t1 t2) = *}
+        hypjoin (eqtrm t1 t2) ret by t1_eq t2_eq end
+      end
+  | lam n1 t1a => 
+    foralli(t2:trm).
+      case t2 with
+        default => 
+        existsi ff { (eqtrm t1 t2) = *}
+        hypjoin (eqtrm t1 t2) ff by t1_eq t2_eq end
+      | lam n2 t2a =>
+        abbrev ret = 
+          terminates
+            (and terminates (eqtrm t1a t2a) by [t1_IH t1a t2a]
+                 (eqvar n1 n2)) 
+          by and_tot in
+        existsi ret { (eqtrm t1 t2) = *}
+        hypjoin (eqtrm t1 t2) ret by t1_eq t2_eq end
+      end
+  | pi n1 t1a t1b => 
+    foralli(t2:trm).
+      case t2 with
+        default => 
+        existsi ff { (eqtrm t1 t2) = *}
+        hypjoin (eqtrm t1 t2) ff by t1_eq t2_eq end
+      | pi n2 t2a t2b =>
+        abbrev ret = 
+        terminates
+          (and 
+             terminates 
+               (and terminates (eqtrm t1a t2a) by [t1_IH t1a t2a]
+                    terminates (eqtrm t1b t2b) by [t1_IH t1b t2b])
+             by and_tot
+             (eqvar n1 n2))
+        by and_tot in
+        existsi ret { (eqtrm t1 t2) = *}
+        hypjoin (eqtrm t1 t2) ret by t1_eq t2_eq end
+      end
+  end.
 
-Define trusted neqtrmNeq : Forall(t1 t2:trm)(u:{(eqtrm t1 t2) = ff}).
-                          { t1 != t2 } := truei.
+Total eqtrm eqtrm_tot.
+
+Define eqtrm_eq : Forall(t1 t2:trm)(u:{(eqtrm t1 t2) = tt}).
+                    { t1 = t2 } := 
+  induction(t1:trm) 
+  return Forall(t2:trm)(u:{(eqtrm t1 t2) = tt}). { t1 = t2 }
+  with
+    sym n1 => 
+    foralli(t2:trm)(u:{(eqtrm t1 t2) = tt}).
+    case t2 with
+      default =>
+      contra
+       trans trans symm u hypjoin (eqtrm t1 t2) ff by t1_eq t2_eq end
+             clash ff tt
+      { t1 = t2 }
+    | sym n2 => 
+      case (eqvar n1 n2) by v ign with
+        ff => 
+        contra 
+          trans trans symm u hypjoin (eqtrm t1 t2) ff by t1_eq t2_eq v end
+                clash ff tt
+        { t1 = t2 }
+      | tt => hypjoin t1 t2 by t1_eq t2_eq [eqvar_eq n1 n2 v] end
+      end
+    end
+  | app t1a t1b => 
+    foralli(t2:trm)(u:{(eqtrm t1 t2) = tt}).
+    case t2 with
+      default => 
+      contra
+       trans trans symm u hypjoin (eqtrm t1 t2) ff by t1_eq t2_eq end
+             clash ff tt
+      { t1 = t2 }
+    | app t2a t2b => 
+      abbrev e1 = (eqtrm t1a t2a) in
+      abbrev e2 = (eqtrm t1b t2b) in
+      abbrev P = trans hypjoin (and e1 e2) (eqtrm t1 t2)
+                       by t1_eq t2_eq end
+                    u in
+      hypjoin t1 t2 by t1_eq t2_eq
+        [t1_IH t1a t2a [and_eq_tt1 e1 e2 P]]
+        [t1_IH t1b t2b [and_eq_tt2 e1 e2 P]]
+      end
+    end
+  | lam n1 t1a => 
+    foralli(t2:trm)(u:{(eqtrm t1 t2) = tt}).
+    case t2 with
+      default => 
+      contra
+       trans trans symm u hypjoin (eqtrm t1 t2) ff by t1_eq t2_eq end
+             clash ff tt
+      { t1 = t2 }
+    | lam n2 t2a => 
+      abbrev e1 = (eqtrm t1a t2a) in
+      abbrev e2 = (eqvar n1 n2) in
+      abbrev P = trans hypjoin (and e1 e2) (eqtrm t1 t2)
+                       by t1_eq t2_eq end
+                    u in
+      hypjoin t1 t2 by t1_eq t2_eq
+        [t1_IH t1a t2a [and_eq_tt1 e1 e2 P]]
+        [eqvar_eq n1 n2 [and_eq_tt2 e1 e2 P]]
+      end
+    end
+  | pi n1 t1a t1b => 
+    foralli(t2:trm)(u:{(eqtrm t1 t2) = tt}).
+    case t2 with
+      default => 
+      contra
+       trans trans symm u hypjoin (eqtrm t1 t2) ff by t1_eq t2_eq end
+             clash ff tt
+      { t1 = t2 }
+    | pi n2 t2a t2b => 
+      abbrev e1 = (eqtrm t1a t2a) in
+      abbrev e2 = (eqtrm t1b t2b) in
+      abbrev e3 = (eqvar n1 n2) in
+      abbrev e12 = (and e1 e2) in
+      abbrev P = trans hypjoin (and e12 e3) (eqtrm t1 t2)
+                       by t1_eq t2_eq end
+                    u in
+      abbrev P1 = [and_eq_tt1 e12 e3 P] in
+      hypjoin t1 t2 by t1_eq t2_eq
+        [t1_IH t1a t2a [and_eq_tt1 e1 e2 P1]]
+        [t1_IH t1b t2b [and_eq_tt2 e1 e2 P1]]
+        [eqvar_eq n1 n2 [and_eq_tt2 e12 e3 P]]
+      end
+    end
+  end.
+
+% just skipping for now
+Define trusted eqtrm_refl : Forall(t1:trm). { (eqtrm t1 t1) = tt } := 
+  induction(t1:trm) return {(eqtrm t1 t1) = tt}
+  with
+    sym n1 =>
+    hypjoin (eqtrm t1 t1) tt by t1_eq [eqvar_refl n1] end
+  | app t1a t1b => 
+    hypjoin (eqtrm t1 t1) tt by t1_eq [t1_IH t1a] [t1_IH t1b] end
+  | lam n1 t1a => 
+    hypjoin (eqtrm t1 t1) tt by t1_eq [t1_IH t1a] [eqvar_refl n1] end
+  | pi n1 t1a t1b => 
+    hypjoin (eqtrm t1 t1) tt by t1_eq [t1_IH t1a] [t1_IH t1b] [eqvar_refl n1] end
+  end.
+
+Define neqtrm_neq
+  : Forall(t1 t2:trm)(u:{(eqtrm t1 t2) = ff}).
+      { t1 != t2 } := 
+  foralli(t1 t2:trm)(u1:{(eqtrm t1 t2) = ff}).
+  diseqi
+  foralli(u2:{ t1 = t2 }).
+  contra
+    trans symm u1
+    trans cong (eqtrm t1 *) symm u2
+    trans [eqtrm_refl t1]
+          clash tt ff
+  False.    
 
 Define sym_to_string :=
   fun(v:var). "sym".
@@ -202,6 +370,7 @@ Define tpknd_tot : Forall(b:bool). Exists(n:var). { (tpknd b) = n } :=
             hypjoin (tpknd b) tp by b_eq end
   end.
 
+Total tpknd tpknd_tot.
 
 Define istpkndEq : Forall(T:trm)
                          (Tistpknd:{(or (istp T) (isknd T)) = tt}).

@@ -26,7 +26,7 @@ Define aequiv_conv : Forall(nextid:var)(t1 t2:trm)
   abbrev P2 = trans cong (eqtrm (acanon nextid t1) *) 
                      symm eval (acanon nextid t2)
                    P in
-  [eqtrmEq
+  [eqtrm_eq
     terminates (acanon nextid t1) by cinv (acanon nextid t1) P1
     terminates (acanon nextid t2) by cinv (acanon nextid t2) P2
     P].     

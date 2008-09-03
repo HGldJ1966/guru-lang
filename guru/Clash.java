@@ -47,16 +47,8 @@ public class Clash extends Expr{
     }
 
     public Expr classify(Context ctxt) {
-        if(!t1.termTerminates(ctxt))
-            handleError(ctxt,
-                        "Terms given to clash must terminate; the first "
-                        +"may need a terminates cast:\n"
-                        +"The term: "+t1.toString(ctxt));
-        if(!t2.termTerminates(ctxt))
-            handleError(ctxt,
-                        "Terms given to clash must terminate; the second "
-                        +"may need a terminates cast:\n"
-                        +"The term: "+t2.toString(ctxt));
+        t1.checkTermination(ctxt);
+        t2.checkTermination(ctxt);
 
 	Expr t1a = t1.dropAnnos(ctxt).defExpandTop(ctxt);
 	Expr t2a = t2.dropAnnos(ctxt).defExpandTop(ctxt);

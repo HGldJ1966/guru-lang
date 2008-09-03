@@ -153,9 +153,9 @@ public class TermApp extends App{
 	    }
 	    return new TermApp(e.head, X2, specarg2);
 	}
-	if (h == head)
-	    return this;
-	return new TermApp(h, X, specarg);
+	if (h.construct == head.construct)
+	    return new TermApp(h, X, specarg);
+	return this;
     }
 
     public Expr classify(Context ctxt, int approx, boolean spec) {
@@ -172,11 +172,8 @@ public class TermApp extends App{
 	boolean check_spec_terminates = ctxt.getFlag("check_spec_terminates");
 	for (int i = 0;i < X.length; i++) {
 	    if (ch.owned[i].status == Ownership.SPEC) {
-		if (check_spec_terminates && !X[i].termTerminates(ctxt)) 
-		    handleError(ctxt,
-				"An argument in a specificational position"
-				+" is not terminating."
-				+"\n1. the argument: "+X[i].toString(ctxt));
+		if (check_spec_terminates)
+		    X[i].checkTermination(ctxt);
 		specarg[i] = true;
 	    }
 	}
@@ -309,71 +306,92 @@ public class TermApp extends App{
 	return ret;
     }
 
-    public boolean termTerminates(Context ctxt) {
-	TermApp t = (TermApp)spineForm(ctxt,false,true,true);
-	Expr no_annos = dropAnnos(ctxt);
+    public void checkTermination(Context ctxt) {
+	Expr no_annos = dropAnnos(ctxt).defExpandTop(ctxt);
+	if (no_annos.construct == FUN_TERM || no_annos.construct == CONST)
+	    return;
+	if (no_annos.construct != TERM_APP)
+	    handleError(ctxt,"We are checking termination of a term application where"
+			+" dropping\nannotations gives an unexpected form of expression."
+			+"1. the term application: "+toString(ctxt)
+			+"\n2. with annotations dropped: "+no_annos.toString(ctxt));
+	TermApp t = (TermApp)((TermApp)no_annos).spineForm(ctxt,true,true,true);
+
+	TermApp anno_t = (TermApp)spineForm(ctxt,false,true,true);
 	if(ctxt.getFlag("debug_terminates")) {
-	    ctxt.w.println("termTerminates checking app: "
-			   +t.toString(ctxt)
-			   +"\n--> head:"
-			   +t.head.toString(ctxt)+
-			   "  inj:"
-			   +t.isI(ctxt)
-			   +"  head_is_constr:"
-			   +(t.head.construct == CONST ? 
-			     ctxt.isTermCtor((Const)t.head) : "false")
-			   +"  no_annos:"+no_annos.toString(ctxt));
+	    ctxt.w.println("termTerminates checking TermApp.\n"
+			   +"\n1. original term, no annos: "+no_annos.toString(ctxt)
+			   +"\n2. spine form: "+anno_t.toString(ctxt)
+			   +"\n3. head:"
+			   +anno_t.head.toString(ctxt)+
+			   "\n4. inj:"
+			   +anno_t.isI(ctxt)
+			   +"\n5. head is ctor:"
+			   +(anno_t.head.construct == CONST ? 
+			     ctxt.isTermCtor((Const)anno_t.head) : "false"));
 	    ctxt.w.flush();
 	}
 
-	if (no_annos.defExpandTop(ctxt).construct == FUN_TERM)
-	    return true;
 
 	if(t.head.construct != CONST)
-	    return false;
-	return ctxt.isTermCtor((Const)t.head)
-	    && t.headAndArgsTerminate(ctxt, false);
-    }
+	    handleError(ctxt,"Checking termination, the head of an application is "
+			+"not a constant.\n"
+			+"1. the application in spine form: "+t.toString(ctxt)
+			+"\n2. the head: "+t.head.toString(ctxt));
+	
+	Const c = (Const)t.head;
+	boolean is_total = ctxt.isTotal(c);
+	if (!is_total && !ctxt.isTermCtor(c))
+	    handleError(ctxt,"Checking termination, the head of an application is "
+			+"neither\ndeclared total nor a term constructor.\n"
+			+"1. the application in spine form: "+t.toString(ctxt)
+			+"\n2. the head: "+c.toString(ctxt));
 
-    /* underTerminates is true if we are immediately under a
-     * terminates-cast.  This matters for term apps written in
-     * curried form, e.g.:  ((add (S Z)) Z), since the head of
-     * the outer term is a non-terminating term, but the proof
-     * supplied to the terminates-cast may prove termination of
-     * ((add (S Z)) Z) or equivalently (add (S Z) Z); so we judge
-     * such applications to be terminating. */
-    public boolean headAndArgsTerminate(Context ctxt, boolean underTerminates) {
-	boolean dbg = ctxt.getFlag("debug_terminates");
-        if(dbg) {
-            ctxt.w.println("--checking termination of "+head.toString(ctxt));
-        }
-        if(!head.termTerminates(ctxt) &&
-           !(underTerminates && head.construct == TERM_APP &&
-             ((TermApp)head).headAndArgsTerminate(ctxt, true))) {
-            if(dbg) {
-                ctxt.w.println(toString(ctxt));
-                ctxt.w.println("--> head doesn't terminate: "+head.toString(ctxt));
-            }
-            return false;
-        } else if(dbg) {
-            ctxt.w.println(toString(ctxt));
-            if(underTerminates)
-                ctxt.w.println("--> head terminates (under terminates-cast): "+head.toString(ctxt));
-            else ctxt.w.println("--> head terminates: "+head.toString(ctxt));
-        }
-	for(int i = 0, iend = X.length; i < iend; i++) {
-            if(!X[i].termTerminates(ctxt)) {
-                if(dbg) {
-                    ctxt.w.println(toString(ctxt));
-                    ctxt.w.println("--> arg "+i+" doesn't terminate: "+X[i].toString(ctxt));
-                }
-                return false;
-            } else if(dbg) {
-                ctxt.w.println(toString(ctxt));
-                ctxt.w.println("--> arg "+i+" terminates: "+X[i].toString(ctxt));
-            }
-        }
-        return true;
+	if (is_total) {
+	    /* a little more work is needed here to check that if
+	       totality were proved when some arguments are certain
+	       fixed other terms, we have those arguments here. */
+	    Collection thms = ctxt.getTotalityTheorems(c);
+	    Iterator it = thms.iterator();
+
+	    boolean problem = true;
+	    while(it.hasNext()) {
+		Forall F = (Forall)it.next();
+		TermApp lhs = (TermApp)((Atom)((Exists)F.body).body).Y1;
+		
+		problem = false;
+		for (int j = 0, jend = lhs.X.length; j < jend; j++)
+		    if (lhs.X[j].construct != VAR)
+			if (!lhs.X[j].defEq(ctxt,t.X[j])) {
+			    problem = true;
+			    break; // out of for loop
+			}
+		if (!problem)
+		    // we have found a matching totality theorem.
+		    break; // out of while loop
+	    }
+
+	    if (problem) {
+		String s = ("Termination checking cannot find a registered totality theorem"
+			    +" for the\ngiven application.  The number of theorems registered"
+			    +" for the head is "+(new Integer(thms.size())).toString()+".\n"
+			    +"1. the term to termination check: "+t.toString());
+		if (thms.size() > 0) {
+		    s = s+"2. the totality theorems registered for the head:\n";
+		    it = thms.iterator();
+		    while(it.hasNext()) {
+			Forall F = (Forall)it.next();
+			s = s + "-- "+F.toString(ctxt);
+		    }
+		}
+		handleError(ctxt, s);
+	    }
+	}
+
+	/* we cannot look at just t next, because terminates casts
+	   will have been dropped computing it. */
+	for (int i = 0, iend = t.X.length; i < iend; i++)
+	    anno_t.X[i].checkTermination(ctxt);
     }
 
     public void checkSpec(Context ctxt, boolean in_type){

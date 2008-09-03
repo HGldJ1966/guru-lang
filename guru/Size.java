@@ -62,8 +62,8 @@ public class Size extends Expr {
     }
 
     // this is how we axiomatize the fact that every value has a size.
-    public boolean termTerminates(Context ctxt) {
-        return t.termTerminates(ctxt);
+    public void checkTermination(Context ctxt) {
+        t.checkTermination(ctxt);
     }
 
     public Expr evalStep(Context ctxt) {

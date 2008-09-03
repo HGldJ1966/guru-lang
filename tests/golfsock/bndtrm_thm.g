@@ -10,15 +10,14 @@ Define bndtrm_tot : Forall(n:var)(t:trm).Exists(r:bool).{(bndtrm n t) = r} :=
     foralli(r1:bool)(ur1:{(bndtrm n t1) = r1}).
     existse [t_IH t2]
     foralli(r2:bool)(ur2:{(bndtrm n t2) = r2}).
-      abbrev ret = terminates (and r1 r2) by and_total in
+      abbrev ret = (and r1 r2) in
         existsi ret
          {(bndtrm n t) = *} 
          hypjoin (bndtrm n t) ret by t_eq ur1 ur2 end
   | lam n' t1 => 
     existse [t_IH t1]
     foralli(r1:bool)(ur1:{(bndtrm n t1) = r1}).
-      abbrev ret = terminates (and terminates (vlt n' n) by vlt_total r1)
-                   by and_total in
+      abbrev ret = (and (vlt n' n) r1) in
         existsi ret
          {(bndtrm n t) = *} 
          hypjoin (bndtrm n t) ret by t_eq ur1 end
@@ -27,13 +26,13 @@ Define bndtrm_tot : Forall(n:var)(t:trm).Exists(r:bool).{(bndtrm n t) = r} :=
     foralli(r1:bool)(ur1:{(bndtrm n t1) = r1}).
     existse [t_IH t2]
     foralli(r2:bool)(ur2:{(bndtrm n t2) = r2}).
-      abbrev ret = terminates (and terminates (vlt n' n) by vlt_total 
-                     terminates (and r1 r2) by and_total)
-                   by and_total in
+      abbrev ret = (and (vlt n' n) (and r1 r2)) in
         existsi ret
          {(bndtrm n t) = *} 
          hypjoin (bndtrm n t) ret by t_eq ur1 ur2 end
   end.
+
+Total bndtrm bndtrm_tot.
 
 Define bndmctxt := fun(m:var).
   (all <option trm> Unit unit 
@@ -115,10 +114,10 @@ Define bndtrm_pi1 : Forall(n:var)(t:trm)(n1:var)(t1 t2:trm)
   foralli(n:var)(t:trm)(n1:var)(t1 t2:trm)
          (u1:{ (bndtrm n t) = tt })
          (u2: { t = (pi n1 t1 t2) }).
-   abbrev b1 = terminates (vlt n1 n) by lt_total in
-   abbrev b2 = terminates (bndtrm n t1) by bndtrm_tot in
-   abbrev b3 = terminates (bndtrm n t2) by bndtrm_tot in
-   abbrev b4 = terminates (and b2 b3) by and_total in
+   abbrev b1 = (vlt n1 n) in
+   abbrev b2 = (bndtrm n t1) in
+   abbrev b3 = (bndtrm n t2) in
+   abbrev b4 = (and b2 b3) in
     [andtt_e1 b1 b4 hypjoin (and b1 b4) tt by u1 u2 end].
 
 Define bndtrm_pi2 : Forall(n:var)(t:trm)(n1:var)(t1 t2:trm)
@@ -128,10 +127,10 @@ Define bndtrm_pi2 : Forall(n:var)(t:trm)(n1:var)(t1 t2:trm)
   foralli(n:var)(t:trm)(n1:var)(t1 t2:trm)
          (u1:{ (bndtrm n t) = tt })
          (u2: { t = (pi n1 t1 t2) }).
-   abbrev b1 = terminates (vlt n1 n) by lt_total in
-   abbrev b2 = terminates (bndtrm n t1) by bndtrm_tot in
-   abbrev b3 = terminates (bndtrm n t2) by bndtrm_tot in
-   abbrev b4 = terminates (and b2 b3) by and_total in
+   abbrev b1 = (vlt n1 n) in
+   abbrev b2 = (bndtrm n t1) in
+   abbrev b3 = (bndtrm n t2) in
+   abbrev b4 = (and b2 b3) in
     [andtt_e1 b2 b3 [andtt_e2 b1 b4 hypjoin (and b1 b4) tt by u1 u2 end]].
 
 Define bndtrm_pi3 : Forall(n:var)(t:trm)(n1:var)(t1 t2:trm)
@@ -141,10 +140,10 @@ Define bndtrm_pi3 : Forall(n:var)(t:trm)(n1:var)(t1 t2:trm)
   foralli(n:var)(t:trm)(n1:var)(t1 t2:trm)
          (u1:{ (bndtrm n t) = tt })
          (u2: { t = (pi n1 t1 t2) }).
-   abbrev b1 = terminates (vlt n1 n) by lt_total in
-   abbrev b2 = terminates (bndtrm n t1) by bndtrm_tot in
-   abbrev b3 = terminates (bndtrm n t2) by bndtrm_tot in
-   abbrev b4 = terminates (and b2 b3) by and_total in
+   abbrev b1 = (vlt n1 n) in
+   abbrev b2 = (bndtrm n t1) in
+   abbrev b3 = (bndtrm n t2) in
+   abbrev b4 = (and b2 b3) in
     [andtt_e2 b2 b3 [andtt_e2 b1 b4 hypjoin (and b1 b4) tt by u1 u2 end]].
 
 Define bndtrm_vle

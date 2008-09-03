@@ -20,6 +20,8 @@ public class Command {
     // dependence tracking
     public static final int DUMPDEPENDENCE = 15;
     
+    public static final int TOTAL = 16;
+
     public static final int CHECK_TRUSTED = 18;
 
     protected int which;

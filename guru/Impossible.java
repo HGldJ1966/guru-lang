@@ -88,8 +88,8 @@ public class Impossible extends Expr{
 	return null;
     }
     
-    public boolean termTerminates(Context ctxt) {
-        return false;
+    public void checkTermination(Context ctxt) {
+	handleError(ctxt,"An impossible-term does not terminate.");
     }
 
     public java.util.Set getDependences() {

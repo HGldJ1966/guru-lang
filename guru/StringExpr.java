@@ -84,8 +84,7 @@ public class StringExpr extends Expr {
     
     public void getFreeVarsComputational(Context ctxt, Collection vars) { }
 
-    public boolean termTerminates(Context ctxt) {
-        return true;
+    public void checkTermination(Context ctxt) {
     }
 
     public void checkSpec(Context ctxt, boolean in_type){

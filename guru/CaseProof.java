@@ -20,10 +20,7 @@ public class CaseProof extends CasesExpr{
     }
 
     public Expr classify(Context ctxt, int approx, boolean spec) {
-	if (!t.termTerminates(ctxt))
-	    handleError(ctxt,"The scrutinee of a case-proof is not known"
-			+" to be terminating.\n"
-			+"1. the scrutinee: "+t.toString(ctxt));
+	t.checkTermination(ctxt);
 	return super.classify(ctxt,approx,spec);
     }
 
