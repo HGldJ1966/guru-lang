@@ -35,18 +35,20 @@ Define bndtrm_tot : Forall(n:var)(t:trm).Exists(r:bool).{(bndtrm n t) = r} :=
 Total bndtrm bndtrm_tot.
 
 Define bndmctxt := fun(m:var).
-  (all <option trm> Unit unit 
-    fun(u:Unit)(owned o:<option trm>).
+  (all ctxte Unit unit 
+    fun(u:Unit)(owned o:<pair var trm>).
       match o with
-        nothing ign => tt
-      | something ign t =>
-        (bndtrm m t)
+        mkpair ign1 ign2 n t => (bndtrm m t)
       end).
 
-Define trusted bndmctxtc
+Define bndmctxtc
  : Forall(n1 n2:var)(t:trm)
          (u:{(bndtrm n1 t) = tt}).
-     {(bndmctxt n1 (mctxtc n2 t mctxtn)) = tt} := truei.
+     {(bndmctxt n1 (mctxtc n2 t mctxtn)) = tt} := 
+ foralli(n1 n2:var)(t:trm)
+        (u:{(bndtrm n1 t) = tt}).
+ hypjoin (bndmctxt n1 (mctxtc n2 t mctxtn)) tt
+ by u end.
 
 %-
 Define trusted bndctxt_le
@@ -194,11 +196,21 @@ Define bndtrm_vle
         end
     end.
 
-Define trusted bndopttrm_vle :
+Define bndopttrm_vle :
   Forall(n m:var)(o:<option trm>)
-           (u1:{(vle n m) = tt})
-           (u2:{(bndopttrm n o) = tt}).
-      { (bndopttrm m o) = tt} := truei.
+        (u1:{(vle n m) = tt})
+        (u2:{(bndopttrm n o) = tt}).
+      { (bndopttrm m o) = tt} := 
+  foralli(n m:var)(o:<option trm>)
+         (u1:{(vle n m) = tt})
+         (u2:{(bndopttrm n o) = tt}).
+    case o with
+      nothing ign => hypjoin (bndopttrm m o) tt by o_eq end
+    | something ign t => 
+      hypjoin (bndopttrm m o) tt 
+      by o_eq [bndtrm_vle n m t u1 hypjoin (bndtrm n t) tt by u2 o_eq end]
+      end
+    end.  
 
 %-
 Define trusted bndtrm_csbst_nextid 

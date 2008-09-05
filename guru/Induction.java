@@ -97,8 +97,11 @@ public class Induction extends Expr{
 			+"1. the return type:"+F.toString(ctxt)+"\n"
 			+"2. its classifier:"+cF.toString(ctxt));
 
-	Expr IH = new Forall(vl.vars, vl.types, F);
-	ctxt.setClassifier(x3, IH);
+	Forall IH = new Forall(vl.vars, vl.types, F);
+	/* we need to rename, because we may instantiate this quantifier
+	   with an expression containing one of the (other) variables. */
+	Forall renamedIH = (Forall)IH.rename(ctxt, x3.pos);
+	ctxt.setClassifier(x3, renamedIH);
 
 	for (int i = 0, iend = C.length; i < iend; i++) {
 	    // get this first, to set the types of pattern variables.

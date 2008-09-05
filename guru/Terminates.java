@@ -186,6 +186,9 @@ public class Terminates extends Expr{
         x2 = ((App)x2).spineForm(ctxt, false, true, true);
 
 	x1 = x1.dropAnnos(ctxt);
+	if (dbg) {
+	    ctxt.w.println("yo"); ctxt.w.flush();
+	}
 	x2 = x2.dropAnnos(ctxt);
 
 	if (x1.construct == CONST || x1.construct == FUN_TERM)

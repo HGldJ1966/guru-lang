@@ -65,7 +65,7 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
            (bndexpected:{(bndopttrm nextid expected) = tt})
            (owned where:string)
          :unique <check_t nextid symbols create expected>.
-  abbrev G = terminates (gs_ctxt symbols) by gs_ctxt_tot in
+  abbrev G = (gs_ctxt symbols) in
   existse_term symok
   fun(I1 : @<diffids G>)
      (I2 : @<idsbnd1 nextid G>)
@@ -666,7 +666,7 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                                            nle1 
                                            Pnextid'] in
                        abbrev d2 = 
-                         (dconv terminates (gs_ctxt inssymbols) by gs_ctxt_tot
+                         (dconv (gs_ctxt inssymbols)
                             t2 T2 eT aid d2 
                             [bndtrm_vle nextid aid eT
                               [vlt_implies_vle nextid aid
@@ -676,19 +676,9 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                                     by bndexpected expected_eq end]
                              acT2eT) in
 
-                    existse_term 
-                      [deriv_perm 
-                         terminates (gs_ctxt inssymbols) by gs_ctxt_tot
-                         t2 eT G1 G2 nextid' t1 d2
-                         inssymctxt]
-                    fun(spec d2:<deriv 
-                                   (ctxtc nextid' t1 (append ctxte G1 G2))
-                                   t2 eT>)
-                       (ign:True).
-
-                       abbrev lookup' = [trie_lookup_same_interp symbols_e 
-                                          symbols symbols' s oprev
-                                          symm oprev_eq1 U1] in
+                  abbrev lookup' = [trie_lookup_same_interp symbols_e 
+                                      symbols symbols' s oprev
+                                      symm oprev_eq1 U1] in
 
                   abbrev symbolsi =
                      foralli(oprev_eq : { oprev = nothing }).
@@ -726,11 +716,8 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                                          (cons (mkpair s prev) L2))
                                        (cons prev G2) in
 
-                       % pull d2 back from symbols'' to an extension of symbols
-                       abbrev d2 = 
-                         match oprev with 
-                          nothing A => 
-                          abbrev symctxt_nothing = 
+                    abbrev symctxt_nothing =
+                       foralli(oprev_eq : { oprev = nothing }).
                            trans join G
                                   (map unit fun(u).snd 
                                     (trie_interp symbols))
@@ -740,12 +727,45 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                                 <pair var trm> Unit unit 
                                 fun(u:Unit).(snd string <pair var trm>)
                                 L1 L2] in
+                          
+                    % { (lookup nextid' G1) = nothing }
+                    abbrev for_perm1 =
+                      abbrev P = [idsbnd1_lookup_nothing nextid' G 
+                                    [idsbnd1_vle nextid nextid' G I2 nle1]] in
+                      case oprev with
+                        nothing ign =>
+                        abbrev G_eq = [symctxt_nothing oprev_eq] in
+                        [lookup_nothing_append1 nextid' G1 G2 
+                           trans cong (lookup nextid' *) symm G_eq P]
+                      | something ign prev =>
+                        abbrev G_eq = [symctxt_something prev oprev_eq] in
+                        [lookup_nothing_append1 nextid' G1 (cons ctxte prev G2) 
+                           trans cong (lookup nextid' *) symm G_eq P]
+                      end in
+
+                    existse_term 
+                      [deriv_perm (gs_ctxt inssymbols)
+                         t2 eT G1 G2 nextid' t1 for_perm1 inssymctxt d2]  
+                    fun(spec d2:<deriv 
+                                   (ctxtc nextid' t1 (append ctxte G1 G2))
+                                   t2 eT>)
+                       (ign:True).
+
+                       % pull d2 back from symbols'' to an extension of symbols
+                       abbrev d2 = 
+                         match oprev with 
+                          nothing A => 
+
+                          % In this case, G = (append G1 G2) 
+
                           cast d2
                           by cong <deriv (ctxtc nextid' t1 *) t2 eT>
-                               symm symctxt_nothing
+                               symm [symctxt_nothing oprev_eq]
                       | something ign prev => 
-                           abbrev G1' = terminates (ctxtc nextid' t1 G1) 
-                                        by ctxtc_tot in
+
+                           % In this case, G = (append G1 (cons prev G2))
+
+                           abbrev G1' = (ctxtc nextid' t1 G1) in
                            abbrev GG = (append ctxte G1' (cons ctxte prev G2)) in
                            abbrev origG = (append ctxte G1 (cons ctxte prev G2)) in
                            abbrev GG' = (ctxtc nextid' t1 origG) in
@@ -1071,35 +1091,11 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                         abbrev bran'' = [bndtrm_vle nextid' nextid'' ran'
                                           nle bran'] in
 
-                        abbrev GG = (ctxtc nextid dom (append ctxte G1 G2)) in
-                        existse_term 
-                         [deriv_perm 
-                           terminates (gs_ctxt inssymbols) by gs_ctxt_tot
-                           t1 rT G1 G2 nextid dom d1
-                           inssymctxt]
-                        fun(spec d1:<deriv GG t1 rT>)
-                           (ign:True).
-
                         match rK with
                           Tcheck_nothing ign1 ign2 ign3 => nothing
                         | Tcheck_something ign1 ign2 ign3 aid ale ae =>
-                        abbrev d1 = (dconv GG t1 rT ran' aid d1
-                                      [bndtrm_vle nextid'' aid ran' ale bran'']
-                                      ae) in
-                        cast
-                        match oprev with
-                          nothing A => 
-
-                          let remsymbols = (trie_remove symbols_e s symbols') in
-                          dec s
-                          abbrev remsymbolsi =
-                            [trie_remove_interp symbols_e symbols' remsymbols
-                               s (mkpair var trm nextid dom) 
-                               symm remsymbols_eq L1 L2
-                               trans symm U
-                                     inssymi] in
-                          
-                          abbrev symctxt_nothing = 
+                        abbrev symctxt_nothing = 
+                           foralli(oprev_eq : { oprev = nothing }).
                            trans join G
                                   (map unit fun(u).snd 
                                     (trie_interp symbols))
@@ -1109,32 +1105,8 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                                 <pair var trm> Unit unit 
                                 fun(u:Unit).(snd string <pair var trm>)
                                 L1 L2] in
-                          let k = 
-                            (tcheck_tt nextid'' symbols rettp
-                               (lam nextid t1)
-                               (dlam G t1 nextid dom ran' 
-                                  cast d1
-                                  by cong <deriv (ctxtc nextid dom *) t1 ran'>
-                                      symm symctxt_nothing)
-                               blam) in
 
-                          (mk_check nextid symbols tt (something trm eT)
-                            pb_stdin remsymbols nextid'' rettp k K
-                            Pnextid2a
-                            trans [symbolsi oprev_eq] symm remsymbolsi)
-                           
-                        | something ign prev => 
-                     
-                          let rsymbols = 
-                               (trie_insert symbols_e s prev symbols') in
-                          abbrev symrsymi = 
-                                   [trie_restore_interp symbols_e symbols
-                                     inssymbols symbols' rsymbols s prev 
-                                     (mkpair var trm nextid dom)
-                                     trans symm oprev_eq1 oprev_eq
-                                     symm inssymbols_eq
-                                     U symm rsymbols_eq ] in
-                          abbrev symctxt_something = 
+                        abbrev symctxt_something = 
                           foralli(prev:<pair var trm>)
                                  (oprev_eq : { oprev = (something prev)}).
                            trans join G
@@ -1162,6 +1134,69 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                                          (cons (mkpair s prev) L2))
                                        (cons prev G2) in
 
+                      abbrev for_perm1 =
+                        abbrev P = [idsbnd1_lookup_nothing nextid G I2] in
+                        case oprev with
+                          nothing ign =>
+                          abbrev G_eq = [symctxt_nothing oprev_eq] in
+                          [lookup_nothing_append1 nextid G1 G2 
+                             trans cong (lookup nextid *) symm G_eq P]
+                        | something ign prev =>
+                          abbrev G_eq = [symctxt_something prev oprev_eq] in
+                          [lookup_nothing_append1 nextid G1 (cons ctxte prev G2) 
+                             trans cong (lookup nextid *) symm G_eq P]
+                        end in
+
+                        abbrev GG = (ctxtc nextid dom (append ctxte G1 G2)) in
+                        existse_term 
+                         [deriv_perm 
+                           (gs_ctxt inssymbols)
+                           t1 rT G1 G2 nextid dom for_perm1 inssymctxt d1]
+                        fun(spec d1:<deriv GG t1 rT>)
+                           (ign:True).
+
+                        abbrev d1 = (dconv GG t1 rT ran' aid d1
+                                      [bndtrm_vle nextid'' aid ran' ale bran'']
+                                      ae) in
+
+                        cast
+                        match oprev with
+                          nothing A => 
+
+                          let remsymbols = (trie_remove symbols_e s symbols') in
+                          dec s
+                          abbrev remsymbolsi =
+                            [trie_remove_interp symbols_e symbols' remsymbols
+                               s (mkpair var trm nextid dom) 
+                               symm remsymbols_eq L1 L2
+                               trans symm U
+                                     inssymi] in
+                          
+                          let k = 
+                            (tcheck_tt nextid'' symbols rettp
+                               (lam nextid t1)
+                               (dlam G t1 nextid dom ran' 
+                                  cast d1
+                                  by cong <deriv (ctxtc nextid dom *) t1 ran'>
+                                      symm [symctxt_nothing oprev_eq])
+                               blam) in
+
+                          (mk_check nextid symbols tt (something trm eT)
+                            pb_stdin remsymbols nextid'' rettp k K
+                            Pnextid2a
+                            trans [symbolsi oprev_eq] symm remsymbolsi)
+                           
+                        | something ign prev => 
+                     
+                          let rsymbols = 
+                               (trie_insert symbols_e s prev symbols') in
+                          abbrev symrsymi = 
+                                   [trie_restore_interp symbols_e symbols
+                                     inssymbols symbols' rsymbols s prev 
+                                     (mkpair var trm nextid dom)
+                                     trans symm oprev_eq1 oprev_eq
+                                     symm inssymbols_eq
+                                     U symm rsymbols_eq ] in
                           abbrev G1' = (ctxtc nextid dom G1) in
                           abbrev GG = (append ctxte G1' (cons ctxte prev G2)) in
                           abbrev origG = (append ctxte G1 (cons ctxte prev G2)) in

@@ -13,21 +13,26 @@ public class Var extends Expr{
         this.name = name;
     }
 
+    public void print_pos_comment(java.io.PrintStream w, Context ctxt) {
+	if (ctxt.getFlag("comment_vars")) 
+	    print_pos_comment_short(w);
+	else if (ctxt.getFlag("comment_vars_long")) 
+	    print_pos_comment_long(w);
+    }
+
     public void do_print(java.io.PrintStream w, Context ctxt) {
 	if (!ctxt.getFlag("no_expand_vars") && ctxt.isMacroDefined(this))
 	    ctxt.getDefBody(this).print(w,ctxt);
 	else
 	    w.print(name);
-	if (ctxt.getFlag("comment_vars")) 
-	    print_pos_comment(w);
+	print_pos_comment(w,ctxt);
     }    
 
     /* special method for the benefit of Abbrev, because the binding occurrence
        in an abbrev is a very special case. */
     public void abbrev_print(java.io.PrintStream w, Context ctxt) {
 	w.print(name);
-	if (ctxt.getFlag("comment_vars")) 
-	    print_pos_comment(w);
+	print_pos_comment(w,ctxt);
     }
 
     public int numOcc(Expr e) {

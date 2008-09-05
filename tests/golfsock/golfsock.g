@@ -1,4 +1,5 @@
 %Set "show_includes".
+%Set "print_parsed".
 Set "check_spec_terminates".
 %Include trusted "../../lib/trie.g".
 Include "../../lib/trie.g".
