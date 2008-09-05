@@ -436,6 +436,8 @@ Define trie_interp_tot : Forall(A:type)(t:<trie A>).
     end
    size t A t [x_le_x size t]].
 
+Total trie_interp trie_interp_tot.
+
 %- Now that we have termination of trie_interp, we can get a much more
    convenient lemma for dealing with the call to cvfold inside trie_interp. -%
 Define trie_interp_charvec_tot :
@@ -585,7 +587,7 @@ Define trie_lookup_interp_charvec :
            abbrev U = terminates 
                         (map T T <trie_interp_i1 A>
                             cookie (trie_interp_h1 A)
-                              terminates (trie_interp A t2) by trie_interp_tot)
+                              (trie_interp A t2))
                       by map_total in
              existse
                [n_IH n' next 
@@ -927,9 +929,16 @@ Define trie_range_map_tot
        { (hf unit a) = *}
           join (hf unit a) (snd a)].
 
-Define trusted trie_range_tot
+Define trie_range_tot
  : Forall(A:type)(t:<trie A>).
-   Exists(l:<list A>). { (trie_range t) = l} := truei.
+   Exists(l:<list A>). { (trie_range t) = l} := 
+   foralli(A:type)(t:<trie A>).
+   abbrev ret = 
+     terminates (map <pair string A> A Unit unit fun(u:Unit).(snd string A) 
+                 (trie_interp A t)) 
+     by trie_range_map_tot in
+   existsi ret { (trie_range t) = *}
+     join (trie_range t) ret.
 
 Define trie_interp_range1
  : Forall(A:type)(t1 t2:<trie A>)

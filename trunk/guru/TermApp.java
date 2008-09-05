@@ -134,8 +134,30 @@ public class TermApp extends App{
     public App spineForm(Context ctxt, boolean drop_annos, boolean spec,
 			 boolean expand_defs) {
 	Expr h = head;
-	if (expand_defs)
-	    h = h.defExpandTop(ctxt, drop_annos, spec);
+	Expr prev = null;
+	if (expand_defs) {
+	    Expr prev2 = null;
+	    while (h != prev) {
+		prev2 = prev;
+		prev = h;
+		h = h.defExpandOne(ctxt, drop_annos, spec);
+	    }
+	    if (prev2 != null)
+		prev = prev2;
+
+	    if (h.construct != construct && h.construct != CONST &&
+		h.construct != VAR)
+		/* we are trying to keep these constructs in the head. */
+		h = prev;
+	}
+
+	if (ctxt.getFlag("debug_spine_form")) {
+	    ctxt.w.println("Computing spine form of "+toString(ctxt));
+	    ctxt.w.println("{");
+	    ctxt.w.println("Head expands to "+h.toString(ctxt));
+	    ctxt.w.flush();
+	}
+	App ret = this;
 	if (h.construct == construct) {
 	    TermApp e = (TermApp)((TermApp)h).spineForm(ctxt, drop_annos,
 							spec, expand_defs);
@@ -151,11 +173,17 @@ public class TermApp extends App{
 		X2[i+eXlen] = X[i];
 		specarg2[i+eXlen] = specarg[i];
 	    }
-	    return new TermApp(e.head, X2, specarg2);
+	    ret = new TermApp(e.head, X2, specarg2);
 	}
-	if (h.construct == head.construct)
-	    return new TermApp(h, X, specarg);
-	return this;
+	else if (h != head)
+	    ret = new TermApp(h, X, specarg);
+
+	if (ctxt.getFlag("debug_spine_form")) {
+	    ret.print(ctxt.w,ctxt);
+	    ctxt.w.println("\n}");
+	    ctxt.w.flush();
+	}
+	return ret;
     }
 
     public Expr classify(Context ctxt, int approx, boolean spec) {
@@ -321,10 +349,11 @@ public class TermApp extends App{
 	if(ctxt.getFlag("debug_terminates")) {
 	    ctxt.w.println("termTerminates checking TermApp.\n"
 			   +"\n1. original term, no annos: "+no_annos.toString(ctxt)
-			   +"\n2. spine form: "+anno_t.toString(ctxt)
-			   +"\n3. head:"
+			   +"\n2. spine form, no annos: "+t.toString(ctxt)
+			   +"\n3. spine form, with annos: "+anno_t.toString(ctxt)
+			   +"\n4. head:"
 			   +anno_t.head.toString(ctxt)+
-			   "\n4. inj:"
+			   "\n5. inj:"
 			   +anno_t.isI(ctxt)
 			   +"\n5. head is ctor:"
 			   +(anno_t.head.construct == CONST ? 

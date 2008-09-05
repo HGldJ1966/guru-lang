@@ -14,8 +14,8 @@ public class Const extends Expr implements Comparable {
     
     public void do_print(java.io.PrintStream w, Context ctxt) {
 	w.print(name);
-	if (ctxt.getFlag("comment_vars")) 
-	    print_pos_comment(w);
+	if (ctxt.getFlag("comment_consts")) 
+	    print_pos_comment_long(w);
     }    
 
     public int numOcc(Expr e) {

@@ -12,6 +12,9 @@ Define symbols_t := <trie symbols_e>.
 Define gs_ctxt : Fun(unique_owned symbols:symbols_t).ctxt :=
   (trie_range symbols_e).
 
+Total gs_ctxt 
+  foralli(symbols:symbols_t). [trie_range_tot symbols_e symbols].
+
 Define predicate symbols_ok :=
   fun(n:var)(symbols:symbols_t).
     Exists(I1 : @<diffids (gs_ctxt symbols)>)

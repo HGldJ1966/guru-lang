@@ -113,7 +113,15 @@ public abstract class Expr {
 	do_print(w,ctxt);
     }
 
-    protected void print_pos_comment(java.io.PrintStream w) {
+    protected void print_pos_comment_short(java.io.PrintStream w) {
+	if (pos != null) {
+	    w.print("(* ");
+	    w.print(new Integer(pos.linenum).toString());
+	    w.print(" *)");
+	}
+    }
+
+    protected void print_pos_comment_long(java.io.PrintStream w) {
 	if (pos != null) {
 	    w.print("(* ");
 	    pos.print(w);
@@ -279,27 +287,25 @@ public abstract class Expr {
 	return e1.defEqNoAnno(ctxt,e2,spec);
     }
 
-    // allows dropping annotations. 
-    public Expr defExpandTop(Context ctxt, boolean drop_annos,
-			     boolean spec) {
-	Expr tmp = defExpandTopH(ctxt, drop_annos, spec);
-	/*	if (drop_annos)
-	  return tmp.dropAnnos(ctxt); */
-	return tmp;
-    }
-
     // do not drop annotations, treat as specificational
     public Expr defExpandTop(Context ctxt) {
-	return defExpandTopH(ctxt, false, true);
+	return defExpandTop(ctxt, false, true);
     }
 
-    private Expr defExpandTopH(Context ctxt, boolean drop_annos,
-			       boolean spec) {
+    public Expr defExpandTop(Context ctxt, boolean drop_annos,
+			     boolean spec) {
+	Expr ret = defExpandOne(ctxt,drop_annos,spec);
+	if (ret != this)
+	    return ret.defExpandTop(ctxt,drop_annos,spec);
+	return ret;
+    }
+
+    public Expr defExpandOne(Context ctxt, boolean drop_annos,
+			     boolean spec) {
 	if (construct == VAR) {
 	    Var v = (Var)this;
 	    if (ctxt.isMacroDefined(v)) 
-		return ctxt.getDefBody(v).defExpandTopH(ctxt, drop_annos, 
-							spec);
+		return ctxt.getDefBody(v);
 	}
 	else if (construct == CONST) {
 	    Const c = (Const)this;
@@ -312,14 +318,12 @@ public abstract class Expr {
 		   TypeApp, so that we can do beta-reductions
 		   immediately with them. */
 		return (drop_annos ? ctxt.getDefBodyNoAnnos(c) 
-			: ctxt.getDefBody(c))
-		    .defExpandTopH(ctxt, drop_annos, spec);
+			: ctxt.getDefBody(c));
 	}
 	else if (construct == ABBREV || construct == EABBREV) 
-	    return ((Abbrev)this).subst().defExpandTopH(ctxt,drop_annos,spec);
+	    return ((Abbrev)this).subst();
 	else if (construct == CUTOFF) {
-	    return (((Cutoff)this).get_nat_t(ctxt,spec)
-		    .defExpandTopH(ctxt, drop_annos, spec));
+	    return ((Cutoff)this).get_nat_t(ctxt,spec);
 	}
 	else if (construct == PRED_APP) 
 	    return ((PredApp)this).doBeta(ctxt, drop_annos, spec, 

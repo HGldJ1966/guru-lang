@@ -50,6 +50,24 @@ public class Abstraction extends VarListExpr{
 	else return this;
     }
     	
+    /* rename the variables in this abstraction by creating new ones with
+       the same names but position p.  The result should have */
+    public Abstraction rename(Context ctxt, Position p) {
+	Expr cur = this;
+	int iend = vars.length;
+	Var[] nvars = new Var[iend];
+	Expr[] ntypes = new Expr[iend];
+	for (int i = 0; i < iend; i++) {
+	    Abstraction a = (Abstraction)cur;
+	    nvars[i] = new Var(vars[i].name);
+	    nvars[i].pos = p;
+	    ntypes[i] = a.types[0]; // to get the substituted type.
+	    cur = a.instantiate(nvars[i]);
+	}
+	
+	return new Abstraction(construct, nvars, ntypes, cur);
+    }
+
     public int numOcc(Expr e) {
 	int n = body.numOcc(e);
 	if (!isBound(e))

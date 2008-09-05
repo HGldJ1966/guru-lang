@@ -27,8 +27,8 @@ public class Main {
 	    }
 	java.util.Collection trusted = ctxt.getTrustedDefs();
 	if (trusted.size() > 0) {
-	    ctxt.w.print("Trusting "+(new Integer(trusted.size())).toString()
-			 +":");
+	    ctxt.w.println("Trusting "+(new Integer(trusted.size())).toString()
+			   +":\n");
 	    java.util.Iterator it = trusted.iterator();
 	    if (ctxt.getFlag("print_trusted_details")) {
 		boolean first = true;
