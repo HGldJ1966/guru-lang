@@ -9,7 +9,285 @@ public class HypJoin extends Expr{
     public Expr [] Ps;
     public boolean mark = false;
     
-    private Vector varOrderVec = new Vector();
+    private class UnorderableException extends Exception {}
+    private class OrderingRestartRequiredException extends Exception {}
+    private class InconsistentException extends Exception
+    {
+    	public InconsistentException(String s)
+    	{
+    		super(s);
+    	}
+    }
+    
+    private class OrderMap
+    {
+    	public static final int UNKNOWN = 0;
+    	public static final int GREATER = 1;
+    	public static final int NOT_GREATER = 2;
+    	
+    	private class MapEntry
+    	{
+    		private Expr e1;
+    		private Expr e2;
+    		private Context ctxt;
+    		
+    		public MapEntry(Expr e1, Expr e2, Context ctxt)
+    		{
+    			this.e1 = e1;
+    			this.e2 = e2;
+    			this.ctxt = ctxt;
+    		}
+    		
+    		public int hashCode()
+    		{
+    			return e1.toString(ctxt).hashCode() + e2.toString(ctxt).hashCode();
+    		}
+    		public boolean equals(Object objEntry)
+    		{
+    			MapEntry entry = (MapEntry)objEntry;
+    			return e1.defEq(ctxt, entry.e1) && e2.defEq(ctxt, entry.e2);
+    			
+    		}
+    	}
+    	
+    	private Hashtable<MapEntry, Boolean> map = new Hashtable<MapEntry, Boolean>();
+    	
+    	// the following variables are used to measure the performance of the map
+    	int hits = 0;
+    	int misses = 0;
+    	
+    	public int compare(Expr e1, Expr e2, Context ctxt)
+    	{
+    		int result = UNKNOWN;
+    		MapEntry entry = new MapEntry(e1, e2, ctxt);
+    		Boolean greater = map.get(entry);
+    		if(greater != null)
+    		{
+    			++hits;
+    			if(greater.booleanValue())
+    			{
+    				result = GREATER;
+    			}
+    			else
+    			{
+    				result = NOT_GREATER;
+    			}
+    		}
+    		else
+    		{
+    			++misses;
+    		}
+    		return result;
+    	}
+    	
+    	public void addGreaterThan(Expr e1, Expr e2, boolean greater, Context ctxt)
+    	{
+    		MapEntry entry = new MapEntry(e1, e2, ctxt);
+    		map.put(entry, new Boolean(greater));
+    	}
+    }
+    
+    private class VarOrder
+    {
+    	
+    	private class ConstraintTable extends Hashtable<Var, Vector<Var> >{}
+    	
+    	private ConstraintTable requiredConstraints = new ConstraintTable();
+    	private ConstraintTable arbitraryConstraints = new ConstraintTable();
+    	
+    	public static final int CONSTRAINT_ADD_RESULT_SUCCESS = 0;
+    	public static final int CONSTRAINT_ADD_RESULT_RESTART_REQUIRED = 1;
+    	public static final int CONSTRAINT_ADD_RESULT_FAIL = 2;
+    	
+    	public void clearArbitraryConstraints()
+    	{
+    		arbitraryConstraints.clear();
+    	}
+    	
+    	public boolean varGreaterThan(Var v1, Var v2)
+    	{
+    		if(checkVarGreaterThan(v1, v2))
+    		{
+    			return true;
+    		}
+    		if(checkVarGreaterThan(v2, v1))
+    		{
+    			return false;
+    		}
+    		if(v1 == v2)
+    		{
+    			return false;
+    		}
+    		addArbitraryConstraint(v1, v2);
+    		return true;
+    	}
+    	
+    	private boolean checkVarGreaterThanRequired(Var v1, Var v2)
+    	{
+    		// v1 >* v2 iff exists v3 such that v1 > v3 v3 >* v2
+    		Vector<Var> constraints = getRequiredConstraintEntriesStartingWith(v1);
+    		Iterator<Var> constraintIter = constraints.iterator();
+    		while(constraintIter.hasNext())
+    		{
+    			Var curEntry = constraintIter.next();
+    			if(curEntry == v2)
+    			{
+    				return true;
+    			}
+    		}
+    		
+    		constraintIter = constraints.iterator();
+    		while(constraintIter.hasNext())
+    		{
+    			Var curEntry = constraintIter.next();
+    			if(checkVarGreaterThanRequired(curEntry, v2))
+    			{
+    				return true;
+    			}
+    		}
+    		
+    		return false;
+    		
+    	}
+    	
+    	private Vector<Var> getRequiredConstraintEntriesStartingWith(Var v)
+    	{
+    		Vector<Var> result = requiredConstraints.get(v);
+    		if(result == null)
+    		{
+    			result = new Vector<Var>();
+    			requiredConstraints.put(v, result);
+    		}
+    		return result;
+    	}
+    	
+    	private Vector<Var> getArbitraryConstraintEntriesStartingWith(Var v)
+    	{
+    		Vector<Var> result = arbitraryConstraints.get(v);
+    		if(result == null)
+    		{
+    			result = new Vector<Var>();
+    			arbitraryConstraints.put(v, result);
+    		}
+    		return result;
+    	}
+    	
+    	private boolean checkVarGreaterThan(Var v1, Var v2)
+    	{
+    		// v1 >* v2 iff exists v3 such that v1 > v3 v3 >* v2
+    		Vector<Var> requiredConstraints = getRequiredConstraintEntriesStartingWith(v1);
+    		Vector<Var> arbitraryConstraints = getArbitraryConstraintEntriesStartingWith(v1);
+    		
+    		Iterator<Var> constraintIter = requiredConstraints.iterator();
+    		while(constraintIter.hasNext())
+    		{
+    			Var curEntry = constraintIter.next();
+    			if(curEntry == v2)
+    			{
+    				return true;
+    			}
+    		}
+    		constraintIter = arbitraryConstraints.iterator();
+    		while(constraintIter.hasNext())
+    		{
+    			Var curEntry = constraintIter.next();
+    			if(curEntry == v2)
+    			{
+    				return true;
+    			}
+    		}
+    		
+    		constraintIter = requiredConstraints.iterator();
+    		while(constraintIter.hasNext())
+    		{
+    			Var curEntry = constraintIter.next();
+    			if(checkVarGreaterThan(curEntry, v2))
+    			{
+    				return true;
+    			}
+    		}
+    		
+    		constraintIter = arbitraryConstraints.iterator();
+    		while(constraintIter.hasNext())
+    		{
+    			Var curEntry = constraintIter.next();
+    			if(checkVarGreaterThan(curEntry, v2))
+    			{
+    				return true;
+    			}
+    		}
+    		
+    		return false;
+    		
+    	}
+    	
+    	// Add an arbitrary constraint that v1 > v2
+    	private void addArbitraryConstraint(Var v1, Var v2)
+    	{
+    		if(v1 == v2)
+    		{
+    			throw new RuntimeException("Attempt to add " + v1.name + ">" + v2.name + " to var order");
+    		}
+    		
+    		Vector<Var> constraintList = arbitraryConstraints.get(v1);
+    		if(constraintList == null)
+    		{
+    			constraintList = new Vector<Var>();
+    			arbitraryConstraints.put(v1, constraintList);
+    		}
+    		constraintList.add(v2);
+    	}
+    	
+    	// Add a required constraint that v1 > v2
+    	public int addRequiredConstraint(Var v1, Var v2)
+    	{
+    		if(v1 == v2)
+    		{
+    			// do nothing
+    			// note that the desire to add v>v may indicate inconsistency,
+    			//	which will be found later
+    			return CONSTRAINT_ADD_RESULT_SUCCESS;
+    		}
+    		
+    		if(checkVarGreaterThanRequired(v2, v1))
+    		{
+    			return CONSTRAINT_ADD_RESULT_FAIL;
+    		}
+    		
+    		int returnValue = CONSTRAINT_ADD_RESULT_SUCCESS;  		
+    		if(checkVarGreaterThan(v2, v1))
+    		{
+    			returnValue = CONSTRAINT_ADD_RESULT_RESTART_REQUIRED;
+    		}
+    		
+    		Vector<Var> constraintList = requiredConstraints.get(v1);
+    		if(constraintList == null)
+    		{
+    			constraintList = new Vector<Var>();
+    			requiredConstraints.put(v1, constraintList);
+    		}
+    		constraintList.add(v2);
+
+    		return returnValue;
+    	}
+    	
+    	public int addRequiredConstraints(Var v1, Collection<Var> v2s)
+    	{
+    		int returnValue = CONSTRAINT_ADD_RESULT_SUCCESS;
+    		Iterator<Var> varIter = v2s.iterator();
+    		while(varIter.hasNext())
+    		{
+    			Var curVar = varIter.next();
+    			int curReturn = addRequiredConstraint(v1, curVar);
+    			if(curReturn != CONSTRAINT_ADD_RESULT_SUCCESS)
+    			{
+    				return curReturn;
+    			}
+    		}
+    		
+    		return returnValue;
+    	}
+    }
     
     public HypJoin() {
         super(HYPJOIN);
@@ -99,7 +377,8 @@ public class HypJoin extends Expr{
     	return returnValue;
     }
     
-    private Atom[] complete(Context ctxt, Atom[] thePs, Stack boundVars)
+    private Atom[] complete(Context ctxt, Atom[] thePs, Stack boundVars, VarOrder theVarOrder, OrderMap theOrderMap)
+    	throws OrderingRestartRequiredException, UnorderableException
     {
     	for(int i = 0; i < thePs.length; ++i)
     	{
@@ -113,7 +392,7 @@ public class HypJoin extends Expr{
     				{
     					// there is an overlap
     					Atom newRule = new Atom(curAtom.equality, rewY1, curAtom.Y2);
-    					Atom orientedNewRule = orient(ctxt, newRule);			
+    					Atom orientedNewRule = orient(ctxt, newRule, theVarOrder, theOrderMap);			
     					if(!contains(ctxt, thePs, orientedNewRule))
     					{
     						Atom[] newRuleArr = new Atom[thePs.length + 1];
@@ -124,7 +403,7 @@ public class HypJoin extends Expr{
     							}
     							newRuleArr[newRuleArr.length - 1] = orientedNewRule;
     						}
-    						return complete(ctxt, newRuleArr, boundVars);
+    						return complete(ctxt, newRuleArr, boundVars, theVarOrder, theOrderMap);
     					}
     				}
 
@@ -328,21 +607,26 @@ public class HypJoin extends Expr{
     {
     	if(e.construct == ABORT)
     	{
-    		return 8;
+    		return 9;
     	}
     	else if(e.construct == BANG)
     	{
-    		return 7;
-    	}
-    	else if(e.construct == VAR)
-    	{
-    		return 6;
+    		return 8;
     	}
     	else if(e.construct == LET)
     	{
-    		return 5;
+    		return 7;
     	}
     	else if(e.construct == MATCH || e.construct == SIZE)
+    	{
+    		return 6;
+    	}
+    	else if(e.construct == TERM_APP && 
+    			((TermApp)e).head.construct != CONST )
+    	{
+    		return 5;
+    	}
+    	else if(e.construct == VAR)
     	{
     		return 4;
     	}
@@ -350,7 +634,8 @@ public class HypJoin extends Expr{
     	{
     		return 3;
     	}
-    	else if(e.construct == TERM_APP)
+    	else if(e.construct == TERM_APP && 
+    			((TermApp)e).head.construct == CONST )
     	{
     		return 2;
     	}
@@ -625,44 +910,7 @@ public class HypJoin extends Expr{
     	
     }
     
-    private int varOrderIndex(Var v)
-    {
-    	int returnValue = -1;
-    	for(int i = 0; i < varOrderVec.size(); ++i)
-    	{
-    		if(varOrderVec.elementAt(i) == v)
-    		{
-    			returnValue = i;
-    			break;
-    		}
-    	}
-    	
-    	return returnValue;
-    }
-    
-    private void addToVarOrder(Var v)
-    {
-    	if(varOrderIndex(v) < 0)
-    	{
-    		varOrderVec.insertElementAt(v, 0);
-    	}
-    }
-    
-    private boolean varGreaterThan(Var v1, Var v2)
-    {
-    	if(varOrderIndex(v2) < 0)
-    	{
-    		varOrderVec.add(v2);
-    	}
-    	if(varOrderIndex(v1) < 0)
-    	{
-    		varOrderVec.insertElementAt(v1, 0);
-    	}
-    	
-    	return varOrderIndex(v1) < varOrderIndex(v2);
-    }
-    
-    private boolean functionGreaterThanLPO(Context ctxt, Expr e1, Expr e2)
+    private boolean functionGreaterThanLPO(Context ctxt, Expr e1, Expr e2, VarOrder theVarOrder)
     {
     	boolean returnValue = false;
     	if(getLPO_ConstructValue(ctxt, e1) > getLPO_ConstructValue(ctxt, e2))
@@ -677,7 +925,7 @@ public class HypJoin extends Expr{
     		{
     			Var vare1 = (Var)e1;
     			Var vare2 = (Var)e2;
-    			returnValue = varGreaterThan(vare1, vare2);
+    			returnValue = theVarOrder.varGreaterThan(vare1, vare2);
     		}
     	}
     	
@@ -695,33 +943,29 @@ public class HypJoin extends Expr{
     		{
     			returnValue = e1 == e2;
     		}
+    		else if(e1.construct == CONST && e2.construct == CONST)
+    		{
+    			returnValue = e1 == e2;
+    		}
     	}
     	
     	return returnValue;	
     }
     
-    private boolean greaterThanLPO_Subterms(Context ctxt, Expr e1, Expr e2)
-    {
-    	boolean returnValue = true;
-    	
-    	int subtermsCount = getSubtermsCount(ctxt, e2);
-		for(int i = 0; i < subtermsCount; ++i)
-		{
-			Expr curSubterm = getSubterm(ctxt, e2, i);	
-			if(!greaterThanLPO(ctxt, e1, curSubterm))
-			{
-				returnValue = false;
-				break;
-			}
-		}
-		return returnValue;
-    }
-    
     // Compares e1 and e2 in a lexicographic path ordering
     // returns true if e1 > e2 in LPO
     // returns false otherwise
-    private boolean greaterThanLPO(Context ctxt, Expr e1, Expr e2)
+    private boolean greaterThanLPO(Context ctxt, Expr e1, Expr e2, VarOrder theVarOrder, OrderMap theOrderMap)
     {
+    	if(e1.defEq(ctxt, e2))
+    	{
+    		return false;
+    	}
+    	
+    	//System.out.println("in greaterThanLPO with \n" + 
+    	//		"\te1 = " + e1.toString(ctxt) + "\n" + 
+    	//		"\te2 = " + e2.toString(ctxt));
+    	
     	while(e1.construct == ABBREV)
     	{
     		e1 = ((Abbrev)e1).subst();
@@ -729,53 +973,139 @@ public class HypJoin extends Expr{
     	while(e2.construct == ABBREV)
     	{
     		e2 = ((Abbrev)e2).subst();
+    	}  	
+    	
+    	int mapResult = theOrderMap.compare(e1, e2, ctxt);
+    	if(mapResult == OrderMap.GREATER)
+    	{
+    		return true;
+    	}
+    	else if(mapResult == OrderMap.NOT_GREATER)
+    	{
+    		return false;
     	}
     	
     	boolean returnValue = false;
-    	if(functionGreaterThanLPO(ctxt, e1, e2))
+    	if(!returnValue)
     	{
-    		returnValue = greaterThanLPO_Subterms(ctxt, e1, e2);
+	    	for(int i = 0; i < getSubtermsCount(ctxt, e1); ++i)
+	    	{
+	    		Expr curSubTerm = getSubterm(ctxt, e1, i);
+	    		if(greaterThanLPO(ctxt, curSubTerm, e2, theVarOrder, theOrderMap) || curSubTerm.defEq(ctxt, e2))
+	    		{
+	    			returnValue = true;
+	    			break;
+	    		}
+	    	}
     	}
-    	else if(functionEqualsLPO(ctxt, e1, e2))
+    	if(!returnValue)
     	{
-    		if(greaterThanLPO_Subterms(ctxt, e1, e2))
-    		{
-    			int subtermsCount = getSubtermsCount(ctxt, e1);
-    			for(int i = 0; i < subtermsCount; ++i)
-    			{
-    				Expr e1Subterm = getSubterm(ctxt, e1, i);
-    				Expr e2Subterm = getSubterm(ctxt, e2, i);
-    				if(greaterThanLPO(ctxt, e1Subterm, e2Subterm))
-    				{
-    					returnValue = true;
-    					break;
-    				}
-    				else if(greaterThanLPO(ctxt, e2Subterm, e1Subterm))
-    				{
-    					break;
-    				}
-    			}
-    		}
+	    	if(functionGreaterThanLPO(ctxt, e1, e2, theVarOrder) && greaterLPO_ThanAllSubterms(ctxt, e1, e2, theVarOrder, theOrderMap))
+	    	{
+	    		returnValue = true;		
+	    	}
     	}
+    	if(!returnValue)
+    	{
+	    	if(functionEqualsLPO(ctxt, e1, e2))
+	    	{
+	    		if(greaterLPO_ThanAllSubterms(ctxt, e1, e2, theVarOrder, theOrderMap))
+	    		{
+	    			int subtermsCount = getSubtermsCount(ctxt, e1);
+	    			for(int i = 0; i < subtermsCount; ++i)
+	    			{
+	    				Expr e1Subterm = getSubterm(ctxt, e1, i);
+	    				Expr e2Subterm = getSubterm(ctxt, e2, i);
+	    				if(greaterThanLPO(ctxt, e1Subterm, e2Subterm, theVarOrder, theOrderMap))
+	    				{
+	    					returnValue = true;
+	    					break;
+	    				}
+	    				else if(greaterThanLPO(ctxt, e2Subterm, e1Subterm, theVarOrder, theOrderMap))
+	    				{
+	    					break;
+	    				}
+	    			}
+	    		}
+	    	}
+    	}
+    		
+    	theOrderMap.addGreaterThan(e1, e2, returnValue, ctxt);
+    	
     	return returnValue;
     }
     
-    // we use Atoms to store ordered rewrite rules 
+    private boolean greaterLPO_ThanAllSubterms(Context ctxt, Expr e1, Expr e2, VarOrder theVarOrder, OrderMap theOrderMap) 
+    {
+		boolean returnValue = true;
+		for(int i = 0; i < getSubtermsCount(ctxt, e2); ++i)
+		{
+			if(!greaterThanLPO(ctxt, e1, this.getSubterm(ctxt, e2, i), theVarOrder, theOrderMap))
+			{
+				returnValue = false;
+				break;
+			}
+		}
+		return returnValue;
+	}
+
+	// we use Atoms to store ordered rewrite rules 
     // of the form Y1 -> Y2
-    private Atom orient(Context ctxt, Atom theP)
+    private Atom orient(Context ctxt, Atom theP, VarOrder theVarOrder, OrderMap theOrderMap) 
+    	throws OrderingRestartRequiredException, UnorderableException
     {
     	Atom returnValue = theP;
+  
+    	int constraintAddResult = VarOrder.CONSTRAINT_ADD_RESULT_SUCCESS;
     	
-    	if(theP.Y1.construct == VAR)
+    	if(theP.Y1.construct == VAR && theP.Y2.construct == TERM_APP &&
+    			((TermApp)theP.Y2).head.construct == CONST)
     	{
-    		addToVarOrder((Var)theP.Y1);
+    		Vector<Var> y2Vars = new Vector<Var>();
+    		theP.Y2.getFreeVarsComputational(ctxt, y2Vars);
+    		theVarOrder.addRequiredConstraints((Var)theP.Y1, y2Vars);
     	}
-    	if(theP.Y2.construct == VAR)
+    	else if(theP.Y2.construct == VAR && theP.Y1.construct == TERM_APP &&
+    			((TermApp)theP.Y1).head.construct == CONST)
     	{
-    		addToVarOrder((Var)theP.Y2);
+    		Vector<Var> y1Vars = new Vector<Var>();
+    		theP.Y1.getFreeVarsComputational(ctxt, y1Vars);
+    		theVarOrder.addRequiredConstraints((Var)theP.Y2, y1Vars);
     	}
     	
-    	if(greaterThanLPO(ctxt, theP.Y2, theP.Y1))
+    	if(constraintAddResult == VarOrder.CONSTRAINT_ADD_RESULT_RESTART_REQUIRED)
+    	{
+    		throw new OrderingRestartRequiredException();
+    	}
+    	else if(constraintAddResult == VarOrder.CONSTRAINT_ADD_RESULT_FAIL)
+    	{
+    		throw new UnorderableException();
+    	}
+    	
+    	// test code
+    	/*
+    	if(greaterThanLPO(ctxt, theP.Y1, theP.Y2, theVarOrder))
+    	{
+    		if(greaterThanLPO(ctxt, theP.Y2, theP.Y1, theVarOrder))
+    		{
+    			throw new RuntimeException("Two terms are greater than each other in LPO\n1: "+theP.Y1.toString(ctxt)+"\n2: "+theP.Y2.toString(ctxt));
+    		}
+    		if(theP.Y1.defEq(ctxt, theP.Y2))
+    		{
+    			throw new RuntimeException("Term one is greater than AND equal to term 2 in LPO\n1: "+theP.Y1+"\n2: "+theP.Y2);
+    		}
+    	}
+    	else
+    	{
+    		if(!greaterThanLPO(ctxt, theP.Y2, theP.Y1, theVarOrder) && !theP.Y1.defEq(ctxt, theP.Y2))
+    		{
+    			throw new RuntimeException("Two terms are unrelated in LPO\n1: "+theP.Y1+"\n2: "+theP.Y2);
+    		}
+    	}
+    	*/
+    	// end test code
+    	
+    	if(greaterThanLPO(ctxt, theP.Y2, theP.Y1, theVarOrder, theOrderMap))
     	{
     		returnValue = new Atom(theP.equality, theP.Y2, theP.Y1);
     	}
@@ -783,12 +1113,13 @@ public class HypJoin extends Expr{
     	return returnValue;
     }
     
-    private Atom[] orient(Context ctxt, Atom[] thePs)
+    private Atom[] orient(Context ctxt, Atom[] thePs, VarOrder theVarOrder, OrderMap theOrderMap)
+    	throws OrderingRestartRequiredException, UnorderableException
     {
     	Atom[] returnValue = new Atom[thePs.length];
     	for(int i = 0; i < thePs.length; ++i)
     	{
-    		returnValue[i] = orient(ctxt, thePs[i]);
+    		returnValue[i] = orient(ctxt, thePs[i], theVarOrder, theOrderMap);
     	}
     	return returnValue;
     }
@@ -799,6 +1130,12 @@ public class HypJoin extends Expr{
     	{
     		Expr curY1 = completeRules[i].Y1;
     		Expr curY2 = completeRules[i].Y2;
+    		
+    		if(curY1.defEq(ctxt, curY2))
+    		{
+    			// a term can always be equal to itself, regardless of other rules
+    			continue;
+    		}
     		
     		if(curY1 instanceof TermApp)
     		{
@@ -838,23 +1175,83 @@ public class HypJoin extends Expr{
     				   "Atoms in hypjoin may not allow equality of two different term constructors: " + completeRules[i].toString(ctxt));
     			}
     		}
+    		
+    		if(isValueContainingExpr(ctxt, curY2, curY1) || 
+    		   isValueContainingExpr(ctxt, curY1, curY2))
+			{
+				handleError(ctxt, 
+					"Atoms in hypjoin may not allow equality of an expression and a value containing that expression: " + completeRules[i].toString(ctxt));
+				
+			}
+    		
     	}
     }
     
+    private boolean isValueContainingExpr(Context ctxt, Expr e, Expr v)
+    {
+    	boolean returnValue = false;
+    	
+    	if(e.defEq(ctxt, v))
+    	{
+    		returnValue = true;
+    	}
+    	else if(e instanceof TermApp)
+    	{
+    		TermApp appE = (TermApp)e;
+    		if(appE.head instanceof Const)
+    		{
+    			for(int i = 0; i < appE.X.length; ++i)
+    			{
+    				returnValue = returnValue || isValueContainingExpr(ctxt, appE.X[i], v);
+    			}
+    		}
+    	}
+    	
+    	return returnValue;
+    }
     
-    private Expr normalize(Context ctxt, Expr theExpr, Atom[] thePs)
+    private Expr[] normalize(Context ctxt, Expr[] theExprs, Atom[] thePs)
     {
 
-    	theExpr = theExpr.dropAnnos(ctxt);
-    	theExpr = removeAbbrev(ctxt, theExpr);
+    	Expr[] result = new Expr[theExprs.length];
     	
     	Stack emptyBoundVars = new Stack();
-    	Atom[] orientedPs = orient(ctxt, thePs);
-    	Atom[] completePs = complete(ctxt, orientedPs, emptyBoundVars);
-
-    	checkConsistency(ctxt, completePs);
+    	VarOrder theVarOrder = new VarOrder();
     	
-    	return normalizeWithCompleteRules(ctxt, theExpr, completePs, emptyBoundVars);
+    	for(int i = 0; i < 100; ++i)
+    	{
+    		try
+    		{
+    			OrderMap theOrderMap = new OrderMap();
+		    	Atom[] orientedPs = orient(ctxt, thePs, theVarOrder, theOrderMap);
+		    	Atom[] completePs = complete(ctxt, orientedPs, emptyBoundVars, theVarOrder, theOrderMap);
+		
+		    	checkConsistency(ctxt, completePs);
+		    	
+		    	for(int exprIndex = 0; exprIndex < theExprs.length; ++exprIndex)
+		    	{
+		    		Expr curExpr = theExprs[exprIndex];
+		    		curExpr = curExpr.dropAnnos(ctxt);
+		    		curExpr = removeAbbrev(ctxt, curExpr);
+		    		result[exprIndex] = normalizeWithCompleteRules(ctxt, curExpr, completePs, emptyBoundVars);
+		    	}
+		    	
+		    	return result;
+    		}
+    		catch(UnorderableException ex)
+    		{
+    			handleError(ctxt, "Unable to order the variables in the supplied equations: " + 
+    					getArrString(ctxt, thePs));
+    		}
+    		catch(OrderingRestartRequiredException ex)
+    		{
+    			theVarOrder.clearArbitraryConstraints();
+    		}
+    	}
+    	
+    	handleError(ctxt, "Unable to order the variables in the supplied equations: " + 
+				getArrString(ctxt, thePs));
+    	return null;
     }
     
     private Atom[] getAtomArray(Context ctxt, Expr[] theExprs)
@@ -912,10 +1309,12 @@ public class HypJoin extends Expr{
     		}
     		boolean smallerAtomsChanged = normalize(ctxt, smallerAtoms);
 
-    		Expr normY1 = normalize(ctxt, curAtom.Y1, smallerAtoms);
-    		Expr normY2 = normalize(ctxt, curAtom.Y2, smallerAtoms);
-    		Atom normCurAtom = new Atom(curAtom.equality, normY1, normY2);
-    		boolean curAtomChanged = !normY1.defEq(ctxt, curAtom.Y1) || !normY2.defEq(ctxt, curAtom.Y2);
+    		Expr [] sourceExprs = new Expr[2];
+    		sourceExprs[0] = curAtom.Y1;
+    		sourceExprs[1] = curAtom.Y2;
+    		Expr[] normExprs = normalize(ctxt, sourceExprs, smallerAtoms);
+    		Atom normCurAtom = new Atom(curAtom.equality, normExprs[0], normExprs[1]);
+    		boolean curAtomChanged = !normExprs[0].defEq(ctxt, curAtom.Y1) || !normExprs[1].defEq(ctxt, curAtom.Y2);
 
 		smallerIndex = 0;
 		for(int j = 0; j < thePs.length; ++j)
@@ -938,11 +1337,31 @@ public class HypJoin extends Expr{
     private boolean equalModEquations(Context ctxt, Expr e1, Expr e2,
 				      Atom[] equations, Stack boundVars)
     {
-    	Atom[] orientedPs = orient(ctxt, equations);
-    	Atom[] completePs = complete(ctxt, orientedPs, boundVars);
-    	Expr ne1 = orderedRewrite(ctxt, e1, completePs, boundVars);
-    	Expr ne2 = orderedRewrite(ctxt, e2, completePs, boundVars);
-    	return ne1.defEq(ctxt, ne2);
+    	VarOrder theVarOrder = new VarOrder();
+    	for(int i = 0; i < 100; ++i)
+    	{
+    		try
+    		{	    
+    			OrderMap theOrderMap = new OrderMap();
+		    	Atom[] orientedPs = orient(ctxt, equations, theVarOrder, theOrderMap);
+		    	Atom[] completePs = complete(ctxt, orientedPs, boundVars, theVarOrder, theOrderMap);
+		    	Expr ne1 = orderedRewrite(ctxt, e1, completePs, boundVars);
+		    	Expr ne2 = orderedRewrite(ctxt, e2, completePs, boundVars);
+		    	return ne1.defEq(ctxt, ne2);
+    		}
+    		catch(UnorderableException ex)
+    		{
+    			handleError(ctxt, "Unable to order the variables in the supplied equations: " + 
+    					getArrString(ctxt, equations));
+    		}
+    		catch(OrderingRestartRequiredException ex)
+    		{
+    			theVarOrder.clearArbitraryConstraints();
+    		}
+    	}
+    	handleError(ctxt, "Unable to order the variables in the supplied equations: " + 
+				getArrString(ctxt, equations));
+    	return false;
     }
     
     private String getArrString(Context ctxt, Atom[] theAtoms)
@@ -959,24 +1378,29 @@ public class HypJoin extends Expr{
     {
     	if(mark)
     	{
-    		int i = 0;
+    		@SuppressWarnings("unused")
+			int i = 0;
     	}
     	
 		Atom[] proofAtoms = getAtomArray(ctxt, Ps);
 		normalize(ctxt, proofAtoms);
 
-    	Expr e1 = normalize(ctxt, t1, proofAtoms);
-        Expr e2 = normalize(ctxt, t2, proofAtoms);
+		Expr[] sourceExprs = new Expr[2];
+		sourceExprs[0] = t1;
+		sourceExprs[1] = t2;
+		Expr[] normExprs = normalize(ctxt, sourceExprs, proofAtoms);
         
         Stack emptyContext = new Stack();
-        if(equalModEquations(ctxt, e1, e2, proofAtoms, emptyContext))
-	    return new Atom(true, t1, t2);
+        if(equalModEquations(ctxt, normExprs[0], normExprs[1], proofAtoms, emptyContext))
+        {
+        	return new Atom(true, t1, t2);
+        }
         
         handleError(ctxt,
       		    "Evaluation cannot join two terms" 
       		    +" in a hypjoin proof.\n"
-      		    +"1. Normal form of first term: "+e1.toString(ctxt)+"\n"
-      		    +"2. Normal form of second term: "+e2.toString(ctxt)+"\n"
+      		    +"1. Normal form of first term: "+normExprs[0].toString(ctxt)+"\n"
+      		    +"2. Normal form of second term: "+normExprs[1].toString(ctxt)+"\n"
       		    +"3. Normal form of equations:\n" + getArrString(ctxt, proofAtoms));
    
     
