@@ -4,6 +4,17 @@ Inductive nat : type :=
   Z : nat
 | S : Fun(x:nat).nat.
 
+Define pred :=
+  fun pred(n:nat) : nat.
+    match n by n1 n2 return nat with
+       Z => Z
+     | S n' => n'
+   end. 
+
+Define breakHypjoin : Forall(a b d e: nat)(p1: {(S b) = a})(p2: {d = b})(p3:{e = a}).{(pred a) = b} :=
+	foralli(a b d e: nat)(p1: {(S b) = a})(p2: {d = b})(p3:{e = a}).
+		hypjoin (pred a) b by p1 p2 p3 end.
+		
 Define plus : Fun(n m : nat). nat :=
   fun plus(n m : nat):nat. 
     match n by x y return nat with
@@ -43,7 +54,7 @@ Define ge :=
      | S n' => (ge n' m')
      end
    end. 
-
+	
 Define geRefl : Forall(n:nat). { (ge n n) = T } :=
 	induction(n:nat) by x1 x2 IH return { (ge n n) = T} with
 		Z => hypjoin (ge n n) T by x1 end
