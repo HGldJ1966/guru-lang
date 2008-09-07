@@ -727,73 +727,65 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                                 <pair var trm> Unit unit 
                                 fun(u:Unit).(snd string <pair var trm>)
                                 L1 L2] in
-                          
-                    % { (lookup nextid' G1) = nothing }
-                    abbrev for_perm1 =
-                      abbrev P = [idsbnd1_lookup_nothing nextid' G 
-                                    [idsbnd1_vle nextid nextid' G I2 nle1]] in
-                      case oprev with
-                        nothing ign =>
-                        abbrev G_eq = [symctxt_nothing oprev_eq] in
-                        [lookup_nothing_append1 nextid' G1 G2 
-                           trans cong (lookup nextid' *) symm G_eq P]
-                      | something ign prev =>
-                        abbrev G_eq = [symctxt_something prev oprev_eq] in
-                        [lookup_nothing_append1 nextid' G1 (cons ctxte prev G2) 
-                           trans cong (lookup nextid' *) symm G_eq P]
-                      end in
 
-                    existse_term 
-                      [deriv_perm (gs_ctxt inssymbols)
-                         t2 eT G1 G2 nextid' t1 for_perm1 inssymctxt d2]  
-                    fun(spec d2:<deriv 
-                                   (ctxtc nextid' t1 (append ctxte G1 G2))
-                                   t2 eT>)
-                       (ign:True).
-
-                       % pull d2 back from symbols'' to an extension of symbols
-                       abbrev d2 = 
+                       abbrev the_deriv = 
                          match oprev with 
                           nothing A => 
-
-                          % In this case, G = (append G1 G2) 
-
-                          cast d2
-                          by cong <deriv (ctxtc nextid' t1 *) t2 eT>
-                               symm [symctxt_nothing oprev_eq]
+                          abbrev G_eq = [symctxt_nothing oprev_eq] in
+                          cast
+                            (dpi G1 G2 nextid' t1 t2 eTistp 
+                               cast d1 by cong <deriv * t1 (sym tp)> G_eq
+                               cast d2 by
+                               trans cong <deriv (gs_ctxt inssymbols) t2 *> PeT
+                                 cong <deriv * t2 (sym (tpknd (istp eT)))> inssymctxt)
+                          by cong <deriv * (pi nextid' t1 t2)
+                                      (sym (tpknd (istp eT)))> symm G_eq
                       | something ign prev => 
 
                            % In this case, G = (append G1 (cons prev G2))
+                           abbrev G' = (append ctxte G1 (cons ctxte prev G2)) in
+                           abbrev Gprev = (cons ctxte prev ctxtn) in
+                           abbrev G1' = (append ctxte G1 Gprev) in
+                           abbrev G2' = (ctxtc nextid' t1 G2) in
+                           abbrev GG = (append ctxte G1' G2) in
+                           abbrev GG' = (append ctxte G1' G2') in
+                           abbrev GG'' = (append ctxte G1 (cons ctxte prev G2')) in
 
-                           abbrev G1' = (ctxtc nextid' t1 G1) in
-                           abbrev GG = (append ctxte G1' (cons ctxte prev G2)) in
-                           abbrev origG = (append ctxte G1 (cons ctxte prev G2)) in
-                           abbrev GG' = (ctxtc nextid' t1 origG) in
-                        abbrev diffidsGG = 
-                            [cong_diffids GG' GG
-                                 [diffids_wk origG nextid' t1
-                                    [cong_diffids G origG I1
-                                      [symctxt_something prev oprev_eq]]
-                                    [idsbnd1_vle nextid nextid' 
-                                       origG [cong_idsbnd1 nextid G origG
-                                               I2 [symctxt_something prev oprev_eq]]
-                                       nle1]]
-                                  join GG' GG] in
+                        abbrev G_eq = [symctxt_something prev oprev_eq] in
+                        abbrev G_eq_GG = 
+                               trans G_eq
+                                  trans join G' (append G1 (append Gprev G2))
+                                        symm [append_assoc ctxte G1 Gprev G2] in
+                        abbrev GG'_eq_GG'' = trans [append_assoc ctxte G1 Gprev G2']
+                                               join (append G1 (append Gprev G2')) GG'' in
+                        abbrev diffidsGG'' = 
+                            [cong_diffids GG' GG''
+                              [diffids_wk1 G1' G2 nextid' t1 
+                                 [cong_diffids G GG I1 G_eq_GG]
+                                 [idsbnd1_vle nextid nextid' GG
+                                   [cong_idsbnd1 nextid G GG I2 G_eq_GG] nle1]]
+                              GG'_eq_GG''] in
                          existse_term 
-                           [deriv_wk1 G1' G2 prev t2 eT 
-                              diffidsGG
-                              cast d2
-                              by cong <deriv * t2 eT>
-                                   join (ctxtc nextid' t1 (append G1 G2))
-                                        (append (ctxtc nextid' t1 G1) G2)]
-                        fun(spec d2:<deriv GG t2 eT>)
-                           (ign:True).
+                         [deriv_wk1 G1 G2' prev t2 eT 
+                            diffidsGG''
+                            cast d2
+                            by cong <deriv * t2 eT> inssymctxt]
+                         fun(spec d2:<deriv GG'' t2 eT>)
+                            (ign:True).
                         
-                          cast d2
-                          by trans cong <deriv * t2 eT>
-                                     join GG GG'
-                               cong <deriv (ctxtc nextid' t1 *) t2 eT>
-                                 symm [symctxt_something prev oprev_eq]
+                          cast 
+                          (dpi G1' G2 nextid' t1 t2 eTistp
+                            cast d1 by cong <deriv * t1 (sym tp)> 
+                                         trans G_eq
+                                         trans join (append G1 (cons prev G2))
+                                                    (append G1 (append Gprev G2))
+                                               symm [append_assoc ctxte G1 Gprev G2]
+                            cast d2 by trans cong <deriv * t2 eT> symm GG'_eq_GG''
+                                         cong <deriv GG' t2 *> PeT)
+                          by cong <deriv * (pi nextid' t1 t2) (sym (tpknd (istp eT)))>
+                                 trans [append_assoc ctxte G1 Gprev G2]
+                                 trans join (append G1 (append Gprev G2)) G'
+                                   symm G_eq
                       end in
 
                       abbrev bpi = 
@@ -807,11 +799,7 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                        (tcheck_tt nextid'' symbols eT 
                           (pi nextid' t1 t2)
                           cast
-                            (dpi G nextid' t1 t2 eTistp
-                               d1 cast d2
-                                  by cong <deriv (ctxtc nextid' t1 G)
-                                             t2 *>
-                                       PeT)
+                            the_deriv
                             by cong <deriv G (pi nextid' t1 t2) *>
                                 symm PeT                    
                           bpi) in
@@ -1134,35 +1122,17 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                                          (cons (mkpair s prev) L2))
                                        (cons prev G2) in
 
-                      abbrev for_perm1 =
-                        abbrev P = [idsbnd1_lookup_nothing nextid G I2] in
-                        case oprev with
-                          nothing ign =>
-                          abbrev G_eq = [symctxt_nothing oprev_eq] in
-                          [lookup_nothing_append1 nextid G1 G2 
-                             trans cong (lookup nextid *) symm G_eq P]
-                        | something ign prev =>
-                          abbrev G_eq = [symctxt_something prev oprev_eq] in
-                          [lookup_nothing_append1 nextid G1 (cons ctxte prev G2) 
-                             trans cong (lookup nextid *) symm G_eq P]
-                        end in
-
-                        abbrev GG = (ctxtc nextid dom (append ctxte G1 G2)) in
-                        existse_term 
-                         [deriv_perm 
-                           (gs_ctxt inssymbols)
-                           t1 rT G1 G2 nextid dom for_perm1 inssymctxt d1]
-                        fun(spec d1:<deriv GG t1 rT>)
-                           (ign:True).
-
-                        abbrev d1 = (dconv GG t1 rT ran' aid d1
+                        abbrev d1 = cast
+                                    (dconv (gs_ctxt inssymbols) t1 rT ran' aid d1
                                       [bndtrm_vle nextid'' aid ran' ale bran'']
-                                      ae) in
+                                      ae)
+                                    by cong <deriv * t1 ran'> inssymctxt in
 
                         cast
                         match oprev with
                           nothing A => 
 
+                          abbrev G_eq = [symctxt_nothing oprev_eq] in
                           let remsymbols = (trie_remove symbols_e s symbols') in
                           dec s
                           abbrev remsymbolsi =
@@ -1175,10 +1145,10 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                           let k = 
                             (tcheck_tt nextid'' symbols rettp
                                (lam nextid t1)
-                               (dlam G t1 nextid dom ran' 
-                                  cast d1
-                                  by cong <deriv (ctxtc nextid dom *) t1 ran'>
-                                      symm [symctxt_nothing oprev_eq])
+                               cast 
+                               (dlam G1 G2 t1 nextid dom ran' d1)
+                               by cong <deriv * (lam nextid t1) (pi nextid dom ran')>
+                                    symm G_eq
                                blam) in
 
                           (mk_check nextid symbols tt (something trm eT)
@@ -1188,6 +1158,7 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                            
                         | something ign prev => 
                      
+                          abbrev G_eq = [symctxt_something prev oprev_eq] in
                           let rsymbols = 
                                (trie_insert symbols_e s prev symbols') in
                           abbrev symrsymi = 
@@ -1197,37 +1168,45 @@ Define check : Fun(unique pb_stdin:pb_stdin_t)(unique symbols:symbols_t)
                                      trans symm oprev_eq1 oprev_eq
                                      symm inssymbols_eq
                                      U symm rsymbols_eq ] in
-                          abbrev G1' = (ctxtc nextid dom G1) in
-                          abbrev GG = (append ctxte G1' (cons ctxte prev G2)) in
-                          abbrev origG = (append ctxte G1 (cons ctxte prev G2)) in
-                          abbrev GG' = (ctxtc nextid dom origG) in
-                          abbrev GorigG = [symctxt_something prev oprev_eq] in
-                          abbrev diffidsGG = 
-                            [cong_diffids GG' GG
-                              [diffids_wk origG nextid dom
-                                 [cong_diffids G origG I1 GorigG]
-                                 [cong_idsbnd1 nextid G origG I2 GorigG]]
-                              join GG' GG] in
-                          existse_term 
-                           [deriv_wk1 G1' G2 prev t1 ran'
-                              diffidsGG
-                              cast d1
-                              by cong <deriv * t1 ran'>
-                                   join (ctxtc nextid dom (append G1 G2))
-                                        (append (ctxtc nextid dom G1) G2)]
-                         fun(spec d1:<deriv GG t1 ran'>)
+                           % In this case, G = (append G1 (cons prev G2))
+                           abbrev G' = (append ctxte G1 (cons ctxte prev G2)) in
+                           abbrev Gprev = (cons ctxte prev ctxtn) in
+                           abbrev G1' = (append ctxte G1 Gprev) in
+                           abbrev G2' = (ctxtc nextid dom G2) in
+                           abbrev GG = (append ctxte G1' G2) in
+                           abbrev GG' = (append ctxte G1' G2') in
+                           abbrev GG'' = (append ctxte G1 (cons ctxte prev G2')) in
+
+                        abbrev G_eq = [symctxt_something prev oprev_eq] in
+                        abbrev G_eq_GG = 
+                               trans G_eq
+                                  trans join G' (append G1 (append Gprev G2))
+                                        symm [append_assoc ctxte G1 Gprev G2] in
+                        abbrev GG'_eq_GG'' = trans [append_assoc ctxte G1 Gprev G2']
+                                               join (append G1 (append Gprev G2')) GG'' in
+                        abbrev diffidsGG'' = 
+                            [cong_diffids GG' GG''
+                              [diffids_wk1 G1' G2 nextid dom
+                                 [cong_diffids G GG I1 G_eq_GG]
+                                 [cong_idsbnd1 nextid G GG I2 G_eq_GG]]
+                              GG'_eq_GG''] in
+                         existse_term 
+                         [deriv_wk1 G1 G2' prev t1 ran' 
+                            diffidsGG'' d1]
+                         fun(spec d1:<deriv GG'' t1 ran'>)
                             (ign:True).
                         
                          let k =
                           (tcheck_tt nextid'' symbols rettp
                             (lam nextid t1)
-                            (dlam G t1 nextid dom ran'
-                             cast d1
-                             by trans cong <deriv * t1 ran'>
-                                       join GG GG'
-                                  cong <deriv (ctxtc nextid dom *) t1 ran'>
-                                    symm [symctxt_something prev oprev_eq])
-                             blam) in
+                            cast
+                              (dlam G1' G2 t1 nextid dom ran'
+                                cast d1 by cong <deriv * t1 ran'> symm GG'_eq_GG'')
+                            by cong <deriv * (lam nextid t1) (pi nextid dom ran')>
+                                 trans [append_assoc ctxte G1 Gprev G2]
+                                 trans join (append G1 (append Gprev G2)) G'
+                                   symm G_eq
+                            blam) in
 
                           (mk_check nextid symbols tt (something trm eT)
                             pb_stdin rsymbols nextid'' rettp k K
