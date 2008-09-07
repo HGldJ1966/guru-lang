@@ -213,13 +213,14 @@ Inductive deriv : Fun(G:ctxt)(t T:trm).type :=
             (u2 : { (bndtrm m T2) = tt})
             (u3 : { (vlt n m) = tt}).
             <deriv G (app t1 t2) (sbst m t2 n T2)>
-| dlam : Fun(G:ctxt)(t:trm)(n:var)(T1 T2:trm)
-            (d1 : <deriv (ctxtc n T1 G) t T2>).
-            <deriv G (lam n t) (pi n T1 T2)>
-| dpi : Fun(G:ctxt)(n:var)(T1 T2:trm)(b:bool)
-           (d1 : <deriv G T1 (sym tp)>)
-           (d2 : <deriv (ctxtc n T1 G) T2 (sym (tpknd b))>).
-           <deriv G (pi n T1 T2) (sym (tpknd b))>
+| dlam : Fun(G1 G2:ctxt)(t:trm)(n:var)(T1 T2:trm)
+            (d1 : <deriv (append ctxte G1 (ctxtc n T1 G2)) t T2>).
+            <deriv (append ctxte G1 G2) (lam n t) (pi n T1 T2)>
+| dpi : Fun(G1 G2:ctxt)(n:var)(T1 T2:trm)(b:bool)
+           (d1 : <deriv (append ctxte G1 G2) T1 (sym tp)>)
+           (d2 : <deriv (append ctxte G1 (ctxtc n T1 G2))
+                    T2 (sym (tpknd b))>).
+           <deriv (append ctxte G1 G2) (pi n T1 T2) (sym (tpknd b))>
 | dconv : Fun(G:ctxt)(t T1 T2:trm)(m:var)
            (d1 : <deriv G t T1>)
            (u1 : { (bndtrm m T2) = tt})
