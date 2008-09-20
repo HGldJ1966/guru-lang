@@ -25,6 +25,18 @@
 %\newcommand{\aaseq}[3]{ #3}
 \newcommand{\aaseq}[3]{ #1 \vdash #3}
 \newcommand{\abseq}[3]{ #1 \vdash #3}
+
+\newcommand{\ppp}[1]{\begin{tikzpicture}
+\draw (-2,0) 
+   node[fill=orange!40,ellipse,minimum height=1cm,minimum width=3cm](f) {proofs};
+\draw (2,0)
+   node[fill=blue!40,ellipse,minimum height=1cm,minimum width=3cm](g) {programs};
+\draw[-latex',orange!40,very thick] (f.north) .. controls (-1,1) and (1,1) .. (g.north);
+\draw[-latex',blue!40,very thick] (g.south) .. controls (1,-1) and (-1,-1) .. (f.south);
+\draw (0,0) node {\Huge #1};
+\end{tikzpicture}}
+
+
 \mode<presentation>
 {
   %\usetheme{Warsaw}
@@ -141,9 +153,8 @@ Funding from NSF CAREER.
 \begin{itemize}
 \item Verify that optimized LF checker builds type-correct LF.
 \item Uses a declarative presentation of LF.
-\item That presentation could be simpler.
-\item More meta-theory would be needed.
-\item Balance simplicity of specification, ease of verification.
+\item Still efficient, but much more trustworthy.
+\item Partial verification.
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -185,10 +196,11 @@ E.g.,
 \item SMT solvers check large formulas, produce big proofs.
 \item Must check proofs efficiently.
 \item LFSC provides flexible intermediate proof language.
+\item Extends LF with computational side conditions. 
 \end{itemize}
-\item Problems with C++ (proof checker):
+\item Problems with C++ checker:
 \begin{itemize}
-\item Lack of memory safety => many days with \textsc{valgrind}.
+\item Lack of memory safety => many days with \texttt{valgrind}.
 \item Optimizations reduce trustworthiness.
 \end{itemize}
 \item As features are added to checker, trust diminishes.
@@ -197,31 +209,333 @@ E.g.,
 \end{frame}
 
 \begin{frame}
-\frametitle{\textsc{Golfsock}: Towards A Verified LF Checker}
+\frametitle{Towards A Verified LFSC Checker}
 \begin{itemize}
-\item Goal: implement verified LFSC checker.
-\item \textsc{Golfsock}: incremental LF checker in \textsc{Guru}.
+\item \textsc{Golfsock} (``\textsc{Guru} LFSC'').
 \begin{itemize}
-\item \textsc{Guru} is a verified programming language.
-\item Combines a dependently type PL, logical theory (OpTT).
-\item Supports mutable state, non-termination, input/output.
+\item \textsc{Guru} is a verified functional programming language.
+\item Supports mutable state, non-termination, I/O.
+\item Verification via dependent types, induction proofs.
 \item Type/proof checker, compiler to efficient C code.
 \item Beating native code \textsc{OCaml} on small testcases.
 \end{itemize}
 \item Status:
 \begin{itemize}
-\item \textsc{Golfsock} implemented.
-\item Running reasonably fast: 40\% slower than C++ version.
+\item Incremental LF checking implemented.
+\item Running reasonably fast: 50\% slower than C++ version.
 \item Specification: ASTs we build are type correct LF.
 \item Expressed with dependent types, declarative LF.
-\item A number of lemmas still to prove.
-\item 4300 lines code, proof.
-\item 13000 lines standard library (e.g., tries).
+\item 4300 lines code, proof; 13000 lines standard library (e.g., tries).
 \end{itemize}
 \end{itemize}
 \end{frame}
 
+\begin{frame}
+\frametitle{\textsc{Guru} and Operational Type Theory}
+\begin{itemize}
+\item \textsc{Guru} implements Operational Type Theory (OpTT).
+\item OpTT is new type theory intended to:
+\begin{itemize}
+\item Combine programming, theorem proving (cf. ATS, Epigram, Ynot).
+\item Allow general recursion, other effects.
+\item Retain sound logic.
+\item Retain decidability of type checking.
+\item Support external reasoning about dependently typed programs.
+\item Support compilation to efficient executables.
+\end{itemize}
+\item Critical design idea: separate different reductions.
+\begin{itemize}
+\item Reduction for definitional equality ($\equiv$).
+\item Reduction for programs.
+\item Normalization (aka, cut elimination) for proofs.
+\end{itemize}
+\end{itemize}
+\end{frame}
 
+\begin{frame}
+\frametitle{Rejection of Curry-Howard}
+\begin{itemize}
+\item Proofs $\neq$ Programs, Formulas $\neq$ Types.
+
+\ 
+
+\begin{center}
+\begin{tikzpicture}
+\small
+\draw (-2.5,2)
+   node[fill=blue!40,ellipse,minimum height=1cm,minimum width=3cm] {terms};
+\draw (2.5,2)
+   node[fill=blue!20,ellipse,minimum height=1cm,minimum width=3cm] {types};
+\draw (0,2) node { :};
+\draw (-2.5,1) node{\texttt{fun(A:type)(x:A).x}};
+\draw (2.5,1) node{\texttt{Fun(A:type)(x:A).A}};
+\draw (0,1) node { :};
+
+\draw (-2.5,-1) 
+   node[fill=orange!40,ellipse,minimum height=1cm,minimum width=3cm] {proofs};
+\draw (2.5,-1) 
+   node[fill=orange!20,ellipse,minimum height=1cm,minimum width=3cm] {formulas};
+\draw (0,-1) node { :};
+\draw (-3,-2) node{\texttt{foralli(x:nat).truei}};
+\draw (3,-2) node{\texttt{Forall(x:nat).True}};
+\draw (0,-2) node { :};
+\end{tikzpicture}
+\end{center}
+
+\item Otherwise non-terminating programs $=$ unsound proofs.
+
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Rejection of Conversion}
+\begin{itemize}
+\item Definitional equality ($\equiv$) cannot include program reduction.
+
+\item Otherwise type checking undecidable.
+
+\item Adopt a very weak $\equiv$ ($\equiv_\alpha$, definitions, sugar).
+
+\item Constrast with strong conversion relations.
+\begin{itemize}
+\item CIC: $\equiv$ includes $\equiv_\beta$, terminating recursion.
+
+\item CCIC: $\equiv$ uses decision procedures, hypotheses.
+
+\end{itemize}
+
+\item With conversion, lose definitional transparency.
+\item Typing holds modulo $\equiv$, but not other operations.
+\begin{itemize}
+\item $\Gamma \vdash t : T$ \ \ => \ \ $\Gamma' \vdash t' : T'$ with $\Gamma \equiv \Gamma'$, $t \equiv t'$, $T \equiv T'$.
+\item Rewriting modulo $\equiv_\beta$ only recently decidable \textcolor{blue}{[Stirling06]}.
+\item In Coq, many tactics do not work modulo $\equiv$.
+\item In \textsc{Guru}, all tactics work modulo $\equiv$.
+\end{itemize}
+
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Operational Equality}
+\begin{itemize}
+\item Due to weak $\equiv$, need casts in code (and proofs):
+
+\ 
+
+$\infer{\texttt{cast\ t\ by\ P} : {\texttt{T}_2}}
+      {\texttt{t} : \texttt{T}_1 & 
+        \texttt{P} : \texttt{\{T}_1\texttt{ = T}_2\texttt{\}}}$
+
+\ 
+
+\item Reasoning about code with casts tedious in other systems.
+
+\item In OpTT, reason about unannotated programs.
+
+\begin{itemize}
+\item Propositional equality \texttt{\{ t = t' \}} holds if $t \downarrow t'$.
+\item No type annotations, casts, proofs in \texttt{t}, \texttt{t'}.
+\item No \emph{specificational data}.
+\item Vastly simplifies external reasoning about code.
+\item Annotations dropped by definitional equality.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[containsverbatim]
+\frametitle{Example: Vector Append}
+\footnotesize
+\begin{verbatim}
+Inductive vec : Fun(A:type)(n:nat).type :=
+  vecn : Fun(A:type).<vec A Z>
+| vecc : Fun(A:type)(spec n:nat)(a:A)(l:<vec A n>).
+              <vec A (S n)>.
+
+vec_append : Fun(A:type)(spec n m:nat)
+                (l1 : <vec A n>)(l2 : <vec A m>).
+                <vec A (plus n m)>
+
+vec_append_assoc : 
+  Forall(A:type)(n1 : nat)(l1 : <vec A n1>)
+        (n2 n3 : nat)(l2 : <vec A n2>)(l3 : <vec A n3>).
+  { (vec_append (vec_append l1 l2) l3) =
+    (vec_append l1 (vec_append l2 l3)) }
+\end{verbatim}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Functional Modeling and Ownership}
+\begin{itemize}
+\item Following \textcolor{blue}{[Swierstra+07]}: awkwardness => modeling school.
+\item Awkward squad modeled functionally.
+\begin{itemize}
+\item Standard input is a list of chars.
+\item \texttt{getc()} is head.
+\item Mutable arrays of length $n$ are vectors of length $n$.
+\item \texttt{read} and \texttt{write} are pure, $O(n)$ operations.
+\end{itemize}
+\item Reason about code using functional model.
+\item Replace during compilation with non-functional implementation.
+\item Restrict usage for soundness (monads or linear types).
+\item \textsc{Guru} uses linear types.
+\begin{itemize}
+\item Fit well with \emph{ownership types}.
+\item \textsc{Guru} statically tracks ownership of all data.
+\item Enables reference counting for memory management.
+\item Function inputs \texttt{unowned}, \texttt{owned}, \texttt{unique}, or \texttt{unique\_owned}.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{\textsc{Golfsock}: Symbols}
+\begin{itemize}
+\item Incrementally consume textual input, type check LF.
+\item LF variables (constants) implemented as 32-bit words.
+\begin{itemize}
+\item Implementation with \texttt{nat} too slow.
+\item Words are functionally modeled as \texttt{<vec bool 32>}.
+\item Trusted operations: increment, equality check, create 0.
+\item Reason via model, also via conversion to \texttt{nat}.
+\end{itemize}
+\item Symbol table maps strings (lists of chars) to (var, type) pairs.
+\item Symbol table implemented as a trie.
+\item Mutable char-indexed arrays of subtries at each node.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{\textsc{Golfsock}: LF derivations}
+\begin{itemize}
+\item Code ``builds'' specificational LF derivations.
+\item For $\Gamma \vdash t \Leftarrow T$ (or $\Gamma \vdash t \Rightarrow T$), we build \texttt{<deriv G t T>}.
+\item Context encoded as a list of (var,type) pairs.
+\item Must map the symbol table to context.
+\begin{itemize}
+\item Difficult.
+\item Must prove lemmas like trie membership => context membership.
+\item Resulting context is not ordered.
+\item Phrase typing rules for unordered contexts.
+\item Ok, because vars uniquely named.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Empirical Results}
+\begin{figure}
+\footnotesize
+\begin{center}
+\begin{tabular}{|l|l|l|l|l|l|l|l|}
+\hline
+benchmark & size (MB) & C++ impl & \textsc{Golfsock} & \textsc{Twelf}
+\\
+\hline
+cnt01e
+&
+2.6
+&
+1.3
+&
+2.0
+&
+14.0 
+\\
+tree-exa2-10
+&
+3.1
+&
+1.7
+&
+2.5
+&
+18.6
+\\
+cnt01re
+&
+4.6
+&
+2.4
+&
+3.6
+&
+218.4
+\\
+toilet\_02\_01.2
+&
+11
+&
+5.8
+&
+8.8
+&
+1143.8
+\\
+1qbf-160cl.0
+&
+20
+&
+10.0
+&
+14.1
+&
+timeout
+\\
+tree-exa2-15
+&
+37
+&
+19.9
+&
+31.2
+&
+timeout 
+\\
+toilet\_02\_01.3
+&
+110
+&
+58.6
+&
+89.7
+&
+exception 
+\\
+\hline
+\end{tabular}
+\end{center}
+\caption{\label{fig:qbf}Checking times in seconds for QBF benchmarks}
+\end{figure}
+
+\begin{itemize}
+\item Good, since some optimizations not implemented.
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Conclusion}
+\begin{itemize}
+\item \textsc{Golfsock}: towards verified, efficient language tools.
+\item OpTT makes this easier:
+\begin{itemize}
+\item Not required \emph{a priori} to prove termination.
+\item Reason about code with annotations dropped.
+\item Use dependent types for big functions (\texttt{check}, 1200 lines).
+\item Supports functional modeling.
+\end{itemize}
+
+\item Onward towards verified, efficient software!
+\end{itemize}
+
+\begin{center}
+\large
+\textcolor{blue}{\url{www.guru-lang.org}}
+\end{center}
+
+\end{frame}
 
 \end{document}
 
