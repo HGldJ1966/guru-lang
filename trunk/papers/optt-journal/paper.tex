@@ -1,0 +1,1425 @@
+\documentclass{fundam}
+
+\usepackage{amsmath}
+\usepackage{latexsym}
+\usepackage{amssymb}
+\usepackage{proof}
+\usepackage{url}
+
+% \usepackage{natbib}
+%  \bibpunct();A{},
+%  \let\cite=\citep
+
+\newcommand{\lam}[2]{\lambda #1 . #2}
+\newcommand{\lams}[2]{\lambda^* #1 . #2}
+\newcommand{\alet}[3]{\textit{let}\ #1\ :=\ #2\ \textit{in}\ #3}
+\newcommand{\Thet}[1]{\lam{V}{\lam{L}{\lam{A}{\lam{O}{\lam{C}{\lam{S}{\lam{D}{#1}}}}}}}}
+\newcommand{\ope}[0]{\textit{open}}
+\newcommand{\swap}[0]{\textit{swap}}
+\newcommand{\vcomp}[0]{\textit{vcomp}}
+\newcommand{\nlambda}[0]{\bar{\lambda}}
+\newcommand{\nlam}[2]{\nlambda #1 . #2}
+\newcommand{\rulename}[1]{\text{\textup{\textsf{#1}}}}
+\newcommand\bs{\char '134 }  % A backslash character for \tt font
+\newcommand{\seq}[3]{#1 \vdash #2 : #3}
+\newcommand{\eval}[0]{\Downarrow}
+\newcommand{\evalj}[2]{#1\, \eval\, #2}
+\newcommand{\starstar}[0]{*\negthinspace*}
+\newcommand{\nat}[0]{\mathbb{N}}
+\newcommand{\optt}{\textsc{OpTT}}
+
+\newcommand{\rase}[1]{\ulcorner #1 \urcorner}
+\newcommand{\lowr}[1]{\llcorner #1 \lrcorner}
+
+\newcommand{\Eq}[0]{\texttt{=}}
+\newcommand{\Neq}[0]{\texttt{!=}}
+\newcommand{\Qeq}[0]{\stackrel{?}{=}}
+\newcommand{\bang}[0]{\texttt{!}}
+\newcommand{\quant}[0]{\textit{Quant}}
+
+\newcommand{\To}{\Rightarrow}
+\newcommand{\gtrans}[2]{#1 \cdot #2}
+\newcommand{\gtransa}[2]{#1 \cdot_1 #2}
+\newcommand{\gtransb}[2]{#1 \cdot_2 #2}
+\newcommand{\gsymm}[1]{#1^{-1}}
+\newcommand{\gcong}[1]{f(#1)}
+\newcommand{\ginj}[1]{f^{-1}(#1)}
+
+\begin{document}
+
+\title{A Core Operational Type Theory}
+
+\author{Aaron Stump\thanks{Partially supported by NSF grant CCF-0448275.} \\
+CS, The University of Iowa \\
+astump{@}acm.org \\
+\and
+Edwin Westbrook \\
+CS, Rice University \\
+ewestbro{@}cse.wustl.edu}
+
+
+\runninghead{A. Stump, E. Westbrook}{A Core Operational Type Theory}
+
+%astump@acm.org,mdeters@cse.wustl.edu,tws2@cec.wustl.edu,tas5@cec.wustl.edu,ewestbro@cse.wustl.edu
+
+%\date{}
+
+\maketitle
+
+%\thispagestyle{empty}
+
+\begin{abstract}
+A core calculus for Operational Type Theory (\optt) is developed.
+\optt\ is a new type theory designed to support more general
+programming than directly supported in traditional total type theories
+based on the Curry-Howard isomorphism.   The theory accommodates
+functions which might diverge or abort on some inputs, while retaining
+decidability of type checking and logical consistency.  For the
+latter, \optt\ distinguishes proofs from programs, and formulas from
+types.  Proofs and other computationally irrelevant annotations,
+including data marked as specificational, are dropped during formal
+reasoning.  This greatly simplifies verification problems by removing
+the need to reason about types when reasoning about programs.  
+\end{abstract}
+
+\section{Introduction}
+
+Type theories based on the Curry-Howard isomorphism are of continuing
+appeal as providing a unified formalism for writing and verifying
+programs.  One well-known drawback is that partial functions must be
+accommodated with care, for two reasons.  First, naively allowing
+diverging terms renders the logic unsound.  Second, for type theories
+with a definitional equality which includes computation, diverging
+terms can render type checking undecidable.
+
+The present work is based on the observation that three roles for
+evaluation in type theory may be distinguished, which are commonly
+unified, particularly under the Curry-Howard isomorphism.  These are
+evaluation for program execution, evaluation for proof normalization,
+and evaluation for definitional equality.  Distinguishing these roles
+for evaluation allows much greater control over the meta-theory of the
+system.  By devising different classification (type) systems for
+programs, proofs, and their classifiers, we can vary the complexity of
+program execution, proof normalization, and definitional equality
+independently.  This paper presents one system based on this idea,
+called Operational Type Theory (\optt).  This system allows possibly
+diverging or finitely failing programs, while keeping the logic first
+order and definitional equality decidable.  The focus here is on
+practical program verification.  For formalized mathematics, a
+higher-order logic and richer definitional equality might be more
+appropriate, and could possibly be developed similarly to \optt.
+Similarly, there is no need to keep the logic intuitionistic:
+non-constructive reasoning could be permitted.  The strict separation
+of programs and proofs ensures that computations cannot depend on
+proofs, and hence non-constructive proofs cannot pose problems for
+(constructive) computations.  In practice, a need for non-constructive
+reasoning has not emerged in verified programming with \optt, and so
+we take \optt's logic to be intuitionistic in this paper.
+
+Having separated proofs and programs, the critical technical challenge
+is to allow them nevertheless to interact.  The goal is to support a
+combination of internal and external
+verification~\cite{alti:esslli96}.  With external verification, proofs
+prove specificational statements about the observational behavior of
+programs.  With internal verification, specifications are expressed
+through rich typing of the programs, typically using dependent
+function types and indexed datatypes.  Each style has its advantages
+and disadvantages: the former is more flexible, since additional
+properties can be proved after coding without modifying the program;
+while the latter is closer to existing programming practice.  The
+combination of internal and external verification leads to technical
+puzzles, such as how to state equalities between terms with provably
+but not definitionally equal types~\cite{hofmann+98}.  One answer is
+heterogeneous equality~\cite{mcbride99}.  Another is contextual
+definitional equality~\cite{blanqui+08}.
+
+\optt\ combines internal and external verification in a different way
+by taking an untyped propositional equality on type-free terms, with
+all typing annotations dropped.  Examples of such annotations are type
+annotations, and proofs in explicit casts, which are used to establish
+type equivalences beyond definitional equality.  Compilation to erased
+form typically drops such annotations.  \optt\ takes this a step
+further, by allowing external reasoning in the theory about such
+type-free terms.  The practical benefits of this are significant,
+since it is no longer necessary to reason about the types of terms
+when reasoning about the terms.  Provable equality soundly captures
+joinability of untyped terms in the call-by-value operational
+semantics of the language, thus giving \optt\ its name.
+
+\textbf{Primary Contributions.} The goal of the present paper is to
+establish in detail the meta-theory of a core \optt.  \optt\ has been
+implemented in a tool called \textsc{Guru}, including a type/proof
+checker and a compiler to efficient C code.  Several medium-sized case
+studies (on the order of thousands of lines of code and proof) have
+been carried out.  Nevertheless, it is beyond the scope of this paper
+to demonstrate the practical utility of \optt.  The focus here is on
+the meta-theory of a core calculus for \optt, and its benefits from a
+theoretical and meta-theoretical point of view.  For this reason, we
+omit consideration of numerous features implemented in \textsc{Guru}.
+Some of these are non-trivial extensions, whose formal meta-theoretic
+consideration must remain to future work; while others would require
+less significant meta-theoretic work, but distract from the study of
+\optt's essential features.  We begin by considering additional
+related work, and then proceed to the definition of the language, and
+its meta-theoretic properties.
+
+\section{Related Work}
+
+\textbf{Intensional Type Theory.} One approach to accommodating
+general recursive programs in intensional type theory is to require
+such programs to take an additional input, which restricts the program
+to a subset of its nominal domain on which it is uniformly terminating
+(see, e.g.,~\cite{bove+05}).  Programs which truly might fail to
+terminate are not allowed, and finite failure is usually not
+considered.  Finite failure simplifies code on inputs outside the
+intended domain, and is supported by all practical programming
+languages.  Another approach views potentially non-terminating
+computations as elements of a co-inductive type, and combines such
+computations monadically~\cite{capretta05}.  This method accommodates
+general computations indirectly, and requires co-inductive types.  In
+contrast, the present work provides direct support for general
+computations, and does not rely on co-inductive types.
+
+\textbf{Extensional Type Theory.} In~\cite{constable+89} and
+consequent literature, the \textsc{Nuprl} type theory is extended to
+accommodate partial functions via liftings $\bar{A}$ of total types
+$A$.  Possibly diverging terms may inhabit $\bar{A}$.  Since
+\textsc{Nuprl} has an undecidable type checking problem, the technical
+problems encountered are different than for intensional theories.
+Previous work adding lifted types to the Calculus of Constructions
+sacrificed decidability of type checking~\cite{audebaud91}.
+Observational Type Theory (\texttt{OTT}) supports extensionality while
+retaining decidable type checking~\cite{altenkirch+07}.  \texttt{OTT}
+cannot directly accommodate truly non-terminating functions, however,
+and has not yet been extended with co-inductive types.
+
+\textbf{Logics of Partial Terms.} Logics of partial terms support
+reasoning about termination and non-termination of partial recursive
+functions~\cite{stark98,B85}.  These systems are not based on the
+Curry-Howard isomorphism and hence do not suffer from the problems
+associated with supporting partial functions in type theory.  On the
+other hand, they lack the expressiveness and conceptual unity of type
+theory for writing and verifying typed programs.
+
+\textbf{Dependent Types for Programming.} \textsc{Epigram} is a total
+type theory proposed for practical programming with dependent
+types~\cite{mcbride+04}.  Xi's \textsc{ATS} and a system proposed by
+Licata and Harper have similar aims, but allow general
+recursion~\cite{licata+05,chenxi05}.  Programs which can index types
+and which are subject to external reasoning, however, are required to
+be uniformly terminating.  This is done via \emph{stratification}:
+such terms are drawn from a syntactic class distinct from that of
+program terms.  Existing stratified systems restrict external
+verification to terms in the index domain.  Similar approaches are
+taken in \textsc{Concoqtion} and
+$\Omega$\textsc{mega}~\cite{pasalic+07,sheard06}.  Hoare Type Theory
+supports internal verification of possibly non-terminating, imperative
+programs, but at present does not support external verification of
+such programs~\cite{nanevski+05}.
+
+\textbf{DFOL.} A final piece of related work develops a dependently
+typed first-order logic (DFOL)~\cite{rabe06}.  The logic of \optt\
+improves upon this system by allowing both term constructors and
+computational functions to accept proofs as arguments, while remaining
+first-order (in the sense of normalization complexity).
+
+\section{Terms and Types}
+\label{sec:terms}
+
+The syntax for \optt\ terms and types is given in
+Figure~\ref{fig:terms}.  The syntax-directed classification rules for
+terms are given in Figure~\ref{fig:cl-term}, with those for types and
+kinds omitted for space reasons.  All classification rules in this
+paper compute a classifier as output for a given context $\Gamma$ and
+expression as input.  The rules operate modulo definitional equality,
+defined below.  The syntax-directed nature of these classification
+rules, together with the proof rules presented subsequently, imply
+decidability of classification.  A few points are needed before
+turning to an overview of the constructs.
+
+\textbf{Meta-variables.} We write $P$ for
+proofs, and $F$ for formulas, defined in Section~\ref{sec:pfs}.  We
+use $x$ for variables, $c$ for term constructors, and $d$ for type
+constructors.  We occasionally use $v$ for any variable or term
+constructor.  Variables are considered to be syntactically
+distinguished as either term-, type-, or proof-level.  This enables
+definitional equality to recognize which variables are proofs or
+types.  A reserved constant $\bang$ is used for erased annotations,
+including types (Section~\ref{sec:defeq}).  
+
+\textbf{Multi-arity notations.} We write $\texttt{fun}\
+x(\bar{x}\,:\,\bar{A}) : T .\ t$ for $\texttt{fun}\
+x(x_1\,:\,A_1)\cdots(x_n\, :\,A_n) : T .\ t$, with $n > 0$.  Also, in
+the \texttt{fun} typing rule, we use judgment
+$\seq{\Gamma}{\bar{x}}{\bar{A}}$:
+\[ 
+\begin{array}{ll}
+\infer{\seq{\Gamma}{x,\bar{x}}{A,\bar{A}}}
+      {\seq{\Gamma}{A}{\textit{sort}(A)} & \seq{\Gamma,x:A}{\bar{x}}{\bar{A}}}
+&
+\infer{\seq{\Gamma}{\cdot}{\cdot}}
+      {\ }
+\end{array}
+\]
+Here and in several other rules, $\textit{sort}$ is a meta-level
+function assigning a sort to every expression.  The possible sort of a
+type is \texttt{type}, of \texttt{type} is \texttt{kind}, and of a
+formula is \texttt{formula}.
+
+\textbf{The \texttt{Terminates} judgment.} Specificational arguments
+are required to be terminating, using a \texttt{Terminates} side
+condition.  This is also used in quantifier proof rules below.
+Terminating terms here are just \emph{inactive} terms, of the
+following form:
+
+\begin{eqnarray*}
+I & ::= & x\ ||\ c\ ||\ T\ ||\ P\ ||\ (c\ I_1\,\cdots\, I_n)\ ||\ 
+\texttt{cast}\ I\ \texttt{by}\ P\ || \ 
+ \texttt{fun}\ x(\bar{x}_1\,:\,A_1)\,\cdots(\bar{x}_n\,:\,A_n):T .\ t\ || \\
+\ & \ & \texttt{falsee\_term}\ T\ P
+\end{eqnarray*}
+
+\noindent Inactive terms are like values as defined for the operational
+semantics below (Section~\ref{sec:opsem})), except that annotations
+are retained: terms, types, and casts are allowed in inactive terms.
+While terminating terms are just the inactive terms for purposes of
+this paper, it is possible to expand the terminates judgment to
+include features like termination casts, where a proof of totality is
+supplied to show the type checker that a term is terminating.  Such
+extensions are beyond the scope of this paper, however.
+
+\textbf{Conditions on \texttt{match}.} The \texttt{match} typing rule
+has one premise for each case of the match expression (indicated using
+meta-level bounded universal quantification in the premise).  The
+premise requiring $T$ to be a type is to ensure it does not contain
+free pattern variables.  The rule also has several conditions not
+expressed in the figure.  First, the term constructors $c_1, \cdots,
+c_n$ are all and only those of the type constructor $d$, and $n$ must
+be at least one (\texttt{match}es with no cases are problematic for
+type computation without an additional annotation).  Second, the
+context $\Delta_i$ is the one assigning to pairwise distinct variables
+$\bar{x}_i$ the types required by the declaration of the constructor
+$c_i$.  Third, the type $T_i$ is the return type for constructor
+$c_i$, where the pattern variables have been substituted for the input
+variables of $c_i$.  Fourth, the type constructor is allowed to be
+$0$-ary, in which case $\langle d\ \bar{X}\rangle$ should be
+interpreted here as just $d$.  The uninformative formalization of
+these conditions is omitted.
+
+\begin{figure}
+\begin{eqnarray*}
+t & ::= & x\ ||\ c\ ||\ 
+       \texttt{fun}\ x(\bar{x}\,:\,\bar{A}) : T .\ t\ ||\ (t\ X)\ ||\ 
+        \texttt{cast}\ t\ \texttt{by}\ P  \ ||\ \texttt{abort}\ T\ ||\ \texttt{falsee\_term}\ T\ P\ ||\\
+\ & \ & \texttt{let}\ x\ \Eq\ t\ \texttt{by}\ y\ \texttt{in}\ t' \ ||\  \texttt{match}\ t\ \texttt{by}\ x\ y \ \texttt{with}\ 
+c_1\ \bar{s}_1\ \bar{x}_1\ \texttt{=>}\ t_1 |
+ \cdots | c_n\ \bar{s}_n\ \bar{x}_n\ \texttt{=>}\ t_n\ \texttt{end}\\
+T & ::= & x\ ||\ d\ ||\ \bang\ ||\ 
+     \texttt{Fun}(x\,:\,A) . \ T\ ||\ \langle T\ Y\rangle \\
+X & ::= & t ||\ T\ ||\ P \\
+Y & ::= & t\ ||\ T \\
+A & ::= & T\ ||\ \texttt{type}\ ||\ F 
+\end{eqnarray*}
+\caption{\label{fig:terms} Terms ($t$) and Types ($T$)}
+\end{figure}
+
+
+\begin{figure}
+\begin{tabular}{l}
+\begin{tabular}{lll}
+\infer{\seq{\Gamma}{v}{A}}{\Gamma(v) = A}
+
+&
+
+\infer{\seq{\Gamma}{\texttt{abort}\ T}{T}}{\seq{\Gamma}{T}{\texttt{type}}}
+
+&
+
+\infer{\seq{\Gamma}{\texttt{falsee\_term}\ T\ P}{T}}{\seq{\Gamma}{T}{\texttt{type}} & \seq{\Gamma}{P}{\texttt{False}}}
+\end{tabular}
+
+
+\\ \\ 
+
+\infer{\seq{\Gamma}{\texttt{cast}\ t\ \texttt{by}\ P}{T_2}}
+      {\seq{\Gamma}{t}{T_1} & 
+        \seq{\Gamma}{P}{\{T_1 = T_2\}}}
+
+
+\\ \\
+
+
+\infer{
+\seq{\Gamma}{\texttt{fun}\ x(\bar{x}\,:\,\bar{A}):T.\ t}
+            {\texttt{Fun}(\bar{x}\,:\,\bar{A}).\ T} }
+{\seq{\Gamma}{\bar{x}}{\bar{A}}\ \ \ \ \  \seq{\Gamma, \bar{x}:\bar{A},x\,:\,\texttt{Fun}(\bar{x}\,:\,\bar{A}).\ T}{t}{T}
+\ \ \ \ \ 
+x,\bar{x}\not\in\textit{FV}(T)
+}
+
+\\
+\\
+
+\infer{
+\Gamma \vdash \texttt{match}\ t\ \texttt{by}\ x\,y\ \ \texttt{with} \ \ 
+ c_1\ \bar{s}_1\ \bar{x}_1 \texttt{=>} s_1 | \ldots 
+        | c_n\ \bar{s}_n\ \bar{x}_n \texttt{=>} s_n\ \texttt{end}\ :\ T}
+      {\seq{\Gamma}{t}{\langle d\ \bar{X}\rangle}
+    \ \ \ \ \  \forall\ i \le n.\ (\seq{\Gamma,\Delta_i,x:\{t\, \Eq\, (c_i\ \bar{x}_i)\},
+y:\{\langle d\ \bar{X}\rangle\, \Eq\, T_i\}}{s_i}{T})}
+
+\\
+\\
+
+\infer{\seq{\Gamma}{(t\ X)}{[X/x]T}}
+      {\seq{\Gamma}{t}{\texttt{Fun}(x : A).\ T} \ \ \ \ \seq{\Gamma}{X}{A}} 
+
+\\
+\\
+
+\infer{
+\seq{\Gamma}{\texttt{let}\ x\ \Eq\ t\ \texttt{by}\ y\ \texttt{in}\ t'}{T}}
+{\seq{\Gamma}{t}{A} &
+\seq{\Gamma,x:A,y:\{x\, \Eq\, t\}}{t'}{T} & x,y\not\in\textit{FV}(T)}
+
+    
+\end{tabular}
+\caption{\label{fig:cl-term}Term Classification}
+\end{figure}
+
+\subsection{Overview of Constructs}
+
+Our \texttt{cast}-terms witness to the type checker that a term may be
+viewed as having an equal type.  For the benefit of \texttt{casts},
+\texttt{match}-terms bind variables for assumptions of equalities in
+the cases.  Specifically, assumption variables $x$ and $y$ are bound
+(just) in the bodies of the cases, and serve as assumptions of
+different equalities in each case: the former that the scrutinee
+equals the pattern, and the latter that the scrutinee's type equals
+the pattern's type.  The same assumption variables ($x$ and $y$) are
+assigned different classifiers in the different cases.  These
+variables are in principle sufficient for casts in the cases.  We omit
+consideration here of a term construct that witnesses that a case
+cannot be used due to inconsistency of the context.  While such a
+construct is implemented in \textsc{Guru}, it is less critical in
+\optt\ than in total type theories.  We must anyway prove totality
+externally in \optt\ if it is needed: there is no automatic
+termination checker for \texttt{fun}-terms (though of necessity there
+is for \texttt{induction}-proofs, discussed below).  In practice, some
+form of automatic type refinement can greatly reduce the annotation
+burden on the programmer.  \textsc{Guru} implements a simple form of
+type refinement using first-order matching (modulo definitional
+equality) of the type of the pattern and the type of the scrutinee.
+We exclude this feature from consideration here in our core \optt.
+
+In \texttt{fun}-abstractions, the bound variable $x$ immediately
+following the \texttt{fun} keyword can be used for recursive calls in
+the body of the abstraction.  It may be omitted, in which case the
+type annotation following the \texttt{fun}-term's declarations can
+also be omitted.  Recursive multi-arity \texttt{fun}-terms as
+described in Figure~\ref{fig:terms} cannot always be translated into
+nested unary \texttt{fun}-terms, due to the dependent typing.  The
+\texttt{abort} term cancels all pending evaluation.  It is annotated
+with a type to facilitate type computation.  A related construct, not
+otherwise mentioned, is $\texttt{impossible}\ P\ T$.  This is
+definitionally equal to an \texttt{abort}, but documents via a proof
+$P$ of a contradiction that execution cannot reach this point.
+
+Our \texttt{let}-terms are as usual, except that like
+\texttt{match}-terms, they also bind an assumption variable.  In a
+\texttt{let}-term, the variable $y$, bound in the body of the
+\texttt{let}-term, serves as an assumption of the equality ${x\, \Eq\,
+t}$.  \textsc{Guru} includes a mechanism for local macro definitions
+at the term, type, formula, and proof levels, not considered here.
+
+We omit consideration of a term-level existential elimination
+(\texttt{existse\_term}), which is necessary to make use of proved
+existentials in code.  While this is a critical feature for
+programming with existential proofs, it requires a consideration of
+computationally irrelevant (or \emph{specificational}) data.  This is
+because we do not wish to permit the result of computation to depend
+on the value of a piece of data proven to exist (and introduced into
+code with \texttt{existse\_term}).  Otherwise, we would not be
+justified in dropping proofs from code at runtime.  While \textsc{Guru}
+implements specificational data and \texttt{existse\_term}, a formal
+consideration of the meta-theory of this feature is beyond the scope
+of this paper.
+
+We must include a term-level \texttt{False} elimination constructr
+(\texttt{falsee\_term}), for the benefit of proofs below.  This is not
+used in practice, but is necessary for our meta-theoretic development.
+
+\subsection{Definitional Equality}
+\label{sec:defeq}
+
+Proofs, type annotations, and specificational data are of interest
+only for type checking, and are dropped during evaluation.  Our
+definitional equality takes this into account.  It also takes into
+account safe renaming of variables, and replacement of defined
+constants by the terms they are defined to equal.  Flattening of
+left-nested applications, and right-nested \texttt{fun}-terms and
+\texttt{Fun}-types is also included.  More formally, definitional
+equality is the least congruence relation which makes (terms or types)
+$Y \approx Y'$ when any of these conditions holds:
+\begin{enumerate}
+\item $Y =_\alpha Y'$ ($Y$ and $Y'$ are identical modulo safe renaming
+of bound variables).
+\item $Y \equiv Y^*[c]$ and $Y' \equiv Y^*[t_c]$, where $c$ is defined
+non-recursively at the top level to equal $t_c$ (see
+Section~\ref{sec:commands} below).  Here and below, contexts $Y^+$ for
+are $Y$ entities containing a hole $*$.
+\item Nested applications and abstractions in $Y$ and $Y'$ flatten
+to the same result, as mentioned above.
+\item $Y \To Y'$, using the first-order term rewriting system of
+Figure~\ref{fig:dropannos} (where we temporarily view abstractions
+as first-order terms).
+\end{enumerate}
+
+\noindent The rules of Figure~\ref{fig:dropannos} drop annotations in
+favor of the special constant $\bang$, mentioned above.  There, we
+temporarily write $P^-$ for a proof $P$ which is not \bang, and
+similarly for $T^-$ and $A^-$.  The rules also operate on members of
+the list of input declarations in a \texttt{fun}-term, as first class
+expressions.  Such lists can be emptied by dropping specificational
+inputs (hence the first rule in the figure).  We temporarily consider
+patterns in \texttt{match} terms as applications, and hence apply the
+rules for rewriting applications to them.  The rules are locally
+confluent and terminating, so confluent by Newman's Lemma.  We can
+thus define a function $|\cdot|$ to return the unique normal form of
+any expression under the rules.  Notice that types are dropped only
+where used in terms.  So $|T|$ is not $\bang$ for any type $T$.  Note
+that dropping annotations is defined on both typeful and type-free
+expressions.
+
+\begin{figure}
+\[
+\begin{array}{lllllll} 
+\texttt{fun}\ x()\, :\, T\, .\ t & \To & t & \ \ & 
+\texttt{fun}\ x(\bar{x}\,:\,\bar{A})\, :\, T^-\, .\ t & \To &
+\texttt{fun}\ x(\bar{x}\,:\,\bar{A})\, :\, \bang\, .\ t \\
+P^- & \To & \bang &\ \ & 
+(t\ T^-) & \To & (t\ \bang) \\
+(t\ \texttt{spec}\ X) & \To & (t\ \bang) &\ \ &
+(t\ \bang) & \To & t \\
+\texttt{cast}\ t\ \texttt{by}\ P & \To & t &\ \  &
+\texttt{abort}\ T^- & \To & \texttt{abort}\ \bang \\
+\texttt{existse\_term}\ P\ t & \To & t &\ \ &
+(\bar{x}\,:\,\bar{A}-) & \To & (\bar{x}\,:\,\bang) \\
+(\texttt{spec}\ \bar{x}\,:\,\bar{A}-) & \To & \cdot &\ & 
+\texttt{falsee\_term}\ T\ P & \ & \texttt{falsee\_term}\ \bang\ \bang
+\end{array}
+\]
+\caption{\label{fig:dropannos}Dropping Annotations}
+\end{figure}
+
+Definitional equality is easily decided by, for example, considering
+the \emph{unannotated expansions} of the expressions in question.
+These expansions result from replacing all constants with their
+definitions, then dropping all annotations using $|\cdot|$, and then
+putting terms into an $\alpha$-canonical form.  The distinction
+between terms, types, proofs, and formulas provides a simple
+principled basis for adopting different definitional equalities in
+different settings (e.g., one definitional equality for use in type
+checking a proof, and a different one for terms).  While this turns
+out to be a valuable feature in practice, exploring it further is
+beyond the scope of this paper.
+
+\subsection{Operational Semantics}
+\label{sec:opsem}
+
+Evaluation in \optt\ is call-by-value.  A small-step evaluation
+relation is defined in a standard way in Figure~\ref{fig:eval} on
+terms with annotations dropped.  The definition uses evaluation
+contexts $E$ and values $V$.  The latter are like values as
+traditionally used in operational semantics of programming languages,
+but allow variables.  Variables can occur during partial evaluation,
+used below in proof checking.  In the rule for applications of
+\texttt{fun}-terms, it is assumed that there are as many arguments
+($\bar{V}$) as parameters ($\bar{x}$); and similarly in the
+\texttt{match} rule.  Terms of the form $\texttt{falsee\_term}\ \bang\ \bang$
+cannot arise during evaluation in the empty context, as a consequence
+of meta-theoretic results below.  They can arise during partial
+evaluation, however, in which case they are treated like values.
+
+\begin{figure}
+\[
+\begin{array}{l}
+\begin{array}{lll}
+E[(F\ \bar{V})] & \leadsto &
+E[[\bar{V}/\bar{x},F/x]t] \\ 
+F \ \equiv\ \texttt{fun}\ x(\bar{x}:\bar{\bang})\,:\,\bang\,.t &\ & \ 
+\\ \\
+E[ \texttt{match}\ (c_i\ \bar{V})\  \texttt{by}\ x\,y\ \texttt{with}
+\ c_1\ \bar{x}_1 \texttt{=>} s_1 | \ldots 
+        | c_n\ \bar{x}_n \texttt{=>} s_n \texttt{end}] 
+& \leadsto &
+E[[\bar{V}/\bar{x}_i]s_i]  \\ \\
+E[\texttt{let}\ x\ =\ V\ \texttt{by}\ y\ \texttt{in}\ t] & \leadsto &  
+E[[V/x]t] \\ \\
+E[\texttt{abort}\ \bang] & \leadsto & \texttt{abort}\ \bang 
+\end{array} \\ \\ 
+\textit{where:}\\ \\ 
+\begin{array}{lll}
+E & ::= & *\ ||\ (E\ X)\ ||\ (V\ E)\ ||\  
+\texttt{let}\ x\ =\ E\ \texttt{by}\ y \ \texttt{in}\ t\ 
+||\\
+\ &\ & \texttt{match}\ E\ \texttt{by}\ x\ y \ \texttt{with}\ c_1\ \bar{x}_1\ \texttt{=>}\ t_1 |
+ \ldots | c_n\ \bar{x}_n\ \texttt{=>}\ t_n\ \texttt{end} \\ \\
+V & ::= & x\ ||\ c\ ||\ \bang\ ||\ T\ ||\ P\ ||\ (c\ V_1\,\cdots\, V_n)\ ||\ \texttt{fun}\ x(\bar{x}\,:\,\bang)\,:\bang .\ t\ ||\ \texttt{falsee\_term}\ \bang\ \bang
+\end{array}
+\end{array}
+\]
+\caption{\label{fig:eval}Small-step evaluation}
+\end{figure}
+
+\subsection{Datatypes}
+\label{sec:commands}
+
+We avoid the uninformative formalization of a typing signature
+declaring and defining constants, and instead specify informally the
+kinds of datatypes that may be declared, thus adding type and term
+constructors to the signature.  The syntax of datatype declarations is
+given in Figure~\ref{fig:command}.  Here, $K$ is for kinds.  Datatypes
+may be both term- and type-indexed.  We additionally restrict input
+types $A$ to a (term) constructor so that if $d$ occurs in $A$, it
+does so only if $A$ is a type application with $d$ as the head.  More
+liberal forms of datatypes are of interest in practice, but for
+simplicity we consider just such algebraic datatypes.  Also, we impose
+the additional restriction that input types may not contain
+quantification or functional abstraction over types.  The syntax also
+prohibits type constructors from accepting proofs as arguments.
+
+\begin{figure}
+\[
+\begin{array}{l} 
+\begin{array}{lll}
+\texttt{Inductive}\ d\, :\, K \ := \ c_1 : D_1\ |\ \ldots\ |\ c_k : D_k\, .
+\end{array}
+\\ \\ 
+\textit{\ \ where}\\
+\begin{array}{lll}
+D & ::= & \texttt{Fun}(\bar{y}\,:\,\bar{A}) . \langle  d\ Y_1\ \ldots\ Y_n\rangle
+\\
+K & ::= & \texttt{type}\ ||\ \texttt{Fun}(x\,:\,B).\ K
+\\ 
+B & ::= & \texttt{type}\ ||\ T
+\end{array}
+\end{array}
+\]
+\caption{\label{fig:command}Commands}
+\end{figure}
+
+\section{Proofs and Formulas}
+\label{sec:pfs}
+
+The syntax of \optt\ formulas and selected proof constructs is given
+in Figure~\ref{fig:formulas-proofs}.  For reasons that will be
+explained below, it is helpful to view implications as degenerate
+forms of universal quantifications.  For symmetry, we similarly view
+conjunctions as existential quantifications.  We find we do not need
+disjunction (not to be confused with the boolean \texttt{or}
+operation) for any of a broad range of program verification examples,
+so we exclude it for simplicity.  The syntax-directed classification
+rules are given in Figures~\ref{fig:cl-formula},~\ref{fig:cl-proof},
+and~\ref{fig:cl-proof2}.  Classification of proofs and formulas, as of
+terms and types, is easily seen to be decidable.  Note that proofs may
+contain term- and type-level variables, so the first rule of
+Figure~\ref{fig:cl-proof} is indeed needed.  There are several
+additional points to mention:
+
+\textbf{Formulas.} Equations are formed between type-free terms, as
+well as between types.  Instead of allowing any untyped terms, one
+could require some form of approximate typing, but this is not
+essential nor required in practice.  Each disequation $\{ t\ \Neq\
+t'\}$ is taken as abbreviating the formula $\{ t\ \Eq\ t'\}\ \to\
+\texttt{False}$.  For a large number of program verification examples
+logical disjunction (not to be confused with the boolean operation
+``or'') is unnecessary, and indeed, \textsc{Guru} does not implement
+it.  Omitting it from the formal treatment simplifies, as is well
+known, the strong normalization argument.  Existential quantification,
+which also poses complications for that argument, is included, because
+it truly is needed for practical program verification.  Implication
+and conjunction are viewed here as degenerate forms of universal and
+existential quantification, respectively.  This is actually
+implemented in \textsc{Guru}, as it provides a more compact syntax for
+long sequences of universal variables and hypotheses.  This treatment
+plays a more fundamental role in the present work, in the treatment of
+existential elimination in the cut elimination proof
+(Section~\ref{sec:cut_elim}).
+
+\textbf{Contexts and Holes.}  Holes ($h$ in
+Figure~\ref{fig:formulas-proofs}) are numbered by $n$, a natural
+number, for the benefit of the injectivity rule.  The notation
+$C[\bar{I}]$ is for the result of substituting the $I_1,\ldots,I_n$
+for the first $n$ holes of $C$.  Similarly, $C[Y,\bar{Y}]$ in the
+injectivity rule denotes the result of substitution $Y$ for hole $*_0$
+and then $\bar{Y}$ for the next holes.  Hence, injectivity allows
+equating corresponding subterms of terms headed by the same
+constructor, disregarding some other, possibly different, subterms.
+We require those other subterms to be terminating to allow for
+non-trivial equation of diverging terms.  This is not done in the core
+\optt, but could be allowed.  In such a case, unsoundness could result
+if the other subterms were diverging, since strictness would equate
+the two constructor terms on the basis of the diverging subterms.  The
+terms equated by \texttt{inj} might not, then, be truly equal.
+
+For congruence, we stipulate that $Y^*$ has at least one occurrence of
+the hole $*_0$, and no occurrences of other holes.  Insertion of an
+expression into a hole is capture-avoiding.  This disallows truly
+extensional reasoning about \texttt{fun}-terms and \texttt{Fun}-types
+(discussed further in Section~\ref{sec:eqext} below).  The
+classification rule for \texttt{clash} records disjointness of the
+range of constructors: two constructor terms are disequal if their
+heads are disequal (where the head of $(c\ \bar{h})$ is $c$ and
+$\langle d\ \bar{h}\rangle$ is $d$).
+
+\textbf{Evaluation.} The rule \texttt{evalstep} axiomatizes the
+small-step operational semantics.  As in other theorem provers,
+higher-level tactics are needed in practice.  \textsc{Guru} implements
+several of these, for joining terms with multiple steps of reduction.
+They are not essential to the core theory, however, and are not
+discussed further.  Note that the use of $|\cdot|$ for obtaining the
+unannotated expansion of a term is used in the premise of
+\texttt{evalstep}, because the operational semantics is defined only
+for terms without annotations.
+
+\textbf{\texttt{Terminates} and Quantifiers.} \texttt{Forall}-elimination
+and \texttt{Exists}-introduction require the instantiating and
+witnessing terms, respectively, to be typed terminating expressions.
+Quantifiers in \optt\ range over values (excluding non-terminating
+terms), and hence this restriction is required for soundness.
+
+\textbf{Induction.} Classification for \texttt{induction}-proofs is
+not stated in the figure, for space reasons.  These proofs are similar
+to a combination of recursive \texttt{fun}-terms and
+\texttt{match}-terms.  A third assumption variable is bound in the
+cases, for the induction hypothesis.  The last classifier in the list
+$\bar{A}$ (see Figure~\ref{fig:formulas-proofs}) is required to be a
+datatype (i.e., of the form $\langle d\ \bar{Y}\rangle$).  The last
+variable in the list is thus the parameter of induction.  Earlier
+parameters may be needed due to dependent typing.  Simple structural
+decrease at recursive call sites is checked automatically.  The
+classifier for the proof is then of the form
+$\texttt{Forall}(\bar{x}\,:\,\bar{A}). F$.
+
+\textbf{\texttt{False} elimination.} We restrict \texttt{falsee} to
+introduce just an atomic formula (i.e., an equation) from a
+contradiction.  A simple meta-theoretic proof by induction on the
+structure of a formula $F$ then shows that from a contradiction, we
+can build a proof of $F$ using \texttt{falsee} for atoms and the
+corresponding introduction rule for each other form of formula.  This
+requires \texttt{falsee\_term} in the existential case.  Since we can
+derive any formula $F$ from a contradiction, we are justified in
+restricting \texttt{falsee} to atomic formulas.  This, in turn,
+simplifies the meta-theory.
+
+\begin{figure}
+\begin{eqnarray*}
+F & ::= & \quant(x\,:\,A). \, F\ ||\  \{ Y_1\, \Eq\, Y_2 \}\ ||\ \texttt{False}\\ \\
+\quant & \in & \{ \texttt{Forall}, \texttt{Exists} \} \\ 
+\Qeq & \in & \{ \Eq, \Neq \} 
+\\ \\
+P & ::= & x\ ||\ \bang\ ||\ 
+        \texttt{foralli}
+         (x\,:\,A) . \, P\ ||\ [P\ X_1 \cdots X_n]\ ||\ 
+  \texttt{existsi}\ t\ F^*\ P\ ||\ \texttt{existse}\ P\ P'\ ||\\
+\ & \ &  \texttt{refl}\ Y\ ||\
+ \texttt{symm}\ P\ ||\ \texttt{trans}\ P\ P'\ ||\ 
+ \texttt{cong}\ Y^*\ \bar{P}\ || \ \texttt{clash}\ I_1\ I_2\ ||\ \texttt{falsee}\ P\ ||\ \\
+\ & \ & \texttt{induction}(\bar{x}\,:\,\bar{A})\ \ 
+\texttt{by}\ x\ y\ z\ 
+\texttt{return}\ F\ \texttt{with}\ \ 
+c_1\ \bar{x}_1\ \texttt{=>}\ P_1 | 
+ \cdots | c_n\ \bar{x}_n\ \texttt{=>}\ P_n\ \texttt{end}\ || \\
+\ &\ & \texttt{inj}\ C\ P\ ||\ \texttt{dom\_inj}\ P\ ||\ \texttt{ran\_inj}\ X\ P\ 
+||\ \texttt{fclash}\ \texttt{Fun}(x:A).B\ \langle T\ Y \rangle \ ||\ \texttt{evalstep}\ t\ t' \\ \\
+C & ::= & (c\ \bar{h})\ ||\ \langle d\ \bar{h} \rangle \\ 
+h & ::= & *_n
+\end{eqnarray*}
+\caption{\label{fig:formulas-proofs} Formulas ($F$) and Proofs ($P$)}
+\end{figure}
+
+\begin{figure}
+\begin{tabular}{ll}
+\infer{
+\seq{\Gamma}{\texttt{False}}{\texttt{formula}}}
+{\ }
+
+&
+
+\infer{
+\seq{\Gamma}{\quant(x\,:\,A).\ F}{\texttt{formula}} }
+{\seq{\Gamma}{A}{\textit{sort}(A)} & \seq{\Gamma, x\,:\,A}{F}{\texttt{formula}}}
+
+\\ 
+\\ 
+
+\infer{
+\seq{\Gamma}{\{t_1\, \Qeq\, t_2\}}{\texttt{formula}}}
+{\ }
+
+&
+
+\infer{
+\seq{\Gamma}{\{T_1\, \Qeq\, T_2\}}{\texttt{formula}}}
+{\ }
+\end{tabular}
+\caption{\label{fig:cl-formula}Formula Classification}
+\end{figure}
+
+\begin{figure}
+\begin{tabular}{l}
+\begin{tabular}{ll}
+
+
+\infer{\seq{\Gamma}{x}{A}}{\Gamma(x) = A}
+
+& 
+
+\infer{\seq{\Gamma}{\texttt{falsee}\ P\ Y_1\ Y_2}{ \{ Y_1\ \Eq\ Y_2\} }}
+      {\seq{\Gamma}{P}{\texttt{False}}}
+
+\end{tabular}
+
+\\
+\\ 
+
+\infer{
+\seq{\Gamma}{\texttt{foralli}(x\,:\,A).\ P}{\texttt{Forall}(x\,:\,A).\ F} }
+{\seq{\Gamma}{A}{\textit{sort}(A)} & \seq{\Gamma, x\,:\,A}{P}{F}}
+
+
+\\
+\\
+
+\infer{
+\seq{\Gamma}{[P\ X]}{[X/x] F} }
+{\seq{\Gamma}{P}{\texttt{Forall}(x:A).\ F} & \seq{\Gamma}{X}{A} & \texttt{Terminates}\ X}
+
+\\
+\\
+
+\infer{
+\seq{\Gamma}{\texttt{existsi}\ X\ F^*\ P}{\texttt{Exists}(x : A) .
+ F^*[x]} }
+{\seq{\Gamma}{P}{F^*[X]} & \seq{\Gamma}{X}{A} & \texttt{Terminates}\ X}
+
+\\
+\\
+
+\infer{
+\seq{\Gamma}{\texttt{existse}\ P\ P'}{C}}
+{\seq{\Gamma}{P}{\texttt{Exists}(x : A). F^*[x] } \ \ \ \ \ 
+\seq{\Gamma}{P'}{\texttt{Forall}(x : A)(u : F^*[x]). C \ \ \ \ \  x,u\not\in\textit{FV}(C)}}
+
+\end{tabular}
+\caption{\label{fig:cl-proof}Logical Inferences}
+\end{figure}
+
+\begin{figure}
+\begin{tabular}{ll}
+\infer{
+\seq{\Gamma}{\texttt{clash}\ I\ I'}{\{ I\ \Neq\ I' \}}}
+{I \equiv C[\bar{I}] & I' \equiv C'[\bar{I'}] & \textit{head}(C) \not \equiv \textit{head}(C')}
+
+
+&
+
+\infer{
+\seq{\Gamma}{\texttt{cong}\ Y^*\ P}{\{Y^*[Y]\ \Eq\ Y^*[Y']\}} }
+{\seq{\Gamma}{P}{\{Y\ \Eq\ Y'\}}}
+
+\\
+\\
+
+\infer{
+\seq{\Gamma}{\texttt{trans}\ P_1\ P_2}{\{Y_1\ \Qeq\ Y_3\}} }
+{\seq{\Gamma}{P_1}{\{Y_1\ \Eq\ Y_2\}} & \seq{\Gamma}{P_2}{\{Y_2\ \Qeq\ Y_3\}} }
+
+&
+
+\infer{
+\seq{\Gamma}{\texttt{symm}\ P}{\{Y'\ \Qeq\ Y\}} }
+{\seq{\Gamma}{P}{\{Y\ \Qeq\ Y'\}}}
+
+\\ 
+\\
+
+\infer{
+\seq{\Gamma}{\texttt{inj}\ C\ P}{\{Y\ \Eq\ Y'\}} }
+{\seq{\Gamma}{P}{\{C[Y,\bar{Y}]\ \Eq\ C[Y',\bar{Y'}]\}} & \texttt{Terminates}\ \bar{Y},\ \bar{Y'}}
+
+& 
+
+\infer{
+\seq{\Gamma}{\texttt{evalstep}\ t}{\{t\ \Eq\ t'\}} }
+{|t|\ \leadsto\ |t'|}
+
+\\ \\ 
+
+\infer{\seq{\Gamma}{\texttt{dom\_inj}\ P}{\{T\ \Eq\ T'\}} }
+{\seq{\Gamma}{P}{\{ \texttt{Fun}(x:T).B \ \Eq\ \texttt{Fun}(x:T').B' \}}}
+
+&
+
+\infer{\seq{\Gamma}{\texttt{ran\_inj}\ X\ P}{\{[X/x]B\ \Eq\ [X/x]B'\}} }
+{\seq{\Gamma}{P}{\{ \texttt{Fun}(x:A).B \ \Eq\ \texttt{Fun}(x:A').B' \}}}
+
+
+\\ \\ 
+
+\multicolumn{2}{l}{\infer{\seq{\Gamma}{\texttt{fclash}\ \texttt{Fun}(x:A).B\ \langle T\ Y\rangle}{\{ \texttt{Fun}(x:A).B\ \Neq\ \langle T\ Y\rangle\}}}{\ } \ \ \ \ \ \infer{\seq{\Gamma}{\texttt{refl}\ Y}{\{ Y = Y \} }}{\ }}
+
+
+\end{tabular}
+\caption{\label{fig:cl-proof2}Equational Inferences}
+\end{figure}
+
+\section{Advantage of Weak Definitional Equality}
+\label{sec:weak}
+
+Before presenting the meta-theoretic results, we consider some
+critical aspects of \optt's design at a high level.  \optt's
+definitional equality is unusual for a type theory in several
+respects.  Most essentially, as we have seen, it drops annotations
+from terms.  This facilitates reasoning about operational behavior,
+where annotations are irrelevant.  But secondarily, it does not
+include $\beta$-reduction, or any similar computational reductions.
+This makes it much weaker than the conversion relations often used in
+type theory, which include $\beta$-reduction, and even
+pattern-matching and structural recursion.  This is the situation, for
+example, in \textsc{Coq}.  In \optt, we cannot include the operational
+semantics of the language in the definitional equality, because the
+presence of general recursion would render testing definitional
+equality undecidable.  Pushing conversion reasoning out of
+definitional equality and into propositional equality solves this
+problem.  Taking propositional equality to operate on unannotated
+terms then mitigates the consequences of this, namely that we must
+include more casts in terms. 
+
+There is a further critical benefit of using a weak definitional
+equality, which is applicable even for type theories of total
+functions.  It makes it much easier to implement other operations of
+the type theory so that they work modulo definitional equality.
+Definitional equality is supposed to be provide certain syntactic
+identities for free.  Wherever it is used, it should abstract away
+completely from certain syntactic differences in expressions, so that
+these differences are eliminated for purposes of other operations.
+Let us say that a family of judgments $\mathcal{J}$, such as typing
+judgments, satisfies \emph{definitional transparency} iff whenever
+$\mathcal{J}[e]$ holds for some judgment $\mathcal{J}$, then
+$\mathcal{J}[e']$ also holds, when $e$ and $e'$ are definitionally
+equal.  In a more refined fashion, we could speak about which argument
+positions to a judgment like typing satisfy definitional transparency.
+
+The core typing judgments of a traditional type theory like, for
+example, the Calculus of Inductive Constructions (CIC) used in
+\textsc{Coq}, all satisfy definitional transparency, by design.  But
+many extra operations are implemented in a tool like \textsc{Coq}
+beyond those core judgments.  The difficulty with using a strong
+definitional equality is that it becomes very difficult to ensure that
+those other judgments also satisfy definitional transparency.  This
+leads to a non-uniformity in the system: certain judgments are
+definitionally transparent, and certain others are not.  This
+non-uniformity can lead to confusion for at least new users of such
+systems, and may be considered a design flaw.  For example, consider
+the problem of applying a rewrite rule to a term modulo definitional
+equality.  This operation is provided by the \texttt{rewrite} tactic
+in \textsc{Coq}.  If definitional equality includes even just
+$\beta$-reduction of simply typed redexes, as it does in CIC, then
+applying the rule modulo definitional equality requires higher-order
+matching, only just recently proved decidable in
+general~\cite{stirling06}.  Indeed, \texttt{rewrite} does not work
+modulo definitional equality.  In contrast, rewriting can be performed
+easily modulo \optt's definitional equality, without higher-order
+matching, by operating on unannotated expansions of terms.
+
+In systems like \textsc{Coq}, many tactics intended to aid users in
+the construction of proofs do not work modulo definitional equality.
+Rewriting tactics are a good example.  Indeed, many tactics are
+designed to allow the user to change a goal formula into a different
+but definitionally equal one!  Thus, the untrusted theorem proving
+environment, which is, as it should be by the \emph{de Bruijn}
+criterion, the biggest part of the system, does not satisfy
+definitional transparency.  It is then small consolation that the core
+typing judgments do.  In contrast, the weakness of \optt's
+definitional equality makes it possible to implement all typical
+theorem proving operations like rewriting or unification in a
+definitionally transparent way.  We must just note that while the
+classification judgments of \optt satisfy definitional transparency
+for the classifiers and contexts without qualification, for classified
+terms they do so only under replacement by classifiable expressions.
+That is, if $\seq{\Gamma}{e[e_1]}{T}$ holds for any classified
+expression $e$ containing $e_1$, then we have
+$\seq{\Gamma}{e[e_2]}{T}$ if and only if $e_1 \equiv e_2$ and $e_2$ is
+classifiable in $\Gamma$.  Omitting classifiability of $e_2$ here is
+not possible, since annotations are required in general for
+expressions to be classified, though not for expressions to be
+classifiers.
+
+This critique of conversion must be qualified by one note.  If
+definitional equality replaces all additional theorem proving
+operations, the lack of definitional transparency can be avoided.
+This sounds like a radical option, but it is being explored in the
+context of the Calculus of Congruent Inductive Constructions (CCIC),
+where definitional equality is extended to include decision procedures
+operating with hypotheses from the context~\cite{blanqui+08}.  Viewed
+from the perspective of definitional transparency, this impressive
+work can be viewed as a high-stakes gamble: if all theorem proving
+operations can be subsumed in definitional equality, then definitional
+transparency is retained.  But if not, then any that remain will
+almost certainly be impossible to implement modulo the now highly
+complex definitional equality.  Finally, we note that N. de Bruijn
+also advocates the use of a weak definitional equality, although in
+his case this still includes $\beta$-reduction (but not pattern
+matching or recursion)~\cite{debruijn91}.  
+
+\section{Logical Cut Elimination}
+\label{sec:cut_elim}
+
+Our goal is to prove consistency of \optt's logic in a standard way,
+via analysis of canonical forms of closed proofs of atomic formulas.
+Proofs in this form are obtained via a 2-stage process.  In the first
+stage, we eliminate \emph{logical} cuts: that is patterns of
+introduction followed by elimination inferences, where the inferences
+in question are logical ones (Figure~\ref{fig:cl-proof}).  For logical
+cut elimination, we prove our stage 1 reduction process is strongly
+normalizing (SN).  The second stage of the process is considered in
+the next section.
+
+By design, and as one of its main benefits, \optt\ has a simple
+consistency proof, in both a qualitative and proof-theoretic sense,
+despite accomodating programs of intolerable proof-theoretic strength
+(i.e., diverging ones).  The SN proof is based on a standard one,
+namely that given by Girard for G\"odel's System T (which we refer to
+below as the PaT proof)~\cite{pat}.  The necessary adaptations are (1)
+accomodation of existentials and (2) treatment of a richer class of
+datatypes.  This section considers only logical cuts.
+
+\subsection{A Modified System for Existentials}
+
+It is well known that existential elimination does not fit the pattern
+of other elimination rules for minimal natural deduction, since the
+result of the elimination is an arbitrary formula unrelated to the
+principal formula of the elimination.  For the convenient accomodation
+of existentials, we use a modified proof system with a different
+treatment of existential elimination.  Replace $\texttt{existse}\ P\
+P'$ everywhere in proofs with $[P'\ \texttt{existse1} P\
+\texttt{existse2}\ P]$, and add these rules:
+
+\[
+\begin{array}{l}
+\infer{
+\seq{\Gamma}{\texttt{existse1}\ P}{A}}
+{\seq{\Gamma}{P}{\texttt{Exists}(x : A). F^*[x] }}
+\\
+\\
+\infer{
+\seq{\Gamma}{\texttt{existse2}\ P}{F^*[\texttt{existse1}\ P]}}
+{\seq{\Gamma}{P}{\texttt{Exists}(x : A). F^*[x]}}
+\end{array}
+\]
+
+\noindent For this, we naturally must extend the syntax of our terms
+($t$), types ($T$), and proofs ($P$) to include $\texttt{existse1}\
+P$, and of proofs to include $\texttt{existse2}\ P$.  Also, we extend
+our notion of inactive expressions $I$ (that is, terminating
+expressions) and values $V$ (from the operational semantics) to allow
+$\texttt{existse1}\ P$.  Less trivially, we must modify our
+definitional equality, specifically our notion of dropping
+annotations.  Now, we do not automatically discard all proofs.
+Instead, we discard them everywhere except immediately under
+\texttt{existse1}.  There they must be retained to distinguish
+different entities proved to exist.  We must also add an inference
+$\texttt{existse\_redex}\ F^*\ P$ stating that from $P:F^*[t]$, we may
+conclude $F^*[\texttt{existse1}\ \texttt{existsi}\ t\ F'^*\ P']$, if
+$P':F'^*[t]$.  This is needed for preservation of types during logical
+reduction.
+
+The reader may wonder how the eigenvariable condition on
+\texttt{existse} in the original system is enforced in the new system.
+In the new system, the dependence of a conclusion on variables
+introduced by an existential whose proof $P$ depends on hypotheses is
+tracked explicitly by $\texttt{existse1}\ P$, which is used instead of
+an eigenvariable.  The classification rule for proof-level application
+(i.e., universal elimination) ensures that these dependencies are
+updated appropriately when the set of hypotheses supporting an
+\texttt{existse1}-term changes.  For example, consider this proof
+term:
+
+\begin{verbatim}
+foralli(u:Exists(x:nat). 
+          Exists(v:{ (lt x 3) = tt }).
+                { (lt 0 x) = tt }).
+  [lt_S existse1 u 3 existse2 existse2 u]
+\end{verbatim}
+
+\noindent Call this proof term $P$.  Assuming that \texttt{lt\_S} proves
+monotonicity of successor w.r.t. less-than (\texttt{lt}) (and assuming
+decimal notation for unary natural numbers), $P$ proves
+
+\begin{verbatim}
+Forall(u:Exists(x:nat). 
+         Exists(v:{ (lt x 3) = tt }).
+               { (lt 0 x) = tt }).
+  { (lt (S existse1 u) 4) = tt }
+\end{verbatim}
+
+\noindent Instantiating this universal quantifier with a $P'$
+containing free assumption variables will result in a proof
+term with classifier:
+
+\begin{verbatim}
+  { (lt (S existse1 P') 4) = tt }
+\end{verbatim}
+
+\noindent The dependence of this fact on the assumptions in $P'$
+is thus tracked by the type system.  
+
+The scheme just described preserves the property that
+$\seq{\Gamma}{P}{F}$ implies $\seq{\Gamma}{F}{\texttt{formula}}$,
+while replacing the meta-theoretically problematic existential
+elimination with a much more tractable variant.  We omit a full
+soundness proof.
+
+\subsection{An Ordering on Classifiers}
+
+For the adaption of the (unary) logical relation used in the PaT
+proof, it is necessary to define a well-founded partial order on
+classifiers.  First, let $<$ be a standard subterm (partial) ordering
+on classifiers, where as usual we include instances of quantified
+formulas as subterms.  This includes instantiating a formula with an
+\texttt{existse1}-term.  In \optt, there is no quantification over
+formulas, so this is well-founded.  Now, extend this ordering $<$ by
+additionally making $\langle d\ \bar{X}\rangle$ bigger than all
+classifiers which lack quantification over \texttt{type}, and which
+mention just datatypes $d'$ also mentioned in the datatype declaration
+for $d$.  We must exclude quantifications over \texttt{type} in input
+types to term constructors, since otherwise our definition could make
+instances of a type like $\texttt{Fun}(A:\texttt{type}).A$ isomorphic
+to that type (the instance is smaller as an instance, but bigger if
+the \texttt{Fun}-type can be used as the type of an argument to a term
+constructor for the instance).  Finally, take the transitive closure
+of the resulting relation.  This yields a well-founded partial order
+on classifiers, sufficient for the needs of our SN proof below.
+
+\subsection{Reduction of Proofs}
+
+Figure~\ref{fig:pf-red} specifies the reduction relation on proofs
+which we shall prove is strongly normalizing.  The reduction of
+\texttt{induction}-proof redexes (specified by the first rule of
+Figure~\ref{fig:pf-red}) is to be done modulo normalization of the
+scrutinized argument by an auxiliary convergent reduction, for cast
+shifting.  The scrutinized argument is the one corresponding to the
+parameter of induction.  Cast shifting is used also in work by
+Chapman~\cite{chapman08}.  These rules are to be applied only if they
+preserve typability:
+
+\[
+\begin{array}{lll}
+(\texttt{cast}\ t\ \texttt{by}\ P\ \ t') & \Rightarrow & \texttt{cast}\ (t\ \texttt{cast}\ t'\ \texttt{by}\ \texttt{dom\_inj}\ P)\ \texttt{by}\ \texttt{ran\_inj}\ t'\ P \\ 
+(\texttt{cast}\ t\ \texttt{by}\ P\ \ P') & \Rightarrow & \texttt{cast}\ (t\ P')\ \texttt{by}\ \texttt{ran\_inj}\ P'\ P \\
+(\texttt{cast}\ t\ \texttt{by}\ P\ \ T) & \Rightarrow & \texttt{cast}\ (t\ T)\ \texttt{by}\ \texttt{ran\_inj}\ T\ P
+\end{array}
+\]
+
+\noindent These rules fail to preserve typability if the type of $t$
+(before being cast) is not a \texttt{Fun}-type.  In that case, as
+stipulated, the rules are not applied.  We will see that this
+situation can arise only if the current context is inconsistent.  We
+further stipulate that after normalization with these rules, if the
+scrutinized term in an \texttt{induction}-redex is not a cast term,
+then a trivial cast of the form $\texttt{cast}\ t\ \texttt{by}\
+\texttt{refl}\ T$, where $T$ is the type of $t$, is inserted.  This
+allows \texttt{induction}-redex reduction to be expressed in a uniform
+way.  The rules are locally confluent and, since they reduce the sum
+of the depths of cast terms applied as functions, also terminating.
+Hence, this reduction relation is convergent.
+
+% If the type of $t$ is of the
+% form $\langle d \bar{Y}\rangle$, then from $P$ a contradiction can be
+% derived using the \texttt{fclash} proof rule.  In that case, instead
+% of reducing the \texttt{induction}-redex as described in
+% Figure~\ref{fig:pf-red}, the redex is replaced by a proof of the same
+% formula, built from the contradiction.  As noted in the discussion of
+% \texttt{falsee} above, from a contradiction we can build a proof of
+% any formula.  So this can be done.
+
+Our reduction relation is then the compatible closure of the rules in
+the figure.  A few further notes are required.  First, the rather
+complex form of an \texttt{induction}-proof redex (determined by the
+first rule in the figure) is to accomodate casts on the scrutinized
+term.  For type preservation, we must substitute proofs for the
+assumption variables $y_1$ and $y_2$.  Second, we consider reduction
+only for well-classified proofs.  We must, of course, prove that
+classifiers are preserved by reduction.
+
+\begin{figure}
+\[
+\begin{array}{lll}
+\ [Q \ 
+ \bar{X}\ s] & \ \leadsto\ & [\bar{X}/\bar{x},s/x,\bar{X'}/\bar{x'},\texttt{refl}\ (c_i\ \bar{X}')/y_1,P/y_2,Q/y_3] P_i \\
+\ \textit{where:} &\ &\ \\
+\multicolumn{3}{l}
+{\begin{array}{llll}
+1. &  Q & \equiv & \texttt{induction}(\bar{x}:\bar{A})(x:d)\ \texttt{by}\ y_1\ y_2\ y_3\ \texttt{return}\ F 
+\ \texttt{with}\ C_1 | \cdots | C_n\ \texttt{end} \\
+2. & s & \equiv & \texttt{cast} (c_i\ \bar{X}')\ \texttt{by}\ P \\
+3. & \forall i. (C_i & \equiv & c_i\ \bar{x'} \ \Rightarrow \ P_i)
+\end{array}}
+\\ \\
+ \ [\texttt{foralli}(x:A).P\ \ X] & \leadsto & [X/x]P
+\\ \\
+\ \texttt{existse1}\ \texttt{existsi}\  X\ F^*\ P & \leadsto & X \\ \\
+\ \texttt{existse2}\ \texttt{existsi}\ X\ F^*\ P & \leadsto & P
+\\ \\
+\end{array}
+\]
+\caption{\label{fig:pf-red}Reductions on Proofs}
+\end{figure}
+
+\subsection{Classifier Preservation for Proof Reduction}
+
+Before proving normalization of the proof reduction defined above, we
+first prove classifier preservation for proof reduction.  That is:
+
+\begin{theorem}[Type Preservation for Proof Reduction]
+\label{thm:tp-pres-pf} If
+$X^*[R]\leadsto X^*[C]$ for a context $X^*$, a redex $R$, and
+contractum $C$, and if $X^*[R] : A$ for a classifier $A$; then $X^*[C]
+: A$.
+\end{theorem}
+
+\noindent The presence of reductions for \texttt{existse1}
+necessitates the more general form of this statement: otherwise, we
+could phrase it in terms of proof contexts $P^*$ and formula contexts
+$F^*$, in place of $X^*$ and $A^*$, respectively.  The theorem will
+not go through without the following extension of the system.  We
+stipulate that definitional equality is expanded to include the
+equational theory determined by the reductions above.  This is for the
+benefit of accomodating contracted proofs beneath \texttt{existse1} in
+the formula proved, and also of accomodating contractions of
+\texttt{existse1} in the type of the reduced proof.  This modification
+may mean, a priori, that definitional equality is no longer decidable.
+Since this change is done solely for the benefit of this
+meta-theoretic argument, it is not necessary to retain a decidable
+definitional equality.
+
+The proof is by induction on the structure of the context $X^*$.  If
+$X^*$ is just the context's hole, then we must just consider each
+redex reduction.  The \texttt{existse1} and \texttt{existse2} cases
+are obvious.  The \texttt{foralli} case follows from the following
+Substitution Lemma.
+
+\begin{lemma}[Substitution]
+If $\seq{\Gamma,x:A_1,\Gamma'}{X_2}{A_2}$, $\seq{\Gamma}{X_1}{A_1}$,
+and $\texttt{Terminates} X_1$, then
+$\seq{\Gamma,[X_1/x]\Gamma'}{[X_1/x]X_2}{[X_1/x]A_2}$; and similarly
+for $\seq{\Gamma,x:A_1,\Gamma'}{F}{\texttt{formula}}$.
+\end{lemma}
+
+The proof is by induction on the structure of the derivation of the
+first assumed classification.  The requirement of termination is
+needed just for cases like proof-level application.  Without this
+requirement, we might be substituting a term not judged terminating by
+\texttt{Terminates} for a variable (which is judged terminating by
+\texttt{Terminates}).  That would cause the substitution instance to
+be untypable.  Since both values and terms introduced by
+\texttt{existsi} are terminating terms, this restriction to
+terminating terms still enables the Substitution Lemma to be applied
+in the cases where it is needed, namely here and for type preservation
+for term reduction.
+
+To return to the proof of Theorem~\ref{thm:tp-pres-pf}: the case for
+\texttt{induction}-proofs also follows from the Substitution Lemma.
+The restriction imposed by the classification rule for proof-level
+application ensures that $\bar{X}$ and $(c_i\ \bar{X}')$ are
+terminating, so Substitution can be applied.  Note that
+$\texttt{refl}\ (c_i\ \bar{X}')$ does prove, modulo definitional
+equality, that $s$ (the instance of $x$) equals $(c_i\ \bar{X}')$ (the
+instance of the pattern).  Similarly, $P$ proves that the type of the
+instance of $x$ equals the type of the instance of the pattern.
+
+This concludes the base case of the induction on the form of the
+context $X^*$.  We must now prove the step case.  The only problematic
+cases are when a reduction happens in an argument to a proof-level
+application, and when a reduction happens in a proof given to
+\texttt{existse2}.  For the first case, we have $P_1$ applied to
+$P_2^*[R]$, which reduces to $P_1$ applied to $P_2^*[C]$.  Thanks to
+our extension of definitional equality to include proof reductions,
+the types of the arguments are still definitionally equal, so the
+application is still typable with a definitionally equal type.
+Similarly, the type of the reduced \texttt{existse2}-proof
+is also definitionally equal to the original.
+
+\subsection{Strong Normalization}
+
+We may now adapt the PaT SN proof for \optt's proof reduction.  First,
+we stipulate that an \texttt{induction}-proof starting with
+$\texttt{induction}(\bar{x}:\bar{A})$ proves a universal of the form
+$\texttt{Forall}((\bar{x}:\bar{A}))$, where the double parentheses are
+special notation indicating that the given arguments must be supplied
+simultaneously.  Any partial application of an
+\texttt{induction}-proof or its third assumption variable (for the
+induction hypothesis) can be modified to be type correct with respect
+to this new typing of \texttt{induction}-proofs, by $\eta$-expansion.
+So we assume this done, and hence all uses of
+\texttt{induction}-proofs are fully applied to their arguments.  So we
+are considering \texttt{induction}-redexes only, and need not define
+reducibility for the types of \texttt{induction}-proofs.  Similarly,
+we insist that all term constructors are fully applied.  Following
+PaT, we further assume each variable is labeled with exactly one type,
+and we dispense with a typing context.  The set of reducible
+expressions $X$ of classifier $A$, denoted $\textit{RED}_A$, is then
+defined by recursion on $A$ as follows:
+
+\begin{enumerate}
+\item Call $A$ atomic iff it is an equation, \texttt{False}, a type
+which is not a datatype (i.e., a type constant or application of a
+type constructor), or \texttt{type}. Then for atomic $A$,
+$X\in\textit{RED}_A$ iff $X$ is strongly normalizing.
+\item If $A$ is a datatype, and so $A \equiv \langle d
+\bar{Y}\rangle$, then $X\in\textit{RED}_A$ iff all reductions normalize in terms
+of the form $(c\ \bar{X})$, where the $\bar{X}$ are reducible
+expressions of the appropriate types.  
+\item If $A \equiv \texttt{Exists}(x : A'). F$, then $X\in\textit{RED}_A$ iff $\texttt{existse1}\ X\in\textit{RED}_{A'}$
+and $\texttt{existse2}\ X\in\textit{RED}_{F'}$, where $F' \equiv {[\textit{existse1\ X}/x]F}$.
+\item If $A \equiv \texttt{Forall}(x : A').F$, then
+$X\in\textit{RED}_A$ iff for all $X'\in\textit{RED}_{A'}$, we have $(X\
+X')\in\textit{RED}_F'$, where $F' \equiv [X'/x]F$.
+\end{enumerate}
+
+\noindent Recall that our well-founded classifier ordering makes
+instances of a quantified formula (like the instance $F'$ in the
+clause above for existentials) smaller than the quantified formula.
+We have also made datatypes smaller than all classifiers their
+constructors can depend on.  So this definition of \textit{RED} is
+well-founded.  Note that the definition differs from the PaT in its
+treatment of datatypes.  This is to allow term constructors to take
+proofs as arguments.  The corresponding property is not allowed by
+G\"odel's System T.
+
+We now define the neutral expressions to be variables and logical
+eliminations, namely proof-level applications,
+\texttt{induction}-redexes, and existential eliminations.  Closely
+following PaT, we must now prove the three critical properties:
+
+\begin{enumerate}
+\item If $X\in\textit{RED}_A$, then $X$ is strongly normalizing.
+\item If $X\in\textit{RED}_A$ and $X \leadsto X'$, then
+$X'\in\textit{RED}_A$.
+\item If $X^*[R]$ is neutral, $R \leadsto C$, and
+$X^*[C]\in\textit{RED}_A$; then $X\in\textit{RED}_A$.
+\end{enumerate}
+
+\noindent The three properties are established by the same (easy)
+reasoning for atomic classifiers, existentials, and universals as in
+PaT, with existentials handled by the same reasoning as for product
+types.  For datatypes, the properties follow easily, as in the case
+for atomic classifiers.  Again using the same reasoning as in PaT, we
+may then show that \texttt{existsi} and \texttt{foralli} preserve
+reducibility.  Application of term and type constructors are also
+easily seen to preserve reducibility.  
+
+Finally, we must show that \texttt{induction}-redexes preserve
+reducibility.  So we assume that the body $P_i$ of each case in the
+\texttt{induction} proof is reducible, for all reducible values that
+can be substituted for the pattern variables.  As in the PaT proof
+(Section 7.2 of~\cite{pat}), we prove that all terms reachable in one
+reduction step are reducible.  The third property then allows us to
+conclude the \texttt{induction}-redex is reducible.  We reason by
+induction on a different norm than the one used in the PaT proof, to
+accomodate our richer datatypes.  The norm is the lexicographic
+combination of (a) the number of constructors in the normal form of
+the scrutinized term and (b) the sum of the maximum lengths of the
+normalization sequences for the arguments to the
+\texttt{induction}-proof and those lengths for the bodies of the
+cases.  The essential case is when the \texttt{induction}-redex itself
+reduces, in which case new \texttt{induction}-redexes may be created.
+But their norms are smaller, since the first component has decreased.
+
+From these considerations, it is now straightforward to conclude,
+by a similar inductive argument as in PaT:
+
+\begin{theorem}
+All well-typed expressions are reducible, and hence by the first
+property, strongly normalizing.
+\end{theorem}
+
+\section{Equational Soundness and Consistency}
+
+Having eliminated logical cuts, we proceed now to show consistency of
+the system.  This will be done with the help of a characterization of
+equalities and disequalities provable in equational contexts: that is,
+the only free variables allowed (in the typing context) are ones
+proving equations.  We will simultaneously prove the following, for
+all proofs $P$ in normal form with respect to the proof reduction
+considered in the previous section.  If $P$ proves \texttt{False},
+then the context contains an equation $\{t\, \Eq\, t'\}$ or
+$\{T\,\Eq\, T'\}$ satisfying:
+
+\noindent
+\textbf{1.} $t$ and $t'$ evaluate to values of the form
+$C[I_1,\bar{I}]$ and $C'[I_2,\bar{I}']$, where $C$ and $C'$ have
+different heads.
+
+\noindent
+\textbf{2.} $T$ and $T'$ are of the forms $R[t,\bar{t}]$ and
+$R[t',\bar{t}']$ for some type expression $R$ with holes, where
+$t$ and $t'$ are provably disequal.
+
+\noindent Also, if $P$ proves a disequation, that disequation must
+satisfy the same characterization.  Finally, if $P$ proves an equation
+$\{t\, \Eq\, t'\}$ or $\{T\,\Eq\, T'\}$, then one of the follow holds:
+
+\noindent
+\textbf{1.} $t$ and $t'$ are both diverging.
+
+\noindent
+\textbf{2.} $t$ and $t'$ are joinable at a value or stuck term.
+
+\noindent 
+\textbf{3.} $T$ and $T'$ are of the forms $R[\bar{t}]$ and $R[\bar{t}']$ for
+some type expression $R$ with holes in any non-binding position, and
+lists of terms $\bar{t}$ and $\bar{t'}$, with corresponding elements
+provably equal.
+
+Also, if $P$ proves a disequation $\{t\, \Neq\, t'\}$ or $\{T\,\Neq\,
+T'\}$, then one of the following holds:
+
+
+
+
+
+\section{Conclusion}
+
+Operational Type Theory combines a dependently typed programming
+language with a first-order theory of its untyped evaluation.  By
+separating proofs and programs, contrary to the Curry-Howard
+isomorphism, we free programs to include constructs like general
+recursion which are problematic for proofs; and provide a principled
+basis for proofs to reason about programs with type annotations
+dropped, via untyped operational equality.  The robustness of \optt's
+central design ideas is shown by its ability to accomodate extensions
+like termination casts.  Future work includes further extensions to
+the language to accomodate more features of practical programming
+languages such as mutable state, input/output, and global variables.
+Non-functional features can be accomodated using functional modeling.
+A functional model for the non-functional feature is devised and used
+for formal reasoning about programs.  This model is replaced during
+compilation with the efficient non-functional implementation.
+Correctness of this replacement is outside the verification
+environment, and must be trusted.  Soundness of the approach can be
+enforced using linear types to control resource usage.  A similar idea
+is proposed in~\cite{swierstra+07}.
+
+\textbf{Acknowledgements:} Thorsten Altenkirch for detailed comments
+on an earlier draft, and the NSF for support under award CCF-0448275.
+
+\bibliographystyle{fundam}
+
+\nocite{HG91}
+\bibliography{partiality,misc_logic,automated_reasoning,formal_methods,verification,lf,general,refinement,coop_dec_procs,cl,rewriting,theorem_provers,sat,program_analysis,software_engineering,specification,pl,stanford_group,hoas,semantic_programming,misc}
+
+
+\end{document}
