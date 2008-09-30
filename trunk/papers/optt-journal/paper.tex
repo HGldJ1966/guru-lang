@@ -1451,13 +1451,10 @@ $\{ t_1\ \Neq\ t_3\}$.  This concludes the proof.
 We now prove type soundness for a typed version of the operational
 semantics (Figure~\ref{fig:eval}) of \optt.  Rules for reducing
 redexes in this typed operational semantics are given in
-Figure~\ref{fig:tp-eval}.  Rules for reduction in context are given in
-Figure~\ref{fig:tp-eval2}, where the derivable judgment $t\ \leadsto\
-t'\ \rhd\ P$ is intended to mean that $t$ reduces in one
-step to $t'$, with $P$ proving that the types of $t$ and $t'$ are
-equal.  Only well-typed terms are to be evaluated, and only in the
-empty context.  All rules are to be applied modulo cast-shifting,
-defined just as above for proof reduction.  By
+Figure~\ref{fig:tp-eval}, and rules for reduction in context are given
+in Figure~\ref{fig:tp-eval2}.  Only well-typed terms are to be
+evaluated, and only in the empty context.  All rules are to be applied
+modulo cast-shifting, defined just as above for proof reduction.  By
 Theorem~\ref{thm:consistency}, cast-shifting cannot get stuck, because
 all types provably equal in the empty context have the same top-level
 form.  We cannot equate a type-level application and a
@@ -1493,28 +1490,13 @@ V & ::= & x\ ||\ c\ ||\ T\ ||\ P\ ||\ (c\ V_1\,\cdots\, V_n)\ ||\ \texttt{fun}\ 
 \begin{figure}
 \[
 \begin{array}{l}
-\infer{t \ \leadsto\ t'\ \rhd\ \texttt{refl}\ T}
-      {t\ :\ T \ \ &\ \  t\ \leadsto\ t'}
+\infer{(t_1\ X)\ \leadsto\ (t_1'\ X)}
+      {t_1\ \leadsto\ t_1'}
 
 \\ \\
 
-\infer{(t_1\ t_2)\ \leadsto\ (t_1'\ \texttt{cast}\ t_2\ \texttt{by}\ \texttt{dom\_inj}\ P)\ \rhd\ \texttt{ran\_inj}\ t_2\ P}
-      {t_1\ \leadsto\ t_1'\ \rhd\ P}
-
-\\ \\
-
-\infer{(t_1\ T)\ \leadsto\ (t_1'\ T)\ \rhd\ \texttt{ran\_inj}\ T\ P}
-      {t_1\ \leadsto\ t_1'\ \rhd\ P}
-
-\\ \\
-
-\infer{(t_1\ P')\ \leadsto\ (t_1'\ P')\ \rhd\ \texttt{ran\_inj}\ P'\ P}
-      {t_1\ \leadsto\ t_1'\ \rhd\ P}
-
-\\ \\
-
-\infer{(V\ t_2)\ \leadsto\ (V\ \texttt{cast}\ t_2'\ \texttt{by}\ P)\ \rhd\ \texttt{Cong}\ T_2^*\ \texttt{evalstep}\ t_2\ t_2'}
-      {t_2\ \leadsto\ t_2'\ \rhd\ P \ \ &\ \  V : \texttt{Fun}(x:T_1).T_2^*[x]}
+\infer{(V\ t_2)\ \leadsto\ \texttt{Cong}\ T_2^*\ \texttt{evalstep}\ t_2\ t_2'\ (V\ t_2')}
+      {t_2\ \leadsto\ t_2'}
 
 
 \end{array}
@@ -1522,24 +1504,26 @@ V & ::= & x\ ||\ c\ ||\ T\ ||\ P\ ||\ (c\ V_1\,\cdots\, V_n)\ ||\ \texttt{fun}\ 
 \caption{\label{fig:tp-eval2}Typed Reductions for Terms}
 \end{figure}
 
-
 Some explanation of typed reduction in context is warranted.  The
 essential difficulty, of course, is that due to dependent typing, the
 type of a term may depend on subterms which are to be reduced.  The
 term resulting from one step of reduction then requires casts to
 ensure that its type is definitionally equal to the starting type.
 This is not the case for redexes, by an application of the
-Substitution Lemma (which then justifies the form of the first rule of
-Figure~\ref{fig:tp-eval2}).  In the rule for reducing $(V\ t_2)$, we
-write \texttt{Cong} for a meta-theoretic function which computes, by
-recursion on the structure of the type context given as its first
-argument (say $T^*$), a proof that $T^*[t_a]$ equals $T^*[t_b]$,
-where its second argument proves $\{ t_a\ \Eq\ t_b\}$.  The following
-lemma shows this can be computed:
+Substitution Lemma.  In the rule for reducing $(V\ t_2)$, we write
+\texttt{Cong} for a meta-theoretic function with the following
+specification.  The first argument is a context $A^*$, the second is a
+proof of an equation $\{ t_a\ \Eq\ t_b\}$, and the third is an
+expression $X$ with classifier $A^*[t_b]$.  This \texttt{Cong} then
+produces an expression with classifier $A^*[t_a]$.  Its definition,
+recursive in the form of the context $A^*$, is given in
+Figure~\ref{fig:cong}.
 
-\begin{lemma}[Congruence]
-For any $A^*$ or $t^*$, if $P$ proves $\{ t_1\ \Eq\ t_2\}$, then
-there is a proof of $A^[t_1]
+\begin{figure}
+\[
+\begin{array}{l}
+\infer{\texttt{Cong}\ \langle d\ \bar{Y^*}\rangle\ P\ t\ =\ \texttt{cast}\ 
+
 
 \section{Conclusion}
 
