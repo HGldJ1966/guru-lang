@@ -558,18 +558,18 @@ E[\texttt{let}\ x\ =\ V\ \texttt{by}\ y\ \texttt{in}\ t] & \leadsto &
 E[[V/x]t] \\ \\
 E[\texttt{abort}\ \bang] & \leadsto & \texttt{abort}\ \bang 
 \end{array} \\ \\ 
-\textit{where:}\\ \\ 
+\textit{where:}\\ 
 \begin{array}{lll}
 E & ::= & *\ ||\ (E\ X)\ ||\ (V\ E)\ ||\  
 \texttt{let}\ x\ =\ E\ \texttt{by}\ y \ \texttt{in}\ t\ 
 ||\\
 \ &\ & \texttt{match}\ E\ \texttt{by}\ x\ y \ \texttt{with}\ c_1\ \bar{x}_1\ \texttt{=>}\ t_1 |
- \ldots | c_n\ \bar{x}_n\ \texttt{=>}\ t_n\ \texttt{end} \\ \\
+ \ldots | c_n\ \bar{x}_n\ \texttt{=>}\ t_n\ \texttt{end} \\ 
 V & ::= & x\ ||\ c\ ||\ \bang\ ||\ T\ ||\ P\ ||\ (c\ V_1\,\cdots\, V_n)\ ||\ \texttt{fun}\ x(\bar{x}\,:\,\bang)\,:\bang .\ t\ ||\ \texttt{falsee\_term}\ \bang\ \bang
 \end{array}
 \end{array}
 \]
-\caption{\label{fig:eval}Small-step evaluation}
+\caption{\label{fig:eval}Small-step Evaluation}
 \end{figure}
 
 \subsection{Datatypes}
@@ -630,22 +630,20 @@ additional points to mention:
 \textbf{Formulas.} Equations are formed between type-free terms, as
 well as between types.  Instead of allowing any untyped terms, one
 could require some form of approximate typing, but this is not
-essential nor required in practice.  Each disequation $\{ t\ \Neq\
-t'\}$ is taken as abbreviating the formula $\{ t\ \Eq\ t'\}\ \to\
-\texttt{False}$.  For a large number of program verification examples
-logical disjunction (not to be confused with the boolean operation
-``or'') is unnecessary, and indeed, \textsc{Guru} does not implement
-it.  Omitting it from the formal treatment simplifies, as is well
-known, the strong normalization argument.  Existential quantification,
-which also poses complications for that argument, is included, because
-it truly is needed for practical program verification.  Implication
-and conjunction are viewed here as degenerate forms of universal and
-existential quantification, respectively.  This is actually
-implemented in \textsc{Guru}, as it provides a more compact syntax for
-long sequences of universal variables and hypotheses.  This treatment
-plays a more fundamental role in the present work, in the treatment of
-existential elimination in the cut elimination proof
-(Section~\ref{sec:cut_elim}).
+essential nor required in practice.  For a large number of program
+verification examples logical disjunction (not to be confused with the
+boolean operation ``or'') is unnecessary, and indeed, \textsc{Guru}
+does not implement it.  Omitting it from the formal treatment
+simplifies, as is well known, the strong normalization argument.
+Existential quantification, which also poses complications for that
+argument, is included, because it truly is needed for practical
+program verification.  Implication and conjunction are viewed here as
+degenerate forms of universal and existential quantification,
+respectively.  This is actually implemented in \textsc{Guru}, as it
+provides a more compact syntax for long sequences of universal
+variables and hypotheses.  This treatment plays a more fundamental
+role in the present work, in the treatment of existential elimination
+in the cut elimination proof (Section~\ref{sec:cut_elim}).
 
 \textbf{Contexts and Holes.}  Holes ($h$ in
 Figure~\ref{fig:formulas-proofs}) are numbered by $n$, a natural
@@ -661,17 +659,27 @@ non-trivial equation of diverging terms.  This is not done in the core
 \optt, but could be allowed.  In such a case, unsoundness could result
 if the other subterms were diverging, since strictness would equate
 the two constructor terms on the basis of the diverging subterms.  The
-terms equated by \texttt{inj} might not, then, be truly equal.
+terms equated by \texttt{inj} might not, then, be truly equal.  We
+further stipulate that in a use of \texttt{inj}, we cannot pass from
+an equality on terms in the premise to an equality on types in the
+conclusion.  This is needed for soundness, since dropping annotations
+from terms in our definitional equality allows, for example,
+$(\texttt{nil}\ \texttt{bool})$ and $(\texttt{nil}\ \texttt{nat})$ to
+be equated.  Yet it would be unsound to conclude from this that
+\texttt{bool} equals \texttt{nat}.
 
 For congruence, we stipulate that $Y^*$ has at least one occurrence of
-the hole $*_0$, and no occurrences of other holes.  Insertion of an
-expression into a hole is capture-avoiding.  This disallows truly
-extensional reasoning about \texttt{fun}-terms and \texttt{Fun}-types
-(discussed further in Section~\ref{sec:eqext} below).  The
-classification rule for \texttt{clash} records disjointness of the
-range of constructors: two constructor terms are disequal if their
-heads are disequal (where the head of $(c\ \bar{h})$ is $c$ and
-$\langle d\ \bar{h}\rangle$ is $d$).
+the hole $*_0$, and no occurrences of other holes.  We also stipulate
+that the context is shallow: the hole occurs at depth 1.  This
+simplifies the development below.  Insertion of an expression into a
+hole is capture-avoiding.  This disallows truly extensional reasoning
+about \texttt{fun}-terms and \texttt{Fun}-types (discussed further in
+Section~\ref{sec:eqext} below).  The classification rule for
+\texttt{clash} records disjointness of the range of constructors: two
+constructor terms are disequal if their heads are disequal, where the
+head of $(c\ \bar{h})$ is $c$ and $\langle d\ \bar{h}\rangle$ is $d$.
+For purposes of this rule, we treat a constructor by itself as a 0-ary
+application.
 
 \textbf{Evaluation.} The rule \texttt{evalstep} axiomatizes the
 small-step operational semantics.  As in other theorem provers,
@@ -715,7 +723,7 @@ simplifies the meta-theory.
 
 \begin{figure}
 \begin{eqnarray*}
-F & ::= & \quant(x\,:\,A). \, F\ ||\  \{ Y_1\, \Eq\, Y_2 \}\ ||\ \texttt{False}\\ \\
+F & ::= & \quant(x\,:\,A). \, F\ ||\  \{ Y_1\, \Qeq\, Y_2 \}\ ||\ \texttt{False}\\ \\
 \quant & \in & \{ \texttt{Forall}, \texttt{Exists} \} \\ 
 \Qeq & \in & \{ \Eq, \Neq \} 
 \\ \\
@@ -870,7 +878,11 @@ h & ::= & *_n
 
 \multicolumn{2}{l}{\infer{\seq{\Gamma}{\texttt{fclash}\ \texttt{Fun}(x:A).B\ \langle T\ Y\rangle}{\{ \texttt{Fun}(x:A).B\ \Neq\ \langle T\ Y\rangle\}}}{\ } \ \ \ \ \ \infer{\seq{\Gamma}{\texttt{refl}\ Y}{\{ Y = Y \} }}{\ }}
 
+\\ \\ 
 
+\infer{\seq{\Gamma}{\texttt{contra}\ P_1\ P_2}{\texttt{False}}}
+{\seq{\Gamma}{P_1}{\{ Y_1\ \Eq\ Y_2\}} & \seq{\Gamma}{P_2}{\{ Y_1\ \Neq\ Y_2\}}}
+ &\ 
 \end{tabular}
 \caption{\label{fig:cl-proof2}Equational Inferences}
 \end{figure}
@@ -1175,7 +1187,7 @@ classifiers are preserved by reduction.
 \\ \\
 \end{array}
 \]
-\caption{\label{fig:pf-red}Reductions on Proofs}
+\caption{\label{fig:pf-red}Reductions for Proofs}
 \end{figure}
 
 \subsection{Classifier Preservation for Proof Reduction}
@@ -1352,44 +1364,182 @@ Having eliminated logical cuts, we proceed now to show consistency of
 the system.  This will be done with the help of a characterization of
 equalities and disequalities provable in equational contexts: that is,
 the only free variables allowed (in the typing context) are ones
-proving equations.  We will simultaneously prove the following, for
-all proofs $P$ in normal form with respect to the proof reduction
-considered in the previous section.  If $P$ proves \texttt{False},
-then the context contains an equation $\{t\, \Eq\, t'\}$ or
-$\{T\,\Eq\, T'\}$ satisfying:
+proving equations.  We simultaneously prove the following three
+assertions.
 
-\noindent
-\textbf{1.} $t$ and $t'$ evaluate to values of the form
-$C[I_1,\bar{I}]$ and $C'[I_2,\bar{I}']$, where $C$ and $C'$ have
-different heads.
+\begin{theorem}{Consistency}
+\label{thm:consistency}
+For all proofs $P$ in normal form with respect to the
+proof reduction of the previous section, the following hold. 
 
-\noindent
-\textbf{2.} $T$ and $T'$ are of the forms $R[t,\bar{t}]$ and
-$R[t',\bar{t}']$ for some type expression $R$ with holes, where
-$t$ and $t'$ are provably disequal.
+\begin{enumerate}
+\item $P$ does not
+prove \texttt{False}.  
+\item If $P$ proves an equation $\{t\, \Eq\,
+t'\}$ or $\{T\,\Eq\, T'\}$, then one of the following is true:
 
-\noindent Also, if $P$ proves a disequation, that disequation must
-satisfy the same characterization.  Finally, if $P$ proves an equation
-$\{t\, \Eq\, t'\}$ or $\{T\,\Eq\, T'\}$, then one of the follow holds:
+\begin{enumerate}
+\item $t$ and $t'$ are both diverging.
 
-\noindent
-\textbf{1.} $t$ and $t'$ are both diverging.
+\item $t$ and $t'$ are joinable at a value or stuck term.
 
-\noindent
-\textbf{2.} $t$ and $t'$ are joinable at a value or stuck term.
-
-\noindent 
-\textbf{3.} $T$ and $T'$ are of the forms $R[\bar{t}]$ and $R[\bar{t}']$ for
+\item $T$ and $T'$ are of the forms $R[\bar{t}]$ and $R[\bar{t}']$ for
 some type expression $R$ with holes in any non-binding position, and
 lists of terms $\bar{t}$ and $\bar{t'}$, with corresponding elements
 provably equal.
+\end{enumerate}
 
-Also, if $P$ proves a disequation $\{t\, \Neq\, t'\}$ or $\{T\,\Neq\,
+\item If $P$ proves a disequation $\{t\, \Neq\, t'\}$ or $\{T\,\Neq\,
 T'\}$, then one of the following holds:
 
+\begin{enumerate}
+\item $t$ and $t'$ evaluate to values of the form
+$C[I_1,\bar{I}]$ and $C'[I_2,\bar{I}']$, where $C$ and $C'$ have
+different heads.
+
+\item $T$ and $T'$ are of the forms $C[I_1,\bar{I}]$ and
+$C'[I_2,\bar{I}']$, where $C$ and $C'$ have different heads and
+again some of the $\bar{I},\bar{I'}$ may be stuck.
+
+\item $T$ is a functional type and $T'$ is of the form $\langle d\
+\bar{Y}\rangle$, or vice versa.
+\end{enumerate}
+\end{enumerate}
+\end{theorem}
+
+The proof is by induction on the structure of $P$ in normal form.  We
+must first observe that $P$ cannot be a stuck
+\texttt{induction}-redex.  Such could in principle arise if the
+scrutinized argument contained an intervening cast that could not be
+shifted.  A cast can fail to be shifted if the term $t$ being cast to
+functional type does not itself have functional type.  But in that
+case, the cast's proof $P'$ would have to prove that some
+non-functional type is equal to a functional type.  In the empty
+context, that cannot happen unless the non-functional type is a type
+application $\langle d\ \bar{Y}\rangle$.  By induction, $P'$ cannot
+prove an equation of this form, as it violates the characterization of
+equations provable in the empty context.  Also, an
+\texttt{existse1}-term cannot cause an \texttt{induction}-redex to be
+stuck, since in the empty context, such could only be applied to an
+\texttt{existsi}-proof, violating the assumption that $P$ is normal.
+So normal $P$ cannot be a stuck \texttt{induction}-redex.  Similar
+standard reasoning shows that $P$ cannot prove \texttt{False} if it
+ends in a logical elimination rule, and it obviously cannot prove
+\texttt{False} if it ends in a logical elimination rule.  It could
+\emph{a priori} prove \texttt{False} if it ends in a \texttt{contra}
+inference, but the disjointness of our characterizations of the pairs
+of provably equal terms (or types) and the pairs of provably disequal
+ones prevents, by induction, such an inference.  This shows the first
+part of the Theorem.
+
+For the second and third parts, we simply observe that the
+characterization is preserved by our equational inferences
+(Figure~\ref{fig:cl-proof2}), and that by induction, $P$ cannot end in
+\texttt{falsee}.  The \texttt{trans} case, of course, has the most
+subcases to check.  For example, suppose we are going from $\{ t_1\
+\Eq\ t_2\}$ and $\{t_2\ \Neq\ t_3\}$ to $\{t_1\ \Neq\ t_3\}$.  An
+example subcase is then if $t_2$ and $t_3$ evalute to differently
+headed inactive terms $I_1$ and $I_2$.  It cannot happen that $t_1$
+and $t_2$ are diverging, so it must be that they are joinable at a
+value.  By determinism of the operational semantics, this value must
+be the same as the $I_1$, and hence differently headed from $I_2$.
+Thus the characterization is maintained for the derived disequation
+$\{ t_1\ \Neq\ t_3\}$.  This concludes the proof.
+
+\section{Type Soundness for Typed Term Reduction}
+
+We now prove type soundness for a typed version of the operational
+semantics (Figure~\ref{fig:eval}) of \optt.  Rules for reducing
+redexes in this typed operational semantics are given in
+Figure~\ref{fig:tp-eval}.  Rules for reduction in context are given in
+Figure~\ref{fig:tp-eval2}, where the derivable judgment $t\ \leadsto\
+t'\ \rhd\ P$ is intended to mean that $t$ reduces in one
+step to $t'$, with $P$ proving that the types of $t$ and $t'$ are
+equal.  Only well-typed terms are to be evaluated, and only in the
+empty context.  All rules are to be applied modulo cast-shifting,
+defined just as above for proof reduction.  By
+Theorem~\ref{thm:consistency}, cast-shifting cannot get stuck, because
+all types provably equal in the empty context have the same top-level
+form.  We cannot equate a type-level application and a
+\texttt{Fun}-type, by Theorem~\ref{thm:consistency}.  Also, in the
+empty context, we also cannot cast a term using an equation between a
+type variable and another expression.
+
+\begin{figure}
+\[
+\begin{array}{l}
+\begin{array}{lll}
+(F\ \bar{V}) & \leadsto &
+[\bar{V}/\bar{x},F/x]t \\ 
+F \ \equiv\ \texttt{fun}\ x(\bar{x}:\bar{A})\,:\,T\,.t &\ & \ 
+\\ \\
+ \texttt{match}\ \texttt{cast}\ (c_i\ \bar{V})\ \texttt{by}\ P\  \texttt{by}\ x\,y\ \texttt{with}
+\ C_1 | \ldots | C_n\texttt{end} 
+& \leadsto &
+[\bar{V}/\bar{x}_i,\texttt{refl}\ (c_i\ \bar{V})/x,P/y]s_i  \\ 
+\forall i. (C_i \equiv c_i\ \bar{x}_i \texttt{=>} s_i ) \\ \\
+\texttt{let}\ x\ =\ V\ \texttt{by}\ y\ \texttt{in}\ t & \leadsto &  
+[V/x,\texttt{refl}\ V/y]t \\ \\
+\end{array} \\ \\ 
+\textit{where:}\\ 
+\begin{array}{lll}
+V & ::= & x\ ||\ c\ ||\ T\ ||\ P\ ||\ (c\ V_1\,\cdots\, V_n)\ ||\ \texttt{fun}\ x(\bar{x}\,:\,\bar{A})\,:T .\ t\ 
+\end{array}
+\end{array}
+\]
+\caption{\label{fig:tp-eval}Typed Redex Reductions for Terms}
+\end{figure}
+
+\begin{figure}
+\[
+\begin{array}{l}
+\infer{t \ \leadsto\ t'\ \rhd\ \texttt{refl}\ T}
+      {t\ :\ T \ \ &\ \  t\ \leadsto\ t'}
+
+\\ \\
+
+\infer{(t_1\ t_2)\ \leadsto\ (t_1'\ \texttt{cast}\ t_2\ \texttt{by}\ \texttt{dom\_inj}\ P)\ \rhd\ \texttt{ran\_inj}\ t_2\ P}
+      {t_1\ \leadsto\ t_1'\ \rhd\ P}
+
+\\ \\
+
+\infer{(t_1\ T)\ \leadsto\ (t_1'\ T)\ \rhd\ \texttt{ran\_inj}\ T\ P}
+      {t_1\ \leadsto\ t_1'\ \rhd\ P}
+
+\\ \\
+
+\infer{(t_1\ P')\ \leadsto\ (t_1'\ P')\ \rhd\ \texttt{ran\_inj}\ P'\ P}
+      {t_1\ \leadsto\ t_1'\ \rhd\ P}
+
+\\ \\
+
+\infer{(V\ t_2)\ \leadsto\ (V\ \texttt{cast}\ t_2'\ \texttt{by}\ P)\ \rhd\ \texttt{Cong}\ T_2^*\ \texttt{evalstep}\ t_2\ t_2'}
+      {t_2\ \leadsto\ t_2'\ \rhd\ P \ \ &\ \  V : \texttt{Fun}(x:T_1).T_2^*[x]}
 
 
+\end{array}
+\]
+\caption{\label{fig:tp-eval2}Typed Reductions for Terms}
+\end{figure}
 
+
+Some explanation of typed reduction in context is warranted.  The
+essential difficulty, of course, is that due to dependent typing, the
+type of a term may depend on subterms which are to be reduced.  The
+term resulting from one step of reduction then requires casts to
+ensure that its type is definitionally equal to the starting type.
+This is not the case for redexes, by an application of the
+Substitution Lemma (which then justifies the form of the first rule of
+Figure~\ref{fig:tp-eval2}).  In the rule for reducing $(V\ t_2)$, we
+write \texttt{Cong} for a meta-theoretic function which computes, by
+recursion on the structure of the type context given as its first
+argument (say $T^*$), a proof that $T^*[t_a]$ equals $T^*[t_b]$,
+where its second argument proves $\{ t_a\ \Eq\ t_b\}$.  The following
+lemma shows this can be computed:
+
+\begin{lemma}[Congruence]
+For any $A^*$ or $t^*$, if $P$ proves $\{ t_1\ \Eq\ t_2\}$, then
+there is a proof of $A^[t_1]
 
 \section{Conclusion}
 
