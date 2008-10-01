@@ -72,14 +72,14 @@ ewestbro{@}cse.wustl.edu}
 A core calculus for Operational Type Theory (\optt) is developed.
 \optt\ is a new type theory designed to support more general
 programming than directly supported in traditional total type theories
-based on the Curry-Howard isomorphism.   The theory accommodates
+based on the Curry-Howard isomorphism.  The theory accommodates
 functions which might diverge or abort on some inputs, while retaining
 decidability of type checking and logical consistency.  For the
 latter, \optt\ distinguishes proofs from programs, and formulas from
-types.  Proofs and other computationally irrelevant annotations,
-including data marked as specificational, are dropped during formal
-reasoning.  This greatly simplifies verification problems by removing
-the need to reason about types when reasoning about programs.  
+types.  Proofs and other computationally irrelevant annotations are
+dropped during formal reasoning.  This greatly simplifies verification
+problems by reducing the need to reason about proofs and types when
+reasoning about programs.
 \end{abstract}
 
 \section{Introduction}
@@ -108,7 +108,7 @@ order and definitional equality decidable.  The focus here is on
 practical program verification.  For formalized mathematics, a
 higher-order logic and richer definitional equality might be more
 appropriate, and could possibly be developed similarly to \optt.
-Similarly, there is no need to keep the logic intuitionistic:
+Also, there is no need to keep the logic intuitionistic:
 non-constructive reasoning could be permitted.  The strict separation
 of programs and proofs ensures that computations cannot depend on
 proofs, and hence non-constructive proofs cannot pose problems for
@@ -147,21 +147,22 @@ joinability of untyped terms in the call-by-value operational
 semantics of the language, thus giving \optt\ its name.
 
 \textbf{Primary Contributions.} The goal of the present paper is to
-establish in detail the meta-theory of a core \optt.  \optt\ has been
-implemented in a tool called \textsc{Guru}, including a type/proof
-checker and a compiler to efficient C code.  Several medium-sized case
-studies (on the order of thousands of lines of code and proof) have
-been carried out.  Nevertheless, it is beyond the scope of this paper
-to demonstrate the practical utility of \optt.  The focus here is on
-the meta-theory of a core calculus for \optt, and its benefits from a
-theoretical and meta-theoretical point of view.  For this reason, we
-omit consideration of numerous features implemented in \textsc{Guru}.
-Some of these are non-trivial extensions, whose formal meta-theoretic
-consideration must remain to future work; while others would require
-less significant meta-theoretic work, but distract from the study of
-\optt's essential features.  We begin by considering additional
-related work, and then proceed to the definition of the language, and
-its meta-theoretic properties.
+establish in some detail the meta-theory of a core \optt.  \optt\ has
+been implemented in a tool called \textsc{Guru}, including a
+type/proof checker and a compiler to efficient C code.  Several
+medium-sized case studies (on the order of thousands of lines of code
+and proof) have been carried out.  Nevertheless, it is beyond the
+scope of this paper to demonstrate the practical utility of \optt.
+The focus here is on the meta-theory of a core calculus for \optt, and
+its benefits from a theoretical and meta-theoretical point of view.
+For this reason, we omit consideration of numerous features
+implemented in \textsc{Guru}.  Some of these are non-trivial
+extensions, whose formal meta-theoretic consideration must remain to
+future work; while others would require less significant
+meta-theoretic work, but distract from the study of \optt's essential
+features.  We begin by considering additional related work, and then
+proceed to the definition of the language, and its meta-theoretic
+properties.
 
 \section{Related Work}
 
@@ -390,7 +391,12 @@ y:\{\langle d\ \bar{X}\rangle\, \Eq\, T_i\}}{s_i}{T})}
 \subsection{Overview of Constructs}
 
 Our \texttt{cast}-terms witness to the type checker that a term may be
-viewed as having an equal type.  For the benefit of \texttt{casts},
+viewed as having an equal type.  Note that we do not require that the
+cast type is classifiable.  This simplifies the system and is more
+convenient to use in practice.  The cost is that $\Gamma\vdash t:T$
+does not imply $\Gamma \vdash T:\texttt{type}$.  Instead, we have that
+there is a $T'$ provably equal to $T$ such that $\Gamma\vdash T' :
+\texttt{type}$.  For the benefit of \texttt{casts},
 \texttt{match}-terms bind variables for assumptions of equalities in
 the cases.  Specifically, assumption variables $x$ and $y$ are bound
 (just) in the bodies of the cases, and serve as assumptions of
@@ -651,35 +657,45 @@ number, for the benefit of the injectivity rule.  The notation
 $C[\bar{I}]$ is for the result of substituting the $I_1,\ldots,I_n$
 for the first $n$ holes of $C$.  Similarly, $C[Y,\bar{Y}]$ in the
 injectivity rule denotes the result of substitution $Y$ for hole $*_0$
-and then $\bar{Y}$ for the next holes.  Hence, injectivity allows
-equating corresponding subterms of terms headed by the same
-constructor, disregarding some other, possibly different, subterms.
-We require those other subterms to be terminating to allow for
-non-trivial equation of diverging terms.  This is not done in the core
-\optt, but could be allowed.  In such a case, unsoundness could result
-if the other subterms were diverging, since strictness would equate
-the two constructor terms on the basis of the diverging subterms.  The
-terms equated by \texttt{inj} might not, then, be truly equal.  We
-further stipulate that in a use of \texttt{inj}, we cannot pass from
-an equality on terms in the premise to an equality on types in the
-conclusion.  This is needed for soundness, since dropping annotations
-from terms in our definitional equality allows, for example,
-$(\texttt{nil}\ \texttt{bool})$ and $(\texttt{nil}\ \texttt{nat})$ to
-be equated.  Yet it would be unsound to conclude from this that
-\texttt{bool} equals \texttt{nat}.
+and then $\bar{Y}$ for the next holes.  For congruence, we stipulate
+that $Y^*$ has at least one occurrence of the hole $*_0$, and no
+occurrences of other holes.  The holes may occur anywhere in $Y^*$.
+This unrestricted form of congruence is needed for type preservation
+of term reduction (Section~\ref{sec:tp-sound} below). Insertion of an
+expression into a hole is capture-avoiding.  This disallows truly
+extensional reasoning about \texttt{fun}-terms and \texttt{Fun}-types.
+The classification rule for \texttt{clash} records disjointness of the
+range of constructors: two constructor terms are disequal if their
+heads are disequal, where the head of $(c\ \bar{h})$ is $c$ and
+$\langle d\ \bar{h}\rangle$ is $d$.  For purposes of this rule, we
+treat a constructor by itself as a 0-ary application.
 
-For congruence, we stipulate that $Y^*$ has at least one occurrence of
-the hole $*_0$, and no occurrences of other holes.  We also stipulate
-that the context is shallow: the hole occurs at depth 1.  This
-simplifies the development below.  Insertion of an expression into a
-hole is capture-avoiding.  This disallows truly extensional reasoning
-about \texttt{fun}-terms and \texttt{Fun}-types (discussed further in
-Section~\ref{sec:eqext} below).  The classification rule for
-\texttt{clash} records disjointness of the range of constructors: two
-constructor terms are disequal if their heads are disequal, where the
-head of $(c\ \bar{h})$ is $c$ and $\langle d\ \bar{h}\rangle$ is $d$.
-For purposes of this rule, we treat a constructor by itself as a 0-ary
-application.
+\textbf{Injectivity.} Various injectivity rules are required.  The
+basic \texttt{inj}-inference allows equating corresponding subterms of
+terms headed by the same constructor, disregarding some other,
+possibly different, subterms.  We require those other subterms to be
+terminating to allow for non-trivial equation of diverging terms.
+This is not done in the core \optt, but could be allowed.  In such a
+case, unsoundness could result if the other subterms were diverging,
+since strictness would equate the two constructor terms on the basis
+of the diverging subterms.  The terms equated by \texttt{inj} might
+not, then, be truly equal.  We further stipulate that in a use of
+\texttt{inj}, we cannot pass from an equality on terms in the premise
+to an equality on types in the conclusion.  This is needed for
+soundness, since dropping annotations from terms in our definitional
+equality allows, for example, $(\texttt{nil}\ \texttt{bool})$ and
+$(\texttt{nil}\ \texttt{nat})$ to be equated.  Yet it would be unsound
+to conclude from this that \texttt{bool} equals \texttt{nat}.
+
+The other injectivity rules are not, so far, needed in practice, but
+are required for the meta-theory.  The somewhat unusual form of
+\texttt{dom\_inj2} is chosen to avoid, at all costs, reasoning about
+equality of formulas.  Such reasoning quickly gives rise to casts on
+proofs, which could not be accomodated in an obvious way by our
+reducibility argument for strong normalization of proof reductions
+(Section~\ref{sec:cut_elim} below).  The form chosen here gives us
+enough information to simulate a cast on a proof at the critical point
+in the strong normalization proof.
 
 \textbf{Evaluation.} The rule \texttt{evalstep} axiomatizes the
 small-step operational semantics.  As in other theorem provers,
@@ -739,8 +755,9 @@ P & ::= & x\ ||\ \bang\ ||\
 \texttt{return}\ F\ \texttt{with}\ \ 
 c_1\ \bar{x}_1\ \texttt{=>}\ P_1 | 
  \cdots | c_n\ \bar{x}_n\ \texttt{=>}\ P_n\ \texttt{end}\ || \\
-\ &\ & \texttt{inj}\ C\ P\ ||\ \texttt{dom\_inj}\ P\ ||\ \texttt{ran\_inj}\ X\ P\ 
-||\ \texttt{fclash}\ \texttt{Fun}(x:A).B\ \langle T\ Y \rangle \ ||\ \texttt{evalstep}\ t\ t' \\ \\
+\ &\ & \texttt{inj}\ C\ P\ ||\ \texttt{dom\_inj1}\ P\ ||\ \texttt{dom\_inj2}\ P\ ||\ \texttt{ran\_inj}\ X\ P\ 
+||\ \texttt{fclash}\ \texttt{Fun}(x:A).B\ \langle T\ Y \rangle\  || \\
+\ &\ & \texttt{evalstep}\ t\ t' \\ \\
 C & ::= & (c\ \bar{h})\ ||\ \langle d\ \bar{h} \rangle \\ 
 h & ::= & *_n
 \end{eqnarray*}
@@ -865,7 +882,7 @@ h & ::= & *_n
 
 \\ \\ 
 
-\infer{\seq{\Gamma}{\texttt{dom\_inj}\ P}{\{T\ \Eq\ T'\}} }
+\infer{\seq{\Gamma}{\texttt{dom\_inj1}\ P}{\{T\ \Eq\ T'\}} }
 {\seq{\Gamma}{P}{\{ \texttt{Fun}(x:T).B \ \Eq\ \texttt{Fun}(x:T').B' \}}}
 
 &
@@ -876,18 +893,28 @@ h & ::= & *_n
 
 \\ \\ 
 
-\multicolumn{2}{l}{\infer{\seq{\Gamma}{\texttt{fclash}\ \texttt{Fun}(x:A).B\ \langle T\ Y\rangle}{\{ \texttt{Fun}(x:A).B\ \Neq\ \langle T\ Y\rangle\}}}{\ } \ \ \ \ \ \infer{\seq{\Gamma}{\texttt{refl}\ Y}{\{ Y = Y \} }}{\ }}
+ \infer{\seq{\Gamma}{\texttt{refl}\ Y}{\{ Y = Y \} }}{\ }
+ & 
+\infer{\seq{\Gamma}{\texttt{contra}\ P_1\ P_2}{\texttt{False}}}
+{\seq{\Gamma}{P_1}{\{ Y_1\ \Eq\ Y_2\}} & \seq{\Gamma}{P_2}{\{ Y_1\ \Neq\ Y_2\}}}
 
 \\ \\ 
 
-\infer{\seq{\Gamma}{\texttt{contra}\ P_1\ P_2}{\texttt{False}}}
-{\seq{\Gamma}{P_1}{\{ Y_1\ \Eq\ Y_2\}} & \seq{\Gamma}{P_2}{\{ Y_1\ \Neq\ Y_2\}}}
- &\ 
+\multicolumn{2}{l}{\infer{\seq{\Gamma}{\texttt{dom\_inj2}\ F^*\ P}{\{t\ \Eq\ t'\}} }
+{\seq{\Gamma}{P}{\{ \texttt{Fun}(x:F^*[t,\bar{t}]).B \ \Eq\ \texttt{Fun}(x:F^*[t',\bar{t'}]).B' \}}
+& *_0\textit{ not in a term in }F^* }}
+
+\\ \\ 
+
+\multicolumn{2}{l}{\infer{\seq{\Gamma}{\texttt{fclash}\ \texttt{Fun}(x:A).B\ \langle T\ Y\rangle}{\{ \texttt{Fun}(x:A).B\ \Neq\ \langle T\ Y\rangle\}}}{\ }}
+
+
+
 \end{tabular}
 \caption{\label{fig:cl-proof2}Equational Inferences}
 \end{figure}
 
-\section{Advantage of Weak Definitional Equality}
+\section{Advantages of Weak Definitional Equality}
 \label{sec:weak}
 
 Before presenting the meta-theoretic results, we consider some
@@ -958,7 +985,7 @@ typing judgments do.  In contrast, the weakness of \optt's
 definitional equality makes it possible to implement all typical
 theorem proving operations like rewriting or unification in a
 definitionally transparent way.  We must just note that while the
-classification judgments of \optt satisfy definitional transparency
+classification judgments of \optt\ satisfy definitional transparency
 for the classifiers and contexts without qualification, for classified
 terms they do so only under replacement by classifiable expressions.
 That is, if $\seq{\Gamma}{e[e_1]}{T}$ holds for any classified
@@ -1006,9 +1033,10 @@ despite accomodating programs of intolerable proof-theoretic strength
 namely that given by Girard for G\"odel's System T (which we refer to
 below as the PaT proof)~\cite{pat}.  The necessary adaptations are (1)
 accomodation of existentials and (2) treatment of a richer class of
-datatypes.  This section considers only logical cuts.
+datatypes.  
 
 \subsection{A Modified System for Existentials}
+\label{sec:mod-ex}
 
 It is well known that existential elimination does not fit the pattern
 of other elimination rules for minimal natural deduction, since the
@@ -1046,7 +1074,11 @@ different entities proved to exist.  We must also add an inference
 $\texttt{existse\_redex}\ F^*\ P$ stating that from $P:F^*[t]$, we may
 conclude $F^*[\texttt{existse1}\ \texttt{existsi}\ t\ F'^*\ P']$, if
 $P':F'^*[t]$.  This is needed for preservation of types during logical
-reduction.
+reduction.  Also, in inferences $\texttt{existsi}\ X\ F^*\ P$, we
+forbid $F^*$ to use its hole beneath \texttt{existse1} if $X$ is a
+proof.  So \texttt{existse1} terms may not depend on existential
+variables which range over proofs.  This restriction is used in
+Section~\ref{sec:cast-shift} below (for the definition of \texttt{Cast}).
 
 The reader may wonder how the eigenvariable condition on
 \texttt{existse} in the original system is enforced in the new system.
@@ -1104,49 +1136,123 @@ formulas as subterms.  This includes instantiating a formula with an
 \texttt{existse1}-term.  In \optt, there is no quantification over
 formulas, so this is well-founded.  Now, extend this ordering $<$ by
 additionally making $\langle d\ \bar{X}\rangle$ bigger than all
-classifiers which lack quantification over \texttt{type}, and which
-mention just datatypes $d'$ also mentioned in the datatype declaration
-for $d$.  We must exclude quantifications over \texttt{type} in input
-types to term constructors, since otherwise our definition could make
-instances of a type like $\texttt{Fun}(A:\texttt{type}).A$ isomorphic
-to that type (the instance is smaller as an instance, but bigger if
-the \texttt{Fun}-type can be used as the type of an argument to a term
+classifiers which lack \texttt{Fun}-abstraction or quantification over
+\texttt{type}, and which mention just datatypes $d'$ also mentioned in
+the datatype declaration for $d$.  We must exclude abstraction and
+quantification over \texttt{type} in input types to term constructors,
+since otherwise our definition could make instances of a type like
+$\texttt{Fun}(A:\texttt{type}).A$ isomorphic to that type (the
+instance is smaller as an instance, but bigger if the
+\texttt{Fun}-type can be used as the type of an argument to a term
 constructor for the instance).  Finally, take the transitive closure
 of the resulting relation.  This yields a well-founded partial order
 on classifiers, sufficient for the needs of our SN proof below.
 
-\subsection{Reduction of Proofs}
+\subsection{Cast Shifting}
+\label{sec:cast-shift}
 
-Figure~\ref{fig:pf-red} specifies the reduction relation on proofs
-which we shall prove is strongly normalizing.  The reduction of
-\texttt{induction}-proof redexes (specified by the first rule of
-Figure~\ref{fig:pf-red}) is to be done modulo normalization of the
-scrutinized argument by an auxiliary convergent reduction, for cast
-shifting.  The scrutinized argument is the one corresponding to the
-parameter of induction.  Cast shifting is used also in work by
-Chapman~\cite{chapman08}.  These rules are to be applied only if they
-preserve typability:
+Reduction for proofs and also for terms requires cast shifting, used
+also in work by Chapman~\cite{chapman08}.  Cast shifting is defined by
+these rules, which are to be applied only if they preserve typability:
 
 \[
 \begin{array}{lll}
 (\texttt{cast}\ t\ \texttt{by}\ P\ \ t') & \Rightarrow & \texttt{cast}\ (t\ \texttt{cast}\ t'\ \texttt{by}\ \texttt{dom\_inj}\ P)\ \texttt{by}\ \texttt{ran\_inj}\ t'\ P \\ 
-(\texttt{cast}\ t\ \texttt{by}\ P\ \ P') & \Rightarrow & \texttt{cast}\ (t\ P')\ \texttt{by}\ \texttt{ran\_inj}\ P'\ P \\
-(\texttt{cast}\ t\ \texttt{by}\ P\ \ T) & \Rightarrow & \texttt{cast}\ (t\ T)\ \texttt{by}\ \texttt{ran\_inj}\ T\ P
+(\texttt{cast}\ t\ \texttt{by}\ P\ \ P') & \Rightarrow & \texttt{cast}\ (t\ \texttt{Cast}\ F^*\ P'\ P_1\ \cdots\ P_n)\ \texttt{by}\ \texttt{ran\_inj}\ P'\ P \\
+\multicolumn{3}{l}{\textit{see text for }\texttt{Cast}\ F^*\ P'\ P_1, \ldots, P_n.}\\
+(\texttt{cast}\ t\ \texttt{by}\ P\ \ T) & \Rightarrow & \texttt{cast}\ (t\ T)\ \texttt{by}\ \texttt{ran\_inj}\ T\ P \\
+\texttt{cast}\ \texttt{cast}\ t\ \texttt{by}\ P\ \texttt{by}\ P' & \Rightarrow & \texttt{cast}\ t\ \texttt{by}\ \texttt{trans}\ P\ P'
 \end{array}
 \]
 
-\noindent These rules fail to preserve typability if the type of $t$
-(before being cast) is not a \texttt{Fun}-type.  In that case, as
+\noindent These rules may fail to preserve typability if the type of
+$t$ (before being cast) is not a \texttt{Fun}-type.  In that case, as
 stipulated, the rules are not applied.  We will see that this
-situation can arise only if the current context is inconsistent.  We
-further stipulate that after normalization with these rules, if the
-scrutinized term in an \texttt{induction}-redex is not a cast term,
-then a trivial cast of the form $\texttt{cast}\ t\ \texttt{by}\
-\texttt{refl}\ T$, where $T$ is the type of $t$, is inserted.  This
-allows \texttt{induction}-redex reduction to be expressed in a uniform
-way.  The rules are locally confluent and, since they reduce the sum
-of the depths of cast terms applied as functions, also terminating.
-Hence, this reduction relation is convergent.
+situation cannot arise in the empty context, which is sufficient for
+our consistency proof.  We further stipulate that after normalization
+with these rules, if the scrutinized term in an
+\texttt{induction}-redex is not a cast term, then a trivial cast of
+the form $\texttt{cast}\ t\ \texttt{by}\ \texttt{refl}\ T$, where $T$
+is the type of $t$, is inserted.  This allows \texttt{induction}-redex
+reduction to be expressed in a uniform way.  The rules are locally
+confluent and, since they reduce the sum of the depths of cast terms
+applied as functions, also terminating.  Hence, this reduction
+relation is convergent.
+
+We must now explain the $\texttt{Cast}\ F^*\ P'\ P_1\ \cdots\ P_n$ in
+the second cast shifting rule.  The goal is to simulate casting the
+proof $P'$, without actually introducing a construct for casting
+proofs.  We suppose here that $P$ proves two \texttt{Fun}-types equal,
+with domains $F^*[\bar{t}]$ and $F^*[\bar{t'}]$, respectively, for
+some formula context $F^*$ whose holes do not occur in terms, and
+sequences of terms $\bar{t}$ and $\bar{t'}$.  If $P$ does not prove
+two such \texttt{Fun}-types equal, the reduction is not performed.
+Using \texttt{dom\_inj2}, we may construct proofs $P_i$ of $\{ t_i\
+\Eq\ t'_i\}$.  Figure~\ref{fig:cast} then defines the meta-level
+function \texttt{Cast}, which computes a proof of $F^*[\bar{t}]$ from
+the proof $P'$ of $F^*[\bar{t'}]$, and the proofs equating the
+$\bar{t}$ with the $\bar{t'}$.  To simplify the presentation, we
+assume variables come with their types, and thus dispense with a
+typing context.  In the definition, we assume that $\bar{t}$ and
+$\bar{t'}$ are always such that $P_i : \{ t_i\ \Eq\ t'_i\}$.  Note that we must
+reverse the equations via $\texttt{symm}\ \bar{P}$ in the first
+premise of the rule for \texttt{Forall}.  The rather complex
+expression given to \texttt{existsi} in the \texttt{Exists} rule is to
+turn $F^*$ into a suitable context for existential introduction, while
+reflecting the fact that it contains the $\bar{t}$.  In the rule for
+types $T^*$, we write $\texttt{cong}\ A^*\ \bar{P}$ for a proof of $\{
+T^*[\bar{t}] = T^*[\bar{t'}]\}$ built transitively using \texttt{cong}
+with the $\bar{P}$ consecutively.
+
+The algorithm maintains the invariant that in each call
+$\Gamma\vdash\texttt{Cast}\ A^*\ X\ \bar{P}\ = \ X'$, we have $X :
+A^*[\bar{t'}]$ and $X' : A^*[\bar{t}]$.  This can be easily checked
+for the \texttt{Forall} rule.  For the existential rule, the reasoning
+is more subtle.  The $P'$ we get back from the recursive call to
+\texttt{Cast} has classifier $[\texttt{existse1}\ P/x]F^*[\bar{t}]$.
+The difficulty here is that for our \texttt{existsi} inference, we
+need that classifier to be definitionally equal to
+$[X/x]F^*[\bar{t}]$.  This holds, however, because if $A^*$ is a
+formula, then our restriction in Section~\ref{sec:mod-ex} prohibits
+any other \texttt{existse1}-term from depending on this proof
+$\texttt{existse1}\ P$.  Proofs are otherwise all definitionally
+equal, so the desired definitional equality holds in that case.  In
+case $A^*$ is a type or \texttt{type}, we may confirm that
+\texttt{Cast} always produces a definitionally equal expression.  The
+rather complex transformation for the case of $\Qeq$-formulas happens
+to work for both equations and disequations.
+
+\begin{figure}
+\[
+\begin{array}{l}
+\infer{ \texttt{Cast}\ \texttt{Forall}(y:A^*).F^*\ P\ \bar{P}\ =\ \texttt{foralli}(x:A^*[\bar{t}]).P'}
+{ \texttt{Cast}\ A^*\ x\ \texttt{symm}\ \bar{P}\ =\ X &  \texttt{Cast}\ [X/y]F^*\ [P\ X]\ \bar{P}\ =\ P'}
+
+\\ \\ 
+
+\infer{ \texttt{Cast}\ \texttt{Exists}(x:A^*).F^*\ P\ \bar{P}\ =\ \texttt{existsi}\ X\ ([*_0/x]F^*)[*_0,\bar{t}]\ P'}
+{\texttt{Cast} A^* \texttt{existe1}\ P\ \bar{P}\ =\ X &
+  \texttt{Cast}\ 
+[\texttt{existse1}\ P/x]F^*\ \texttt{existse2}\ P\ \bar{P}\ =\ P'}
+
+\\ \\ 
+
+\infer{\texttt{Cast}\ \{ Y^*_1\ \Qeq\ Y^*_2 \}\ P\ \bar{P} = 
+\begin{array}{ll}
+\texttt{symm}\ \texttt{trans} & \texttt{cong}\ Y^*_2 \ \bar{P} \\
+\ & \texttt{symm}\ \texttt{trans}\ \texttt{cong}\ Y^*_1 \bar{P}\ P 
+\end{array}}{\ }
+
+\\ \\ 
+\infer{\texttt{Cast}\ T^*\ t\ \bar{P}\ =\ \texttt{cast}\ t\ \texttt{by}\ \texttt{symm}\ \texttt{cong}\ T^*\ \bar{P}}{\ }
+
+\\ \\
+\infer{\texttt{Cast}\ \texttt{type}\ T\ \bar{P}\ =\ T}{\ }
+
+\end{array}
+\]
+\caption{\label{fig:cast}Definition of \texttt{Cast}}
+\end{figure}
 
 % If the type of $t$ is of the
 % form $\langle d \bar{Y}\rangle$, then from $P$ a contradiction can be
@@ -1157,20 +1263,30 @@ Hence, this reduction relation is convergent.
 % \texttt{falsee} above, from a contradiction we can build a proof of
 % any formula.  So this can be done.
 
+\subsection{Reduction for Proofs}
+
+Figure~\ref{fig:pf-red} specifies the reduction relation on proofs
+which we shall prove is strongly normalizing.  The reduction of
+\texttt{induction}-proof redexes (specified by the first rule of
+Figure~\ref{fig:pf-red}) is to be done modulo normalization of the
+scrutinized argument by the cast shifting relation just defined.  The
+scrutinized argument is the one corresponding to the parameter of
+induction.
+
 Our reduction relation is then the compatible closure of the rules in
-the figure.  A few further notes are required.  First, the rather
-complex form of an \texttt{induction}-proof redex (determined by the
-first rule in the figure) is to accomodate casts on the scrutinized
-term.  For type preservation, we must substitute proofs for the
-assumption variables $y_1$ and $y_2$.  Second, we consider reduction
-only for well-classified proofs.  We must, of course, prove that
-classifiers are preserved by reduction.
+Figure~\ref{fig:pf-red}.  A few further notes are required.  First, the
+rather complex form of an \texttt{induction}-proof redex (determined
+by the first rule in the figure) is to accomodate casts on the
+scrutinized term.  For type preservation, we must substitute proofs
+for the assumption variables $y_1$ and $y_2$.  Second, we consider
+reduction only for well-classified proofs.  We must, of course, prove
+that classifiers are preserved by reduction.
 
 \begin{figure}
 \[
 \begin{array}{lll}
 \ [Q \ 
- \bar{X}\ s] & \ \leadsto\ & [\bar{X}/\bar{x},s/x,\bar{X'}/\bar{x'},\texttt{refl}\ (c_i\ \bar{X}')/y_1,P/y_2,Q/y_3] P_i \\
+ \bar{X}\ s] & \ \leadsto\ & [\bar{X}/\bar{x},s/x,\bar{X'}/\bar{x'},\texttt{refl}\ (c_i\ \bar{X}')/y_1,\texttt{symm}\ P/y_2,Q/y_3] P_i \\
 \ \textit{where:} &\ &\ \\
 \multicolumn{3}{l}
 {\begin{array}{llll}
@@ -1249,8 +1365,9 @@ application ensures that $\bar{X}$ and $(c_i\ \bar{X}')$ are
 terminating, so Substitution can be applied.  Note that
 $\texttt{refl}\ (c_i\ \bar{X}')$ does prove, modulo definitional
 equality, that $s$ (the instance of $x$) equals $(c_i\ \bar{X}')$ (the
-instance of the pattern).  Similarly, $P$ proves that the type of the
-instance of $x$ equals the type of the instance of the pattern.
+instance of the pattern).  Similarly, $\texttt{symm}\ P$ proves that
+the type of the instance of $x$ equals the type of the instance of the
+pattern.
 
 This concludes the base case of the induction on the form of the
 context $X^*$.  We must now prove the step case.  The only problematic
@@ -1282,34 +1399,54 @@ reducibility for the types of \texttt{induction}-proofs.  Similarly,
 we insist that all term constructors are fully applied.  Following
 PaT, we further assume each variable is labeled with exactly one type,
 and we dispense with a typing context.  The set of reducible
-expressions $X$ of classifier $A$, denoted $\textit{RED}_A$, is then
-defined by recursion on $A$ as follows:
+expressions $X$ of classifier $A$ with data bound $n$, denoted
+$\textit{RED}^n_A$, is then defined by recursion on norm $(A,n)$ with
+respect to the lexicographic combination of the above defined
+classifier ordering (for $A$) and the usual natural number ordering
+(for natural number $n$), as follows:
 
 \begin{enumerate}
-\item Call $A$ atomic iff it is an equation, \texttt{False}, a type
-which is not a datatype (i.e., a type constant or application of a
-type constructor), or \texttt{type}. Then for atomic $A$,
-$X\in\textit{RED}_A$ iff $X$ is strongly normalizing.
-\item If $A$ is a datatype, and so $A \equiv \langle d
-\bar{Y}\rangle$, then $X\in\textit{RED}_A$ iff all reductions normalize in terms
-of the form $(c\ \bar{X})$, where the $\bar{X}$ are reducible
-expressions of the appropriate types.  
-\item If $A \equiv \texttt{Exists}(x : A'). F$, then $X\in\textit{RED}_A$ iff $\texttt{existse1}\ X\in\textit{RED}_{A'}$
-and $\texttt{existse2}\ X\in\textit{RED}_{F'}$, where $F' \equiv {[\textit{existse1\ X}/x]F}$.
+\item Call $A$ atomic iff it is an equation, \texttt{False}, 
+or \texttt{type}. Then for atomic $A$, $X\in\textit{RED}^n_A$ iff $X$
+is strongly normalizing.
+\item If $A$ is a type $T$, then $X\in\textit{RED}^{(S\ n)}_A$ iff $X$ is
+strongly normalizing and whenever $(c\ \bar{X})$ is a normal form of
+$X$ for term constructor $c$, then for each $X_i$ we have
+$X_i\in\textit{RED}^n_{A'}$, where $X_i$ has classifier $A'$.
+\item If $A \equiv \texttt{Exists}(x : A'). F$, then
+$X\in\textit{RED}^n_A$ iff there exists $n'$ such that
+$\texttt{existse1}\ X\in\textit{RED}^{n'}_{A'}$ and
+$\texttt{existse2}\ X\in\textit{RED}^{n'}_{F'}$, where $F' \equiv
+{[\texttt{existse1}\ X/x]F}$.
 \item If $A \equiv \texttt{Forall}(x : A').F$, then
-$X\in\textit{RED}_A$ iff for all $X'\in\textit{RED}_{A'}$, we have $(X\
-X')\in\textit{RED}_F'$, where $F' \equiv [X'/x]F$.
+$X\in\textit{RED}^n_A$ iff for all $n'$, and for all
+$X'\in\textit{RED}^{n'}_{A'}$, there exists $n''$ with $(X\
+X')\in\textit{RED}^{n''}_{F'}$, where $F' \equiv [X'/x]F$.
 \end{enumerate}
 
-\noindent Recall that our well-founded classifier ordering makes
-instances of a quantified formula (like the instance $F'$ in the
-clause above for existentials) smaller than the quantified formula.
-We have also made datatypes smaller than all classifiers their
-constructors can depend on.  So this definition of \textit{RED} is
-well-founded.  Note that the definition differs from the PaT in its
-treatment of datatypes.  This is to allow term constructors to take
-proofs as arguments.  The corresponding property is not allowed by
-G\"odel's System T.
+\noindent The data bound is used to ensure well-foundedness in the
+second case, for $X_i$ classified by a type.  The issue is that we
+need to stipulate that if $X$ normalizes to $(c_i\ \bar{X})$, the
+$X_i$ are all reducible, since some of these may be proofs of non-atomic
+formulas.  This situation does not arise for G\"odel's System T, where
+data cannot contain functions.  But then, we cannot just insist that
+the $X_i$ are reducible at their types, since a piece of data of type
+\texttt{list}, for example, can easily contain subdata of the same type.
+The definition of reducibility would fail to be well-founded.  The data
+bound gets around this difficulty.  
+
+We call an expression reducible with classifier A (without the data
+bound) if there exists a data bound such that the expression is
+reducible of classifier $A$ with that data bound.  Recall that our
+well-founded classifier ordering makes instances of a quantified
+formula (like the instance $F'$ in the clause above for existentials)
+smaller than the quantified formula.  We have also made datatypes
+smaller than all non-type classifiers that their constructors can
+depend on.  So this definition of \textit{RED} is well-founded.  Note
+that the definition differs from the PaT in its treatment of
+datatypes.  This is to allow term constructors to take proofs as
+arguments.  The corresponding property is not allowed by G\"odel's
+System T.
 
 We now define the neutral expressions to be variables and logical
 eliminations, namely proof-level applications,
@@ -1327,33 +1464,43 @@ $X^*[C]\in\textit{RED}_A$; then $X\in\textit{RED}_A$.
 \noindent The three properties are established by the same (easy)
 reasoning for atomic classifiers, existentials, and universals as in
 PaT, with existentials handled by the same reasoning as for product
-types.  For datatypes, the properties follow easily, as in the case
-for atomic classifiers.  Again using the same reasoning as in PaT, we
-may then show that \texttt{existsi} and \texttt{foralli} preserve
+types.  For types, the properties follow easily, as in the case for
+atomic classifiers.  Again using the same reasoning as in PaT, we may
+then show that \texttt{existsi} and \texttt{foralli} preserve
 reducibility.  Application of term and type constructors are also
-easily seen to preserve reducibility.  
+easily seen to preserve reducibility.  Cast terms also preserve
+reducibility.  The critical point there is that we cannot cast from a
+type to a non-type classifier, or vice versa, and so if $t$ is
+reducible of type $T$, then it is also reducible of type $T'$.  If
+there were a possibility to cast from a type to, say, a
+\texttt{Forall}-formula, the proof would not go through at this point.
 
 Finally, we must show that \texttt{induction}-redexes preserve
-reducibility.  So we assume that the body $P_i$ of each case in the
-\texttt{induction} proof is reducible, for all reducible values that
-can be substituted for the pattern variables.  As in the PaT proof
-(Section 7.2 of~\cite{pat}), we prove that all terms reachable in one
-reduction step are reducible.  The third property then allows us to
-conclude the \texttt{induction}-redex is reducible.  We reason by
-induction on a different norm than the one used in the PaT proof, to
-accomodate our richer datatypes.  The norm is the lexicographic
-combination of (a) the number of constructors in the normal form of
-the scrutinized term and (b) the sum of the maximum lengths of the
-normalization sequences for the arguments to the
-\texttt{induction}-proof and those lengths for the bodies of the
+reducibility.  We must observe that cast shifting preserves
+reducibility (in particular, \texttt{Cast} does).  So we assume that
+the body $P_i$ of each case in the \texttt{induction} proof is
+reducible, for all reducible values that can be substituted for the
+pattern variables.  As in the PaT proof (Section 7.2 of~\cite{pat}),
+we prove that all terms reachable in one reduction step are reducible.
+The third property then allows us to conclude the
+\texttt{induction}-redex is reducible.  We reason by induction on a
+different norm than the one used in the PaT proof, to accomodate our
+richer datatypes.  The norm is the lexicographic combination of (a)
+the maximum number of constructors in the normal forms (we do not
+assume confluence) of the scrutinized term and (b) the sum of the
+maximum lengths of the normalization sequences for the arguments to
+the \texttt{induction}-proof and those lengths for the bodies of the
 cases.  The essential case is when the \texttt{induction}-redex itself
 reduces, in which case new \texttt{induction}-redexes may be created.
 But their norms are smaller, since the first component has decreased.
+By the definition of reducibility for types, all the subdata of the
+(normal) scrutinized term are reducible, so reducibility of the body
+of the taken case follows.
 
 From these considerations, it is now straightforward to conclude,
 by a similar inductive argument as in PaT:
 
-\begin{theorem}
+\begin{theorem}[Strong Normalization]
 All well-typed expressions are reducible, and hence by the first
 property, strongly normalizing.
 \end{theorem}
@@ -1367,10 +1514,11 @@ the only free variables allowed (in the typing context) are ones
 proving equations.  We simultaneously prove the following three
 assertions.
 
-\begin{theorem}{Consistency}
+\begin{theorem}[Consistency]
 \label{thm:consistency}
-For all proofs $P$ in normal form with respect to the
-proof reduction of the previous section, the following hold. 
+For all proofs $P$ classifiable in the empty context and in normal
+form with respect to the proof reduction of the previous section, the
+following hold.
 
 \begin{enumerate}
 \item $P$ does not
@@ -1447,6 +1595,7 @@ Thus the characterization is maintained for the derived disequation
 $\{ t_1\ \Neq\ t_3\}$.  This concludes the proof.
 
 \section{Type Soundness for Typed Term Reduction}
+\label{sec:tp-sound}
 
 We now prove type soundness for a typed version of the operational
 semantics (Figure~\ref{fig:eval}) of \optt.  Rules for reducing
@@ -1454,13 +1603,34 @@ redexes in this typed operational semantics are given in
 Figure~\ref{fig:tp-eval}, and rules for reduction in context are given
 in Figure~\ref{fig:tp-eval2}.  Only well-typed terms are to be
 evaluated, and only in the empty context.  All rules are to be applied
-modulo cast-shifting, defined just as above for proof reduction.  By
-Theorem~\ref{thm:consistency}, cast-shifting cannot get stuck, because
+modulo cast shifting, defined just as above for proof reduction.  By
+Theorem~\ref{thm:consistency}, cast shifting cannot get stuck, because
 all types provably equal in the empty context have the same top-level
 form.  We cannot equate a type-level application and a
 \texttt{Fun}-type, by Theorem~\ref{thm:consistency}.  Also, in the
 empty context, we also cannot cast a term using an equation between a
-type variable and another expression.
+type variable and another expression.  The only values of functional
+type are (casts of) \texttt{fun}-terms, and the only values of type
+$\langle d\ \bar{Y}\rangle$ are (casts of) applications of
+constructors for $d$.  So term-level eliminations cannot get stuck
+(modulo cast shifting) in the empty context.
+
+We may verify by induction that if $t \leadsto t'$ in this typed
+operational semantics, then $|t| \leadsto |t'|$ in the untyped
+operational semantics (Figure~\ref{fig:eval}).  This justifies the use
+of \texttt{evalstep} in the first rule of Figure~\ref{fig:tp-eval2}.
+That rule is present, of course, to account for dependence of the type
+of a term on a redex in it.  We may then easily verify type
+preservation by induction on the structure of the
+$\leadsto$-derivation.  These considerations justify:
+
+\begin{theorem}[Type Preservation]
+If $t \leadsto t'$ with $t:T$, then $t':T$.
+\end{theorem}
+
+\begin{theorem}[Progress]
+If $t:T$, then either $t$ is a value or there exists $t'$ with $t \leadsto t'$.
+\end{theorem}
 
 \begin{figure}
 \[
@@ -1473,14 +1643,14 @@ F \ \equiv\ \texttt{fun}\ x(\bar{x}:\bar{A})\,:\,T\,.t &\ & \
  \texttt{match}\ \texttt{cast}\ (c_i\ \bar{V})\ \texttt{by}\ P\  \texttt{by}\ x\,y\ \texttt{with}
 \ C_1 | \ldots | C_n\texttt{end} 
 & \leadsto &
-[\bar{V}/\bar{x}_i,\texttt{refl}\ (c_i\ \bar{V})/x,P/y]s_i  \\ 
+[\bar{V}/\bar{x}_i,\texttt{refl}\ (c_i\ \bar{V})/x,\texttt{symm}\ P/y]s_i  \\ 
 \forall i. (C_i \equiv c_i\ \bar{x}_i \texttt{=>} s_i ) \\ \\
 \texttt{let}\ x\ =\ V\ \texttt{by}\ y\ \texttt{in}\ t & \leadsto &  
 [V/x,\texttt{refl}\ V/y]t \\ \\
 \end{array} \\ \\ 
 \textit{where:}\\ 
 \begin{array}{lll}
-V & ::= & x\ ||\ c\ ||\ T\ ||\ P\ ||\ (c\ V_1\,\cdots\, V_n)\ ||\ \texttt{fun}\ x(\bar{x}\,:\,\bar{A})\,:T .\ t\ 
+V & ::= & x\ ||\ c\ ||\ T\ ||\ P\ ||\ (c\ V_1\,\cdots\, V_n)\ ||\ \texttt{fun}\ x(\bar{x}\,:\,\bar{A})\,:T .\ t\ || \ \texttt{cast}\ V\ \texttt{by}\ P
 \end{array}
 \end{array}
 \]
@@ -1490,40 +1660,29 @@ V & ::= & x\ ||\ c\ ||\ T\ ||\ P\ ||\ (c\ V_1\,\cdots\, V_n)\ ||\ \texttt{fun}\ 
 \begin{figure}
 \[
 \begin{array}{l}
-\infer{(t_1\ X)\ \leadsto\ (t_1'\ X)}
-      {t_1\ \leadsto\ t_1'}
+
+
+\infer{(V\ t_2)\ \leadsto\ \texttt{cast}\ (V\ t_2')\ \texttt{by}\ \texttt{cong}\ T^*\ \texttt{evalstep}\ t_2\ t_2'}
+      {t_2\ \leadsto\ t_2'\ \  &\ \  V : \texttt{Fun}(x:A).T^*[x]}
 
 \\ \\
 
-\infer{(V\ t_2)\ \leadsto\ \texttt{Cong}\ T_2^*\ \texttt{evalstep}\ t_2\ t_2'\ (V\ t_2')}
-      {t_2\ \leadsto\ t_2'}
+\infer{E[t]\ \leadsto\ E[t']}
+      {t\ \leadsto\ t'}
 
+\\ \\
 
+\begin{array}{lll}
+E & ::= & *\ ||\ (E\ X)\ ||\ 
+\texttt{let}\ x\ =\ E\ \texttt{by}\ y \ \texttt{in}\ t\ 
+||\\
+\ &\ & \texttt{match}\ E\ \texttt{by}\ x\ y \ \texttt{with}\ c_1\ \bar{x}_1\ \texttt{=>}\ t_1 |
+ \ldots | c_n\ \bar{x}_n\ \texttt{=>}\ t_n\ \texttt{end} \\ 
+\end{array}
 \end{array}
 \]
 \caption{\label{fig:tp-eval2}Typed Reductions for Terms}
 \end{figure}
-
-Some explanation of typed reduction in context is warranted.  The
-essential difficulty, of course, is that due to dependent typing, the
-type of a term may depend on subterms which are to be reduced.  The
-term resulting from one step of reduction then requires casts to
-ensure that its type is definitionally equal to the starting type.
-This is not the case for redexes, by an application of the
-Substitution Lemma.  In the rule for reducing $(V\ t_2)$, we write
-\texttt{Cong} for a meta-theoretic function with the following
-specification.  The first argument is a context $A^*$, the second is a
-proof of an equation $\{ t_a\ \Eq\ t_b\}$, and the third is an
-expression $X$ with classifier $A^*[t_b]$.  This \texttt{Cong} then
-produces an expression with classifier $A^*[t_a]$.  Its definition,
-recursive in the form of the context $A^*$, is given in
-Figure~\ref{fig:cong}.
-
-\begin{figure}
-\[
-\begin{array}{l}
-\infer{\texttt{Cong}\ \langle d\ \bar{Y^*}\rangle\ P\ t\ =\ \texttt{cast}\ 
-
 
 \section{Conclusion}
 
@@ -1533,19 +1692,20 @@ separating proofs and programs, contrary to the Curry-Howard
 isomorphism, we free programs to include constructs like general
 recursion which are problematic for proofs; and provide a principled
 basis for proofs to reason about programs with type annotations
-dropped, via untyped operational equality.  The robustness of \optt's
-central design ideas is shown by its ability to accomodate extensions
-like termination casts.  Future work includes further extensions to
-the language to accomodate more features of practical programming
-languages such as mutable state, input/output, and global variables.
-Non-functional features can be accomodated using functional modeling.
-A functional model for the non-functional feature is devised and used
-for formal reasoning about programs.  This model is replaced during
-compilation with the efficient non-functional implementation.
-Correctness of this replacement is outside the verification
-environment, and must be trusted.  Soundness of the approach can be
-enforced using linear types to control resource usage.  A similar idea
-is proposed in~\cite{swierstra+07}.
+dropped, via untyped operational equality.  This paper has studied the
+meta-theory of a core \optt.  As designed, the meta-theoretic
+development is simple, in the proof theoretic sense.  Future work
+includes further extensions to the language to accomodate more
+features of practical programming languages such as mutable state,
+input/output, and global variables.  Non-functional features can be
+accomodated using functional modeling.  A functional model for the
+non-functional feature is devised and used for formal reasoning about
+programs.  This model is replaced during compilation with the
+efficient non-functional implementation.  Correctness of this
+replacement is outside the verification environment, and must be
+trusted.  Soundness of the approach can be enforced using linear types
+to control resource usage.  A similar idea is proposed
+in~\cite{swierstra+07}.
 
 \textbf{Acknowledgements:} Thorsten Altenkirch for detailed comments
 on an earlier draft, and the NSF for support under award CCF-0448275.
