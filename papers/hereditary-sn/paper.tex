@@ -158,7 +158,7 @@ on standard ideas of reducibility, is given in
 Figure~\ref{fig:type-hn}.  The definition is by recursion on the
 structure of the type subscript to \red.  It relies on a predicate
 \sn\ whose extension is the set of strongly normalizing terms.  Note
-that a hereditary condition is imposed only for $to$-types.  A
+that a hereditary condition is imposed only for $\to$-types.  A
 hereditary condition is usually imposed for all compound types, though
 $\vee$-types are problematic.
 
@@ -192,54 +192,74 @@ sometimes say that predicate $P_1$ implies predicate $P_2$, to mean
 that the extension of the first is a subset of the extension of the
 second (or equivalently, $\forall x, P_1(x)\ \To\ P_2(x)$.
 
-\section{Critical Properties of \red_T}
+\section{Critical Properties of $\red \circ \rhd$}
 
 First, let us note the following simple property of \sn: $\sn(t)$ iff
-$\sn(\leadsto(t))$.  Then similarly to the proof in~\cite{1}, we
-define the neutral terms to be variables and eliminations, and show
-the following critical properties of $\red_T$, for all $t:T$:
+$\sn(\leadsto(t))$.  Then similarly to the proof in~\cite{pat}, we show
+the following critical properties of $\red \circ \rhd$:
 
 \begin{itemize}
-\item \textbf{CR1.} If $\red_T(t)$, then $\sn(t)$.
-\item \textbf{CR2.} $\red_T(t)$ implies $\red_T(\leadsto(t))$.
-\item \textbf{CR3.} If $t$ is neutral, $\red_T(\leadsto(t))$ implies
-$\red_T(t)$.
+\item \textbf{CR1.} $\redsub{t} \ \To \sn(t)$.
+\item \textbf{CR2.} $\redsub{t}\ \Leftrightarrow\ \redsub{\leadsto(t)}$.
 \end{itemize}
 
 \noindent Note that the second property says both that reduction
 preserves type-hereditary normalization, and that type-hereditary
 normalization is progressive with respect to reduction.
 
-The proof is by induction on $T$.  We consider first \textbf{CR1}.
-When $T$ is a $\vee$-type or $\top$, \textbf{CR1} follows immediately.
-So suppose $T \equiv T_1\to T_2$, and consider arbitrary $t\ :\ T_1\to
-T_2$ with $\red_{T}(t)$.  By assumption, we have $\red_{T_2}(t\ t')$
-for all $t'$ with $\red_{T_1}(t')$.  In particular, this is true for a
+The proof is by induction on the type $T$.  We consider first
+\textbf{CR1}.  When $T$ is a $\vee$-type or $\top$, \textbf{CR1}
+follows immediately by definition of $\red_T$.  So suppose $T \equiv
+T_1\to T_2$, and consider arbitrary $t\ :\ T_1\to T_2$ with
+$\red_{T}(t)$.  By assumption, we have $\red_{T_2}(t\ t')$ for all
+$t'$ with $\red_{T_1}(t')$.  In particular, this is true for a
 variable $x^{T_1}$, as long as $\red_{T_1}(x^{T_1})$ holds.  We do
-have $\red_{T_1}(x^{T_1})$, since $\red_{T_1}(\leadsto(x^{T_1}))$
-holds vacuously (since $x^{T_1}$ has no $\leadsto$-successors), and so
-we may apply \textbf{CR3} at smaller type $T_1$.  By \textbf{CR1} at
-smaller type $T_2$, we have $\sn(t\ x^{T_1})$, which implies $\sn(t)$.
+have $\red_{T_1}(x^{T_1})$, since $\redsub{\leadsto(x^{T_1})}$ holds
+vacuously (since $x^{T_1}$ has no $\leadsto$-successors and no proper
+subterms), and so we may apply \textbf{CR2} at smaller type $T_1$.  By
+\textbf{CR1} at smaller type $T_2$, we have $\sn(t\ x^{T_1})$, which
+implies $\sn(t)$.
 
-Now consider \textbf{CR2} and \textbf{CR3}.  When $T$ is $\top$ or
-$\vee$, \textbf{CR2} follows from the similar property of $\sn$, which
-we have already noted holds.  So consider the case when $T\equiv
-T_1\to T_2$, and consider arbitrary $t:T$.  For \textbf{CR2}, suppose
-$\red_{T}(t)$, and show $\red_T(\leadsto(t))$.  So consider arbitrary
-$t'$ with $t\leadsto t'$, and show $\red_T(t')$.  For this, we
-consider an arbitrary $t''$ with $\red_{T_1}(t'')$, and we must show
-$\red_{T_2}(t'\ t'')$.  We certainly have $(t\ t'')\leadsto (t'\
+Now consider \textbf{CR2}.  We proceed by inner induction on $t$.  We
+may reason about the proper subterms of $t$ without considering the
+form of $T$, so we do that first.  Assume $\redsub{t}$, and consider
+an arbitrary proper subterm $t'$ of an element of $\leadsto(t)$.  We
+must show $\red(t')$.  Either $t'$ is itself a subterm of $t$, in
+which case we have $\red(t')$ from our assumption of $\redsub{t}$, or
+else there is a subterm $t''$ of $t$ such that $t' \in \leadsto(t'')$.
+Certainly we have $\redsub{t''}$ from $\redsub{t}$, and so our inner
+induction hypothesis gives us $\red(t')$, as required.  For the
+converse, assume $\redsub{\leadsto(t)}$, and consider an arbitrary
+subterm $t'$ of $t$.  We must show $\red(t')$.  Consider
+$\leadsto(t')$.  We certainly have $\leadsto(t') \subset
+\leadsto(\rhd(t))$.  We may observe that $\leadsto \circ \rhd = \rhd
+\circ \leadsto$, and so $\leadsto(t') \subset \rhd(\leadsto(t))$.  From
+our assumption, the latter set is included the extension of $\red$, so
+$\leadsto(t')$ is also.  By inner induction hypothesis, this gives us
+$\redsub{t'}$.
+
+Having dispatched the proper subterms, it now suffices to prove
+$\red_{T}(t)$ iff $\red_{T}(\leadsto(t))$.  When $T$ is $\top$ or
+$\vee$, we have $\red_T(t)$ iff $\red_T(\leadsto(t))$ for all $t:T$,
+from the similar property of $\sn$, noted above.  So consider the case
+when $T\equiv T_1\to T_2$, and consider arbitrary $t:T$.  First
+suppose $\red_{T}(t)$, and show $\red_T(\leadsto(t))$.  So consider
+arbitrary $t'$ with $t\leadsto t'$, and show $\red_T(t')$.  For this,
+we consider an arbitrary $t''$ with $\red_{T_1}(t'')$, and we must
+show $\red_{T_2}(t'\ t'')$.  We certainly have $(t\ t'')\leadsto (t'\
 t'')$, since $t\leadsto t'$.  From the assumption that $\red_{T}(t)$,
-we have $\red_{T_2}(t\ t'')$.  Then by \textbf{CR2} at smaller type
-$T_2$, we get the desired $\red_{T_2}(t'\ t'')$.  Now for
-\textbf{CR3}, assume $\red_T(\leadsto(t))$, and assume $t$ is neutral;
-and show $\red_T(t)$.  For this, consider arbitrary $t''$ with
-$\red_{T_1}(t'')$, and show $\red_{T_2}(t\ t'')$.  To show this, it
-suffices to show $\red_{T_2}(\leadsto(t\ t''))$, by \textbf{CR3} at
-smaller type $T_2$.  So consider arbitrary $t'$ with $(t\ t'')\leadsto
-t'$.  Since $t$ is neutral, $t'$ must be of the form $(t_a\ t_b)$, where
-either $t \leadsto t_a$ or $t'' \leadsto t_b$.  In the former case,
-since 
+we have $\red_{T_2}(t\ t'')$.  Then by $\To$-direction of \textbf{CR2}
+at smaller type $T_2$, we get the desired $\red_{T_2}(t'\ t'')$.  Now
+assume $\red_T(\leadsto(t))$, and show $\red_T(t)$.  For this,
+consider arbitrary $t''$ with $\red_{T_1}(t'')$, and show
+$\red_{T_2}(t\ t'')$.  To show this, it suffices to show
+$\red_{T_2}(\leadsto(t\ t''))$, by \textbf{CR2} at smaller type $T_2$.
+So consider arbitrary $t'$ with $(t\ t'')\leadsto t'$.  We proceed by
+case analysis of the form of the reduction.  If $t' \equiv (t_a\ t'')$
+with the reduction due to $t\leadsto t_a$, then by assumption $\red_{T_1\to T_2}(t_a)$,
+and so $\red_{T_2}(t_a\ t'')$.   or $t'' \leadsto
+t_b$, then 
+
 
 
 
