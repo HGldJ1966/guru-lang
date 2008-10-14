@@ -145,23 +145,27 @@ Typing rules for terms are given in Figure~\ref{fig:typing}.
 \section{Reduction}
 
 Reduction rules for terms are given in Figure~\ref{fig:red}.  The
-first two rules are detour-reduction rules for $\to$ and $\vee$, while
-the second two are commuting conversions for $\vee$-elimination.
-Reduction is the compatible closure of these rules.
+first two rules are detour-reduction rules for $\to$ and $\vee$,
+which, as indicated in the figure, we refer to as $\beta(\to)$- and
+$\beta(\vee)$-reduction, respectively.  The second two are commuting
+conversions, which we refer to as $\textit{cc}(\to)$- and
+$\textit{cc}(\vee)$-reduction, respectively.  Reduction is the
+compatible closure of these rules.
 
 \begin{figure}[p]
-\begin{eqnarray*}
-(\lambda x^T.\ t_1)\ t_2 & \ \leadsto\  & [t_2/x]t_1 \\ \\
-\texttt{case}\ \langle i, t \rangle\ \texttt{of}\ \lambda x^{T_1}. t_1, \lambda x^{T_2}. t_2 & \leadsto & 
+\[
+\begin{array}{llll}
+\beta(\to)\  & (\lambda x^T.\ t_1)\ t_2 & \ \leadsto\  & [t_2/x]t_1 \\ \\
+\beta(\vee)\ & \texttt{case}\ \langle i, t \rangle\ \texttt{of}\ \lambda x^{T_1}. t_1, \lambda x^{T_2}. t_2 & \leadsto & 
   [t/x]t_i \\ \\
-(\texttt{case}\ t\ \texttt{of}\ \lambda x^{T_1}.t_1,\lambda x^{T_2}.t_2)\ t' & \leadsto & 
+\textit{cc}(\to) &(\texttt{case}\ t\ \texttt{of}\ \lambda x^{T_1}.t_1,\lambda x^{T_2}.t_2)\ t' & \leadsto & 
   \texttt{case}\ t\ \texttt{of}\ \lambda x^{T_1}.(t_1\ t'), \lambda x^{T_2}.(t_2\ t') \\ \\
-\texttt{case}\ (\texttt{case}\ t\ \texttt{of}\ \lambda x^{T_1}.t_1,\lambda x^{T_2}.t_2) \ \texttt{of}\ 
-C_1,C_2 & \leadsto & 
+\textit{cc}(\vee) & \texttt{case}\ (\texttt{case}\ t\ \texttt{of}\ \lambda x^{T_1}.t_1,\lambda x^{T_2}.t_2) & \leadsto &\ 
 \texttt{case}\ t\ \texttt{of}\ (\lambda x^{T_1}.\texttt{case}\ t_1\ \texttt{of}\ C_1, C_2),\\
-\ &\ &
+\ & \texttt{of}\ C_1, C_2 \ & \ &
 \ \ \ \ \ \ \ \ \ \ \ \ \ \ (\lambda x^{T_2}.\texttt{case}\ t_2\ \texttt{of}\ C_1, C_2)
-\end{eqnarray*}
+\end{array}
+\]
 \caption{\label{fig:red}Reduction Rules}
 \end{figure}
 
@@ -257,7 +261,7 @@ Write $t' \rhd t$ iff $t$ is a subterm of $t'$.  Following our general
 notations above, this predicate of term-hereditary normalization may
 be written as just $\red \circ \rhd$.
 
-\section{Syntactic Closure of $\red \circ \rhd$}
+\section{Term-Construction Closure of $\red \circ \rhd$}
 
 Before we can prove $\red_T(t)$ for all $t : T$, we will establish
 certain closure properties of the extension of $\red \circ \rhd$.  In
@@ -297,8 +301,9 @@ just show $\sn(\langle i,t\rangle)$, which follows from $\sn(t)$.  The
 latter fact follows, of course, from \textbf{CR1}.  
 
 \begin{lemma}
+\label{lem:lambda}
 Suppose that for all $t'$ with $\red_{T_1}(t')$,
-$\red_{T_2}([t'/x]t)$.  Then $\red_{T_1 \to T_2}{\lambda x^{T_1}. t}$.
+$\red_{T_2}([t'/x]t)$.  Then we also have $\red_{T_1 \to T_2}{\lambda x^{T_1}. t}$.
 \end{lemma}
 
 \noindent We obtain $\red_{T_2}(t)$ by the assumption (call it the
@@ -323,7 +328,7 @@ instantiation assumption for $t$.  We also have $[t''/x]t \leadsto
 $\red_{T_2}([t''/x]t_a)$.  So the instantiation assumption holds for
 $t_a$, and the induction hypothesis applies to show $\red_{T_2}(t_a\
 t_b)$.  Suppose now that instead of a reduction in $t$ or $t'$ we have
-the top-level $\beta$-reduction $((\lambda x^{T_1}.t)\ t')\leadsto
+the top-level $\beta(\to)$-reduction $((\lambda x^{T_1}.t)\ t')\leadsto
 [t'/x]t$.  In this case, the instantiation assumption may be applied
 to conclude the required $\red_{T_2}([t'/x]t)$.  So
 $\red_{T_2}(\leadsto((\lambda x^{T_1}.t)\ t'))$, from which we
@@ -353,20 +358,56 @@ Suppose that the following conditions hold.
 Then we also have $\red_{T}(\texttt{case}\ t\ \texttt{of}\ C_1,C_2)$.
 \end{lemma}
 
-\noindent The proof is by induction on $T$.  If $T$ is a $\vee$-type
-or $\top$, we prove the desired conclusion for all $t$, $C_1$, and
-$C_2$ satisfying the above conditions, by induction on the sum
-$\nu(t)+\nu(C_1)+\nu(C_2)$.  If a reduction of the \texttt{case}-term
-occurs due to a reduction in its proper subterms, then by the
-induction hypothesis (applicable by \texttt{CR2}), the resulting
-\texttt{case}-term is in the extension of $\red_{T}$.  If a top-level
-reduction takes place due to having $t\equiv \langle i, t'\rangle$,
-then by $\redsub{t}$ we have $\red_{T_i}(t')$.  We also have
-$\red_{T_i\to T}(C_i)$.  So by Lemma~\ref{lem:red-inst}, we have
-$\red_T([t'/x]C_i)$.  Since these are all the possibilities, we see
-that $\red_{T}(\leadsto(\texttt{case}\ t\ \texttt{of}\ C_1,C_2))$.  By
-\textbf{CR3}, which applies since $T$ is not a $\vee$-type, we have
-the required $\red_{T}(\texttt{case}\ t\ \texttt{of}\ C_1,C_2)$.
+\noindent Let $e(t)$ be the \texttt{case}-nesting depth of $t$, which
+is a finite number since $\red{t}$.  The proof is by well-founded
+induction on the metric $(e(t),T)$, in the lexicographic combination of
+the subterm and usual less-than ordering on the natural numbers.  If
+$T$ is a $\vee$-type or $\top$, we prove the desired conclusion for
+all $t$, $C_1$, and $C_2$ satisfying the above conditions, by
+induction on the sum $\nu(t)+\nu(C_1)+\nu(C_2)$.  If a reduction of
+the \texttt{case}-term occurs due to a reduction in its proper
+subterms, then by the induction hypothesis (applicable by
+\texttt{CR2}), the resulting \texttt{case}-term is in the extension of
+$\red_{T}$.  If a top-level $\beta(\vee)$-reduction takes place due to
+having $t\equiv \langle i, t'\rangle$, then by $\redsub{t}$ we have
+$\red_{T_i}(t')$.  We also have $\red_{T_i\to T}(C_i)$.  So by
+Lemma~\ref{lem:red-inst}, we have $\red_T([t'/x]C_i)$.  Finally,
+suppose a top-level $\textit{cc}(\vee)$-reduction takes place, as
+follows:
+
+\[
+\begin{array}{lll}
+\texttt{case}\ (\texttt{case}\ t'\ \texttt{of}\ \lambda x^{T_1}.t_1,\lambda x^{T_2}.t_2) & \leadsto &\ 
+\texttt{case}\ t'\ \texttt{of}\ (\lambda x^{T_1}.\texttt{case}\ t_1\ \texttt{of}\ C_1, C_2),\\
+\texttt{of}\ C_1, C_2 \ & \ &
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ (\lambda x^{T_2}.\texttt{case}\ t_2\ \texttt{of}\ C_1, C_2)
+\end{array}
+\]
+
+\noindent Since $e(t_i) < e(t)$ for all $i\in\{1,2\}$, we may apply
+the induction hypothesis to $\texttt{case}\ t_i\ \texttt{of}\ C_1,
+C_2$, to conclude $\red(\texttt{case}\ t_i\ \texttt{of}\ C_1, C_2)$,
+for all $i\in\{1,2\}$.  We wish to apply Lemma~\ref{lem:lambda} to
+conclude $\red(\lambda x^{T_i}. \texttt{case}\ t_i\ \texttt{of}\ C_1,
+C_2)$ for all $i\in\{1,2\}$.  To do this, consider arbitrary
+$i\in\{1,2\}$, and prove that for all $t'$ with $\red_{T_i}(t')$, we
+have $\red([t'/x]\texttt{case}\ t_i\ \texttt{of}\ C_1, C_2)$.  So
+let $t'$ be an arbitrary term with $\red_{T_i}(t')$.  By Lemma~\ref{lem:red-inst},
+we have 
+
+% ###
+
+
+$\red(\lambda x^{T_i}.t_i)$, for all $i\in\{1,2\}$.  
+Now since $e(t') < e(t)$, we may again apply
+the induction hypothesis to get that the resulting term is in the
+extension of \red.
+
+Since the above are all the possibilities for a reduction of the
+\texttt{case}-term, we see that $\red_{T}(\leadsto(\texttt{case}\ t\
+\texttt{of}\ C_1,C_2))$.  By \textbf{CR3}, which applies since $T$ is
+not a $\vee$-type, we have the required $\red_{T}(\texttt{case}\ t\
+\texttt{of}\ C_1,C_2)$.
 
 Suppose now that $T$ is of the form $T_1\to T_2$.  It suffices to
 assume arbitrary $t'$ with $\red_{T_1}(t')$, and show
@@ -374,23 +415,13 @@ $\red_{T_2}((\texttt{case}\ t\ \texttt{of}\ C_1,C_2)\ t')$.  We again
 proceed by induction on the sum $\nu(t)+\nu(C_1)+\nu(C_2)+\nu(t')$.
 If a reduction occurs due to a reduction in $t$, $C_1$, $C_2$, or
 $t'$, we apply the induction hypothesis to conclude that the resulting
-\texttt{case}-term is in the extension of $\red_{T_2}$.  Suppose we have
-$t\equiv \langle i, \hat{t}\rangle$, with $C_i\equiv \lambda
-x^{T'_i}.t_i$, and the top-level reduction
-
-\[
-(\texttt{case}\ \langle i, \hat{t} \rangle\ \texttt{of}\ C_1,C_2)\leadsto [\hat{t}/x]t_i
-\]
-
-\noindent Then in context, we have 
-
-\[ ((\texttt{case}\ t\ \texttt{of}\ C_1,C_2)\ t') \leadsto ([\hat{t}/x]t_i)\ t'
-\]
-
-\noindent By Lemma~\ref{lem:red-inst}, we get $\red_{T_1\to T_2}([\hat{t}/x]t_i)$.
-This then gives us the desired  $\red_{T_2}(([\hat{t}/x]t_i)\ t')$.
-
-Finally, suppose we have a commuting conversion
+\texttt{case}-term is in the extension of $\red_{T_2}$.  Suppose we
+have a $\beta(\vee)$- or a $\textit{cc}(\vee)$-reduction of
+$\texttt{case}\ t\ \texttt{of}\ C_1,C_2$.  Then similar reasoning as
+in the previous case shows that the resulting \texttt{case}-term --
+call it $\hat{t}$ -- is in the extension of $\red_{T_1\to T_2}$.  We
+then get $\red(\hat{t}\ t')$ from the definition of $\red_{T_1\to
+T_2}$.  Finally, suppose we have a commuting conversion
 
 \[
 (\texttt{case}\ t\ \texttt{of}\ \lambda x^{T'_1}.t_1,\lambda x^{T'_2}.t_2)\ t' \leadsto 
@@ -402,7 +433,10 @@ Finally, suppose we have a commuting conversion
 that the resulting \texttt{case}-term is in the extension of
 $\red_{T_2}$ by the induction hypothesis, since the type of this
 \texttt{case}-term is $T_2$, which is smaller than the type $T_1\to
-T_2$ of the original \texttt{case}-term.
+T_2$ of the original \texttt{case}-term.  Note that $e(t)$ has not
+changed, so the metric indeed decreases in the lexicographic
+combination.  We have $\red_{T_2}(t_i\ t')$, for all $i\in\{1,2\}$,
+from $\red_{T_1\ to T_2}(t_i)$.  
 
 
 
