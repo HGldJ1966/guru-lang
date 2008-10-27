@@ -22,57 +22,98 @@ Iowa City, Iowa, USA
 \chapter{Introduction}
 \label{ch1}
 
+\section{What is \guru?}
 
-\chapter{Functional Programming in \guru}
+\guru\ is a verified programming language, as described above.  But in
+this book, we will also refer to the open-source project consisting of
+a compiler for \guru\ code, the standard library of \guru\ code, and
+other materials as ``\guru'' (or ``the \guru\ project'').  Finally,
+the compiler for \guru\ code, which includes a type- and
+proof-checker, as well as an interpreter, is called \texttt{guru}.
+
+\section{Installing \guru}
+
+This book assumes you will be using \guru\ on a Linux computer, but it
+does not assume much familiarity with Linux.  To install \guru, first
+start a shell. Then run the folllowing \textsc{Subversion} command:
+
+\begin{verbatim}
+svn checkout http://guru-lang.googlecode.com/svn/trunk guru-lang
+\end{verbatim}
+
+\noindent This will create a subdirectory called \texttt{guru-lang} of
+your home directory.  This directory contains the \textsc{Java} source
+code for \guru\ itself (\texttt{guru-lang/guru}), the standard library
+written in \guru\ (\texttt{guru-lang/lib}), this book's source code
+(\texttt{guru-lang/doc}), and a number of tests written in \guru\
+(\texttt{guru-lang/tests}).
+
+Before you can use \guru, you must compile it.  To do this, in your
+shell, you should change to the \texttt{guru-lang} directory.  Then
+run the command \texttt{make} from the shell.  This will invoke the
+\textsc{Java} compiler to compile the \textsc{Java} source files in
+\texttt{guru-lang/guru}.  After this is complete, you can run
+\texttt{guru-lang/bin/guru} from the shell to process \guru\ source
+files.  This will be further explained in Section~\ref{sec:natguru}
+below.
+
+\chapter{Basic Functional Programming in \guru}
 \label{ch:prog}
 
-Mainstream programming languages like Java and C++, while powerful and
-effective for many applications, pose problems for program
-verification.  This is for several reasons.  First, these are large
-languages, with many different features.  They also come with large
-standard libraries, which have to be accounted for in order to verify
-programs that use them.  Also, they are based on programming paradigms
-for which practically effective formal reasoning principles are still
-being worked out.  For example, reasoning about programs even with
-such a familiar and seemingly simple feature as \emph{mutable state}
-is not at all trivial.  Mutable state means that the value stored in a
-variable can be changed later.  The reader perhaps has never even
-dreamed there could be languages where this is not the case (where
-once a variable is assigned a value, that value cannot be changed).
-We will study such a language in this chapter.  Object-orientation of
-programs creates additional difficulties for formal reasoning.
+Mainstream programming languages like \textsc{Java} and \textsc{C++},
+while powerful and effective for many applications, pose problems for
+program verification.  This is for several reasons.  First, these are
+large languages, with many different features.  They also come with
+large standard libraries, which have to be accounted for in order to
+verify programs that use them.  Also, they are based on programming
+paradigms for which practically effective formal reasoning principles
+are still being worked out.  For example, reasoning about programs
+even with such a familiar and seemingly simple feature as
+\emph{mutable state} is not at all trivial.  Mutable state means that
+the value stored in a variable can be changed later.  The reader
+perhaps has never even dreamed there could be languages where this is
+not the case (where once a variable is assigned a value, that value
+cannot be changed).  We will study such a language in this chapter.
+Object-orientation of programs creates additional difficulties for
+formal reasoning.
 
 Where object-oriented languages are designed around the idea of an
 object, functional programming languages are designed around the idea
 of a function.  Modern examples with significant user communities and
-tool support include Caml (pronounced ``camel'',
-http://caml.inria.fr/www) and Haskell (http://www.haskell.org/).
-Haskell is particularly interesting for our purposes, because the
-language is \emph{pure}: there is no mutable state of any kind.
-Indeed, Haskell programs have a remarkable property: any expression in
-a program is guaranteed to evaluate in exactly the same way every time
-it is evaluated.  This property fails magnificently in mainstream
-languages, where expressions like ``\texttt{gettimeofday()}'' are, of
-course, intended to evaluate differently each time they are
-called.  Reasoning about impure programs requires reasoning about the
-state they depend on.  Reasoning about pure programs does not, and is
-thus simpler.  
+tool support include \textsc{Caml} (pronounced ``camel'',
+http://caml.inria.fr/) and \textsc{Haskell} (http://www.haskell.org/).
+\textsc{Haskell} is particularly interesting for our purposes, because
+the language is \emph{pure}: there is no mutable state of any kind.
+Indeed, \textsc{Haskell} programs have a remarkable property: any
+expression in a program is guaranteed to evaluate in exactly the same
+way every time it is evaluated.  This property fails magnificently in
+mainstream languages, where expressions like
+``\texttt{gettimeofday()}'' are, of course, intended to evaluate
+differently each time they are called.  Reasoning about impure
+programs requires reasoning about the state they depend on.  Reasoning
+about pure programs does not, and is thus simpler.  Nevertheless, pure
+languages like \textsc{Haskell} do have a way of providing functions
+like ``\texttt{gettimeofday()}''.  We will consider ways to provide
+such functionality in a pure language in Chapter~\ref{ch:funcmod}
+below.
 
-Inside Coq is a pure functional programming language.  The language
-is similar in some ways to Caml and Haskell.  In this chapter, we
-will learn this functional programming language.  In the next chapter,
-we will see how to verify programs written in it.
+\guru\ contains a pure functional programming language, which is
+similar in some ways to Caml and Haskell.  In this chapter, we will
+learn the basics of this functional programming language.  In the next
+chapter, we will see how to verify programs written in it.
 
 \section{Inductive Datatypes}
 
-At the heart of functional programming languages like Caml and Haskell
-(but not LISP dialects like Scheme) are user-declared inductive
-datatypes.  An inductive datatype consists of data which are
-incrementally and uniquely built up using a finite set of operations,
-called the \emph{constructors} of the datatype.  Incrementally built
-up means that bigger data are obtained by gradual augmentation from
-smaller data.  Uniquely means that the same piece of data cannot be
-built up in two different ways.  Let us consider several examples.
+At the heart of functional programming languages like \textsc{Caml}
+and \textsc{Haskell} -- but not functional languages like
+\textsc{LISP} and its dialects (e.g., \textsc{Scheme}) -- are
+user-declared inductive datatypes.  An inductive datatype consists of
+data which are incrementally and uniquely built up using a finite set
+of operations, called the \emph{constructors} of the datatype.
+Incrementally built up means that bigger data are obtained by gradual
+augmentation from smaller data.  Uniquely means that the same piece of
+data cannot be built up in two different ways.  Let us consider
+several examples.
 
 \subsection{Unary Natural Numbers}
 
@@ -85,39 +126,39 @@ example like this:
 
 \noindent A few questions arise.  How do we represent zero?  By zero
 marks?  It is then hard to tell if we have written zero or just not
-written anything at all.  So, let us write zero as $0$.  Also, how
-does this fit the pattern of an inductive datatype?  That is, how are
-bigger pieces of data (i.e., bigger numbers) obtained incrementally
-and uniquely from smaller ones?  One answer is that a number like five
-can be viewed as built up from its \emph{predecessor} 4 by the
+written anything at all.  We will $Z$ for zero.  Also, how does this
+fit the pattern of an inductive datatype?  That is, how are bigger
+pieces of data (i.e., bigger numbers) obtained incrementally and
+uniquely from smaller ones?  One answer is that a number like five can
+be viewed as built up from its \emph{predecessor} 4 by the
 \emph{successor} operation, which we will write $S$.  The successor
 operation just adds one to a natural number.  In this book, we will
-follow Coq in writing the application of a function $f$ to an input
-argument $x$ as $f\ x$ or $(f\ x)$.  This is in contrast to other
-common mathematical notation, that writes $f(x)$ for function
-application.  So the five-fold application of the successor operation
-to zero, representing the number 5, is written this way:
+write the application of a function $f$ to an input argument $x$ as
+$f\ x$ or $(f\ x)$.  This is in contrast to other common mathematical
+notation, where we write $f(x)$ for function application.  So the
+five-fold application of the successor operation to zero, representing
+the number 5, is written this way:
 
-\[ (S\ (S\ (S\ (S\ (S\ 0))))) \]
+\[ (S\ (S\ (S\ (S\ (S\ Z))))) \]
 
-Every natural number is either $0$ or can be built from $0$ by
+Every natural number is either $Z$ or can be built from $Z$ by
 applying the successor operation a finite number of times.
 Furthermore, every natural number is uniquely built that way.  This
-would not be true if in addition to $0$ and $S$, we included an
+would not be true if in addition to $Z$ and $S$, we included an
 operation $P$ for predecessor.  In that case, there would be an
-infinite number of ways to build every number.  For example, $0$ could
-be built using just $0$, or also in these ways (and others):
+infinite number of ways to build every number.  For example, $Z$ could
+be built using just $Z$, or also in these ways (and others):
 
 \[ 
 \begin{array}{l}
-(S\ (P\ 0)) \\
-(S\ (S\ (P\ (P\ 0)))) \\
-(S\ (S\ (S\ (P\ (P\ (P\ 0)))))) \\
+(S\ (P\ Z)) \\
+(S\ (S\ (P\ (P\ Z)))) \\
+(S\ (S\ (S\ (P\ (P\ (P\ Z)))))) \\
 \ldots
 \end{array}
 \]
 
-\noindent The operations $0$ and $S$ are the \emph{constructors} of
+\noindent The operations $Z$ and $S$ are the \emph{constructors} of
 the natural number datatype.
 
 The simplicity of unary natural numbers comes at a price.  The
@@ -125,156 +166,148 @@ representation of a number in unary is much larger -- exponentially
 larger, in fact -- than its representation in decimal notation.  For
 example, it takes very many slash marks or applications of $S$ to
 write $100$ (decimal notation) in unary.  In contrast, it only takes 3
-digits in decimal.
+digits in decimal.  On the other hand, it is much easier to reason
+about unary natural numbers than binary or decimal numbers, and also
+easier to write basic programs like addition.  So we begin with unary
+natural numbers.
 
-\subsection{Unary Natural Numbers in Coq}
-\label{sec:natcoq}
+\subsection{Unary Natural Numbers in \guru}
+\label{sec:natguru}
 
-Coq's standard library includes a definition of unary natural numbers,
-and definitions of standard arithmetic functions operating on them.
-To play with these, start up the Coq IDE (``Integrated Development
-Environment'').  In the left panel, beneath where it says
-``*Unnamed Buffer*'', you can enter Coq input.  To evaluate the next
-piece of input you have written (once you write some), you can select
-\textbf{Navigation - Forward} from the menu.  Alternatively, you can
-click on the down triangle on the menu bar.
-
-In Coq, you can get the type of any expression $e$ by evaluating the
-Vernacular command ``\texttt{Check e.}'' (including the final period).
-(Recall from the Introduction that Vernacular is the top-level command
-language, which instructs Coq to perform operations like declaring
-datatypes and functions, or, as here, checking types.)  Evaluate the
-command:
+\guru's standard library includes a definition of unary natural
+numbers, and definitions of standard arithmetic functions operating on
+them.  To play with these, first start up a text editor, and create a
+new file called \texttt{test.g}.  Start this file with the following
+text:
 
 \begin{verbatim}
-Check 3.
+Include "guru-lang/lib/plus.g".
 \end{verbatim}
 
-\noindent This will cause Coq to print ``\texttt{3 : nat}'' in the bottom
-right panel, which Coq uses for displaying output of commands.  Now try
+\noindent This \texttt{Include}-command will tell \texttt{guru} to
+include the file \texttt{plus.g} from the standard library.  Then
+include the following additional command:
 
 \begin{verbatim}
-Check S (S (S (S (S 0)))).
+Interpret (plus (S (S Z)) (S (S Z))).
 \end{verbatim}
 
-\noindent This causes Coq to print ``\texttt{5 : nat}'' in the output
-panel.  Coq prints $5$ here because it knows that $5$ is the preferred
-(because more readable) notation for the number we write in unary as
-$S\ (S\ (S\ (S\ (S\ 0))))$.  To see the number in unary notation, first
-evaluate
+\noindent This \texttt{Interpret}-command tells \guru\ to run its
+interpreter on the given expression.  The interpreter will evaluate
+the expression to a value, and then print the value.  This expression
+is an application of the function \texttt{plus}, which we will see how
+to define shortly, to 2 and 2, written in unary.  Naturally, we expect
+this will evaluate to 4, written in unary.
+
+To run \texttt{guru} on your \texttt{test.g} file, first make sure
+you have saved your changes to it.  Then, start a shell, and run
+the command
 
 \begin{verbatim}
-Unset Printing Notations.
+guru-lang/bin/guru test.g
 \end{verbatim}
 
-\noindent and then evaluate the \texttt{Check} command to compute the
-type for $S\ (S\ (S\ (S\ (S\ 0))))$ again.  Now Coq's output panel
-will show the number in unary.  If you look carefully, you will see
-that it prints $O$ (the capital letter) instead of $0$ (the number).
-This is because in Coq's datatype \texttt{nat} for unary natural
-numbers, the constructors are declared to be $S$ and $O$ (not $0$).
-The number $0$ is just notation for the constructor $O$.  To turn on
-printing notations again, you can either evaluate the command
+\noindent This runs the \texttt{guru} tool on your file.  You should
+see it print out the expected result of adding 2 and 2 in unary:
 
 \begin{verbatim}
-Set Printing Notations.
+(S (S (S (S Z))))
 \end{verbatim}
 
-\noindent or else you can back up in the Coq window, to ``unevaluate''
-the command which turned off the printing of notations.  To back up,
-you can select \textbf{Navigation - Forward} from the menu, or click
-on the up triangle on the menu bar.
- 
-You can display the actual declaration of the \texttt{nat} datatype
-by evaluating
+The definition of the unary natural numbers is in
+\texttt{guru-lang/lib/nat.g}.  If you look in that file, you will find
+at the top the following definition:
 
 \begin{verbatim}
-Print nat.
+Inductive nat : type :=
+  Z : nat
+| S : Fun(x:nat).nat.
 \end{verbatim}
 
-\noindent If you do this, you will see the following output in the
-output panel:
+\noindent This is an \texttt{Inductive}-command.  It instructs \guru\
+to declare the new inductive datatype \texttt{nat}.  The ``\texttt{nat
+: type}'' on the first line of the definition just tells \guru\ that
+\texttt{nat} is a type.  We will see other examples shortly which use
+more complicated declarations than just ``: \texttt{type}''.  In more
+detail, ``\texttt{nat} : \texttt{type}'' means that \texttt{type} is
+the \emph{classifier} of \texttt{nat}.  The concept of classifier is
+central to \guru.  For example, the next two lines declare the
+classifiers for \texttt{Z} and \texttt{S}.  So what is a classifier?
+In \guru, some expressions are classifiers for others.  For example,
+\texttt{type} is the classifier for types.  Following the processing
+of this \texttt{Inductive}-command, we will also have that
+\texttt{nat} is the classifier for unary natural numbers encoded with
+\texttt{Z} and \texttt{S}.  The classifier for \texttt{S} states that
+it is a function (indicated with \texttt{Fun}) that takes in an input
+called \texttt{x} that is a \texttt{nat}, and then produces a
+\texttt{nat}.  Generally speaking, classifiers partition expressions
+into sets of expressions that have certain similar properties.
 
-\begin{verbatim}
-Inductive nat : Set :=  O : nat | S : nat -> nat
-For S: Argument scope is [nat_scope]
-\end{verbatim}
+An additional simple piece of terminology is useful.  The constructor
+\texttt{Z} returns a \texttt{nat} as output without being given any
+\texttt{nat} (or any other data) as input.  In general, a constructor
+of a type \texttt{T} which has the property that it returns a
+\texttt{T} as output without requiring a \texttt{T} as input is called
+a \emph{base} constructor.  In contrast, \texttt{S} does require a
+\texttt{nat} as input.  In general, a constructor of a type \texttt{T}
+which requires a \texttt{T} as input is called a \emph{recursive}
+constructor.
 
-\noindent We will ignore the second line of output here, which
-concerns Coq's notation system.  The first line gives the actual
-datatype definition.  It begins with the keyword \texttt{Inductive},
-and then gives the name of the datatype which is being declared
-(\texttt{nat}).  After this comes ``\texttt{: Set}''.  We will not
-consider the role of this now, except to say that it tells Coq that
-\texttt{nat} is a computational type (Coq has non-computational types,
-which are related to proofs).  Then comes ``\texttt{:=}'', which is
-followed by declarations for the two constructors, $O$ and $S$, of the
-\texttt{nat} datatype.  There are two declarations, separated by a
-``\texttt{|}''':
+We should note finally that \guru\ does not provide decimal notation
+for unary natural numbers.  Indeed, \guru\ currently does not provide
+special syntax for describing any data.  All data are inductive, and
+are constructed by applying constructors (like \texttt{S} and
+\texttt{Z}) to smaller data.
 
-\begin{verbatim}
-O : nat 
-S : nat -> nat
-\end{verbatim}
-
-\noindent The first states that $O$ is a \texttt{nat}.  The second
-states that $S$ is a function taking \texttt{nat}s as input and
-returning\texttt{nat}s as outputs.  The type for functions is written
-with ``\texttt{->}'' in Coq, with the type for input written before
-the arrow, and the type for output written after.  You can confirm all
-the typings for \texttt{nat} using the Vernacular \texttt{Check}
-command.  For example, if you evaluate
-
-\begin{verbatim}
-Check nat.
-\end{verbatim}
-
-\noindent Coq will report that \texttt{nat} is a \texttt{Set} (that
-is, \texttt{nat} is a computational type), just as it was declared
-above.
-
-\subsection{Lists}
+\subsection{Lists and Polymorphism}
 
 Computer Science frequently uses lists to hold collections of data.
 Lists can also be viewed as constituting an inductive datatype.  There
 are two ways to build a list, on this view: we either build an empty
-list, holding no data, or else we add a piece of data to an existing
-list.  For historical reasons, the empty list is written \texttt{nil}.
-To add a piece of data $x$ to the front of an existing list $L$, we
-can write $x :: L$.  For example, the list of the first 3 natural numbers
-in order from biggest to smallest may be written
+list, holding no data, or else we add a piece of data to the front of
+an existing list.  The constructors for lists are then \texttt{nil},
+for building the empty list; and \texttt{cons} (the name comes
+originally from the \textsc{LISP} programming language), for adding a
+piece of data to the front of a list.
 
-\begin{verbatim}
-2 :: 1 :: 0 :: nil
-\end{verbatim}
+Lists are similar to unary natural numbers.  They each have a single
+base constructor: \texttt{Z} for \texttt{nat} and \texttt{nil} for
+\texttt{list}.  They also each have a single recursive constructor
+(\texttt{S} and \texttt{cons}), and just as \texttt{S} requires
+exactly one \texttt{nat} as argument, so does \texttt{cons} require
+exactly one \texttt{list} (though it also requires the piece of data
+to add to the front of that list).  There is an important difference
+between \texttt{list} and \texttt{nat}, however: \texttt{list} is
+\emph{polymorphic}, while \texttt{nat} is \emph{monomorphic}.
+Polymorphism is a term with many different formal and informal
+meanings in Computer Science.  In the concept of functional
+programming, it refers to the ability of a function or datatype to
+operate on multiple types of data.  In contrast, a monomorphic
+function or datatype is specialized for a particular type of data.
+The polymorphic nature of the \texttt{list} datatype means that we can
+have lists storing different types of data.  More carefully stated,
+for any type \texttt{T}, we can have lists where each list stores just
+elements of type \texttt{T}.  So with the kind of lists we are
+considering here, a single list can hold data from only one type.  We
+can have lists storing elements of type \texttt{A}, and lists storing
+elements of type \texttt{B}, but we cannot have a single list with
+both elements of type \texttt{A} and also elements of type \texttt{B}.
+Such lists are called \emph{homogeneous}.  It is possible also, in
+languages with rich type systems like \guru's, to support
+\emph{heterogeneous} lists, where a single list may hold data of
+different types.  But we will consider just homogeneous lists here.
 
-\noindent This list is built by putting $2$ onto the front of the list
-``\texttt{1 :: 0 :: nil}''.  That list, of course, is built by putting
-$1$ onto the front of the list ``\texttt{0 :: nil}'', which itself is
-formed by putting $0$ onto the front of the empty list.
+There is much more to say about polymorphism (including more refined
+distinctions between various kinds of polymorphism), but let us look
+now at the definition of lists in \guru.
 
-Several points about lists should be noted.  First, as an inductive
-datatype, lists are somewhat similar to natural numbers.  The empty
-list is a bit like $0$, and the operation of putting an element onto
-the front of a list is a bit like the successor operation.  Second, it
-is quite natural to consider different kinds of lists, as determined
-by the kinds of elements they can store.  We can have lists of natural
-numbers, as we have just seen.  But we can also have lists of lists of
-natural numbers, or lists of other kinds of data.  Most programming
-languages require that no one list hold more than one type of
-elements.  If a single list may hold multiple types of data, the list
-is sometimes called \emph{heterogeneous}.  We will not be much
-concerned with heterogeneous lists (although unlike most other
-languages, it is possible to define heterogeneous lists in Coq).  If,
-however, a single datatype of lists supports different kinds of lists
-based on the kinds of elements, than that list type is called
-\emph{polymorphic}.
+\subsection{Lists in \guru}
 
-\subsection{Lists in Coq}
+\guru's standard library defines polymorphic lists and several
+operations on lists.  
 
-Coq's standard library defines polymorphic lists and several
-operations on lists.  Unlike the natural numbers, the datatype for
-lists is not loaded by default when Coq starts up.  To load it,
+Unlike the natural numbers, the datatype for
+lists is not loaded by default when \guru starts up.  To load it,
 evaluate the command
 
 \begin{verbatim}
@@ -283,7 +316,7 @@ Require Import List.
 
 \noindent Now try computing the types of a few different lists by
 evaluating the following commands (as explained at the start of
-Section~\ref{sec:natcoq} above):
+Section~\ref{sec:natguru} above):
 
 \begin{verbatim}
 Check 3 :: 4 :: nil.
@@ -291,13 +324,13 @@ Check (3 :: 4 :: nil) :: (5 :: 6 :: nil) :: nil.
 Check S :: nil.
 \end{verbatim}
 
-\noindent The first list has type ``\texttt{list nat}'' in Coq.  The
+\noindent The first list has type ``\texttt{list nat}'' in \guru.  The
 type ``\texttt{list nat}'' shows that the type of elements of the list
 are \texttt{nat}s.  The second list has type ``\texttt{list (list
 nat)}'', since each of its elements is a list of \texttt{nat}s.  The
 third list has type ``\texttt{list (nat -> nat)}'', because its single
 element, $S$, is a function from \texttt{nat}s to \texttt{nat}s (as
-discussed in Section~\ref{sec:natcoq}).
+discussed in Section~\ref{sec:natguru}).
 
 \subsubsection{The Declaration of \texttt{list}}
 
@@ -309,7 +342,7 @@ Print list.
 \end{verbatim}
 
 \noindent If you do this, you will see the following in the output
-panel (at the lower right of the Coq window), followed by some
+panel (at the lower right of the \guru window), followed by some
 other lines which we will ignore for now:
 
 \begin{verbatim}
@@ -326,19 +359,19 @@ datatype ``\texttt{list A}'' for lists of elements of type $A$.  The
 two constructors are \texttt{nil} for the empty list, and
 \texttt{cons}.  Expressions like \texttt{x::L} are just notation for
 \texttt{cons x L}, as you can confirm by turning off the printing of
-notations (as in Section~\ref{sec:natcoq} above).  Also, with printing
+notations (as in Section~\ref{sec:natguru} above).  Also, with printing
 notations on, if you check the type of \texttt{cons 3 (cons 4 nil)}, for
-example, you will see that Coq views this as \texttt{3::4::nil} (of
+example, you will see that \guru views this as \texttt{3::4::nil} (of
 type \texttt{list nat}).
 
 If you check the type of \texttt{list} with the \texttt{Check}
-command, Coq will report that \texttt{list} has type \texttt{Set ->
+command, \guru will report that \texttt{list} has type \texttt{Set ->
 Set}.  What does this mean?  Since for any computational type $A$, we
-have a computational type \texttt{list A}, Coq views \texttt{list} as
+have a computational type \texttt{list A}, \guru views \texttt{list} as
 a function from types to types.  The input to \texttt{list} is a type
 (namely, the type $A$ for elements of the list), and the output is
 also a type (the type for lists of elements of type $A$).  To
-reinforce your understanding of this idea, try to anticipate what Coq
+reinforce your understanding of this idea, try to anticipate what \guru
 will print for the following:
 
 \begin{verbatim}
@@ -347,7 +380,7 @@ Check list (list nat).
 Check list list.
 \end{verbatim}
 
-\noindent The last example does not type check in Coq (and Coq prints
+\noindent The last example does not type check in \guru (and \guru prints
 an error in the output panel), because \texttt{list} expects a
 computational type as input.  Instead, we have given it a function
 from types to types (namely, \texttt{list}).
@@ -363,7 +396,7 @@ cons : forall A : Set, A -> list A -> list A
 
 \noindent What does this mean?  For any type $A$, \texttt{cons} will
 take an element $x$ of type $A$, and a list $L$ of $A$s, and build you
-the bigger list $x\, ::\, L$.  Coq views \texttt{cons} as taking in
+the bigger list $x\, ::\, L$.  \guru views \texttt{cons} as taking in
 the type $A$ as its first argument, and then accepting $x$ and $L$.
 The ``\texttt{forall}'' notation is used here just to give the name
 $A$ to that first argument, so it can be used in the subsequent types
@@ -382,7 +415,7 @@ of elements included as the first argument to \texttt{cons}:
 cons nat 3 (cons nat 4 nil)
 \end{verbatim}
 
-\noindent The reason we can write the shorter form is that Coq's
+\noindent The reason we can write the shorter form is that \guru's
 notation system allows this type argument to be suppressed, since it
 can be recovered from the types of the other arguments.  Indeed, if
 you look again at the output of the Vernacular command ``\texttt{Print
@@ -394,7 +427,7 @@ implicit argument $A$, you can use the notation
 cons(A:=nat)
 \end{verbatim}
 
-\noindent If you check the type of this expression, Coq will report
+\noindent If you check the type of this expression, \guru will report
 that its type is 
 
 \begin{verbatim}
@@ -417,17 +450,17 @@ recover the type argument.  The solution is to use the notation
 
 \subsection{Exercises}
 
-Here are some exercises intended both to help you explore Coq and to
+Here are some exercises intended both to help you explore \guru and to
 improve your understanding of datatypes.  These exercises, while not
 too hard, may require some educated guesses to figure out how to
-interact with Coq.
+interact with \guru.
 
 \begin{enumerate}
 \item Using just the \texttt{Check} command, see if you can find one
 negative consequence of representing numbers in unary (hint: try
-checking the types of some numbers).  Can you explain why Coq behaves
+checking the types of some numbers).  Can you explain why \guru behaves
 the way it does in this case?
-\item Coq has a pre-defined type for boolean values, just like other
+\item \guru has a pre-defined type for boolean values, just like other
 programming languages.  Try to figure out what this type is and what
 its constructors are.
 \item An \emph{enumerated} inductive datatype is one with a non-zero,
@@ -438,7 +471,7 @@ or \texttt{nil} for \texttt{list}: they do not take in an element of
 the same datatype as input, but rather just create an element out of
 thin air (or some other data).  The enumerated datatype of primary colors
 has three constructors, \texttt{red}, \texttt{green}, and \texttt{blue}.
-Define this datatype in Coq.  Once that is working, add constructors for
+Define this datatype in \guru.  Once that is working, add constructors for
 \texttt{light} and \texttt{dark} (enabling colors like light red or light
 blue).  Check the types of some elements of this datatype.
 \item The datatype of polymorphic binary trees with data at the nodes
@@ -448,16 +481,16 @@ data and builds a tree holding just that piece of data; and
 left and right subtrees), and builds the tree which holds the given
 piece of data at the root, and then branches to the given left and
 right subtrees.  Following the model for polymorphic lists, define
-this datatype in Coq, and check the types of some elements of it.
+this datatype in \guru, and check the types of some elements of it.
 \end{enumerate}
 
-\subsection{Running Programs in Coq}
+\subsection{Running Programs in \guru}
 
 We will see in the next section how to write our own recursive
-programs in Coq.  For now, we will experiment with some predefined
-programs.  First, Coq's standard library includes some basic
+programs in \guru.  For now, we will experiment with some predefined
+programs.  First, \guru's standard library includes some basic
 arithmetic operations.  To run these programs, you use the Vernacular
-\texttt{Eval} command.  For example, to watch Coq add 2 and 2, you can
+\texttt{Eval} command.  For example, to watch \guru add 2 and 2, you can
 evaluate the following command:
 
 \begin{verbatim}
@@ -473,10 +506,10 @@ function written before its arguments), as follows:
 Eval compute in plus 2 2.
 \end{verbatim}
 
-\noindent The ``2 + 2'' is just notation (defined using Coq's notation
+\noindent The ``2 + 2'' is just notation (defined using \guru's notation
 system) for \texttt{plus 2 2}.
 
-\noindent For another set of examples, Coq's library provides definitions
+\noindent For another set of examples, \guru's library provides definitions
 of several standard operations on lists.  For example, try the following:
 
 \begin{verbatim}
@@ -491,7 +524,7 @@ using this notation.
 
 \begin{enumerate}
 \item Using \texttt{Check} and \texttt{Eval}, try to figure out some
-other arithmetic functions Coq's standard library includes.  Try to
+other arithmetic functions \guru's standard library includes.  Try to
 guess their prefix forms.
 
 \item Using \texttt{Check} and \texttt{Eval}, try to figure out what
@@ -522,7 +555,7 @@ Programs can also be viewed as an inductive datatype.  For simplicity,
 we will take a rather minimalistic programming language I am calling
 \emph{Whiz} for our example, but the same idea would work for more
 realistic languages.  Our language is \emph{imperative}, which means
-that unlike Coq, it does have mutable state: we can change the values
+that unlike \guru, it does have mutable state: we can change the values
 assigned to variables.  The only values our language supports are
 natural numbers.  There are only three ways to change the value of a
 variable: incrementing, decrementing, or copying the value of another
@@ -571,14 +604,14 @@ have five constructors for programs: \textit{increment},
 \textit{decrement}, \textit{copy}, \textit{sequence}, and
 \textit{while-not-zero}.
 
-\subsection{The Whiz Programming Language in Coq}
+\subsection{The Whiz Programming Language in \guru}
 
-We can define an inductive datatype for Whiz programs in Coq.  There
+We can define an inductive datatype for Whiz programs in \guru.  There
 is one somewhat annoying issue we must deal with first, which is in
-representing the variables of Whiz programs.  Coq does not have a
+representing the variables of Whiz programs.  \guru does not have a
 string class, so we cannot represent variables like $x$, $y$, and $z$
 from our example program above as ``\texttt{x}'', ``\texttt{y}'', and
-``\texttt{z}''.  The easiest way to represent variables in Coq is just
+``\texttt{z}''.  The easiest way to represent variables in \guru is just
 by natural numbers.  We can think of $x$ as variable $0$, $y$ as
 variable $1$, $z$ as variable $2$, and \textit{tmp} as variable $3$.
 Programs become a little less readable.  Here is the program above
@@ -610,11 +643,11 @@ Inductive whiz : Set :=
 | seq : whiz -> whiz -> whiz
 | whilenz : nat -> whiz -> whiz.
 \end{verbatim}
-\caption{\label{fig:whiz}Whiz Programs as a Coq Datatype}
+\caption{\label{fig:whiz}Whiz Programs as a \guru Datatype}
 \end{figure}
 
 Now we can use the declaration in Figure~\ref{fig:whiz} to declare the
-inductive datatype of Whiz programs in Coq.  We have constructors for
+inductive datatype of Whiz programs in \guru.  We have constructors for
 each construct of Whiz, for example \texttt{inc} for
 \texttt{increment}.  A Whiz program has type \texttt{whiz}.  The
 syntax we have here is not too bad, except that putting programs in
@@ -632,7 +665,7 @@ increment 1
 seq (inc 0) (inc 1)
 \end{verbatim}
 
-\noindent While we could use Coq's notation system to try to clean
+\noindent While we could use \guru's notation system to try to clean
 this up, we will content ourselves for the moment with this notation.
 It can be made somewhat more manageable with indentation.  For example,
 to increment variable 0 up to 4, we can write the following:
@@ -644,7 +677,7 @@ to increment variable 0 up to 4, we can write the following:
      (inc 0)))
 \end{verbatim}
 
-\noindent To experiment with Whiz in Coq, first evaluate the following
+\noindent To experiment with Whiz in \guru, first evaluate the following
 command to load the file defining Whiz:
 
 \begin{verbatim}
@@ -677,7 +710,7 @@ seq (inc 0) (inc 0)
 
 \noindent with the variable 0 will return 2.  There is one slight
 complication here, which brings up a fundamental point about
-programming in Coq.  For deep reasons, Coq's type theory requires that
+programming in \guru.  For deep reasons, \guru's type theory requires that
 every program terminates on all inputs.  We are not allowed to write a
 program that loops forever or could loop forever on some inputs.  It
 is very easy to write an infinitely looping Whiz program.  So, how can
@@ -696,7 +729,7 @@ instructions.) So here is an example of evaluating a Whiz program:
 Eval compute in eval 2 (seq (inc 0) (inc 0)) 0.
 \end{verbatim}
 
-\noindent Coq will report that this evaluates to 2, since the program
+\noindent \guru will report that this evaluates to 2, since the program
 increments variable $0$ twice, and we then print the result.  The
 first argument to \texttt{eval} is the counter.  So we will execute
 this program roughly 2 steps.  Increasing the counter will not change
@@ -716,7 +749,7 @@ you run it and increase its counter?
 
 \item Use \texttt{eval} to confirm (or figure out) what the sample
 program given in Section~\ref{sec:whiz} above does (recall that this
-program is already typed in for you in the Coq Whiz file, and is
+program is already typed in for you in the \guru Whiz file, and is
 available as ``\texttt{prog}'').  What is the smallest value of the
 counter that you need to get the answer to stabilize?
 
@@ -773,20 +806,20 @@ of terminating programs is relevant even in such settings.
 This section explains the three central features used for pure
 functional programming with inductive data: anonymous functions,
 pattern matching, and recursion.  We will study these features as they
-appear in Coq.  Similar constructs appear in languages like Haskell
+appear in \guru.  Similar constructs appear in languages like Haskell
 and Caml, with slightly different syntax.  We start with basic syntax
 for function definitions.
 
 \subsection{Function Definitions}
 
-In Coq, we can write function definitions using the \texttt{Definition}
+In \guru, we can write function definitions using the \texttt{Definition}
 command, like this:
 
 \begin{verbatim}
 Definition square(x : nat) : nat := x * x.
 \end{verbatim}
 
-\noindent This command tells Coq to add a definition of the
+\noindent This command tells \guru to add a definition of the
 \texttt{square} function, which squares a natural number \texttt{x}.
 Let us walk through the notation used in this definition.  First,
 there is the \texttt{Definition} keyword.  Next comes the name of the
@@ -795,7 +828,7 @@ defined function, \texttt{square}.  The single input \texttt{x} to
 type (\texttt{nat}).  After this, we have ``\texttt{: nat}'', which
 declares that the return type of the function will be \texttt{nat}.
 It is often possible to omit the declaration of the return type, since
-Coq can often infer it.  Then comes ``\texttt{:=}'', and then the
+\guru can often infer it.  Then comes ``\texttt{:=}'', and then the
 \emph{body} of the function.  The body of the function shows what the
 function will return when called.  Here, we are returning
 \texttt{x*x}, on input \texttt{x}.
@@ -822,18 +855,18 @@ body of the function, which is \texttt{x*x}.  The type of this function
 is $\texttt{nat}\,\texttt{->}\,\texttt{nat}$, as we would expect.
 
 The \texttt{Definition} we gave above for \texttt{square} is actually
-treated by Coq internally as the following definition involving an
+treated by \guru internally as the following definition involving an
 anonymous function:
 
 \begin{verbatim}
 Definition square := fun (x:nat) => x * x.
 \end{verbatim}
 
-\noindent You can verify that this is the way Coq views our first
+\noindent You can verify that this is the way \guru views our first
 \texttt{Definition}, by printing (with \texttt{Print}) \texttt{square}
 as first defined.  You can watch anonymous functions run by applying
 them to arguments.  For example, try the following (note that here the
-type for the input argument \texttt{x} is omitted, again because Coq
+type for the input argument \texttt{x} is omitted, again because \guru
 can infer that type from the surrounding context):
 
 \begin{verbatim}
@@ -848,7 +881,7 @@ The \emph{composition} of two functions $f$ and $g$ is the function
 which on input $x$ returns $f\ (g\ x)$.  Let us define composition for
 the special case when $f$ and $g$ both take a \texttt{nat} as input
 and return a \texttt{nat} as output.  There are several ways to write
-this in Coq, one of which is:
+this in \guru, one of which is:
 
 \begin{verbatim}
 Definition compose(f : nat -> nat)(g : nat -> nat) := 
@@ -856,7 +889,7 @@ Definition compose(f : nat -> nat)(g : nat -> nat) :=
 \end{verbatim}
 
 \noindent Here, we take in the two arguments \texttt{f} and
-\texttt{g}, and return their composition.  Coq supports a variety of
+\texttt{g}, and return their composition.  \guru supports a variety of
 abbreviations that are useful here.  For example, we can write
 \texttt{compose} more compactly by combining the two argument
 declarations:
@@ -874,7 +907,7 @@ The type of \texttt{compose} is then
 
 \noindent This type says that \texttt{compose} takes in two functions
 from \texttt{nat} to \texttt{nat} as input, and returns another such
-function as output.  Coq will actually print the type of \texttt{compose}
+function as output.  \guru will actually print the type of \texttt{compose}
 as 
 
 \begin{verbatim}
@@ -885,7 +918,7 @@ as
 inputs, $f$, $g$, and $x$, and returns $f\ (g\ x)$.  There is no
 essential difference between this view and the view of
 \texttt{compose} as accepting $f$ and $g$ and returning a function,
-because in Coq, as in other functional languages, functions may be
+because in \guru, as in other functional languages, functions may be
 \emph{partially applied}, to just some of their arguments (first in
 the argument list).  If \texttt{compose} is viewed as taking three
 arguments, we may nevertheless apply it to just the first two.  This
@@ -901,7 +934,7 @@ give more generic forms of functions like \texttt{compose}.  It is
 perfectly reasonable to define \texttt{compose} as taking in $f$ of
 type $B \to C$ and $g$ of type $A \to B$, and returning the
 composition of type $A \to C$; where $A$, $B$, and $C$ are any types.
-To write such a function in Coq, we just take those three types as
+To write such a function in \guru, we just take those three types as
 additional arguments, like this (the spacing and indendation are just
 for readability):
 
@@ -919,7 +952,7 @@ Check compose2 nat nat nat S S.
 
 \noindent This expression has type
 $\texttt{nat}\,\texttt{->}\,\texttt{nat}$.  Since it quickly becomes
-tiresome to write all these type arguments, we can tell Coq that we
+tiresome to write all these type arguments, we can tell \guru that we
 wish to keep them implicit, using the following command:
 
 \begin{verbatim}
@@ -932,15 +965,15 @@ Implicit Arguments compose2[A B C].
 Check compose2 S S.
 \end{verbatim}
 
-\noindent Note that sometimes there is not enough information for Coq
-to infer the value of an implicit argument.  For example, Coq will report
+\noindent Note that sometimes there is not enough information for \guru
+to infer the value of an implicit argument.  For example, \guru will report
 an error if we evaluate the following command:
 
 \begin{verbatim}
 Check compose2 S.
 \end{verbatim}
 
-\noindent Since the first function is given as $S$, Coq knows that
+\noindent Since the first function is given as $S$, \guru knows that
 the type $B$ is \texttt{nat} and the type $C$ is \texttt{nat}.  But
 it does not have enough information to infer what the type $A$ has to
 be, and so it reports an error.
@@ -948,7 +981,7 @@ be, and so it reports an error.
 \subsection{Pattern Matching}
 
 To inspect inductively defined data, functional programming languages
-like Coq's use pattern matching.  A pattern matching expression lists
+like \guru's use pattern matching.  A pattern matching expression lists
 a term to be pattern matched, followed by a number of cases, separated
 by bars (``$|$'').  Each case consists of a pattern and a body.  Here
 is a simple example.  We can define the predecessor function on
@@ -973,7 +1006,7 @@ is \texttt{S y}.  The variable \texttt{y} is a \emph{pattern
 variable}, which will become associated with the matching part of the
 data \texttt{x}.  Suppose the input \texttt{x} to \texttt{pred} is
 $2$.  As we know from a previous section, $2$ is really an
-abbreviation in Coq for \texttt{S\ (S\ O)}.  This expression does
+abbreviation in \guru for \texttt{S\ (S\ O)}.  This expression does
 match the pattern \texttt{S\ y}, if we make \texttt{y} be \texttt{S\
 0}.  The body (``\texttt{y}'') of the second case is then returned.  On
 input $2$, this will be \texttt{S\ O}, or $1$, as expected.  The end
@@ -981,11 +1014,11 @@ of the pattern matching expression is indicated using the keyword
 \texttt{end}.
 
 While other functional languages allow pattern matching expressions to
-leave some cases uncovered, Coq does not.  So Coq will report an error
+leave some cases uncovered, \guru does not.  So \guru will report an error
 on the following attempted definition of the function \texttt{tl} to
 return $L$ from a list $x::L$ (note that below, \texttt{l'} is not
 special syntax: single quotes are allowed to appear in variable
-names in Coq):
+names in \guru):
 
 \begin{verbatim}
 Definition tl(A:Set)(l:list A) := match l with
@@ -1010,9 +1043,9 @@ Functional programming gains its full computational power from the
 ability to define functions by recursion.  In programming languages
 like Java and C++, and even in functional languages like Haskell and
 Caml, it is quite easy to write recursive programs which fail to
-terminate on some inputs.  Coq is unusual in disallowing this: all
+terminate on some inputs.  \guru is unusual in disallowing this: all
 programs are required to terminate on all inputs.  There are different
-ways to enforce termination on all inputs.  In Coq, this is done by
+ways to enforce termination on all inputs.  In \guru, this is done by
 requiring that recursive programs have a designated argument called
 the \emph{parameter of recursion}, which can obviously be seen to
 decrease in size at each recursive call.  Since this argument gets
@@ -1038,7 +1071,7 @@ the keyword \texttt{fix}.  Then comes a name to use for making
 recursive calls.  Here, as is usually done, that name is informatively
 chosen to be \texttt{plus}.  Then comes a declaration for two
 arguments, \texttt{n} and \texttt{m}, of type \texttt{nat}.  Then
-comes ``\texttt{\{struct n\}}''.  This directive tells Coq that
+comes ``\texttt{\{struct n\}}''.  This directive tells \guru that
 \texttt{n} is the parameter of recursion.  If there is only one
 argument to the recursive function, this directive can be omitted.
 The return type of \texttt{nat} is then declared using ``\texttt{:
@@ -1052,9 +1085,9 @@ parameter of recursion).  This \texttt{p} is structurally smaller than
 the input argument \texttt{n}, because it is extracted from \texttt{n}
 using pattern matching.  It is really a smaller piece of \texttt{n}.
 
-It is common in Coq to write recursive definitions with the slightly
+It is common in \guru to write recursive definitions with the slightly
 less cumbersome syntax of Figure~\ref{fig:fixplus}.  This is treated
-internally by Coq as a definition of \texttt{plus} in terms of an
+internally by \guru as a definition of \texttt{plus} in terms of an
 anonymous recursive function.
 
 \begin{figure}
@@ -1092,7 +1125,7 @@ function \texttt{max}, and the \texttt{EqNat} file defines a function
 argument is the parameter of recursion?
 
 \item There are several other ways to write the \texttt{plus}
-function, besides the one we saw above, which Coq uses.  Try to define
+function, besides the one we saw above, which \guru uses.  Try to define
 a \texttt{plus'} function which has the same input-output behavior
 as \texttt{plus}, but is written a different way (hint: one easy way
 to write a different function for plus is to change which argument
@@ -1141,7 +1174,7 @@ only the fours position of the number has a \texttt{true} value.
 Similarly, \texttt{true :: true :: false :: nil} represents 6, since
 both the fours and the twos position have \texttt{true}.
 
-\item An unusual feature of Coq is the ability to write functions
+\item An unusual feature of \guru is the ability to write functions
 which compute types.  Such functions operate on types similarly to
 inductive data, except that pattern matching on types is not allowed.
 Try to write a function \texttt{funtp} which takes in a \texttt{Set}
@@ -1165,7 +1198,7 @@ nat -> nat -> nat -> nat
 \label{sec:receqns}
 
 Another, more mathematical way to write a recursive definition for a
-function is using recursive equations.  Coq does not support this
+function is using recursive equations.  \guru does not support this
 notation, although some functional programming languages (e.g.,
 Haskell and Caml) do.  We can define addition using recursive
 equations as follows, where we take the first argument to be the
@@ -1178,10 +1211,10 @@ parameter of recursion:
 \noindent This definition has one equation for each constructor with
 which the parameter of recursion can be built.  Recursive calls may
 only be made where the parameter of recursion has structurally
-decreased, just as in Coq.
+decreased, just as in \guru.
 
 With these equation, we can prove simple facts like $2+2=4$.  Since
-the numeral $2$ is really just notation (here and in Coq) for $(S\ (S\ 0))$,
+the numeral $2$ is really just notation (here and in \guru) for $(S\ (S\ 0))$,
 what we want to prove can be written like this:
 \[
 (S\ (S\ 0)) + (S\ (S\ 0)) = 4
@@ -1273,13 +1306,13 @@ rewriting terms with equations is a surprisingly rich and active
 research area of theoretical Computer Science, and we will touch on
 further ideas from it later in these notes.
 
-\chapter{Program Verification in Coq}
+\chapter{Program Verification in \guru}
 
 In this chapter, we are going to study techniques for proving
-properties of programs written in Coq's pure functional programming
+properties of programs written in \guru's pure functional programming
 language.  The central proof methods are proof by induction and proof
 by partial evaluation.  We will see how to use these methods both for
-machine-checked proofs in Coq, as well as informal but rigorous proofs
+machine-checked proofs in \guru, as well as informal but rigorous proofs
 in natural language (English).  Before we consider how to write
 proofs, however, it is valuable to consider examples of the kinds of
 properties we will prove about our programs.
@@ -1288,7 +1321,7 @@ properties we will prove about our programs.
 
 The following formulas express some familiar properties of the program
 \texttt{plus}, for adding unary natural numbers.  (We saw this program
-defined in Coq notation in Section~\ref{sec:rec} and by recursive equations
+defined in \guru notation in Section~\ref{sec:rec} and by recursive equations
 in Section~\ref{sec:receqns}.)
 \[ 
 \begin{array}{lll}
@@ -1311,7 +1344,7 @@ This can be made more explicit by writing:
 \]
 \noindent The symbol $\forall$ is the \emph{universal quantifier}:
 it is read ``for all''.  It is called universal, because we are
-saying something about \emph{all} the natural numbers.  In Coq
+saying something about \emph{all} the natural numbers.  In \guru
 notation, these formulas are written like this:
 
 \begin{verbatim}
@@ -1319,18 +1352,18 @@ forall x y : nat, x + y = y + x
 forall x y z : nat, (x + y) + z = x + (y + z)
 \end{verbatim}
 
-\noindent In natural-language proofs, and often even in Coq, it is
+\noindent In natural-language proofs, and often even in \guru, it is
 allowable to omit the type declaration (``\texttt{: nat}'') from the
 formula, if it is clear from the context what the types are.
 
-Formulas, like every other object in Coq, have a type, which you can
+Formulas, like every other object in \guru, have a type, which you can
 check using the \texttt{Check} command:
 
 \begin{verbatim}
 Check forall x y : nat, x + y = y + x.
 \end{verbatim}
 
-\noindent If you evaluate this command, you will find that in Coq,
+\noindent If you evaluate this command, you will find that in \guru,
 formulas have the type \texttt{Prop}.  
 
 \subsection{More Example Properties}
@@ -1370,10 +1403,10 @@ The second formula states that the length of the list you get by
 appending two lists ($x$ and $y$) is equal to the sum of their
 lengths.  This formula bears a certain resemblance to the formula
 above for distributivity of multiplication over addition.  To express
-these formulas in Coq, we have to take account of the fact that our
+these formulas in \guru, we have to take account of the fact that our
 lists are polymorphic.  What we want to say is that for all types $A$,
 and for all lists of $A$s, the property holds.  For the first
-property, this can be written in Coq like this (where indentation and
+property, this can be written in \guru like this (where indentation and
 spacing are purely for readability):
 
 \begin{verbatim}
@@ -1422,10 +1455,10 @@ detail is required, we can reason using recursive equations as in
 Section~\ref{sec:receqns} above, to transform both sides to the same
 value.
 
-\section{Proof by Evaluation in Coq}
+\section{Proof by Evaluation in \guru}
 
-Let us see how proof by evaluation works in Coq.  The most common way
-of writing proofs in Coq requires us to enter \emph{proof mode}, in
+Let us see how proof by evaluation works in \guru.  The most common way
+of writing proofs in \guru requires us to enter \emph{proof mode}, in
 which special commands called \emph{tactics} can be used to try to
 prove the goal formula.  To enter proof mode to prove the formula $3+4
 = 2+5$, evaluate the following Vernacular command:
@@ -1434,9 +1467,9 @@ prove the goal formula.  To enter proof mode to prove the formula $3+4
 Theorem example1: 3+4 = 2+5.
 \end{verbatim}
 
-\noindent All theorems must be named in Coq.  Here, the name we have
+\noindent All theorems must be named in \guru.  Here, the name we have
 chosen is ``example1''.  You will see the following displayed in the
-top right panel of the Coq IDE (which has not displayed any output
+top right panel of the \guru IDE (which has not displayed any output
 until now):
 
 \begin{verbatim}
@@ -1445,9 +1478,9 @@ ______________________________________(1/1)
 3 + 4 = 2 + 5
 \end{verbatim}
 
-\noindent The top right panel in Coq displays the current state of a
-proof when in proof mode.  Here, the message printed by Coq shows that
-we are currently trying to prove 1 goal.  Coq calls this a subgoal,
+\noindent The top right panel in \guru displays the current state of a
+proof when in proof mode.  Here, the message printed by \guru shows that
+we are currently trying to prove 1 goal.  \guru calls this a subgoal,
 because in general, it might have arisen during the proof of our
 original goal formula.  The text ``(1/1)'' indicates that the formula
 listed is the first of our (1) subgoals.  Then we see the actually
@@ -1458,7 +1491,7 @@ evaluate the following tactic:
 compute.
 \end{verbatim}
 
-\noindent This tells Coq to evaluate all the program expressions
+\noindent This tells \guru to evaluate all the program expressions
 in the goal.  This is the same kind of evaluation we used with the
 ``Eval compute in'' Vernacular command above.  The proof state 
 becomes:
@@ -1478,7 +1511,7 @@ reflexivity.
 \end{verbatim}
 
 \noindent Since this is enough to prove the goal formula, and since
-we only had one goal to prove, Coq displays the following wonderful
+we only had one goal to prove, \guru displays the following wonderful
 and welcome message in its proof output panel:
 
 \begin{verbatim}
@@ -1494,9 +1527,9 @@ Qed.
 
 \noindent ``Qed'' is an abbreviation for the Latin phrase ``quod est
 demonstrandum'', meaning ``the thing which had to be proved''.  This
-command causes Coq to exit proof mode and return to its regular mode
+command causes \guru to exit proof mode and return to its regular mode
 of interaction.  At this point, if you check the type of \texttt{example1},
-you will see that its type is $3+4 = 2+5$.  This is how Coq's type theory
+you will see that its type is $3+4 = 2+5$.  This is how \guru's type theory
 records the fact that it is a proof of that formula.
 
 \section{Proof by Partial Evaluation}
@@ -1520,7 +1553,7 @@ evaluation, since not all the inputs to the multiplication function
 are known.  But it can be proved by \emph{partial} evaluation.  In
 Computer Science, partial evaluation refers to evaluation of a program
 expression containing some variables and some known values, just by
-operating with the values.  In Coq, proof by partial evaluation is
+operating with the values.  In \guru, proof by partial evaluation is
 typically only possible when the argument that is used as the
 parameter of recursion is a known value or a partially known value.  A
 partially known value is a term that starts with a constructor and
@@ -1540,10 +1573,10 @@ fix mult (n m : nat) {struct n} : nat :=
   | S p => m + mult p m
   end
 \end{verbatim}
-\caption{\label{fig:mult}Coq Definition of Multiplication}
+\caption{\label{fig:mult}\guru Definition of Multiplication}
 \end{figure}
 
-The above reasoning can be carried out in Coq as follows:
+The above reasoning can be carried out in \guru as follows:
 
 \begin{verbatim}
 Theorem example2 : forall x : nat, 0 * x = 0.
@@ -1553,7 +1586,7 @@ reflexivity.
 Qed.
 \end{verbatim}
 
-\noindent The tactic ``\texttt{intro x}'' is how we instruct Coq to
+\noindent The tactic ``\texttt{intro x}'' is how we instruct \guru to
 introduce an arbitrary \texttt{x} for the universally quantified
 variable.  The name we choose for this arbitrary value can be
 different from the variable in the formula.  So we could just as
@@ -1642,16 +1675,16 @@ $x + 0$ on the left hand side into $x$:
 
 \noindent This is now proved by reflexivity of equality.
 
-\section{A First Look at Proof by Induction in Coq}
+\section{A First Look at Proof by Induction in \guru}
 
 Let us repeat the natural-language induction proof from the previous
-section in Coq.  First, we start our theorem in the usual way:
+section in \guru.  First, we start our theorem in the usual way:
 
 \begin{verbatim}
 Theorem example3: forall x : nat, x + 0 = x.
 \end{verbatim}
 
-\noindent Coq requires us to specify that we are doing induction on
+\noindent \guru requires us to specify that we are doing induction on
 variable $x$, using this tactic:
 
 \begin{verbatim}
@@ -1672,9 +1705,9 @@ S x + 0 = S x
 
 \noindent There are two subgoals: the first is for the base case, and
 the second is for the step case.  They look just the way we expect
-(although we see in the second subgoal that Coq's parsing conventions
+(although we see in the second subgoal that \guru's parsing conventions
 have allowed parentheses to be omitted where we wrote them above).
-Note that for better readability, Coq does not list the assumptions in
+Note that for better readability, \guru does not list the assumptions in
 the second subgoal.  We will see them when we start working on that
 subgoal.  The first subgoal listed is always the one we are currently
 working on.  To prove $0+0 = 0$, we use proof by evaluation with
@@ -1746,7 +1779,7 @@ S x = S x
 
 \section{Exercises}
 
-Do the following in Coq, using (only) the tactics discussed in
+Do the following in \guru, using (only) the tactics discussed in
 this chapter so far:
 
 \begin{enumerate}
@@ -1784,7 +1817,7 @@ the rewriting you need.
 
 \section{More Exercises}
 
-Do the following in Coq, again using (only) the tactics discussed in
+Do the following in \guru, again using (only) the tactics discussed in
 this chapter so far:
 
 \begin{enumerate}
@@ -1825,7 +1858,7 @@ lemmas.  The other lemmas have been admitted.
                                                                               
 Before you try the following, you should make sure you understand
 intuitively why the theorem is correct.  It will not be easy to prove
-this in Coq if you do not really understand why it is true.  Draw some
+this in \guru if you do not really understand why it is true.  Draw some
 pictures of binary search trees with upper and lower bounds to test
 your understanding.  Make sure you see how the helper lemmas I have
 written will be used in the proof.
