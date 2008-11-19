@@ -2,8 +2,8 @@ all:
 	@rm -f paper.dvi
 	@rm -f paper.aux
 	latex paper
-	bibtex paper
-	latex paper
+#	bibtex paper
+#	latex paper
 	latex paper
 	pdflatex paper
 

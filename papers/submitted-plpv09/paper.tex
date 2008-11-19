@@ -1,4 +1,4 @@
-\documentclass[preprint,natbib]{sigplanconf}
+\documentclass[9pt,natbib]{sigplanconf}
 
 %\usepackage{latex8}
 %\usepackage{times}
@@ -54,9 +54,9 @@
 
 \begin{document}
 
-\conferenceinfo{POPL '09}{\ } 
-\copyrightyear{2009} 
-\copyrightdata{\ } 
+\conferenceinfo{PLPV'09,} {January 20, 2009, Savannah, Georgia, USA.}
+\CopyrightYear{2009}
+\copyrightdata{978-1-60558-330-3/09/01} 
 
 \titlebanner{\ }        % These are ignored unless
 \preprintfooter{\ }   % 'preprint' option specified.
@@ -69,20 +69,16 @@
 \title{Verified Programming in Guru}
 
 \authorinfo{Aaron Stump}
-{CS, The University of Iowa}
+{CS Dept.\\ The University of Iowa, USA}
 {astump@acm.org}
 
 \authorinfo{Morgan Deters}
-{LSI, Universitat Polit\`{e}cnica de Catalunya }
+{LSI Dept.\\ Universitat Polit\`{e}cnica de Catalunya, Spain}
 {mdeters@lsi.upc.edu}
 
-\authorinfo{Adam Petcher}
-{MIT Lincoln Laboratory}
-{adampetcher@yahoo.com}
-
-\authorinfo{Todd Schiller \\ Timothy Simpson} 
-{CSE, Washington University in St. Louis}
-{\{tws2,tas5,emw1\}@cec.wustl.edu}
+\authorinfo{Adam Petcher , Todd Schiller \\ Timothy Simpson} 
+{CSE Dept.\\ Washington University in St. Louis, USA}
+{adampetcher@yahoo.com,\\\{tws2,tas5\}@cec.wustl.edu}
 
 %astump@acm.org,mdeters@cse.wustl.edu,tws2@cec.wustl.edu,tas5@cec.wustl.edu,ewestbro@cse.wustl.edu
 
@@ -105,6 +101,16 @@ core OpTT, \guru\ implements a number of extensions, including ones
 for verification of programs using mutable state and input/output.
 This paper gives an introduction to verified programming in \guru.
 \end{abstract}
+
+\category{D.3.2}{Programming Languages}{Applicative (functional) languages}
+\category{F.3.1}{Logics and Meanings of Programs}{Mechanical verification}
+\category{F.4.1}{Mathematical Logic}{Mechanical theorem proving}
+
+\terms
+Languages, Verification
+
+\keywords
+Operational Type Theory, Dependently Typed Programming, Language-Based Verification
 
 \section{Introduction}
 
@@ -211,15 +217,16 @@ omitted here.  The interested reader can find them in~\cite{optt}.
 \section{Related Work}
 
 \textsc{Epigram} is a total type theory proposed for practical
-programming with dependent types~\cite{mcbride+04}.  Xi's \textsc{ATS}
-and a system proposed by Licata and Harper have similar aims, but
-allow general recursion~\cite{licata+05,chenxi05}.  Programs which can
-index types and which are subject to external reasoning, however, are
-required to be uniformly terminating.  This is done via
-\emph{stratification}: such terms are drawn from a syntactic class
-distinct from that of program terms.  Existing stratified systems
-restrict external verification to terms in the index domain.  Similar
-approaches are taken in \textsc{Concoqtion} and
+programming with dependent types~\cite{mcbride+04}.  Agda has similar
+aims~\cite{norell07}.  Xi's \textsc{ATS} and a system proposed by
+Licata and Harper have similar aims, but allow general
+recursion~\cite{licata+05,chenxi05}.  Programs which can index types
+and which are subject to external reasoning, however, are required to
+be uniformly terminating.  This is done via \emph{stratification}:
+such terms are drawn from a syntactic class distinct from that of
+program terms.  Existing stratified systems restrict external
+verification to terms in the index domain.  Similar approaches are
+taken in \textsc{Concoqtion} and
 $\Omega$\textsc{mega}~\cite{pasalic+07,sheard06}.  In contrast, \optt\
 supports what is coming to be called ``full-spectrum dependency'',
 where arbitrary program terms may appear in types.  Hoare Type Theory
@@ -227,7 +234,7 @@ supports internal verification of possibly non-terminating, imperative
 programs, with a relatively low-level model of the
 heap~\cite{nanevski+05}.  In contrast, \optt\ supports internal and
 external verification of pure functional programs, with mutable state
-accomodated using linear types.  \optt's approach sacrifices a
+accommodated using linear types.  \optt's approach sacrifices a
 low-level view of the heap in favor, it is hoped, for a more
 manageable level of abstraction.
 
@@ -241,7 +248,7 @@ reduction, to apply different restrictions to each:
 $\alpha$-equivalence, and unfolding non-recursive definitions;
 \emph{computational} reduction of program terms for purposes of
 computing a value, which is not restricted at all; and \emph{logical}
-reduction of proofs to establish logical consistency, which is \optt\
+reduction of proofs to establish logical consistency, which in \optt\
 is restricted to be of relatively modest complexity, disallowing
 higher-order logical features.  The advantage of this approach is that
 we may retain a relatively simple logic, in a proof theoretic sense,
@@ -369,7 +376,7 @@ t & ::= & x\ ||\ c\ ||\
 \ & \ & \texttt{existse\_term}\ P\ t
 \\
 \\
-X & ::= & t ||\ T\ ||\ P
+X & ::= & t\ ||\ T\ ||\ P
 \\
 \\
 A & ::= & T\ ||\ \texttt{type}\ ||\ F 
@@ -438,13 +445,13 @@ x,\bar{x}\not\in\textit{FV}(T) \\
 \begin{array}{l}
 \Gamma \vdash \texttt{match}\ t\ \texttt{by}\ x\,y\ \ 
 \texttt{with} \\ 
-\ \ \ \ \ \ \  c_1\ \bar{s}_1\ \bar{x}_1 \texttt{=>} s_1 | \ldots 
-        | c_n\ \bar{s}_n\ \bar{x}_n \texttt{=>} s_n\ \texttt{end}\ :\ T
+\ \ \ \ \ \ \  c_1\ \bar{s}_1\ \bar{x}_1 \texttt{=>} t_1 | \ldots 
+        | c_n\ \bar{s}_n\ \bar{x}_n \texttt{=>} t_n\ \texttt{end}\ :\ T
 \end{array}}
       {\begin{array}{l}
        \seq{\Gamma}{t}{\langle d\ \bar{X}\rangle}\ \ \ \ \  \seq{\Gamma}{T}{\texttt{type}}
     \\ \forall\ i \le n.\\ (\seq{\Gamma,\Delta_i,x:\{t\, \Eq\, (c_i\ \bar{x}_i)\},
-y:\{\langle d\ \bar{X}\rangle\, \Eq\, T_i\}}{s_i}{T})
+y:\{\langle d\ \bar{X}\rangle\, \Eq\, T_i\}}{t_i}{T})
 \end{array}}
      
 \\
@@ -573,10 +580,18 @@ datatypes), some automation can alleviate the burden of casts
 significantly.  \textsc{Guru} implements a simple form of type
 refinement using first-order matching (modulo definitional equality)
 of the type of the pattern and the type of the scrutinee.  Pattern
-variables occurring in the type of the pattern may be filled in by such
-matching, for the benefit of type checking the case associated with
-the pattern.  Impossible cases are detected by match failure, and are
-neither type checked nor compiled.
+variables occurring in the type of the pattern may be filled in by
+such matching, for the benefit of type checking the case associated
+with the pattern.  Impossible cases are detected by match failure, and
+are neither type checked nor compiled.  For example, if we analyze a
+scrutinee of type \texttt{<vec A (S n)>}, for vectors of \texttt{A}s
+of length $n+1$, then \textsc{Guru}'s type refinement determines that
+the \texttt{match}-term does not need a case for the empty vector.
+This is because the empty vector's type is \texttt{<vec A Z>}, and we
+get a match failure trying to match \texttt{Z} against \texttt{(S n)}.
+Other systems implement similar (or indeed, more advanced) versions of
+this feature.
+
 
 \subsection{Commands and Datatypes}
 \label{sec:commands}
@@ -597,7 +612,11 @@ the types stated for inputs to the constructor) may not contain
 \texttt{type}.  This may not be essential, but the current
 normalization argument depends on it (and it does not seem needed in
 practice so far).  The syntax also prohibits type constructors from
-accepting proofs as arguments.
+accepting proofs as arguments.  So far we have not found a need for
+that feature in practice, though it could probably be added without
+problems.  The only issue is to make sure that proofs are irrelevant
+if used as type indices, but the rules of Figure~\ref{fig:dropannos}
+would ensure this.
 
 \begin{figure}
 \[
@@ -756,7 +775,7 @@ notation from term rewriting theory for reduction to a normal form):
 \[
 \infer{
 \seq{\Gamma}{\texttt{join}\ t\ t'}{\{t\ \Eq\ t'\}} }
-{|t|\ \leadsto^{!}\ t''\ &\ |t''|\ \leadsto^{!}\ t''}
+{|t|\ \leadsto^{!}\ t''\ &\ |t'|\ \leadsto^{!}\ t''}
 \]
 
 \noindent The most sophisticated tactic is
@@ -793,11 +812,15 @@ though this is not currently implemented in \textsc{Guru}.
 \section{Simple Examples}
 \label{sec:eg}
 
-We consider here two simple examples, which have been machine
-checked using the \textsc{Guru} implementation of \optt.  The first
-could be done in type theories like Coq's, albeit with more work (in a
-precise sense described below).  The second cannot, due to the
-presence of a function which truly can diverge on some inputs.  
+We consider here two simple examples, which have been machine checked
+using the \textsc{Guru} implementation of \optt.  The first could be
+done in type theories like \textsc{Coq}'s, albeit with more work (in a
+precise sense described below).  The second cannot be done directly,
+due to the presence of a function which truly can diverge on some
+inputs.  It could be handled by indirect means, for example by
+encoding it as a relation.  But such means incur their own costs: one
+can no longer use \textsc{Coq}'s built-in partial evaluation with a
+function encoded as a relation.
 
 \subsection{Associativity of Append on Lists with Length}
 
@@ -809,7 +832,7 @@ requires the use of an additional axiom expressing some form of proof
 irrelevance~\cite{hofmann+98,coq}.  This case does not require such an
 axiom, but, as typically implemented, does require tedious
 manipulations of casts.  Indeed, it is often remarked that external
-reasoning about dependently typed functions is tedious in Coq.  
+reasoning about dependently typed functions is tedious in \textsc{Coq}.  
 
 For our \guru\ implementation, we first declare a datatype of lists
 with length, assuming a standard definition of the datatype
@@ -887,7 +910,7 @@ Forall(A:type)(n1 n2 n3 : nat)
 \noindent Since for \texttt{append}, the lengths
 \texttt{n1}, \texttt{n2}, and \texttt{n3} are specificational data,
 they are dropped in type-free positions.  Hence, the equation to be
-proved does not mention those lengths.  In type theories like Coq's or
+proved does not mention those lengths.  In type theories like \textsc{Coq}'s or
 Epigram's, in contrast, the equation to be proved must be typed, and
 so must mention the lengths:
 
@@ -914,7 +937,7 @@ untyped lambda calculus maps closed terms to closed terms.  The
 datatype for lambda terms $t$ is indexed by the list of $t$'s free
 variables.  Using explicit names for free variables is adequate for
 our purposes here.  We take names to be natural numbers.  The datatype
-of terms is:
+of terms is the following:
 
 \begin{verbatim}
 Inductive lterm : Fun(l:<list nat>).type :=
@@ -929,10 +952,16 @@ Inductive lterm : Fun(l:<list nat>).type :=
 
 \noindent Here, \texttt{removeAll} removes all occurrences of an
 element from a list, and \texttt{append} appends lists (without
-length).  The crucial helper function is for substitution of a closed
-term \texttt{e2} for a variable \texttt{n} into an open term
-\texttt{e1}, with list of free variables \texttt{l}.  This
-substitution function has the following type:
+length).  Note that this example, implemented before implementation of
+the specificationality analysis described above was complete, does not
+use specificational data.  It should be possible to make the lists of
+nats that are given as arguments to the constructors for
+\texttt{lterm} specificational.
+
+The crucial helper function is for substitution of a closed term
+\texttt{e2} for a variable \texttt{n} into an open term \texttt{e1},
+with list of free variables \texttt{l}.  This substitution function
+has the following type:
 
 \begin{verbatim}
 Fun(e2:<lterm (nil nat)>)(n:nat)
@@ -1032,7 +1061,8 @@ restricted.  Swierstra and Altenkirch propose using monads for this.
 Here, we use uniqueness types~\cite{barendsen+93}.  Types and type
 families can be designated as \emph{opaque}, in which case any
 functions which perform case analysis on them must be marked
-specificational.  Functions marked specificational must be replaced
+specificational when they are defined at the top level in
+\textsc{Guru}. Functions marked specificational must be replaced
 during compilation.
 
 Previously, \texttt{fun}-terms could specify that arguments are
@@ -1089,7 +1119,7 @@ When the reference count of a piece of data falls to zero, it is, of
 course, time to reclaim the memory associated with that data.  As
 shown in the empirical results of the larger case study below, much
 high-performance allocation can be achieved using a custom allocation
-scheme than just the standard \texttt{malloc} and \texttt{free}
+scheme rather than just the standard \texttt{malloc} and \texttt{free}
 library functions.  \guru's approach is the following.  We keep a
 distinct free list for every term constructor.  Suppose it is time to
 reclaim the memory for a data element of the form $(c\ \bar{V})$.
@@ -1148,23 +1178,24 @@ variable.
 This section describes a larger case study carried out in \guru, in
 the domain of efficient proof checking.  In automated theorem proving,
 the complexity of solver implementations limits trustworthiness of
-their results.  For example, modern SMT solvers typically have
-codebases around 50k-100kloc C++ (e.g., \textsc{CVC3}~\cite{BT07}).
-One method to help catch solver errors and to export results to
-skeptical interactive theorem provers is to have the solvers emit
-proofs.  Independent checking of the proofs by a much smaller and
-simpler checker can confirm the solvers' results.  Efficient and
-flexible proof checking for tools like SMT solvers is a subject of
-current interest in the SMT community (e.g.,~\cite{moskal08}).  A
-proposal of the first author is to use an extension of the Edinburgh
-Logical Framework (LF) as the basis for efficient and flexible proof
-checking for SMT~\cite{SO08,HHP93}.  LF is a dependent type theory
-with support for higher-order abstract syntax, used previously in
-proof-carrying code and related applications (e.g.,~\cite{A01,N97}).
-In LF encoding methodology, proof checking in an object logic is
-reduced to type checking in LF.  To handle large proofs from SMT
-solvers, several optimizations for LF type checking have been
-proposed, including \emph{incremental checking}.
+their results.  For example, modern SMT (Satisfiability Modulo
+Theories) solvers typically have codebases around 50k-100kloc C++
+(e.g., \textsc{CVC3}~\cite{BT07}).  One method to help catch solver
+errors and to export results to skeptical interactive theorem provers
+is to have the solvers emit proofs.  Independent checking of the
+proofs by a much smaller and simpler checker can confirm the solvers'
+results.  Efficient and flexible proof checking for tools like SMT
+solvers is a subject of current interest in the SMT community
+(e.g.,~\cite{moskal08}).  A proposal of the first author is to use an
+extension of the Edinburgh Logical Framework (LF) as the basis for
+efficient and flexible proof checking for SMT~\cite{SO08,HHP93}.  LF
+is a dependent type theory with support for higher-order abstract
+syntax, used previously in proof-carrying code and related
+applications (e.g.,~\cite{A01,N97}).  In LF encoding methodology,
+proof checking in an object logic is reduced to type checking in LF.
+To handle large proofs from SMT solvers, several optimizations for LF
+type checking have been proposed, including \emph{incremental
+checking}.
 
 \subsection{Incremental LF Type Checking}
 
@@ -1246,7 +1277,10 @@ Define word_to_nat_inc2
       { (S (word_to_nat w)) = (word_to_nat w2) }
 \end{verbatim}
 
-\noindent To use this lemma, \textsc{Golfsock} aborts if overflow
+\noindent Note that \texttt{mk\_word\_inc\_t} is a term constructor
+used to pass back both the incremented word (its first argument) and a
+boolean telling whether or not overflow occurred (its second
+argument).  To use this lemma, \textsc{Golfsock} aborts if overflow
 occurs.  Provisions are included to reset the upper bound in
 non-creating, checking mode, where this is proven sound; and overflow
 does not occur in any benchmarks tested.  A more robust solution, of
@@ -1309,18 +1343,30 @@ the trie.  But how can we write a provably total function to compute
 the size of a trie?  Such can certainly be implemented in
 \textsc{Guru}, but to prove it total we are back to the same problem
 it was introduced to solve: the natural totality proof proceeds
-essentially by induction on the structure of the trie.  The separation
-of terms and proofs in \optt\ provides a foundation for an easy fix to
-this problem.  We introduce a specificational construct \texttt{size
-t} to compute the size of any value.  Functions are assigned size 0,
-while constructor terms are assigned the successor of the sizes of
-their subterms.  The evaluation rules of the theory are extended
-appropriately.  We may now prove properties about trie operations by
-complete induction on trie size computed by this construct.  \optt's
-design allows us to make such an addition without needing to
-reconsider any meta-theory: neither the logical consistency argument
-(since \texttt{size} may not be applied to proofs) nor type soundness
-for term reduction (since \texttt{size} is purely specificational).
+essentially by induction on the structure of the trie.  Indexing tries
+by their size does not help, since the character-indexed array type is
+homogeneous: it cannnot store subtries of different sizes, if the size
+is part of the type of tries.  One could get around this problem by
+indexing tries by an upper bound on their sizes, but then inserting a
+bigger subtrie into the array would require weakening the upper bounds
+for all the other tries.  In a language with good support for
+eliminating coercion functions (like weakening the upper bound on a
+trie's size) during compilation, this would solve the problem.  Such a
+feature is perhaps non-trivial to implement, and \textsc{Guru} does
+not have it presently.
+
+A different, easy solution is enabled by the separation of terms and
+proofs in \optt.  We introduce a specificational construct
+\texttt{size t} to compute the size of any value.  Functions are
+assigned size 0, while constructor terms are assigned the successor of
+the sizes of their subterms.  The evaluation rules of the theory are
+extended appropriately.  We may now prove properties about trie
+operations by complete induction on trie size computed by this
+construct.  \optt's design allows us to make such an addition without
+needing to reconsider any meta-theory: neither the logical consistency
+argument (since \texttt{size} may not be applied to proofs) nor type
+soundness for term reduction (since \texttt{size} is purely
+specificational).
 
 As a performance benchmark, a program to histogram the words in ASCII
 text was implemented in both \textsc{Guru} and \textsc{OCaml} version
@@ -1534,11 +1580,186 @@ reviewers for detailed and helpful comments on an earlier draft;
 Daniel Tratos and Henry Li for additions to the \textsc{Guru} standard
 library; and the NSF for support under award CCF-0448275.
 
-\bibliographystyle{plainnat}
+%\bibliographystyle{plainnat}
 
 %\nocite{SH80}
-\bibliography{partiality,misc_logic,automated_reasoning,formal_methods,verification,lf,general,refinement,coop_dec_procs,cl,rewriting,theorem_provers,sat,program_analysis,software_engineering,specification,pl,stanford_group,hoas,semantic_programming,misc}
+%\bibliography{partiality,misc_logic,automated_reasoning,formal_methods,verification,lf,general,refinement,coop_dec_procs,cl,rewriting,theorem_provers,sat,program_analysis,software_engineering,specification,pl,stanford_group,hoas,semantic_programming,misc}
 
+\begin{thebibliography}{28}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Appel(2001)]{A01}
+A.~Appel.
+\newblock {Foundational Proof-Carrying Code}.
+\newblock In \emph{16th Annual IEEE Symposium on Logic in Computer Science},
+  2001.
+
+\bibitem[Barendsen and Smetsers(1993)]{barendsen+93}
+E.~Barendsen and S.~Smetsers.
+\newblock {Conventional and Uniqueness Typing in Graph Rewrite Systems}.
+\newblock In \emph{Proc. 13th Conference on Foundations of Software Technology
+  and Theoretical Computer Science}, pages 41--51. Springer-Verlag, 1993.
+
+\bibitem[Barrett and Tinelli(2007)]{BT07}
+C.~Barrett and C.~Tinelli.
+\newblock {CVC3}.
+\newblock In W.~Damm and H.~Hermanns, editors, \emph{Proceedings of the
+  $19^{th}$ International Conference on Computer Aided Verification (CAV '07)},
+  pages 298--302. Springer-Verlag, 2007.
+
+\bibitem[Chen and Xi(2005)]{chenxi05}
+C.~Chen and H.~Xi.
+\newblock {Combining Programming with Theorem Proving}.
+\newblock In \emph{Proceedings of the 10th International Conference on
+  Functional Programming (ICFP05)}, Tallinn, Estonia, September 2005.
+
+\bibitem[Harper et~al.(1993)Harper, Honsell, and Plotkin]{HHP93}
+R.~Harper, F.~Honsell, and G.~Plotkin.
+\newblock {A Framework for Defining Logics}.
+\newblock \emph{Journal of the Association for Computing Machinery},
+  40\penalty0 (1):\penalty0 143--184, January 1993.
+
+\bibitem[Hertz and Berger(2005)]{hertz+05}
+Matthew Hertz and Emery~D. Berger.
+\newblock {Quantifying the Performance of Garbage Collection vs. Explicit
+  Memory Management}.
+\newblock In \emph{Proc. 20th Annual ACM SIGPLAN Conference on Object Oriented
+  Programming, Systems, Languages, and Applications}, pages 313--326. ACM,
+  2005.
+
+\bibitem[Hofmann and Streicher(1998)]{hofmann+98}
+M.~Hofmann and T.~Streicher.
+\newblock The groupoid interpretation of type theory.
+\newblock In G.~Sambin, editor, \emph{Twenty-five years of constructive type
+  theory}, pages 83--111. Oxford: Clarendon Press, 1998.
+
+\bibitem[Lee et~al.(2007)Lee, Crary, and Harper]{lee+07}
+D.~Lee, K.~Crary, and R.~Harper.
+\newblock {Towards a Mechanized Metatheory of Standard ML}.
+\newblock In \emph{{Proc. 34th ACM Symposium on Principles of Programming
+  Languages}}, pages 173--184. ACM Press, 2007.
+
+\bibitem[Licata and Harper(2005)]{licata+05}
+D.~Licata and R.~Harper.
+\newblock {A Formulation of Dependent ML with Explicit Equality Proofs}.
+\newblock Technical Report CMU-CS-05-178, {Carnegie Mellon University School of
+  Computer Science}, December 2005.
+
+\bibitem[McBride and McKinna(2004)]{mcbride+04}
+C.~McBride and J.~McKinna.
+\newblock {The View from the Left}.
+\newblock \emph{Journal of Functional Programming}, 14\penalty0 (1), 2004.
+
+\bibitem[Moskal(2008)]{moskal08}
+M.~Moskal.
+\newblock {Rocket-Fast Proof Checking for SMT Solvers}.
+\newblock In C.~Ramakrishnan and J.~Rehof, editors, \emph{Tools and Algorithms
+  for the Construction and Analysis of Systems}, 2008.
+
+\bibitem[Nanevski and Morrisett(2005)]{nanevski+05}
+A.~Nanevski and G.~Morrisett.
+\newblock {Dependent Type Theory of Stateful Higher-Order Functions}.
+\newblock Technical Report TR-24-05, Harvard University, 2005.
+
+\bibitem[Necula(1997)]{N97}
+G.~Necula.
+\newblock {Proof-Carrying Code}.
+\newblock In \emph{24th ACM SIGPLAN-SIGACT Symposium on Principles of
+  Programming Languages}, pages 106--119, January 1997.
+
+\bibitem[Norell(2007)]{norell07}
+U.~Norell.
+\newblock \emph{{Towards a Practical Programming Language Based on Dependent
+  Type Theory}}.
+\newblock PhD thesis, {Chalmers University of Technology}, 2007.
+
+\bibitem[Pasalic et~al.(2007)Pasalic, Siek, Taha, and Fogarty]{pasalic+07}
+E~Pasalic, J.~Siek, W.~Taha, and S.~Fogarty.
+\newblock {Concoqtion: Indexed Types Now!}
+\newblock In G.~Ramalingam and E.~Visser, editors, \emph{ACM SIGPLAN 2007
+  Workshop on Partial Evaluation and Program Manipulation}, 2007.
+
+\bibitem[Petcher(2008)]{petcher08}
+A.~Petcher.
+\newblock {Deciding Joinability Modulo Ground Equations in Operational Type
+  Theory.}
+\newblock Master's thesis, {Washington University in Saint Louis}, May 2008.
+\newblock Available from \url{http://cl.cse.wustl.edu}.
+
+\bibitem[Pfenning and Sch{\"u}rmann(1999)]{PfS98}
+F.~Pfenning and C.~Sch{\"u}rmann.
+\newblock {System Description: Twelf --- A Meta-Logical Framework for Deductive
+  Systems}.
+\newblock In \emph{16th International Conference on Automated Deduction}, 1999.
+
+\bibitem[Pierce and Turner(1998)]{pierce98local}
+Benjamin~C. Pierce and David~N. Turner.
+\newblock Local type inference.
+\newblock In \emph{25TH {ACM} {SIGPLAN}-{SIGACT} Symposium on Principles of
+  Programming Languages}, pages 252--265, 1998.
+
+\bibitem[Sheard(2006)]{sheard06}
+T.~Sheard.
+\newblock {Type-Level Computation Using Narrowing in $\Omega$mega}.
+\newblock In \emph{Programming Languages meets Program Verification}, 2006.
+
+\bibitem[Stump(2008)]{stump08b}
+A.~Stump.
+\newblock {Proof Checking Technology for Satisfiability Modulo Theories}.
+\newblock In A.~Abel and C.~Urban, editors, \emph{Logical Frameworks and
+  Meta-Languages: Theory and Practice}, 2008.
+
+\bibitem[Stump and Oe(2008)]{SO08}
+A.~Stump and D.~Oe.
+\newblock {Towards an SMT Proof Format}.
+\newblock In C.~Barrett and L.~de~Moura, editors, \emph{International Workshop
+  on Satisfiability Modulo Theories}, 2008.
+
+\bibitem[Stump and Westbrook()]{optt}
+A.~Stump and E.~Westbrook.
+\newblock {A Core Operational Type Theory}.
+\newblock Under review, available from \url{http://www.cs.uiowa.edu/~astump}.
+
+\bibitem[Swierstra and Altenkirch(2007)]{swierstra+07}
+W.~Swierstra and T.~Altenkirch.
+\newblock {Beauty in the Beast}.
+\newblock In \emph{Haskell Workshop}, 2007.
+
+\bibitem[{The Coq Development Team}(2004)]{coq}
+{The Coq Development Team}.
+\newblock \emph{{The Coq Proof Assistant Reference Manual, Version V8.0}},
+  2004.
+\newblock http://coq.inria.fr.
+
+\bibitem[Urban et~al.(2008)Urban, Cheney, and Berghofer]{urban+08}
+C.~Urban, J.~Cheney, and S.~Berghofer.
+\newblock {Mechanising the Metatheory of LF}.
+\newblock In \emph{Proc. of the 23rd IEEE Symposium on Logic in Computer
+  Science}, pages 45--56. IEEE Computer Society, 2008.
+
+\bibitem[Watkins et~al.(2002)Watkins, Cervesato, Pfenning, and Walker]{clf02}
+K.~Watkins, I.~Cervesato, F.~Pfenning, and D.~Walker.
+\newblock {A Concurrent Logical Framework I: Judgments and Properties}.
+\newblock Technical Report CMU-CS-02-101, Carnegie Mellon University, 2002.
+
+\bibitem[Zeller et~al.(2007)Zeller, Stump, and Deters]{zeller07}
+M.~Zeller, A.~Stump, and M.~Deters.
+\newblock {Signature Compilation for the Edinburgh Logical Framework}.
+\newblock In C.~Sch{\"u}rmann, editor, \emph{Workshop on Logical Frameworks and
+  Meta-Languages: Theory and Practice (LFMTP)}, 2007.
+
+\bibitem[Zhu and Xi(2005)]{zhuxi-padl05}
+D.~Zhu and H.~Xi.
+\newblock {Safe Programming with Pointers through Stateful Views}.
+\newblock In \emph{Proceedings of the 7th International Symposium on Practical
+  Aspects of Declarative Languages}, pages 83--97, Long Beach, CA, January
+  2005. Springer-Verlag LNCS vol. 3350.
+
+\end{thebibliography}
 
 
 \end{document}
