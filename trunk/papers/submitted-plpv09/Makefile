@@ -1,4 +1,8 @@
-all: 
+submitted: paper.pdf paper.ps
+	mv paper.pdf plpv03-stump.pdf
+	mv paper.ps plpv03-stump.ps
+
+paper.pdf: 
 	@rm -f paper.dvi
 	@rm -f paper.aux
 	latex paper
@@ -13,7 +17,4 @@ all:
 
 %.ps : %.dvi
 	dvips -t letter -o $*.ps $*.dvi
-
-%.pdf : %.ps
-	ps2pdf $*.ps $*.pdf
 
