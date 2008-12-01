@@ -65,7 +65,7 @@
 %               {\hspace{-1\parindent}\textbf{Proof:}}
 %               {\hfill $\square$\vspace{1\baselineskip}}
 
-\title{Verified Programming in Operational Type Theory}
+\title{Verified Programming in Guru}
 
 \authorinfo{Aaron Stump}
 {CS, The University of Iowa}
@@ -88,21 +88,20 @@
 %\thispagestyle{empty}
 
 \begin{abstract}
-An Operational Type Theory (OpTT) is developed based on a
-theory of operational joinability of untyped terms.  The theory
-accommodates functions which might diverge or abort on some inputs,
-while retaining decidability of type checking and logical consistency.
-For the latter, OpTT distinguishes proofs from programs, and formulas
-from types.  Proofs and other computationally irrelevant annotations,
-including data marked as specificational, are dropped during formal
-reasoning.  This greatly simplifies verification problems by removing
-the need to reason about types when reasoning about programs.  Indeed,
-terms with provably disequal types can be shown equal in
-OpTT.  OpTT is realized in a tool called
-\textsc{Guru}, featuring a type/proof checker and a compiler to C
-code.  The theory easily accomodates extensions such as uniqueness and
-ownership types, used to track program resources.  Several case
-studies are discussed, including ones based on mutable tries.
+Operational Type Theory (OpTT) is a type theory based on operational
+joinability of untyped terms.  The theory accommodates functions which
+might diverge or abort on some inputs, while retaining decidability of
+type checking and logical consistency.  For the latter, OpTT
+distinguishes proofs from programs, and formulas from types.  Proofs
+and other computationally irrelevant annotations, including data
+marked as specificational, are dropped during formal reasoning.  This
+greatly simplifies verification problems by removing the need to
+reason about types when reasoning about programs.  Indeed, terms with
+provably disequal types can be shown equal in OpTT.  OpTT is realized
+in a tool called \textsc{Guru}, featuring a type/proof checker and a
+compiler to C code.  This paper surveys OpTT, and shows how it may be
+extended and used for verified programming in \textsc{Guru}.  Several
+case studies are discussed, including ones based on mutable tries.
 \end{abstract}
 
 \section{Introduction}
@@ -570,8 +569,8 @@ annotations from \texttt{Fun}-types:
 and specificationality analysis, and not for reasoning.  Dropping them
 during formal reasoning avoids some clutter in proofs, since theorems
 need not mention specificationality.  We will put the distinction
-between computational and specificational disequality to work more
-crucially when we consider functional modeling in
+between computational and specificational definitional equality to
+work more crucially when we consider functional modeling in
 Section~\ref{sec:model} below.
 
 \subsection{Operational Semantics}
@@ -596,10 +595,12 @@ undecidability of type inhabitation in the presence of indexed
 datatypes), some automation can alleviate the burden of casts
 significantly.  \textsc{Guru} implements a simple form of type
 refinement using first-order matching (modulo definitional equality)
-of the type of the pattern and the type of the scrutinee.  Impossible
-cases are detected by match failure.  Systems with richer definitional
-equality still need casts in general, at which point they can become
-problematic for external reasoning.
+of the type of the pattern and the type of the scrutinee.  Pattern
+variables occuring in the type of the pattern may be filled in by such
+matching, for the benefit of type checking the case associated with
+the pattern.  Impossible cases are detected by match failure.  Systems
+with richer definitional equality still need casts in general, at
+which point they can become problematic for external reasoning.
 
 \subsection{Commands and Datatypes}
 \label{sec:commands}
@@ -743,7 +744,7 @@ c_1\ \bar{x}_1\ \texttt{=>}\ P_1 |
 \\ 
 \infer{
 \seq{\Gamma}{\quant(x\,:\,B).\ F}{\texttt{formula}} }
-{\seq{\Gamma}{T}{\texttt{type}} & \seq{\Gamma, x\,:\,T}{F}{\texttt{formula}}}
+{\seq{\Gamma}{B}{\texttt{type}} & \seq{\Gamma, x\,:\,B}{F}{\texttt{formula}}}
 
 \\ 
 \\ 
@@ -1142,10 +1143,11 @@ view of the type of a term, a termination cast changes its view of the
 termination behavior of a term.  \texttt{Terminates} is extended to
 check that $P$ either proves $t$ is a equal to a constructor term, or
 else proves totality of the head (call it $f$) of $t$, in the sense
-mentioned above.  The basic design of \optt\ makes this addition
-straightforward, since termination casts are computationally
-irrelevant.  We extend our definitional equalities by dropping
-\texttt{terminates}-annotations:
+mentioned above.  \texttt{Terminates} is now contextual, since the
+proof $P$ may use hypotheses from the context. The basic design of
+\optt\ makes this addition straightforward, since termination casts
+are computationally irrelevant.  We extend our definitional equalities
+by dropping \texttt{terminates}-annotations:
 \[
 \begin{array}{lll}
 $\texttt{terminates}\ t\ \texttt{by}\ P$ & \To & t
@@ -1387,9 +1389,9 @@ this.
 easily added:
 \[
 \infer{
-\seq{\Gamma}{\texttt{aclash}\ I}{\{\texttt{abort\,!}\ \Neq\ I\}}
+\seq{\Gamma}{\texttt{aclash}\ t}{\{\texttt{abort\,!}\ \Neq\ t\}}
  }
-{\ } 
+{\Gamma \vdash \texttt{Terminates }t} 
 \]
 
 \textbf{Parametric Extensionality.} We may extend the theory with a
@@ -1402,8 +1404,8 @@ following rule:
 \]
 This principle allows us to equate abstractions by equating their
 bodies, but only using equational inferences, and critically, not
-induction.  This is because the context is not extended, so only
-(untyped) equational reasoning is possible.  
+induction on the form of their arguments.  This is because the context
+is not extended, so only (untyped) equational reasoning is possible.
 
 With full extensionality, the context is extended.  This principle is
 not compatible with \optt, for with it, we could prove that
@@ -1425,7 +1427,7 @@ under our characterization of provable equality.
 \[
 \infer{
 \seq{\Gamma}{\texttt{cinv}\ t\ P}{\texttt{Exists}(x:T).\{t\ \Eq\ x\}} }
-{\seq{\Gamma}{P}{\{E[t]\ \Eq\ I\}} & \seq{\Gamma}{t}{T}}
+{\seq{\Gamma}{P}{\{E[t]\ \Eq\ t'\}} & \seq{\Gamma}{t}{T} & \Gamma \vdash \texttt{Terminates }t'}
 \]
 
 \textbf{Computational Induction.}  Stronger than computational
