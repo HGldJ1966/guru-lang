@@ -1,0 +1,4 @@
+(declare nat type)
+(declare Z nat)
+(declare S (! y nat nat))
+
