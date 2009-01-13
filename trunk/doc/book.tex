@@ -29,7 +29,8 @@ this book, we will also refer to the open-source project consisting of
 a compiler for \guru\ code, the standard library of \guru\ code, and
 other materials as ``\guru'' (or ``the \guru\ project'').  Finally,
 the compiler for \guru\ code, which includes a type- and
-proof-checker, as well as an interpreter, is called \texttt{guru}.
+proof-checker, as well as an interpreter, is called \texttt{guru}.  We
+will work with version 1.0 of \guru.
 
 \section{Installing \guru}
 
@@ -38,15 +39,15 @@ does not assume much familiarity with Linux.  To install \guru, first
 start a shell. Then run the folllowing \textsc{Subversion} command:
 
 \begin{verbatim}
-svn checkout http://guru-lang.googlecode.com/svn/trunk guru-lang
+svn checkout http://guru-lang.googlecode.com/svn/branches/v1.0 guru-lang
 \end{verbatim}
 
 \noindent This will create a subdirectory called \texttt{guru-lang} of
 your home directory.  This directory contains the \textsc{Java} source
-code for \guru\ itself (\texttt{guru-lang/guru}), the standard library
-written in \guru\ (\texttt{guru-lang/lib}), this book's source code
-(\texttt{guru-lang/doc}), and a number of tests written in \guru\
-(\texttt{guru-lang/tests}).
+code for \guru\ version 1.0 itself (\texttt{guru-lang/guru}), the
+standard library written in \guru\ (\texttt{guru-lang/lib}), this
+book's source code (\texttt{guru-lang/doc}), and a number of tests
+written in \guru\ (\texttt{guru-lang/tests}).
 
 Before you can use \guru, you must compile it.  To do this, in your
 shell, you should change to the \texttt{guru-lang} directory.  Then
