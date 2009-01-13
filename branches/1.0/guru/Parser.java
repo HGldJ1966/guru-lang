@@ -377,6 +377,8 @@ public class Parser {
 	    c = readCompile();
 	else if (tryToEat("Interpret")) 
 	    c = readInterpret();
+	else if (tryToEat("Classify")) 
+	    c = readClassifyCmd();
 	else if (tryToEat("Untracked")) 
 	    c = readUntracked();
         else if (tryToEat("DumpDependence"))
@@ -525,10 +527,21 @@ public class Parser {
     	Interpret cmd = new Interpret();
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing an Interpret.");
-	cmd.c = readConst();
+	cmd.t = readTerm();
 	eat(".", "Interpret");
     	return cmd;
     }
+
+    protected ClassifyCmd readClassifyCmd() throws IOException
+    {
+    	ClassifyCmd cmd = new ClassifyCmd();
+	if (!eat_ws())
+	    handleError("Unexpected end of input parsing an Interpret.");
+	cmd.G = readAny();
+	eat(".", "Type");
+    	return cmd;
+    }
+
     protected Untracked readUntracked() throws IOException
     {
     	Untracked cmd = new Untracked();
