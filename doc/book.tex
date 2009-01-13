@@ -47,7 +47,9 @@ your home directory.  This directory contains the \textsc{Java} source
 code for \guru\ version 1.0 itself (\texttt{guru-lang/guru}), the
 standard library written in \guru\ (\texttt{guru-lang/lib}), this
 book's source code (\texttt{guru-lang/doc}), and a number of tests
-written in \guru\ (\texttt{guru-lang/tests}).
+written in \guru\ (\texttt{guru-lang/tests}).  A few things in the
+distribution currently depend on its being called \texttt{guru-lang},
+and residing in your home directory.
 
 Before you can use \guru, you must compile it.  To do this, in your
 shell, you should change to the \texttt{guru-lang} directory.  Then
@@ -58,8 +60,7 @@ run the command \texttt{make} from the shell.  This will invoke the
 files.  This will be further explained in Section~\ref{sec:natguru}
 below.
 
-\chapter{Basic Functional Programming in \guru}
-\label{ch:prog}
+\chapter{Monomorphic Functional Programming}
 
 Mainstream programming languages like \textsc{Java} and \textsc{C++},
 while powerful and effective for many applications, pose problems for
@@ -95,13 +96,15 @@ programs requires reasoning about the state they depend on.  Reasoning
 about pure programs does not, and is thus simpler.  Nevertheless, pure
 languages like \textsc{Haskell} do have a way of providing functions
 like ``\texttt{gettimeofday()}''.  We will consider ways to provide
-such functionality in a pure language in Chapter~\ref{ch:funcmod}
-below.
+such functionality in a pure language in a later chapter.
 
 \guru\ contains a pure functional programming language, which is
 similar in some ways to Caml and Haskell.  In this chapter, we will
 learn the basics of this functional programming language.  In the next
-chapter, we will see how to verify programs written in it.
+chapter, we will see how to verify programs written in it.  We will
+focus for now just on \emph{monomorphic} programs.  These are programs
+defined for specific datatypes.  Generic, or \emph{polymorphic},
+programming will be considered a little later.
 
 \section{Inductive Datatypes}
 
@@ -116,7 +119,7 @@ augmentation from smaller data.  Uniquely means that the same piece of
 data cannot be built up in two different ways.  Let us consider
 several examples.
 
-\subsection{Unary Natural Numbers}
+\subsection{Unary natural numbers}
 
 The natural numbers are the numbers $0,1,2,\ldots$.  We typically
 write numbers in decimal notation.  Unary notation is much simpler.
@@ -134,11 +137,11 @@ uniquely from smaller ones?  One answer is that a number like five can
 be viewed as built up from its \emph{predecessor} 4 by the
 \emph{successor} operation, which we will write $S$.  The successor
 operation just adds one to a natural number.  In this book, we will
-write the application of a function $f$ to an input argument $x$ as
-$f\ x$ or $(f\ x)$.  This is in contrast to other common mathematical
-notation, where we write $f(x)$ for function application.  So the
-five-fold application of the successor operation to zero, representing
-the number 5, is written this way:
+write the \emph{application} of a function $f$ to an input argument
+$x$ as $f\ x$ or $(f\ x)$.  This is in contrast to other common
+mathematical notation, where we write $f(x)$ for function application.
+So the five-fold application of the successor operation to zero,
+representing the number 5, is written this way:
 
 \[ (S\ (S\ (S\ (S\ (S\ Z))))) \]
 
@@ -163,16 +166,15 @@ be built using just $Z$, or also in these ways (and others):
 the natural number datatype.
 
 The simplicity of unary natural numbers comes at a price.  The
-representation of a number in unary is much larger -- exponentially
-larger, in fact -- than its representation in decimal notation.  For
-example, it takes very many slash marks or applications of $S$ to
-write $100$ (decimal notation) in unary.  In contrast, it only takes 3
-digits in decimal.  On the other hand, it is much easier to reason
-about unary natural numbers than binary or decimal numbers, and also
-easier to write basic programs like addition.  So we begin with unary
-natural numbers.
+representation of a number in unary is exponentially larger than its
+representation in decimal notation.  For example, it takes very many
+slash marks or applications of $S$ to write $100$ (decimal notation)
+in unary.  In contrast, it only takes 3 digits in decimal.  On the
+other hand, it is much easier to reason about unary natural numbers
+than binary or decimal numbers, and also easier to write basic
+programs like addition.  So we begin with unary natural numbers.
 
-\subsection{Unary Natural Numbers in \guru}
+\subsection{Unary natural numbers in \guru}
 \label{sec:natguru}
 
 \guru's standard library includes a definition of unary natural
@@ -216,8 +218,9 @@ see it print out the expected result of adding 2 and 2 in unary:
 \end{verbatim}
 
 The definition of the unary natural numbers is in
-\texttt{guru-lang/lib/nat.g}.  If you look in that file, you will find
-at the top the following definition:
+\texttt{guru-lang/lib/nat.g}, which is included by the file
+\texttt{plus.g} which we have included here.  If you look in
+\texttt{nat.g}, you will find at the top the following definition:
 
 \begin{verbatim}
 Inductive nat : type :=
@@ -228,7 +231,7 @@ Inductive nat : type :=
 \noindent This is an \texttt{Inductive}-command.  It instructs \guru\
 to declare the new inductive datatype \texttt{nat}.  The ``\texttt{nat
 : type}'' on the first line of the definition just tells \guru\ that
-\texttt{nat} is a type.  We will see other examples shortly which use
+\texttt{nat} is a type.  We will see other examples later which use
 more complicated declarations than just ``: \texttt{type}''.  In more
 detail, ``\texttt{nat} : \texttt{type}'' means that \texttt{type} is
 the \emph{classifier} of \texttt{nat}.  The concept of classifier is
@@ -242,7 +245,8 @@ of this \texttt{Inductive}-command, we will also have that
 it is a function (indicated with \texttt{Fun}) that takes in an input
 called \texttt{x} that is a \texttt{nat}, and then produces a
 \texttt{nat}.  Generally speaking, classifiers partition expressions
-into sets of expressions that have certain similar properties.
+into sets of expressions that have certain similar properties.  Every
+expression in \textsc{Guru} has exactly one classifier.
 
 An additional simple piece of terminology is useful.  The constructor
 \texttt{Z} returns a \texttt{nat} as output without being given any
@@ -260,1621 +264,216 @@ special syntax for describing any data.  All data are inductive, and
 are constructed by applying constructors (like \texttt{S} and
 \texttt{Z}) to smaller data.
 
-\subsection{Lists and Polymorphism}
-
-Computer Science frequently uses lists to hold collections of data.
-Lists can also be viewed as constituting an inductive datatype.  There
-are two ways to build a list, on this view: we either build an empty
-list, holding no data, or else we add a piece of data to the front of
-an existing list.  The constructors for lists are then \texttt{nil},
-for building the empty list; and \texttt{cons} (the name comes
-originally from the \textsc{LISP} programming language), for adding a
-piece of data to the front of a list.
-
-Lists are similar to unary natural numbers.  They each have a single
-base constructor: \texttt{Z} for \texttt{nat} and \texttt{nil} for
-\texttt{list}.  They also each have a single recursive constructor
-(\texttt{S} and \texttt{cons}), and just as \texttt{S} requires
-exactly one \texttt{nat} as argument, so does \texttt{cons} require
-exactly one \texttt{list} (though it also requires the piece of data
-to add to the front of that list).  There is an important difference
-between \texttt{list} and \texttt{nat}, however: \texttt{list} is
-\emph{polymorphic}, while \texttt{nat} is \emph{monomorphic}.
-Polymorphism is a term with many different formal and informal
-meanings in Computer Science.  In the concept of functional
-programming, it refers to the ability of a function or datatype to
-operate on multiple types of data.  In contrast, a monomorphic
-function or datatype is specialized for a particular type of data.
-The polymorphic nature of the \texttt{list} datatype means that we can
-have lists storing different types of data.  More carefully stated,
-for any type \texttt{T}, we can have lists where each list stores just
-elements of type \texttt{T}.  So with the kind of lists we are
-considering here, a single list can hold data from only one type.  We
-can have lists storing elements of type \texttt{A}, and lists storing
-elements of type \texttt{B}, but we cannot have a single list with
-both elements of type \texttt{A} and also elements of type \texttt{B}.
-Such lists are called \emph{homogeneous}.  It is possible also, in
-languages with rich type systems like \guru's, to support
-\emph{heterogeneous} lists, where a single list may hold data of
-different types.  But we will consider just homogeneous lists here.
-
-There is much more to say about polymorphism (including more refined
-distinctions between various kinds of polymorphism), but let us look
-now at the definition of lists in \guru.
-
-\subsection{Lists in \guru}
-
-\guru's standard library defines polymorphic lists and several
-operations on lists.  
-
-Unlike the natural numbers, the datatype for
-lists is not loaded by default when \guru starts up.  To load it,
-evaluate the command
+\section{Programming Constructs}
 
-\begin{verbatim}
-Require Import List.
-\end{verbatim}
-
-\noindent Now try computing the types of a few different lists by
-evaluating the following commands (as explained at the start of
-Section~\ref{sec:natguru} above):
-
-\begin{verbatim}
-Check 3 :: 4 :: nil.
-Check (3 :: 4 :: nil) :: (5 :: 6 :: nil) :: nil.
-Check S :: nil.
-\end{verbatim}
-
-\noindent The first list has type ``\texttt{list nat}'' in \guru.  The
-type ``\texttt{list nat}'' shows that the type of elements of the list
-are \texttt{nat}s.  The second list has type ``\texttt{list (list
-nat)}'', since each of its elements is a list of \texttt{nat}s.  The
-third list has type ``\texttt{list (nat -> nat)}'', because its single
-element, $S$, is a function from \texttt{nat}s to \texttt{nat}s (as
-discussed in Section~\ref{sec:natguru}).
-
-\subsubsection{The Declaration of \texttt{list}}
-
-As for natural numbers, you can see the declaration for the list
-datatype by evaluating the command:
-
-\begin{verbatim}
-Print list.
-\end{verbatim}
-
-\noindent If you do this, you will see the following in the output
-panel (at the lower right of the \guru window), followed by some
-other lines which we will ignore for now:
-
-\begin{verbatim}
-Inductive list (A : Set) : Set :=
-    nil : list A | cons : A -> list A -> list A.
-\end{verbatim}
-
-\noindent This declares the inductive datatype \texttt{list}.  We have
-some additional complexity here beyond what we saw for the
-\texttt{nat} type, because we are supporting polymorphic lists.  The
-notation \texttt{list (A : Set) : Set} in the first line states that
-for any computational type ``\texttt{A}'', we have the inductive
-datatype ``\texttt{list A}'' for lists of elements of type $A$.  The
-two constructors are \texttt{nil} for the empty list, and
-\texttt{cons}.  Expressions like \texttt{x::L} are just notation for
-\texttt{cons x L}, as you can confirm by turning off the printing of
-notations (as in Section~\ref{sec:natguru} above).  Also, with printing
-notations on, if you check the type of \texttt{cons 3 (cons 4 nil)}, for
-example, you will see that \guru views this as \texttt{3::4::nil} (of
-type \texttt{list nat}).
-
-If you check the type of \texttt{list} with the \texttt{Check}
-command, \guru will report that \texttt{list} has type \texttt{Set ->
-Set}.  What does this mean?  Since for any computational type $A$, we
-have a computational type \texttt{list A}, \guru views \texttt{list} as
-a function from types to types.  The input to \texttt{list} is a type
-(namely, the type $A$ for elements of the list), and the output is
-also a type (the type for lists of elements of type $A$).  To
-reinforce your understanding of this idea, try to anticipate what \guru
-will print for the following:
-
-\begin{verbatim}
-Check list nat.
-Check list (list nat).
-Check list list.
-\end{verbatim}
-
-\noindent The last example does not type check in \guru (and \guru prints
-an error in the output panel), because \texttt{list} expects a
-computational type as input.  Instead, we have given it a function
-from types to types (namely, \texttt{list}).
-
-\subsubsection{The Type of \texttt{cons}}
-
-The constructor \texttt{cons} has a rather unusual type, which you
-can see using the \texttt{Check} command:
-
-\begin{verbatim}
-cons : forall A : Set, A -> list A -> list A
-\end{verbatim}
-
-\noindent What does this mean?  For any type $A$, \texttt{cons} will
-take an element $x$ of type $A$, and a list $L$ of $A$s, and build you
-the bigger list $x\, ::\, L$.  \guru views \texttt{cons} as taking in
-the type $A$ as its first argument, and then accepting $x$ and $L$.
-The ``\texttt{forall}'' notation is used here just to give the name
-$A$ to that first argument, so it can be used in the subsequent types
-(like \texttt{list A}).  One puzzling thing the reader may have
-noticed: above, we did not include a type as the first argument to
-\texttt{cons}.  For example, we wrote
-
-\begin{verbatim}
-cons 3 (cons 4 nil)
-\end{verbatim}
-
-\noindent not the following more verbose expression, with the type $A$
-of elements included as the first argument to \texttt{cons}:
-
-\begin{verbatim}
-cons nat 3 (cons nat 4 nil)
-\end{verbatim}
-
-\noindent The reason we can write the shorter form is that \guru's
-notation system allows this type argument to be suppressed, since it
-can be recovered from the types of the other arguments.  Indeed, if
-you look again at the output of the Vernacular command ``\texttt{Print
-list.}'', you will see some lines below the datatype declaration,
-which mention ``implicit arguments''.  To specify the value for
-implicit argument $A$, you can use the notation
-
-\begin{verbatim}
-cons(A:=nat)
-\end{verbatim}
-
-\noindent If you check the type of this expression, \guru will report
-that its type is 
-
-\begin{verbatim}
-nat -> list nat -> list nat
-\end{verbatim}
-
-Implicit arguments also explain the otherwise rather cryptic error
-message you will get if you evaluate the command
-
-\begin{verbatim}
-Check nil.
-\end{verbatim}
-
-\noindent The problem \texttt{nil}'s type argument is implicit. It can
-be recovered only if \texttt{nil} is used in a larger list, where the
-types of the elements determine the type \texttt{nil} must have.  When
-\texttt{nil} is used just by itself, as here, there is no way to
-recover the type argument.  The solution is to use the notation
-\texttt{nil(A:=nat)}, for example, to specify the implicit argument.
-
-\subsection{Exercises}
-
-Here are some exercises intended both to help you explore \guru and to
-improve your understanding of datatypes.  These exercises, while not
-too hard, may require some educated guesses to figure out how to
-interact with \guru.
-
-\begin{enumerate}
-\item Using just the \texttt{Check} command, see if you can find one
-negative consequence of representing numbers in unary (hint: try
-checking the types of some numbers).  Can you explain why \guru behaves
-the way it does in this case?
-\item \guru has a pre-defined type for boolean values, just like other
-programming languages.  Try to figure out what this type is and what
-its constructors are.
-\item An \emph{enumerated} inductive datatype is one with a non-zero,
-finite number of elements.  It has a finite number of constructors,
-all of which create an element of the type without requiring an
-element of the type.  So, the constructors are like $0$ for \texttt{nat}
-or \texttt{nil} for \texttt{list}: they do not take in an element of
-the same datatype as input, but rather just create an element out of
-thin air (or some other data).  The enumerated datatype of primary colors
-has three constructors, \texttt{red}, \texttt{green}, and \texttt{blue}.
-Define this datatype in \guru.  Once that is working, add constructors for
-\texttt{light} and \texttt{dark} (enabling colors like light red or light
-blue).  Check the types of some elements of this datatype.
-\item The datatype of polymorphic binary trees with data at the nodes
-and leaves has two constructors: \texttt{leaf}, which takes a piece of
-data and builds a tree holding just that piece of data; and
-\texttt{node}, which takes a piece of data and two trees (called the
-left and right subtrees), and builds the tree which holds the given
-piece of data at the root, and then branches to the given left and
-right subtrees.  Following the model for polymorphic lists, define
-this datatype in \guru, and check the types of some elements of it.
-\end{enumerate}
-
-\subsection{Running Programs in \guru}
-
-We will see in the next section how to write our own recursive
-programs in \guru.  For now, we will experiment with some predefined
-programs.  First, \guru's standard library includes some basic
-arithmetic operations.  To run these programs, you use the Vernacular
-\texttt{Eval} command.  For example, to watch \guru add 2 and 2, you can
-evaluate the following command:
-
-\begin{verbatim}
-Eval compute in 2 + 2.
-\end{verbatim}
-
-\noindent Here, the ``+'' function is written using \emph{infix}
-notation (meaning, it is written in between its arguments).  You can
-also call the plus function using prefix notation (meaning, with the
-function written before its arguments), as follows:
-
-\begin{verbatim}
-Eval compute in plus 2 2.
-\end{verbatim}
-
-\noindent The ``2 + 2'' is just notation (defined using \guru's notation
-system) for \texttt{plus 2 2}.
-
-\noindent For another set of examples, \guru's library provides definitions
-of several standard operations on lists.  For example, try the following:
-
-\begin{verbatim}
-Eval compute in app (1::2::3::nil) (4::5::6::nil).
-\end{verbatim}
-
-\noindent What is this program \texttt{app} doing?  Infix notation for
-\texttt{app} is ``\texttt{++}''.  Try to repeat the above example
-using this notation.
-
-\subsection{More Exercises}
-
-\begin{enumerate}
-\item Using \texttt{Check} and \texttt{Eval}, try to figure out some
-other arithmetic functions \guru's standard library includes.  Try to
-guess their prefix forms.
-
-\item Using \texttt{Check} and \texttt{Eval}, try to figure out what
-the following list functions do.  Compute a few simple examples with
-them:
-\begin{enumerate}
-\item \texttt{length}
-\item \texttt{nth}
-\item \texttt{rev}
-\end{enumerate}
-\item The list function \texttt{map} is used for applying a function
-to every element of a list.  For example
-
-\begin{verbatim}
-Eval compute in map S (1::2::3::nil)
-\end{verbatim}
-
-\noindent will apply the successor function (\texttt{S}) to every element
-of the given list.  What will be the resulting list?  Can you find a way
-to use \texttt{map} to add 10 to every element of a list (hint: what is
-the type of \texttt{plus 3})?
-\end{enumerate}
-
-\subsection{The Whiz Programming Language}
-\label{sec:whiz}
-
-Programs can also be viewed as an inductive datatype.  For simplicity,
-we will take a rather minimalistic programming language I am calling
-\emph{Whiz} for our example, but the same idea would work for more
-realistic languages.  Our language is \emph{imperative}, which means
-that unlike \guru, it does have mutable state: we can change the values
-assigned to variables.  The only values our language supports are
-natural numbers.  There are only three ways to change the value of a
-variable: incrementing, decrementing, or copying the value of another
-variable.  Decrementing 0 returns 0, and all variables are initialized
-to 0 before the program begins.  Multiple commands are sequenced using
-a semi-colon.  We can also repeat a command while the value of a
-specified variable is not 0 (the language's name is inspired by
-``while-not-zero'').  An example program is given in
-Figure~\ref{fig:whizprog}, where we are using indentation to indicate
-the grouping of commands.  The command \texttt{copy x tmp} stores the
-value of variable \texttt{x} as the new value of variable
-\texttt{tmp}.  Can you figure out what value $z$ will have when this
-program terminates?  Can you figure out what this program is doing?
-
-\begin{figure}
-\begin{verbatim}
-increment x;
-increment x;
-increment x;
-increment y;
-increment y;
-while-not-zero y 
-  copy x tmp;
-  while-not-zero tmp
-     increment z;
-     decrement tmp;
-  decrement y
-\end{verbatim}
-\caption{\label{fig:whizprog}Sample Program in Whiz}
-\end{figure}
-
-Programs in Whiz can be viewed as constituting an inductive datatype
-as follows.  The smallest programs are increment, decrement, and copy
-commands.  So we have constructors for those kinds of programs, just
-the way we had a constructor $0$ for the smallest natural number and a
-constructor \texttt{nil} for the smallest list.  The increment and
-decrement constructors take the name of the variable as their only
-argument.  The constructor for the copy command takes the names of two
-variables (it will copy the value of the first into the second).
-There are two other constructors for programs.  One constructor is for
-sequencing commands.  It takes two programs $p$ and $q$ as arguments,
-and builds the program $p; q$.  The other constructor is for while
-loops.  It takes a variable $v$ and a program $p$ as arguments, and
-builds the program $\textit{while-not-zero}\ v\ p$.  So all told, we
-have five constructors for programs: \textit{increment},
-\textit{decrement}, \textit{copy}, \textit{sequence}, and
-\textit{while-not-zero}.
-
-\subsection{The Whiz Programming Language in \guru}
-
-We can define an inductive datatype for Whiz programs in \guru.  There
-is one somewhat annoying issue we must deal with first, which is in
-representing the variables of Whiz programs.  \guru does not have a
-string class, so we cannot represent variables like $x$, $y$, and $z$
-from our example program above as ``\texttt{x}'', ``\texttt{y}'', and
-``\texttt{z}''.  The easiest way to represent variables in \guru is just
-by natural numbers.  We can think of $x$ as variable $0$, $y$ as
-variable $1$, $z$ as variable $2$, and \textit{tmp} as variable $3$.
-Programs become a little less readable.  Here is the program above
-with this representation of its variables:
-
-\begin{verbatim}
-increment 0;
-increment 0;
-increment 0;
-increment 1;
-increment 1;
-while-not-zero 1
-  copy 0 3;
-  while-not-zero 3
-     increment 2;
-     decrement 3;
-  decrement 1
-\end{verbatim}
-
-\noindent The key is to remember that all numbers appearing in Whiz
-programs are actually the names of variables.
-
-\begin{figure}
-\begin{verbatim}
-Inductive whiz : Set :=
-  inc : nat -> whiz
-| dec : nat -> whiz
-| cp : nat -> nat -> whiz
-| seq : whiz -> whiz -> whiz
-| whilenz : nat -> whiz -> whiz.
-\end{verbatim}
-\caption{\label{fig:whiz}Whiz Programs as a \guru Datatype}
-\end{figure}
-
-Now we can use the declaration in Figure~\ref{fig:whiz} to declare the
-inductive datatype of Whiz programs in \guru.  We have constructors for
-each construct of Whiz, for example \texttt{inc} for
-\texttt{increment}.  A Whiz program has type \texttt{whiz}.  The
-syntax we have here is not too bad, except that putting programs in
-sequence with \texttt{seq} is much uglier than with semi-colon.  For
-example, the Whiz program
-
-\begin{verbatim}
-increment 0;
-increment 1
-\end{verbatim}
-
-\noindent must be written as
-
-\begin{verbatim}
-seq (inc 0) (inc 1)
-\end{verbatim}
-
-\noindent While we could use \guru's notation system to try to clean
-this up, we will content ourselves for the moment with this notation.
-It can be made somewhat more manageable with indentation.  For example,
-to increment variable 0 up to 4, we can write the following:
-
-\begin{verbatim}
- seq (inc 0)
-(seq (inc 0)
-(seq (inc 0)
-     (inc 0)))
-\end{verbatim}
-
-\noindent To experiment with Whiz in \guru, first evaluate the following
-command to load the file defining Whiz:
-
-\begin{verbatim}
-Require Import "~cse240/whiz".
-\end{verbatim}
-
-\noindent You can now print the Whiz datatype with
-
-\begin{verbatim}
-Print whiz.
-\end{verbatim}
-
-\noindent The sample program is defined to be ``\texttt{prog}'', which
-you can also view using \texttt{Print}:
-
-\begin{verbatim}
-Print prog.
-\end{verbatim}
-
-\noindent The file defining Whiz also includes an evaluator called
-\texttt{eval} for executing Whiz programs.  The basic idea is that
-you can call the evaluator with a program and a variable as arguments,
-and the evaluator will run the program and print the value of the
-variable in the final state the program reaches.  For example,
-calling \texttt{eval} on the program 
-
-\begin{verbatim}
-seq (inc 0) (inc 0)
-\end{verbatim}
-
-\noindent with the variable 0 will return 2.  There is one slight
-complication here, which brings up a fundamental point about
-programming in \guru.  For deep reasons, \guru's type theory requires that
-every program terminates on all inputs.  We are not allowed to write a
-program that loops forever or could loop forever on some inputs.  It
-is very easy to write an infinitely looping Whiz program.  So, how can
-we write the Whiz program evaluator \texttt{eval} in such a way that
-it always terminates?  The answer is, we have to use a bit of a hack.
-We must write \texttt{eval} so that you give it a counter telling how
-many steps to execute a program.  If the program is not done running
-but the counter has reached 0, evaluation of the program just ends
-abruptly.  It turns out to be simpler not to count exactly the actual
-number of commands executed, but rather an upper bound of that number
-of steps.  (In more detail, the counter is decremented for every
-instruction, except that it is duplicated at \texttt{seq}
-instructions.) So here is an example of evaluating a Whiz program:
-
-\begin{verbatim}
-Eval compute in eval 2 (seq (inc 0) (inc 0)) 0.
-\end{verbatim}
-
-\noindent \guru will report that this evaluates to 2, since the program
-increments variable $0$ twice, and we then print the result.  The
-first argument to \texttt{eval} is the counter.  So we will execute
-this program roughly 2 steps.  Increasing the counter will not change
-the outcome, since the program really does finish executing with a
-counter of 2.  
-
-\subsection{More Exercises}
-
-\begin{enumerate}
-\item Write a program that increments variable 12 up to 5.  Figure out
-the smallest counter needed to get this program to evaluate to 5 (when
-\texttt{eval} is called with variable 12).  What value does \texttt{eval}
-report for variables other than 12?
-
-\item Can you write a program that loops forever?  What happens as
-you run it and increase its counter?
-
-\item Use \texttt{eval} to confirm (or figure out) what the sample
-program given in Section~\ref{sec:whiz} above does (recall that this
-program is already typed in for you in the \guru Whiz file, and is
-available as ``\texttt{prog}'').  What is the smallest value of the
-counter that you need to get the answer to stabilize?
-
-\item Try to write a Whiz program implementing subtraction.
-
-\item (More challenging) Can you write a Whiz program implementing
-division (hint: you can do division by repeated subtraction)?
-
-\item (More challenging) The \texttt{eval} function uses a helper
-function called \texttt{evalh}.  One of the arguments to this function
-is a function from \texttt{nat}s to \texttt{nat}s.  This function is
-used to implement the state of the program.  It records the value
-currently stored for each variable.  This fits with its type, since
-each variable is represented as a \texttt{nat}, and each value stored
-in a variable is a \texttt{nat}.  So having a function from
-\texttt{nat}s (variables) to \texttt{nat}s (values) lets you look up
-the value for a variable just by calling the function.  Try calling
-\texttt{evalh} yourself.  You can create your own states using
-\texttt{start} and \texttt{update} (first figure out what these do by
-using \texttt{Check} and \texttt{Eval}).  It can actually be a lot
-easier to understand what is going on if you use
-
-\begin{verbatim}
-Eval simpl in 
-\end{verbatim}
-
-\noindent instead of
-
-\begin{verbatim}
-Eval compute in 
-\end{verbatim}
-
-\noindent The former keeps the resulting output more symbolic and
-readable, at least in this case, than the latter.
-
-\end{enumerate}
-
-\section{Functional Programs}
-
-As explained at the start of this chapter, we are studying pure
-functional programs operating on inductively defined data.  Such
-programs have no \emph{side effects}: they cannot change the values of
-variables, nor can they perform input or output of any kind while
-running.  We will further concern ourselves with programs which can be
-easily shown to terminate on all input arguments.  That is, it will
-not be possible to write programs which run forever on some inputs.
-This requirement of termination is certainly not appropriate for many
-settings: for example, operating systems are not designed to terminate
-(although unfortunately they sometimes do, due to software bugs!).
-Nevertheless, even programs designed to run forever usually contain
-many subprograms which are intended to be terminating.  So the study
-of terminating programs is relevant even in such settings.
-
-This section explains the three central features used for pure
-functional programming with inductive data: anonymous functions,
-pattern matching, and recursion.  We will study these features as they
-appear in \guru.  Similar constructs appear in languages like Haskell
-and Caml, with slightly different syntax.  We start with basic syntax
-for function definitions.
-
-\subsection{Function Definitions}
-
-In \guru, we can write function definitions using the \texttt{Definition}
-command, like this:
-
-\begin{verbatim}
-Definition square(x : nat) : nat := x * x.
-\end{verbatim}
-
-\noindent This command tells \guru to add a definition of the
-\texttt{square} function, which squares a natural number \texttt{x}.
-Let us walk through the notation used in this definition.  First,
-there is the \texttt{Definition} keyword.  Next comes the name of the
-defined function, \texttt{square}.  The single input \texttt{x} to
-\texttt{square} is then listed next in parentheses, together with its
-type (\texttt{nat}).  After this, we have ``\texttt{: nat}'', which
-declares that the return type of the function will be \texttt{nat}.
-It is often possible to omit the declaration of the return type, since
-\guru can often infer it.  Then comes ``\texttt{:=}'', and then the
-\emph{body} of the function.  The body of the function shows what the
-function will return when called.  Here, we are returning
-\texttt{x*x}, on input \texttt{x}.
-
-\subsection{Anonymous Functions}
-
-In functional programming languages, functions are first-class data:
-they may be passed as inputs to other functions, or returned from
-functions.  They may also be created anonymously, and used in code
-wherever a function is required.  Anonymous functions are not defined
-with a \texttt{Definition} command.  We can construct an anonymous
-function for squaring and check its type as follows:
-
-\begin{verbatim}
-Check fun (x : nat) => x * x.
-\end{verbatim}
-
-\noindent This notation for an anonymous function begins with the
-keyword \texttt{fun}.  Then arguments are listed, using the same
-syntax as we used for the definition of \texttt{square} above.  No
-return type for the function is required, and indeed, it is not
-allowed to be listed.  The ``\texttt{=>}'' marks the beginning of the
-body of the function, which is \texttt{x*x}.  The type of this function
-is $\texttt{nat}\,\texttt{->}\,\texttt{nat}$, as we would expect.
-
-The \texttt{Definition} we gave above for \texttt{square} is actually
-treated by \guru internally as the following definition involving an
-anonymous function:
-
-\begin{verbatim}
-Definition square := fun (x:nat) => x * x.
-\end{verbatim}
-
-\noindent You can verify that this is the way \guru views our first
-\texttt{Definition}, by printing (with \texttt{Print}) \texttt{square}
-as first defined.  You can watch anonymous functions run by applying
-them to arguments.  For example, try the following (note that here the
-type for the input argument \texttt{x} is omitted, again because \guru
-can infer that type from the surrounding context):
-
-\begin{verbatim}
-Eval compute in (fun x => x * x) 3.
-\end{verbatim}
-
-\subsubsection{Higher-order Functions}
-
-A \emph{higher-order} function is one which accepts a function as an
-input.  A relatively simple example is the \texttt{compose} function.
-The \emph{composition} of two functions $f$ and $g$ is the function
-which on input $x$ returns $f\ (g\ x)$.  Let us define composition for
-the special case when $f$ and $g$ both take a \texttt{nat} as input
-and return a \texttt{nat} as output.  There are several ways to write
-this in \guru, one of which is:
-
-\begin{verbatim}
-Definition compose(f : nat -> nat)(g : nat -> nat) := 
-  fun x:nat => f (g x).
-\end{verbatim}
-
-\noindent Here, we take in the two arguments \texttt{f} and
-\texttt{g}, and return their composition.  \guru supports a variety of
-abbreviations that are useful here.  For example, we can write
-\texttt{compose} more compactly by combining the two argument
-declarations:
-
-\begin{verbatim}
-Definition compose(f g : nat -> nat) := 
-  fun x:nat => f (g x).
-\end{verbatim}
-
-The type of \texttt{compose} is then
-
-\begin{verbatim}
-(nat -> nat) -> (nat -> nat) -> (nat -> nat)
-\end{verbatim}
-
-\noindent This type says that \texttt{compose} takes in two functions
-from \texttt{nat} to \texttt{nat} as input, and returns another such
-function as output.  \guru will actually print the type of \texttt{compose}
-as 
-
-\begin{verbatim}
-(nat -> nat) -> (nat -> nat) -> nat -> nat
-\end{verbatim}
-
-\noindent reflecting the view that \texttt{compose} takes in three
-inputs, $f$, $g$, and $x$, and returns $f\ (g\ x)$.  There is no
-essential difference between this view and the view of
-\texttt{compose} as accepting $f$ and $g$ and returning a function,
-because in \guru, as in other functional languages, functions may be
-\emph{partially applied}, to just some of their arguments (first in
-the argument list).  If \texttt{compose} is viewed as taking three
-arguments, we may nevertheless apply it to just the first two.  This
-results in a function, namely one waiting for the third argument.
-You can confirm this by checking the type of an expression like
-\texttt{compose S S}.
-
-\subsubsection{Polymorphic Functions}
-
-To operate on polymorphic data like polymorphic lists and trees, we
-need polymorphic functions.  Polymorphic functions can also be used to
-give more generic forms of functions like \texttt{compose}.  It is
-perfectly reasonable to define \texttt{compose} as taking in $f$ of
-type $B \to C$ and $g$ of type $A \to B$, and returning the
-composition of type $A \to C$; where $A$, $B$, and $C$ are any types.
-To write such a function in \guru, we just take those three types as
-additional arguments, like this (the spacing and indendation are just
-for readability):
-
-\begin{verbatim}
-Definition compose2(A B C : Set)
-                   (f : A -> B)(g : B -> C) := 
-  fun x:A => f (g x).
-\end{verbatim}
-
-\noindent To use this function, we have to list the three types involved:
-
-\begin{verbatim}
-Check compose2 nat nat nat S S.
-\end{verbatim}
-
-\noindent This expression has type
-$\texttt{nat}\,\texttt{->}\,\texttt{nat}$.  Since it quickly becomes
-tiresome to write all these type arguments, we can tell \guru that we
-wish to keep them implicit, using the following command:
-
-\begin{verbatim}
-Implicit Arguments compose2[A B C].
-\end{verbatim}
-
-\noindent We may now write just
-
-\begin{verbatim}
-Check compose2 S S.
-\end{verbatim}
-
-\noindent Note that sometimes there is not enough information for \guru
-to infer the value of an implicit argument.  For example, \guru will report
-an error if we evaluate the following command:
-
-\begin{verbatim}
-Check compose2 S.
-\end{verbatim}
-
-\noindent Since the first function is given as $S$, \guru knows that
-the type $B$ is \texttt{nat} and the type $C$ is \texttt{nat}.  But
-it does not have enough information to infer what the type $A$ has to
-be, and so it reports an error.
-
-\subsection{Pattern Matching}
-
-To inspect inductively defined data, functional programming languages
-like \guru's use pattern matching.  A pattern matching expression lists
-a term to be pattern matched, followed by a number of cases, separated
-by bars (``$|$'').  Each case consists of a pattern and a body.  Here
-is a simple example.  We can define the predecessor function on
-natural numbers as follows, where we take the predecessor of zero to
-be zero (and the predecessor of a non-zero number like $5$ to be $4$,
-the greatest smaller number):
-
-\begin{verbatim}
-Definition pred(x:nat) := 
-  match x with
-    0 => 0
-  | S y => y
-  end.
-\end{verbatim}
-
-\noindent The \texttt{match} expression used in the body of
-\texttt{pred} is performing a pattern match on \texttt{x}.  If
-\texttt{x} is $0$, we return $0$.  That is what the first case (the
-line ``\texttt{0}\,\texttt{=>}\,\texttt{0}'') of the \texttt{match}
-states.  If \texttt{x} is not $0$, we try the next case.  The pattern
-is \texttt{S y}.  The variable \texttt{y} is a \emph{pattern
-variable}, which will become associated with the matching part of the
-data \texttt{x}.  Suppose the input \texttt{x} to \texttt{pred} is
-$2$.  As we know from a previous section, $2$ is really an
-abbreviation in \guru for \texttt{S\ (S\ O)}.  This expression does
-match the pattern \texttt{S\ y}, if we make \texttt{y} be \texttt{S\
-0}.  The body (``\texttt{y}'') of the second case is then returned.  On
-input $2$, this will be \texttt{S\ O}, or $1$, as expected.  The end
-of the pattern matching expression is indicated using the keyword
-\texttt{end}.
-
-While other functional languages allow pattern matching expressions to
-leave some cases uncovered, \guru does not.  So \guru will report an error
-on the following attempted definition of the function \texttt{tl} to
-return $L$ from a list $x::L$ (note that below, \texttt{l'} is not
-special syntax: single quotes are allowed to appear in variable
-names in \guru):
-
-\begin{verbatim}
-Definition tl(A:Set)(l:list A) := match l with
-  x::l' => l'
-end.
-\end{verbatim}
-
-\noindent One solution to this problem is to define \texttt{tl} on
-the empty list, for example as follows:
-
-\begin{verbatim}
-Definition tl(A:Set)(l:list A) := match l with
-  nil => nil
-| x::l' => l'
-end.
-\end{verbatim}
+In this section, we will see the basic programming constructs of
+\textsc{Guru}.  Like most other functional programming languages, the
+heart of the language is very compact and simple: we can define
+recursive functions, decompose inductive data using a simple
+pattern-matching construct, and apply (aka, call) functions.  That is
+essentially it.  Recursion is such a powerful idea that even with such
+a simple core, we can write arbitrarily rich and complex programs.  We
+will consider first non-recursive functions, then pattern matching,
+and finally recursive functions.
 
-\subsection{Recursion}
-\label{sec:rec}
-
-Functional programming gains its full computational power from the
-ability to define functions by recursion.  In programming languages
-like Java and C++, and even in functional languages like Haskell and
-Caml, it is quite easy to write recursive programs which fail to
-terminate on some inputs.  \guru is unusual in disallowing this: all
-programs are required to terminate on all inputs.  There are different
-ways to enforce termination on all inputs.  In \guru, this is done by
-requiring that recursive programs have a designated argument called
-the \emph{parameter of recursion}, which can obviously be seen to
-decrease in size at each recursive call.  Since this argument gets
-smaller and smaller every time the function calls itself, eventually
-the argument will be of the smallest possible size, and the nested
-recursion will stop.
-
-We can see an example of this kind of terminating recursion by
-examining the code for addition (using ``\texttt{Print plus.}''):
+\subsection{Non-recursive functions}
 
-\begin{verbatim}
-plus = 
-fix plus (n m : nat) {struct n} : nat :=
-  match n with
-  | O => m
-  | S p => S (plus p m)
-  end
-\end{verbatim}
-
-\noindent This says that \texttt{plus} is defined to be an anonymous
-recursive function.  Anonymous recursive functions are written with
-the keyword \texttt{fix}.  Then comes a name to use for making
-recursive calls.  Here, as is usually done, that name is informatively
-chosen to be \texttt{plus}.  Then comes a declaration for two
-arguments, \texttt{n} and \texttt{m}, of type \texttt{nat}.  Then
-comes ``\texttt{\{struct n\}}''.  This directive tells \guru that
-\texttt{n} is the parameter of recursion.  If there is only one
-argument to the recursive function, this directive can be omitted.
-The return type of \texttt{nat} is then declared using ``\texttt{:
-nat}''.  The body of the function comes next.  In the body, we may
-make recursive calls using the name \texttt{plus}, which was listed
-right after the \texttt{fix} keyword.  It is required that the
-parameter of recursion is \emph{structurally} smaller (hence the
-``\texttt{struct}'' directive) at such recursive calls.  Here, we make
-a recursive call with \texttt{p} as the first argument (which is the
-parameter of recursion).  This \texttt{p} is structurally smaller than
-the input argument \texttt{n}, because it is extracted from \texttt{n}
-using pattern matching.  It is really a smaller piece of \texttt{n}.
-
-It is common in \guru to write recursive definitions with the slightly
-less cumbersome syntax of Figure~\ref{fig:fixplus}.  This is treated
-internally by \guru as a definition of \texttt{plus} in terms of an
-anonymous recursive function.
-
-\begin{figure}
-\begin{verbatim}
-Fixpoint plus (n m:nat) {struct n} : nat :=
-  match n with
-  | O => m
-  | S p => S (plus p m)
-  end.
-\end{verbatim}
-\caption{\label{fig:fixplus}Plus Defined Using The Fixpoint Command}
-\end{figure}
-
-
-\subsection{Exercises}
-
-\begin{enumerate}
-\item Write an anonymous function which takes a natural number
-\texttt{x} and returns the list containing just \texttt{x}.  For
-example, if the input is \texttt{3}, the output should be
-\texttt{3::nil}.  Can you write this function polymorphically so that
-\texttt{x} can have type \texttt{A} for any \texttt{Set} \texttt{A}?
-Use \texttt{Check} and \texttt{Eval} to confirm that your function
-works as expected.
-
-\item Write a function \texttt{isempty} to test whether a given
-polymorphic list is empty or not.  Your function should return
-\texttt{true} if the list is empty, and \texttt{false} otherwise.
-Remember that you must do ``\texttt{Require Import List.}'' to 
-import the \texttt{list} type. 
-
-\item The \texttt{Max} file from the standard library defines a
-function \texttt{max}, and the \texttt{EqNat} file defines a function
-\texttt{eq\_nat}.  What do these functions do?  In each case, which
-argument is the parameter of recursion?
-
-\item There are several other ways to write the \texttt{plus}
-function, besides the one we saw above, which \guru uses.  Try to define
-a \texttt{plus'} function which has the same input-output behavior
-as \texttt{plus}, but is written a different way (hint: one easy way
-to write a different function for plus is to change which argument
-is the parameter of recursion).
-\end{enumerate}
-
-\subsection{More Exercises}
-
-The following exercises are a little more challenging.
-
-\begin{enumerate}
-\item Define a function \texttt{exp} which takes in two \texttt{nat}s,
-\texttt{n} and \texttt{m}, as inputs and computes \texttt{n} to the power
-\texttt{m} (so \texttt{exp 2 3} is supposed to evaluate to 8).
-
-\item Let us use the following type for trees of natural numbers (if
-you want a little more of a challenge, use a polymorphic tree type for
-this exercise instead):
-
-\begin{verbatim}
-Inductive tree : Set :=
-  leaf : nat -> tree
-| node : nat -> tree -> tree -> tree.
-\end{verbatim}
-
-\noindent Write a recursive function that takes in a tree as input,
-and returns as output a list of all the \texttt{nat}s in the tree.  It
-is ok to list a \texttt{nat} more than once if it occurs in the tree
-more than once.  If you know what prefix, infix, and postfix
-traversals of trees are, then which one does your function implement
-(and how would you implement the others)?
-
-\item The following command defines the type \texttt{binnat} to be a
-list of booleans.  This type is intended to be the type of binary
-natural numbers.  Recall that a binary natural number is just a list
-of bits, similarly to the way a decimal number is a list of digits.
-
-\begin{verbatim}
-Definition binnat := list bool.
-\end{verbatim}
-
-\noindent Write a recursive function that takes in a \texttt{binnat}
-as input, and returns the \texttt{nat} it represents as output.  For
-example, \texttt{true :: false :: false :: nil} represents 4, since
-only the fours position of the number has a \texttt{true} value.
-Similarly, \texttt{true :: true :: false :: nil} represents 6, since
-both the fours and the twos position have \texttt{true}.
-
-\item An unusual feature of \guru is the ability to write functions
-which compute types.  Such functions operate on types similarly to
-inductive data, except that pattern matching on types is not allowed.
-Try to write a function \texttt{funtp} which takes in a \texttt{Set}
-(i.e., computational type) \texttt{A} and a \texttt{nat} \texttt{n},
-and returns the type
-
-\begin{verbatim}
-A -> ... -> A
-\end{verbatim}
-
-\noindent where there are \texttt{n} \texttt{A}s.  For example,
-\texttt{funtp 4 nat} should evaluate to
-
-\begin{verbatim}
-nat -> nat -> nat -> nat
-\end{verbatim}
-
-\end{enumerate}
-
-\section{Recursive Equations}
-\label{sec:receqns}
-
-Another, more mathematical way to write a recursive definition for a
-function is using recursive equations.  \guru does not support this
-notation, although some functional programming languages (e.g.,
-Haskell and Caml) do.  We can define addition using recursive
-equations as follows, where we take the first argument to be the
-parameter of recursion:
-\begin{eqnarray*}
-0 + m &=& m \\
-(S\ p) + m &=& S\ (p + m)
-\end{eqnarray*}
-
-\noindent This definition has one equation for each constructor with
-which the parameter of recursion can be built.  Recursive calls may
-only be made where the parameter of recursion has structurally
-decreased, just as in \guru.
-
-With these equation, we can prove simple facts like $2+2=4$.  Since
-the numeral $2$ is really just notation (here and in \guru) for $(S\ (S\ 0))$,
-what we want to prove can be written like this:
-\[
-(S\ (S\ 0)) + (S\ (S\ 0)) = 4
-\]
-Using the second equation of the recursive definition of addition, we have
-\[
-(\underline{S}\ (S\ 0)) + (S\ (S\ 0)) = 
-\underline{S}\ ((S\ 0) + (S\ (S\ 0)))
-\]
-where the occurrences of $S$ matching those in the defining equation
-have been underlined.  We then use the second defining equation again
-to get
-\[
-S\ ((\underline{S}\ 0) + (S\ (S\ 0))) = 
-S\ (\underline{S}\ (0 + (S\ (S\ 0))))
-\]
-Finally, we can use the first defining equation:
-\[
-S\ (S\ (\underline{0} + (S\ (S\ 0)))) = S\ (S\ (S\ (S\ 0)))
-\]
-
-Since $4$ is just notation for $S\ (S\ (S\ (S\ 0)))$, we have shown
-that $2+2=4$.  This is not sufficient, of course, to show that we have
-correctly defined addition.  For that, we will need to prove some
-properties of addition, to see that it works as expected.  This will
-be done later in these notes.
-
-\subsection{Recursive Equations for Multiplication}
-
-The definition of multiplication is the following, where again the
-first argument is the parameter of recursion.
-\[
-\begin{array}{llll}
-1. & 0 * m &=& 0 \\
-2. & (S\ p) * m &=& m + (p * m)
-\end{array}
-\]
-
-\noindent The following example showing that $2*2 = 4$ shows how the
-definition works.  We use mixed notation with numerals and successor
-to try to highlight how the defining equations are being used.  First
-we have
-\[
-(S\ (S\ 0)) * 2 =
-2 + ((S\ 0) * 2) 
-\]
-Then we get
-\[
-2 + ((S\ 0) * 2) = 2 + (2 + (0 * 2))
-\]
-Finally we have
-\[
-2 + (2 + (0 * 2)) = 2 + (2 + 0)
-\]
-Using the definition of addition, we can show that the latter term is
-equal to $4$.  This chain of equalities can be written together, as
-follows, where we also label the equality symbol with the number of
-the defining equation that is used:
-
-\[ \begin{array}{lll}
-(S\ (S\ 0)) * 2 & =_1 & 2 + ((S\ 0) * 2) \\
-\ & =_1 & 2 + (2 + (0 * 2)) \\
-\ & =_2 & 2 + (2 + 0)
-\end{array}
-\]
-
-\subsection{Recursive Equations for List Append}
-
-The definition of the list append function via recursive equations is
-the following (where the input lists are of type $A$, for any type
-$A$):
-\begin{eqnarray*}
-\textit{app}\ \textit{nil}\ m &=& m \\
-\textit{app}\ (n :: l_1)\ m &=& n :: (\textit{app}\ l_1\ m)
-\end{eqnarray*}
-
-\subsection{Rewriting with Equations}
-
-Recursive definitions of the form described above can be used
-computationally to rewrite terms in a finite number of steps to a
-canonical form.  The form of the term is called canonical because with
-recursive definitions of the kind considered here, it can be shown
-that two terms are equal iff they have the same canonical form.  A
-term is rewritten by finding a subterm that matches the left hand side
-of one of the defining equations, and replacing that subterm with the
-corresponding right hand side.  This is exactly the process we used
-above to transform $2+2$ into $4$ and $2*2$ into $4$.  The study of
-rewriting terms with equations is a surprisingly rich and active
-research area of theoretical Computer Science, and we will touch on
-further ideas from it later in these notes.
-
-\chapter{Program Verification in \guru}
-
-In this chapter, we are going to study techniques for proving
-properties of programs written in \guru's pure functional programming
-language.  The central proof methods are proof by induction and proof
-by partial evaluation.  We will see how to use these methods both for
-machine-checked proofs in \guru, as well as informal but rigorous proofs
-in natural language (English).  Before we consider how to write
-proofs, however, it is valuable to consider examples of the kinds of
-properties we will prove about our programs.
-
-\section{Example Program Properties}
-
-The following formulas express some familiar properties of the program
-\texttt{plus}, for adding unary natural numbers.  (We saw this program
-defined in \guru notation in Section~\ref{sec:rec} and by recursive equations
-in Section~\ref{sec:receqns}.)
-\[ 
-\begin{array}{lll}
-x+y & = & y + x \\
-(x+y)+z & = & x+(y+z)
-\end{array}
-\]
-
-\noindent The first formula expresses the property called
-\emph{commutativity} of addition.  The second expresses
-\emph{associativity} of addition.  We have written the formulas
-using variables $x$,$y$, and $z$, with the intention of expressing
-that the formulas hold for all natural numbers $x$, $y$, and $z$.
-This can be made more explicit by writing:
-\[ 
-\begin{array}{llll}
-\forall\, x\,y\,:\,\texttt{nat},& x+y & = & y + x \\
-\forall\, x\,y\,z\,:\,\texttt{nat}, & (x+y)+z & = & x+(y+z)
-\end{array}
-\]
-\noindent The symbol $\forall$ is the \emph{universal quantifier}:
-it is read ``for all''.  It is called universal, because we are
-saying something about \emph{all} the natural numbers.  In \guru
-notation, these formulas are written like this:
+Suppose we want to define a doubling function, based on the
+\texttt{plus} function we used before.  We have not seen how to define
+\texttt{plus} yet, since it requires recursion and pattern matching.
+But of course, we can write a function which calls \texttt{plus},
+even if we do not know how \texttt{plus} is written.  The doubling
+function can be written like this:
 
 \begin{verbatim}
-forall x y : nat, x + y = y + x 
-forall x y z : nat, (x + y) + z = x + (y + z)
+fun(x:nat).(plus x x)
 \end{verbatim}
 
-\noindent In natural-language proofs, and often even in \guru, it is
-allowable to omit the type declaration (``\texttt{: nat}'') from the
-formula, if it is clear from the context what the types are.
+\noindent Let us examine this piece of code.  First, ``\texttt{fun}''
+is the keyword which begins a function, also called a
+\texttt{fun}-term.  After this keyword come the arguments to
+the function, in parentheses.  In this case, there is just one
+argument, \texttt{x}.  Arguments must be listed with their types (with
+a colon in between).  In this case, the type is \texttt{nat}.  After
+the arguments we have a period, and then the value returned by the
+function.  In this case, the value returned is just the result of the
+application of \texttt{plus} to \texttt{x} and \texttt{x}, for which
+the notation, as we have already seen, is \texttt{(plus x x)}.
 
-Formulas, like every other object in \guru, have a type, which you can
-check using the \texttt{Check} command:
+To use this function in \guru, try the following.  In your home
+directory, create a file \texttt{test.g}, and begin it with
 
 \begin{verbatim}
-Check forall x y : nat, x + y = y + x.
+Include "guru-lang/lib/plus.g".
 \end{verbatim}
 
-\noindent If you evaluate this command, you will find that in \guru,
-formulas have the type \texttt{Prop}.  
-
-\subsection{More Example Properties}
-
-Other basic arithmetic facts are also examples of program properties.
-Commutativity and associativity of multiplication are examples.  An
-example relating two programs is distributivity of multiplication over
-addition:
-\begin{eqnarray*}
-x * (y + z) & = & (x * y) + (x * z)
-\end{eqnarray*}
-\noindent Properties like these may seem trivial, since they are so
-familiar.  Nevertheless, as we will see, they are actually not
-particularly trivial to prove.  And if we think about them not as
-familiar mathematical facts but rather as statements about programs,
-they become rather richer and more interesting.  For example,
-commutativity says you can call the function in question with the
-order of its arguments reversed, and the result will be the same.
-This is an unusual property, since in general, programs certainly
-behave differently if we scramble the order of their arguments.
-
-Here are two properties about some of the less familiar functions we
-have seen, which may thus seem less trivial.  Recall that \texttt{++} is
-infix notation for appending two lists.  Also, as explored in an
-exercise above, \texttt{length} is a function taking in a list and
-returning its length.
-\begin{eqnarray*}
-(x\ \texttt{++}\ y)\ \texttt{++}\ z & = & x\ \texttt{++}\ (y\ \texttt{++}\ z)\\
-\texttt{length}\ (x\ \texttt{++}\ y) & = & 
-  (\texttt{length}\ x) + (\texttt{length}\ y)
-\end{eqnarray*}
-
-\noindent The first formula states that list append is associative.
-If you compare it with the formula above expressing associativity of
-addition, you can see the forms of these equations are very similar.
-The second formula states that the length of the list you get by
-appending two lists ($x$ and $y$) is equal to the sum of their
-lengths.  This formula bears a certain resemblance to the formula
-above for distributivity of multiplication over addition.  To express
-these formulas in \guru, we have to take account of the fact that our
-lists are polymorphic.  What we want to say is that for all types $A$,
-and for all lists of $A$s, the property holds.  For the first
-property, this can be written in \guru like this (where indentation and
-spacing are purely for readability):
+\noindent As for the example in Section~\ref{sec:natguru} above,
+this includes the definitions of \texttt{nat} and \texttt{plus}.
+Next write:
 
 \begin{verbatim}
-forall A : Set, forall x y z : list A, 
-  (x ++ y) ++ z = x ++ (y ++ z).
+Interpret (fun(x:nat).(plus x x) (S (S Z))).
 \end{verbatim}
 
-\noindent The second formula can be written similarly:
+\noindent Save this file, and then from your home directory run
+\guru\ on your file:
 
 \begin{verbatim}
-forall A : Set, forall x y : list A, 
-  length (x ++ y) = (length x) + (length y)
+guru-lang/bin/guru test.g
 \end{verbatim}
 
-\section{Proof by Evaluation}
-
-We will begin our study of proofs with a particularly simple and easy
-kind of proof, namely proof by evaluation.  When reasoning about
-programs, it sometimes happens that we can prove our \emph{goal
-formula} (the formula we are currently trying to prove) simply by
-running some of the programs in question.  For example, suppose we
-want to prove this obvious fact:
-
-\[ 3+4 = 2+5 
-\]
-
-\noindent We can prove this just by evaluating the program expressions
-on the left and right hand sides of the equation.  By doing these
-evaluations, we can transform the formula to
-
-\[ 7 = 7
-\]
-\noindent This obvious fact holds, because equality is \emph{reflexive}.
-That is, it satisfies the property
-
-\[ \forall x, x = x
-\]
-
-\noindent In informal natural-language (English) proofs, proofs by
-evaluation like the above are often expressed by saying something like
-``by the definition of plus, both sides of the equation evaluate to
-7.''  The use of reflexivity is left implicit.  If less detail is
-required in the proof, one might just say, ``by arithmetic
-calculation, both sides of the equation evaluate to 7.''  If more
-detail is required, we can reason using recursive equations as in
-Section~\ref{sec:receqns} above, to transform both sides to the same
-value.
-
-\section{Proof by Evaluation in \guru}
-
-Let us see how proof by evaluation works in \guru.  The most common way
-of writing proofs in \guru requires us to enter \emph{proof mode}, in
-which special commands called \emph{tactics} can be used to try to
-prove the goal formula.  To enter proof mode to prove the formula $3+4
-= 2+5$, evaluate the following Vernacular command:
+\noindent You should see it print out the expected result of doubling
+2, in unary:
 
 \begin{verbatim}
-Theorem example1: 3+4 = 2+5.
+(S (S (S (S Z))))
 \end{verbatim}
 
-\noindent All theorems must be named in \guru.  Here, the name we have
-chosen is ``example1''.  You will see the following displayed in the
-top right panel of the \guru IDE (which has not displayed any output
-until now):
+\noindent This example illustrates the fact that
+\texttt{fun(x:nat).(plus x x)} is really a function, just like
+\texttt{plus}.  Just as we can apply \texttt{plus} to arguments
+\texttt{x} and \texttt{y} by writing \texttt{(plus x x)}, we can also
+apply \texttt{fun(x:nat).(plus x x)} to an argument \texttt{(S (S Z))}
+by writing \texttt{(fun(x:nat).(plus x x) (S (S Z)))}, as we did in
+this example.
 
-\begin{verbatim}
-1 subgoal
-______________________________________(1/1)
-3 + 4 = 2 + 5
-\end{verbatim}
+\subsubsection{Definitions}
 
-\noindent The top right panel in \guru displays the current state of a
-proof when in proof mode.  Here, the message printed by \guru shows that
-we are currently trying to prove 1 goal.  \guru calls this a subgoal,
-because in general, it might have arisen during the proof of our
-original goal formula.  The text ``(1/1)'' indicates that the formula
-listed is the first of our (1) subgoals.  Then we see the actually
-goal formula we are trying to prove.  To prove this formula by evaluation,
-evaluate the following tactic:
+Most often we write a function expecting it to be called in multiple
+places in our code.  We would like to give the function a name, and
+then refer to it by that name later.  In \textsc{Guru}, this can be
+done with a \texttt{Define}-command. To demonstrate this, add to the
+bottom of \texttt{test.g} the following:
 
 \begin{verbatim}
-compute.
-\end{verbatim}
-
-\noindent This tells \guru to evaluate all the program expressions
-in the goal.  This is the same kind of evaluation we used with the
-``Eval compute in'' Vernacular command above.  The proof state 
-becomes:
+Define double := fun(x:nat).(plus x x).
 
-\begin{verbatim}
-1 subgoal
-______________________________________(1/1)
-7 = 7
+Interpret (double (S (S Z))).
 \end{verbatim}
-
 
-\noindent We can now invoke reflexivity of equality using the following
-tactic:
+\noindent The \texttt{Define}-command assigns name \texttt{double} to
+the \texttt{fun}-term.  We can then refer to that function by
+the name \texttt{double}, as we do in the subsequent
+\texttt{Interpret}-command.  If you run \guru\ on \texttt{test.g},
+you will see the same result for this \texttt{Interpret}-command
+as we had previously: \texttt{(S (S (S (S Z))))}.
 
-\begin{verbatim}
-reflexivity.
-\end{verbatim}
+\subsubsection{Multiple arguments}
 
-\noindent Since this is enough to prove the goal formula, and since
-we only had one goal to prove, \guru displays the following wonderful
-and welcome message in its proof output panel:
+The syntax for functions with multiple arguments is demonstrated
+by this example:
 
 \begin{verbatim}
-Proof completed.
+Define double_plus := fun(x:nat)(y:nat). (plus (double x) (double y)).
 \end{verbatim}
 
-\noindent To conclude the proof, we must at this point enter the
-following last command:
+\noindent This function is supposed to double each of its two
+arguments, and then add them.  The nested application \texttt{(plus
+(double x) (double y))} does that.  The \texttt{fun}-term is
+written with each argument and its type between parentheses, as this
+example shows.  There is a more concise notation when consecutive
+arguments have the same type, demonstrated by:
 
 \begin{verbatim}
-Qed.
+Define double_plus_a := fun(x y:nat). (plus (double x) (double y)).
 \end{verbatim}
 
-\noindent ``Qed'' is an abbreviation for the Latin phrase ``quod est
-demonstrandum'', meaning ``the thing which had to be proved''.  This
-command causes \guru to exit proof mode and return to its regular mode
-of interaction.  At this point, if you check the type of \texttt{example1},
-you will see that its type is $3+4 = 2+5$.  This is how \guru's type theory
-records the fact that it is a proof of that formula.
-
-\section{Proof by Partial Evaluation}
-
-Sometimes a goal formula can be proved by evaluation even when it involves
-some variables.  A simple example of this is the following 
-
-\[ \forall\, x\,:\,\texttt{nat},\ 0 * x = 0 \]
-
-\noindent One simple way to prove a universal formula like this is to
-prove that $0 * x = 0$ holds, where we temporarily assume $x$ is some
-object we know nothing about, except that it is a natural number.  If
-we can prove the property of this \emph{arbitrary} $x$, then we are
-entitled to conclude the property holds for all natural numbers $x$.
-This is because we made no assumptions about $x$ other than that it is
-a natural number.  So we could plug in any natural number we want to
-our proof, and the proof would still work.  We can start a
-natural-language proof using this idea by saying ``Assume an arbitrary
-$x$''.  Now we must show $0 * x = 0$.  This cannot be proved by
-evaluation, since not all the inputs to the multiplication function
-are known.  But it can be proved by \emph{partial} evaluation.  In
-Computer Science, partial evaluation refers to evaluation of a program
-expression containing some variables and some known values, just by
-operating with the values.  In \guru, proof by partial evaluation is
-typically only possible when the argument that is used as the
-parameter of recursion is a known value or a partially known value.  A
-partially known value is a term that starts with a constructor and
-contains some variables.  Here, since multiplication's first argument
-is its parameter of recursion (as can be confirmed using
-\texttt{Print}, which will display the code in Figure~\ref{fig:mult}),
-and since that argument is a value ($0$), we can do some partial
-evaluation.  No matter what the second argument to \texttt{mult} is,
-if the first argument is $0$, \texttt{mult} will return $0$.
-
-\begin{figure}
-\begin{verbatim}
-mult = 
-fix mult (n m : nat) {struct n} : nat :=
-  match n with
-  | O => 0
-  | S p => m + mult p m
-  end
-\end{verbatim}
-\caption{\label{fig:mult}\guru Definition of Multiplication}
-\end{figure}
-
-The above reasoning can be carried out in \guru as follows:
+\noindent Multiple consecutive arguments can be listed in the same
+parenthetical group, followed by a colon, and then their type.
 
-\begin{verbatim}
-Theorem example2 : forall x : nat, 0 * x = 0.
-intro x.
-compute.
-reflexivity.
-Qed.
-\end{verbatim}
+\subsubsection{Function types}
 
-\noindent The tactic ``\texttt{intro x}'' is how we instruct \guru to
-introduce an arbitrary \texttt{x} for the universally quantified
-variable.  The name we choose for this arbitrary value can be
-different from the variable in the formula.  So we could just as
-well have written ``\texttt{intro y}''.  The proof state we get right
-after doing the \texttt{intro} is 
+You can see the classifier that \guru computes for the \texttt{double}
+function as follows.  In your \texttt{test.g} file (in your home
+directory, beginning with an \texttt{Include}-command to include
+\texttt{plus.g}, as above), write the following:
 
 \begin{verbatim}
-x : nat
-______________________________________(1/1)
-0 * x = 0
-\end{verbatim}
-
-\noindent The assumption of an arbitrary \texttt{x} of type
-\texttt{nat} is listed in the \emph{context}, which is printed above
-the long line.  Whenever we are reasoning under assumptions, they
-appear in the context.  The remaining commands in the proof work just
-as for the evaluation example above.
-
-It should be noted that the \texttt{compute} tactic has a tendency to
-unfold too many definitions.  It is generally better for partial
-evaluation to use the \texttt{simpl} tactic, which is like
-\texttt{compute}, but tries to leave definitions folded up when
-unfolding them does not allow more computation to proceed.
-
-\section{A First Look at Proof by Induction}
-
-Suppose we wish to prove the formula $\forall\, x\, :\, \texttt{nat},\
-x + 0 = x$.  This simple formula looks like a prime candidate for
-proof by partial evaluation.  After all, it looks almost identical to
-the first defining equation for addition:
-
-\[ 0 + x = x \]
-
-\noindent The careful reader will notice, however, that these two
-formulas are not the same (even inserting the omitted quantifier into
-the defining equation).  The difference is the order of the arguments.
-Commutativity of addition tells us this does not matter, but at this
-point in our program verification effort, we have not proved that
-property.  Indeed, it turns out that we must prove the formula listed
-here on the way to proving commutativity of addition.
-
-To prove this formula, we must use proof by induction.  Proof by
-induction is used to prove a formula of the form $\forall\,
-x\,:\,\texttt{d},\ \phi(x)$, where \texttt{d} is an inductive datatype,
-and $\phi(x)$, the \emph{body} of the universal formula, is a formula
-mentioning $x$ (the lowercase Greek letter $\phi$ is pronounced
-``fie'' as in ``fee fie fo fum'').  For our example, \texttt{d} is
-\texttt{nat} and $\phi(x)$ is $x + 0 = x$.  Induction is a general
-proof principle that works for any inductive datatype.  Here, we will
-consider just the special case of induction for the unary natural number
-datatype.  
-
-To prove $\forall\, x\,:\,\texttt{nat},\ \phi(x)$ by (natural number)
-induction, we do the following.  First we must prove that our property
-$\phi$ holds for $0$.  That is, we must prove $\phi(0)$.  This is
-called the base case of the inductive proof.  In our example,
-$\phi(0)$ is $0 + 0 = 0$.  This is easily proved by evaluation.  After
-we prove the base case of our inductive proof, we must prove the step
-case (also called the induction or inductive case).  In the step case,
-we must prove that our property $\phi$ holds for $S\ x$, under the
-assumption that it holds for $x$.  This is done for an arbitrary $x$.
-So we must prove $\phi(S\ x)$, under the assumption of $\phi(x)$, for
-an arbitrary $x$.  The assumption of $\phi(x)$ is usually called the
-induction (or inductive) hypothesis, IH.  In our example, $\phi(S\ x)$
-is $(S\ x) + 0 = S\ x$, while the induction hypothesis $\phi(x)$ is
-$x + 0 = x$.  The induction hypothesis lets us assume what we are
-trying to prove, but only for a structurally smaller value: we assume
-$\phi$ holds of $x$ when trying to prove it holds of $S\ x$.  This is
-very similar to what happens in a recursive definition when we make a
-recursive call.  We use the function we are trying to define, but only
-for a structurally smaller value (of its parameter of recursion).
-
-Let us see how to prove our goal formula for our current example. 
-We are assuming $x + 0 = x$ (the induction hypothesis), and our
-goal formula is
-\[(S\ x) + 0 = S\ x\]
-
-\noindent Using the second defining equation for addition, we can see
-that the left hand of this equation can be partially evaluated:
-\[S\ (x + 0) = S\ x\]
-
-\noindent Now we can use our induction hypothesis to transform
-$x + 0$ on the left hand side into $x$:
-
-\[S\ x = S\ x\]
-
-\noindent This is now proved by reflexivity of equality.
-
-\section{A First Look at Proof by Induction in \guru}
-
-Let us repeat the natural-language induction proof from the previous
-section in \guru.  First, we start our theorem in the usual way:
+Define double := fun(x:nat).(plus x x).
 
-\begin{verbatim}
-Theorem example3: forall x : nat, x + 0 = x.
+Classify double.
 \end{verbatim}
 
-\noindent \guru requires us to specify that we are doing induction on
-variable $x$, using this tactic:
+\noindent If you (save your file and then) run \guru\ on \texttt{test.g},
+it will print
 
 \begin{verbatim}
-induction x.
+Fun(x : nat). nat
 \end{verbatim}
-
-\noindent At this point the proof state looks like this:
-
-\begin{verbatim}
-2 subgoals
-______________________________________(1/2)
-0 + 0 = 0
 
+\noindent This is a \texttt{Fun}-type.  \texttt{Fun}-types classify
+\texttt{fun}-term by showing the input names and types, and
+the output type.  We can see that \guru\ has computed the (correct)
+output type \texttt{nat} for our doubling function.
 
-______________________________________(2/2)
-S x + 0 = S x
-\end{verbatim}
-
-\noindent There are two subgoals: the first is for the base case, and
-the second is for the step case.  They look just the way we expect
-(although we see in the second subgoal that \guru's parsing conventions
-have allowed parentheses to be omitted where we wrote them above).
-Note that for better readability, \guru does not list the assumptions in
-the second subgoal.  We will see them when we start working on that
-subgoal.  The first subgoal listed is always the one we are currently
-working on.  To prove $0+0 = 0$, we use proof by evaluation with
-the \texttt{compute} tactic.  This transforms the proof state to be
-the following
+Earlier it was mentioned that every expression in \guru\ has a
+classifier.  You may be curious to see what the classifier for
+\texttt{Fun(x : nat). nat} is.  So add the following to your
+\texttt{test.g} and re-run \guru\ on it:
 
 \begin{verbatim}
-2 subgoals
-______________________________________(1/2)
-0 = 0
-
-
-______________________________________(2/2)
-S x + 0 = S x
+Classify Fun(x : nat). nat.
 \end{verbatim}
 
-\noindent At this point, invoking reflexivity finishes the proof of the
-first subgoal, and our proof state becomes:
+\noindent You will see the result \texttt{type}.  If you ask \guru\
+for the classifier of \texttt{type}, it will tell you \texttt{tkind}.
+If you ask for the classifier of \texttt{tkind}, \guru\ will report a
+parse error, because \texttt{tkind} is not an expression.  So the
+classification hierarchy stops there.  We have the following
+classifications (this is not valid \guru\ syntax, but nicely shows the
+classification relationships):
 
 \begin{verbatim}
-1 subgoal
-x : nat
-IHx : x + 0 = x
-______________________________________(1/1)
-S x + 0 = S x
-\end{verbatim}
+fun(x:nat).(plus x x)  :  Fun(x:nat).nat  :  type  :  tkind
+\end{verbatim} 
 
-\noindent Here we are presented with the step case of our inductive
-proof.  We have an induction hypothesis called \texttt{IHx}, stating
-that $x + 0 = x$.  Our goal formula is as expected.  The assumption
-and goal formula are expressed with respect to an arbitrary
-\texttt{nat} $x$, which is declared in the context (the part above the
-line).  At this point, we wish to do proof by partial evaluation.  As
-remarked above, it is usually best to use \texttt{simpl} for this
-rather than \texttt{compute}.  If we use the \texttt{simpl} tactic, we
-get
-
-\begin{verbatim}
-1 subgoal
-x : nat
-IHx : x + 0 = x
-______________________________________(1/1)
-S (x + 0) = S x
-\end{verbatim}
+\subsubsection{Functions as inputs}
 
-\noindent We now must use our induction hypothesis \texttt{IHx}.  The tactic
-to do this is called \texttt{rewrite}:
+Now that we have seen how to write function types, we can write a
+function that takes in a function \texttt{f} of type
+\texttt{Fun(x:nat).nat} and applies \texttt{f} twice to an argument
+\texttt{a}:
 
 \begin{verbatim}
-rewrite IHx.
+Define apply_twice := fun(f:Fun(x:nat).nat)(a:nat). (f (f a)).
 \end{verbatim}
 
-\noindent This tactic transforms the left hand side of the formula
-associated with \texttt{IHx} into the right hand side, anywhere it
-finds the former in the goal formula.  So it transforms \texttt{x+0}
-into just \texttt{x}, in the single place where \texttt{x+0} occurs
-(on the left hand side of the goal formula).  We get
+\noindent There is no new syntax here: we are just writing another
+\texttt{fun}-term with arguments \texttt{f} and \texttt{a}.  The
+difference from previous examples, of course, is that the type we list
+for \texttt{f} is a \texttt{Fun}-type.  An argument to a
+\texttt{fun}-term (or listed in a \texttt{Fun}-type) can have any
+legal \guru\ type, including, as here, a \texttt{Fun}-type. You can
+test out this example like this (although before you run it, try to
+figure out what it will compute):
 
 \begin{verbatim}
-1 subgoal
-x : nat
-IHx : x + 0 = x
-______________________________________(1/1)
-S x = S x
+Interpret (apply_twice double (S (S Z))).
 \end{verbatim}
 
-\noindent This is now concluded using \texttt{reflexivity} (and then
-\texttt{Qed}).
+\subsubsection{Functions as outputs}
 
-\section{Exercises}
+Functions can be returned as output from other functions.  This is
+actually already possible with our previous example.  
 
-Do the following in \guru, using (only) the tactics discussed in
-this chapter so far:
 
-\begin{enumerate}
-\item Prove the following obvious facts by evaluation (remember to do
-``\texttt{Require Import List}'' to load the list module for the second
-formula):
-\begin{verbatim}
-10 * 10 = 5 * 20.
-(1::2::nil) ++ (3::nil) = (1::nil) ++ (2::3::nil).
-\end{verbatim}
+The central programming construct of \textsc{Guru} and
+other functional languages mentioned above is the first-class
+recursive function.  By first-class, we mean that functions can be
+inputs and outputs of other functions.  In that sense, a function is
+just like a piece of (inductive) data.  Unlike inductive data,
+however, functions cannot Here is an example, for defining the
+\texttt{plus} function on unary natural numbers.
 
-\item Prove the following simple facts by partial evaluation.  Note
-that to assume several arbitrary objects at once, such as \texttt{A}
-and \texttt{x} in the first formula, you can use the tactic
-``\texttt{intros A x.}'', instead of more verbosely using
-``\texttt{intro A.}'' and then ``\texttt{intro x.}''.
 \begin{verbatim}
-forall A : Set, forall x : list A, nil ++ x = x.
-forall A : Set, forall x y z : A, 
-  (x::y::nil) ++ (z::nil) = (x::nil) ++ (y::z::nil).
+  fun plus(n m : nat) : nat.
+    match n return nat with
+      Z => m
+    | S n' => (S (plus n' m))
+    end
 \end{verbatim}
-
-\item Prove this fact by induction: $\forall\, x\, :\, \texttt{nat},\ x * 0 = 0$.
 
-\item Prove this fact by induction: $\forall\, x\, y\, :\,
-\texttt{nat},\ x + (S\ y) = S\ (x + y)$.  This is another fact used in
-the proof of commutativity of addition.  Note that in the step case,
-you will need to rewrite using your induction hypothesis, which will
-be universally quantified (if you do your proof in the obvious way).
-Rewriting works just fine with universally quantified equations, so
-you can use ``\texttt{rewrite IHx}'', as in the examples above, to do
-the rewriting you need.
-
-\end{enumerate}
-
-\section{More Exercises}
-
-Do the following in \guru, again using (only) the tactics discussed in
-this chapter so far:
-
-\begin{enumerate}
-\item Prove the formula
-\begin{verbatim}
-forall x : nat, 0 - x = 0
-\end{verbatim}
-\item Prove the formula
-\begin{verbatim}
-forall x : nat, x - 0 = x
-\end{verbatim}
-\item Prove associativity of addition.
-\item Prove associativity of list append.
-\end{enumerate}
-
-\section{Case Study: Binary Search Trees}
-                                                                             
-The following exercises concerning binary search trees are based on
-the file bst.v.
-
-\begin{enumerate}
-
-\item Prove the admitted theorem intree\_insert.  This states that if y
-is in tree t or y equals x, then y is in the tree resulting from
-inserting x into t; and vice versa.  The ``vice versa'' is implemented
-by using \texttt{<-->}, which is for ``if and only if''.
-
-\item This exercise builds up to the theorem that if a tree t is a
-binary search tree, then searching for a piece of data x in t using
-the intree function (which searches the whole tree) is equivalent to
-searching for x in t using the inbst function (which can search more
-efficiently, using the binary search tree approach).
-                                                                              
-The file bst.v contains a statement of this theorem, called
-bst\_inbst.  The proof I have for this theorem is quite involved,
-using 6 helper lemmas.  I have included proofs for two of these helper
-lemmas.  The other lemmas have been admitted.
-                                                                              
-Before you try the following, you should make sure you understand
-intuitively why the theorem is correct.  It will not be easy to prove
-this in \guru if you do not really understand why it is true.  Draw some
-pictures of binary search trees with upper and lower bounds to test
-your understanding.  Make sure you see how the helper lemmas I have
-written will be used in the proof.
-
-\begin{enumerate}                                                
-\item Prove the helper lemma leq\_total.
-
-\item Prove the theorem bst\_inbst.  You do not need to prove the
-admitted helper lemmas.  You may use any of them that end up being
-needed in the proof of bst\_inbst.
-                                                                               
-\item Prove some of the other admitted helper lemmas.
-
-\end{enumerate}
-\end{enumerate}
+\noindent The basic idea of adding unary natural numbers 
 
 \end{document}
 

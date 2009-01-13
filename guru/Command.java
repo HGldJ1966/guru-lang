@@ -22,6 +22,8 @@ public class Command {
     
     public static final int TOTAL = 16;
 
+    public static final int CLASSIFY_CMD = 17;
+
     public static final int CHECK_TRUSTED = 18;
 
     protected int which;

@@ -6,7 +6,6 @@ all:
 #	@rm -f book.dvi
 #	$(MAKE) book.dvi
 #	@rm -f book.dvi
-	@rm -f book.pdf
 	$(MAKE) book.pdf
 
 
