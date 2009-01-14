@@ -22,45 +22,57 @@ Iowa City, Iowa, USA
 \chapter{Introduction}
 \label{ch1}
 
-\section{What is \guru?}
+\section{Verified Programming}
 
-\guru\ is a verified programming language, as described above.  But in
-this book, we will also refer to the open-source project consisting of
-a compiler for \guru\ code, the standard library of \guru\ code, and
-other materials as ``\guru'' (or ``the \guru\ project'').  Finally,
-the compiler for \guru\ code, which includes a type- and
-proof-checker, as well as an interpreter, is called \texttt{guru}.  We
-will work with version 1.0 of \guru.
+Software errors are estimated to cost the U.S. economy \$60 billion a
+year, and they contribute to computer security vulnerabilities which
+end up costing U.S. companies a similar amount~\cite{nist02,fbi05}.
+Possibly buggy software cannot be used for safety critical systems
+like biomedical implants, nuclear reactors, airplanes, and utilities
+infrastructure, at least not without costly backup mechanisms to
+handle the case of software failure.  These reasons alone are certainly
+enough to motivate our efforts to eliminate the possibility of bugs 
+from our software.
 
-\section{Installing \guru}
+But there is another reason to seek to create software that is
+absolutely guaranteed to be free from errors: the basic desire we have
+as computer scientists to create excellent software.  How
+dissatisfying it is to write code that we know we cannot truly trust!
+Even if we test it heavily, it may still fail.  It has famously been
+said that testing can establish the presence of bugs, but not their
+absence: we might always have missed that one input scenario that
+breaks the system.  For anyone who loves the construction of elaborate
+virtual edifices and intricate logical structures, verification has to
+be an addicting activity.
 
-This book assumes you will be using \guru\ on a Linux computer, but it
-does not assume much familiarity with Linux.  To install \guru, first
-start a shell. Then run the folllowing \textsc{Subversion} command:
+Indeed it is.  The approach we will follow in this book is to
+construct, along with our software, proofs that the software is
+correct.  These proofs are formal artifacts, just like programs.  The
+compiler checks that they are completely logically sound -- no missing
+cases or incorrect inferences, for example -- when it compiles our
+code.  If the proofs check, then we can be much more confident that
+our software is correct.  Of course, it is always possible there is a
+bug in the compiler (or in the operating system or standard libraries
+the compiler relies on), but assuming there is not, then we know our
+code truly has the properties we have proved it has.  No matter what
+inputs we throw at it, it will always behave as our theorems promise
+us it will.
 
-\begin{verbatim}
-svn checkout http://guru-lang.googlecode.com/svn/branches/1.0 guru-lang
-\end{verbatim}
+Constructing programs and proofs together is, quite possibly, the most
+complex engineering activity known to humankind.  It can be quite
+challenging, and at times frustrating, for example when proofs fail to
+go through not because the code is buggy, but because the property one
+wishes to prove must be carefully rephrased.  But building verified
+software is extremely rewarding.  The mental effort required is very
+stimulating, even if we will never again write a line of
+machine-checked proof.  Furthermore, even if we verify only fairly
+modest properties of a piece of code -- and any verification is
+necessarily incomplete, since can never exhaust the things we might
+potentially wish to prove about a piece of code -- it is my experience
+that even lightly verified code tends to work much, much better right
+from the start than unverified code.  
 
-\noindent This will create a subdirectory called \texttt{guru-lang} of
-your home directory.  This directory contains the \textsc{Java} source
-code for \guru\ version 1.0 itself (\texttt{guru-lang/guru}), the
-standard library written in \guru\ (\texttt{guru-lang/lib}), this
-book's source code (\texttt{guru-lang/doc}), and a number of tests
-written in \guru\ (\texttt{guru-lang/tests}).  A few things in the
-distribution currently depend on its being called \texttt{guru-lang},
-and residing in your home directory.
-
-Before you can use \guru, you must compile it.  To do this, in your
-shell, you should change to the \texttt{guru-lang} directory.  Then
-run the command \texttt{make} from the shell.  This will invoke the
-\textsc{Java} compiler to compile the \textsc{Java} source files in
-\texttt{guru-lang/guru}.  After this is complete, you can run
-\texttt{guru-lang/bin/guru} from the shell to process \guru\ source
-files.  This will be further explained in Section~\ref{sec:natguru}
-below.
-
-\chapter{Monomorphic Functional Programming}
+\section{Functional Programming}
 
 Mainstream programming languages like \textsc{Java} and \textsc{C++},
 while powerful and effective for many applications, pose problems for
@@ -98,13 +110,122 @@ languages like \textsc{Haskell} do have a way of providing functions
 like ``\texttt{gettimeofday()}''.  We will consider ways to provide
 such functionality in a pure language in a later chapter.
 
-\guru\ contains a pure functional programming language, which is
-similar in some ways to Caml and Haskell.  In this chapter, we will
-learn the basics of this functional programming language.  In the next
-chapter, we will see how to verify programs written in it.  We will
-focus for now just on \emph{monomorphic} programs.  These are programs
-defined for specific datatypes.  Generic, or \emph{polymorphic},
-programming will be considered a little later.
+\section{What is \guru?}
+
+\guru\ is a pure functional programming language, which is similar in
+some ways to Caml and Haskell.  But \guru\ also contains a language
+for writing formal proofs demonstrating the properties of programs.
+So there are really two languages: the language of programs, and the
+language of proofs.  When the compiler checks a program, it computes a
+type for it, just as compilers for other languages like \textsc{Java}
+do.  But in \guru, such types can be significantly richer than in
+mainstream or even most research programming languages.  These types
+are called \emph{dependent types}, and they can express non-trivial
+semantic properties of data and functions.  Analogously, when the
+compiler checks a proof, it computes a formula for it, namely the
+formula the proof proves.  So we really have four kinds of expressions
+in \guru: programs (which we also call \emph{terms}) and their types;
+proofs and their formulas.
+
+\guru\ is inspired largely by the \textsc{Coq} theorem prover, used
+for formalized mathematics and theoretical computer science, as well
+as program verification~\cite{coq}.  Like \textsc{Coq}, \guru\ has
+syntax for both proofs and programs, and supports dependent types.
+\guru\ does not have as complex forms of polymorphism and dependent
+types as \textsc{Coq} does. But \guru\ supports some features that are
+difficult or impossible for \textsc{Coq} to support, which are useful
+for practical program verification.  In \textsc{Coq}, the compiler
+must be able to confirm that all programs are \emph{uniformly
+terminating}: they must terminate on all possible inputs.  We know
+from basic recursion theory or theoretical computer science that this
+means there are some programs which really do terminate on all inputs
+that the compiler will not be able to confirm do so.  Furthermore,
+some programs, like web servers or operating systems, are not intended
+to terminate.  So that is a significant limitation.  Other features
+\guru\ has that \textsc{Coq} lacks include support for functional
+modeling of non-functional constructs like destructive updates of data
+structures and arrays; and better support for proving properties of
+dependently typed functions.
+
+So \guru\ is a verified programming language.  In this book, we will
+also refer to the open-source project consisting of a compiler for
+\guru\ code, the standard library of \guru\ code, and other materials
+as ``\guru'' (or ``the \guru\ project'').  Finally, the compiler for
+\guru\ code, which includes a type- and proof-checker, as well as an
+interpreter, is called \texttt{guru}.  We will work with version 1.0
+of \guru.
+
+\section{Installing \guru}
+
+This book assumes you will be using \guru\ on a Linux computer, but it
+does not assume much familiarity with Linux.  To install \guru, first
+start a shell. Then run the folllowing \textsc{Subversion} command:
+
+\begin{verbatim}
+svn checkout http://guru-lang.googlecode.com/svn/branches/1.0 guru-lang
+\end{verbatim}
+
+\noindent This will create a subdirectory called \texttt{guru-lang} of
+your home directory.  This directory contains the \textsc{Java} source
+code for \guru\ version 1.0 itself (\texttt{guru-lang/guru}), the
+standard library written in \guru\ (\texttt{guru-lang/lib}), this
+book's source code (\texttt{guru-lang/doc}), and a number of tests
+written in \guru\ (\texttt{guru-lang/tests}).  A few things in the
+distribution currently depend on its being called \texttt{guru-lang},
+and residing in your home directory.
+
+Before you can use \guru, you must compile it.  To do this, in your
+shell, you should change to the \texttt{guru-lang} directory.  Then
+run the command \texttt{make} from the shell.  This will invoke the
+\textsc{Java} compiler to compile the \textsc{Java} source files in
+\texttt{guru-lang/guru}.  After this is complete, you can run
+\texttt{guru-lang/bin/guru} from the shell to process \guru\ source
+files.  This will be further explained in Section~\ref{ch2:natguru}
+below.
+
+\section{The Structure of This Book}
+
+We begin with \emph{monomorphic} functional programming in \guru.
+Monomorphic means that code operates only over data of specific known
+types. We will see further how to write proofs demonstrating that such
+functions satisfy properties we might be interested in verifying.
+Next, we consider \emph{polymorphic}, or generic, programming, where
+code may operate generically over data of any type, not known in
+advance by the code.  We again see how to write proofs showing that
+such functions have the properties we might be interested in.  The
+next step is \emph{dependently typed} programming.  Here, the types of
+data and functions themselves capture the properties we are interested
+in verifying.  There is no separate proof to write for such
+properties, rather the program contains proofs to help the type
+checker check that the code really meets its specification.  We will
+then see how to write additional proofs about dependently typed
+programs. Finally, we see how non-functional constructs like updatable
+arrays are handled in \guru\ via \emph{functional modeling}.
+
+\section{Acknowledgments}
+
+The following people, listed alphabetically, have assisted me with
+with either the theory or implementation of \guru\ or its standard
+library: Morgan Deters, Henry Li, Todd Schiller, Timothy Simpson,
+Daniel Tratos, and Edwin Westbrook.  This research has been partially
+supported by the National Science Foundation under grant CCF-0448275.
+
+\chapter{Monomorphic Functional Programming}
+
+Like most other functional programming languages, the heart of the
+\guru's programming language is very compact and simple: we can define
+inductive datatype, write (recursive) functions, decompose inductive
+data using a simple pattern-matching construct, and apply (aka, call)
+functions.  That is essentially it.  Recursion is such a powerful idea
+that even with such a simple core, we can write arbitrarily rich and
+complex programs.  We will consider first inductive datatypes, then
+non-recursive functions, pattern matching, and finally recursive
+functions.  When we turn to polymorphic and especially dependently
+typed programming in later chapters, we will have to revisit all these
+concepts (inductive types, recursive functions, pattern matching, and
+function applications), which become richer in those richer
+programming settings.  So the syntax in this chapter will be enriched
+in later chapters.
 
 \section{Inductive Datatypes}
 
@@ -116,8 +237,8 @@ data which are incrementally and uniquely built up using a finite set
 of operations, called the \emph{constructors} of the datatype.
 Incrementally built up means that bigger data are obtained by gradual
 augmentation from smaller data.  Uniquely means that the same piece of
-data cannot be built up in two different ways.  Let us consider
-several examples.
+data cannot be built up in two different ways.  Let us consider a
+basic example.
 
 \subsection{Unary natural numbers}
 
@@ -175,7 +296,7 @@ than binary or decimal numbers, and also easier to write basic
 programs like addition.  So we begin with unary natural numbers.
 
 \subsection{Unary natural numbers in \guru}
-\label{sec:natguru}
+\label{ch2:natguru}
 
 \guru's standard library includes a definition of unary natural
 numbers, and definitions of standard arithmetic functions operating on
@@ -236,17 +357,18 @@ more complicated declarations than just ``: \texttt{type}''.  In more
 detail, ``\texttt{nat} : \texttt{type}'' means that \texttt{type} is
 the \emph{classifier} of \texttt{nat}.  The concept of classifier is
 central to \guru.  For example, the next two lines declare the
-classifiers for \texttt{Z} and \texttt{S}.  So what is a classifier?
-In \guru, some expressions are classifiers for others.  For example,
-\texttt{type} is the classifier for types.  Following the processing
-of this \texttt{Inductive}-command, we will also have that
-\texttt{nat} is the classifier for unary natural numbers encoded with
-\texttt{Z} and \texttt{S}.  The classifier for \texttt{S} states that
-it is a function (indicated with \texttt{Fun}) that takes in an input
-called \texttt{x} that is a \texttt{nat}, and then produces a
-\texttt{nat}.  Generally speaking, classifiers partition expressions
-into sets of expressions that have certain similar properties.  Every
-expression in \textsc{Guru} has exactly one classifier.
+classifiers for \texttt{Z} (zero) and \texttt{S} (successor).  So what
+is a classifier?  In \guru, some expressions are classifiers for
+others.  For example, \texttt{type} is the classifier for types.
+Following the processing of this \texttt{Inductive}-command, we will
+also have that \texttt{nat} is the classifier for unary natural
+numbers encoded with \texttt{Z} and \texttt{S}.  The classifier for
+\texttt{S} states that it is a function (indicated with \texttt{Fun})
+that takes in an input called \texttt{x} that is a \texttt{nat}, and
+then produces a \texttt{nat}.  Generally speaking, classifiers
+partition expressions into sets of expressions that have certain
+similar properties.  Every expression in \textsc{Guru} has exactly one
+classifier.
 
 An additional simple piece of terminology is useful.  The constructor
 \texttt{Z} returns a \texttt{nat} as output without being given any
@@ -260,23 +382,11 @@ constructor.
 
 We should note finally that \guru\ does not provide decimal notation
 for unary natural numbers.  Indeed, \guru\ currently does not provide
-special syntax for describing any data.  All data are inductive, and
-are constructed by applying constructors (like \texttt{S} and
-\texttt{Z}) to smaller data.
+special syntax for describing any data.  There are no built-in
+datatypes in \guru: all data are inductive, constructed by applying
+constructors (like \texttt{S} and \texttt{Z}) to smaller data.
 
-\section{Programming Constructs}
-
-In this section, we will see the basic programming constructs of
-\textsc{Guru}.  Like most other functional programming languages, the
-heart of the language is very compact and simple: we can define
-recursive functions, decompose inductive data using a simple
-pattern-matching construct, and apply (aka, call) functions.  That is
-essentially it.  Recursion is such a powerful idea that even with such
-a simple core, we can write arbitrarily rich and complex programs.  We
-will consider first non-recursive functions, then pattern matching,
-and finally recursive functions.
-
-\subsection{Non-recursive functions}
+\section{Non-recursive Functions}
 
 Suppose we want to define a doubling function, based on the
 \texttt{plus} function we used before.  We have not seen how to define
@@ -309,7 +419,7 @@ directory, create a file \texttt{test.g}, and begin it with
 Include "guru-lang/lib/plus.g".
 \end{verbatim}
 
-\noindent As for the example in Section~\ref{sec:natguru} above,
+\noindent As for the example in Section~\ref{ch2:natguru} above,
 this includes the definitions of \texttt{nat} and \texttt{plus}.
 Next write:
 
@@ -339,7 +449,7 @@ apply \texttt{fun(x:nat).(plus x x)} to an argument \texttt{(S (S Z))}
 by writing \texttt{(fun(x:nat).(plus x x) (S (S Z)))}, as we did in
 this example.
 
-\subsubsection{Definitions}
+\subsection{Definitions}
 
 Most often we write a function expecting it to be called in multiple
 places in our code.  We would like to give the function a name, and
@@ -360,7 +470,7 @@ the name \texttt{double}, as we do in the subsequent
 you will see the same result for this \texttt{Interpret}-command
 as we had previously: \texttt{(S (S (S (S Z))))}.
 
-\subsubsection{Multiple arguments}
+\subsection{Multiple arguments}
 
 The syntax for functions with multiple arguments is demonstrated
 by this example:
@@ -383,7 +493,7 @@ Define double_plus_a := fun(x y:nat). (plus (double x) (double y)).
 \noindent Multiple consecutive arguments can be listed in the same
 parenthetical group, followed by a colon, and then their type.
 
-\subsubsection{Function types}
+\subsection{Function types}
 
 You can see the classifier that \guru computes for the \texttt{double}
 function as follows.  In your \texttt{test.g} file (in your home
@@ -429,7 +539,7 @@ classification relationships):
 fun(x:nat).(plus x x)  :  Fun(x:nat).nat  :  type  :  tkind
 \end{verbatim} 
 
-\subsubsection{Functions as inputs}
+\subsection{Functions as inputs}
 
 Now that we have seen how to write function types, we can write a
 function that takes in a function \texttt{f} of type
@@ -453,7 +563,7 @@ figure out what it will compute):
 Interpret (apply_twice double (S (S Z))).
 \end{verbatim}
 
-\subsubsection{Functions as outputs}
+\subsection{Functions as outputs}
 
 Functions can be returned as output from other functions.  This is
 actually already possible with functions we have seen above.  For
@@ -520,10 +630,10 @@ fun(f g : Fun(x:nat).nat)(x:nat). (f (g x))
 
 \noindent That is, due to partial applications, we can write our
 composition function as a function with three arguments: \texttt{f},
-\texttt{g}, and \textt{x}.  We can then just apply it to the first
+\texttt{g}, and \texttt{x}.  We can then just apply it to the first
 two, to get the composition.
 
-\subsubsection{Comments}
+\subsection{Comments}
 
 This is not a bad place to describe the syntax for comments in \guru.  To
 comment out all text to the end of the line, we use \%.  For example:
@@ -547,7 +657,7 @@ middle of expressions, like this:
 Interpret (plus %- here is a comment -% Z).
 \end{verbatim}
 
-\subsection{Pattern matching}
+\section{Pattern Matching}
 
 Like other functional languages that rely on inductive datatypes,
 \guru\ programs can use pattern matching to analyze data by taking it
@@ -629,7 +739,7 @@ so we have one clause for each of those constructors.  It is required
 in \guru\ to list the clauses in the same order as the constructors
 were declared in the \texttt{Inductive}-command which declared the
 datatype.  Our declaration of \texttt{nat} (back in
-Section~\ref{sec:natguru}) lists \texttt{Z} first and then \texttt{S},
+Section~\ref{ch2:natguru}) lists \texttt{Z} first and then \texttt{S},
 so that explains the ordering of the \texttt{match}-clauses here.
 
 Each \texttt{match}-case starts out with a pattern for the
@@ -643,7 +753,127 @@ They are declared by the pattern, and their scope is the rest of the
 \texttt{match}-clause.
 
 After the pattern, each \texttt{match}-clause has ``\texttt{=>}'', and
-then the \emph{body} of the 
+then its \emph{body}.  This is similar to the body of a
+\texttt{fun}-term: it gives the code to compute the value returned by
+the function.  For our \texttt{iszero} function, we return \texttt{tt}
+in the zero (\texttt{Z}) case, and \texttt{ff} in the successor
+(\texttt{S}) case.  If we then run the following example, we will get
+the expected value of \texttt{tt}:
 
+\begin{verbatim}
+Interpret (iszero Z).
+\end{verbatim}
+
+\section{Recursive Functions}
+
+We are finally in a position now to see how to define recursive
+functions.  \guru\ does not have iterative looping constructs like
+\texttt{while}- or \texttt{for}-loops.  Instead, all looping is done
+by recursion.  Here is the code for \texttt{plus}, taken from
+\texttt{guru-lang/lib/plus.g}:
+
+\begin{verbatim}
+  fun plus(n m : nat) : nat.
+    match n with
+      Z => m
+    | S n' => (S (plus n' m))
+    end
+\end{verbatim}
+
+\noindent This is a recursive \texttt{fun}-term.  There are two main
+differences from the non-recursive \texttt{fun}-terms we have seen
+above.  First and foremost, the ``\texttt{fun}'' keyword is followed
+by a name for the recursive function.  This name can be used in the
+body of the function to make a recursive call.  We see it used in the
+second \texttt{match}-clause.  We will walk through the
+\texttt{match}-clauses in just a moment, but before that we note the
+second distinctive feature of a recursive \texttt{fun}-term: after the
+argument list (``\texttt{(n m : nat)}''), there is colon and then the
+return type of the \texttt{fun}-term is listed (``\texttt{ : nat}'').
+Since \texttt{plus} returns a \texttt{nat}, that is the return type.
+The reason \guru\ requires us to list the return type here for a
+recursive \texttt{fun}-term is that it makes it much easier to type
+check the term.  Wherever \texttt{plus} is called in the body of the
+function, we know exactly what its input types and output type are.
+If \guru\ allowed us to omit the output type here at the start of the
+\texttt{fun}-term, then the type checker would not know the type of
+the value that is being computed by the recursive call to
+\texttt{plus} in the second \texttt{match}-clause.
+
+Syntactically, there is nothing else new in the code.  But let us try
+to understand how it manages to add two unary natural numbers.  The
+code is based on the following two mathematical equations:
+\begin{eqnarray*}
+0+ m & = & m \\
+(1+n')+m & = & 1+(n'+m)
+\end{eqnarray*}
+
+\noindent These are certainly true statements about addition.  But
+how do they relate to the \texttt{fun}-term written above?  Let us
+see how to transform them step by step into that \texttt{fun}-term.
+First, we should recognize that $0$ and $1+x$ are just different
+notation for zero and successor of $x$.  If we use the notation we
+have used in \guru\ so far for these, the mathematical equations
+turn into:
+\begin{eqnarray*}
+\texttt{Z}+ m & = & m \\
+(\texttt{S}\ n')+m & = & (\texttt{S}\ (n'+m))
+\end{eqnarray*}
+
+\noindent Now, we do not have infix notation in \guru\ for functions,
+so let us replace the infix $+$ symbol with a prefix \texttt{plus}:
+
+\begin{eqnarray*}
+\texttt{(plus Z m)} & = & m \\
+\texttt{(plus (S n') m)} & = & \texttt{(S (plus n' m))}
+\end{eqnarray*}
+
+\noindent Now look at the right hand sides of the equations we have
+derived by this simple syntactic transformation.  They are exactly the
+same as the bodies of the \texttt{match}-clauses for the recursive
+\texttt{fun}-term for \texttt{plus}.  The final connection can be made
+between these equations and that \texttt{fun}-term by observing that
+the equations are performing a case split on the first argument
+(called \texttt{n} in the \texttt{fun}-term): either it is \texttt{Z},
+or else it is \texttt{S n'} for some \texttt{n'}.  This case split is
+done in the \texttt{fun}-term using pattern matching.  The final point
+to observe is that where we use \texttt{plus} on the right hand side
+of the second equation, we are making a recursive call to
+\texttt{plus}.  This corresponds to the recursive call in the
+\texttt{fun}-term.  In fact, we can observe that with each recursive
+call, the first argument gets smaller.  It is \texttt{(S n')} to start
+with, and then decreases to \texttt{n'}, which is \emph{structurally
+smaller} than \texttt{(S n')}.  Structurally smaller means that
+\texttt{n'} is actually subdata of \texttt{(S n')}.  While we do not
+need this observation now, it will be critical when reasoning with
+\texttt{plus}, since it implies that \texttt{plus} is a \emph{total}
+function.  That is, \texttt{plus} is guaranteed to terminate with a
+value for all inputs we give it.
+
+\section{Summary}
+
+In this chapter, we have seen the four basic programming features of
+\guru, in the setting of monomorphic programming:
+\begin{itemize}
+\item inductive datatypes, like \texttt{nat} for unary natural
+numbers, which has \emph{constructors} \texttt{Z} for zero and
+\texttt{S} for the successor of a number;
+\item applications like \texttt{(S Z)} of a function (which happens to be a constructor) \texttt{S} to argument \texttt{Z},
+and like \texttt{(plus x y)} for applying the function \texttt{plus} to arguments \texttt{x} and \texttt{y};
+\item non-recursive, like the doubling function \texttt{fun(x:nat).(plus x x)}, and recursive ones, like \texttt{plus}; and
+\item pattern matching, which allows us to analyze (i.e., take apart)
+a piece of data (the \emph{scrutinee}) into its subdata.
+\end{itemize}
+
+ \noindent We have also seen how to run \guru\ on simple examples,
+drawing on code from the \guru\ standard library (like the code for
+\texttt{plus}).
+
+\section{Exercises}
+
+
+
+\bibliographystyle{plain}
+\bibliography{the-bib}
 
 \end{document}
