@@ -217,10 +217,10 @@ see it print out the expected result of adding 2 and 2 in unary:
 (S (S (S (S Z))))
 \end{verbatim}
 
-The definition of the unary natural numbers is in
+The declaration of the unary natural numbers is in
 \texttt{guru-lang/lib/nat.g}, which is included by the file
 \texttt{plus.g} which we have included here.  If you look in
-\texttt{nat.g}, you will find at the top the following definition:
+\texttt{nat.g}, you will find at the top:
 
 \begin{verbatim}
 Inductive nat : type :=
@@ -230,7 +230,7 @@ Inductive nat : type :=
 
 \noindent This is an \texttt{Inductive}-command.  It instructs \guru\
 to declare the new inductive datatype \texttt{nat}.  The ``\texttt{nat
-: type}'' on the first line of the definition just tells \guru\ that
+: type}'' on the first line of the declaration just tells \guru\ that
 \texttt{nat} is a type.  We will see other examples later which use
 more complicated declarations than just ``: \texttt{type}''.  In more
 detail, ``\texttt{nat} : \texttt{type}'' means that \texttt{type} is
@@ -291,14 +291,16 @@ fun(x:nat).(plus x x)
 
 \noindent Let us examine this piece of code.  First, ``\texttt{fun}''
 is the keyword which begins a function, also called a
-\texttt{fun}-term.  After this keyword come the arguments to
-the function, in parentheses.  In this case, there is just one
-argument, \texttt{x}.  Arguments must be listed with their types (with
-a colon in between).  In this case, the type is \texttt{nat}.  After
-the arguments we have a period, and then the value returned by the
-function.  In this case, the value returned is just the result of the
-application of \texttt{plus} to \texttt{x} and \texttt{x}, for which
-the notation, as we have already seen, is \texttt{(plus x x)}.
+\texttt{fun}-term.  After this keyword come the arguments to the
+function, in parentheses.  In this case, there is just one argument,
+\texttt{x}.  Arguments must be listed with their types (with a colon
+in between).  In this case, the type is \texttt{nat}.  After the
+arguments we have a period, and then \emph{body} of the
+\texttt{fun}-term.  The body just gives the code to compute the value
+returned by the function.  In this case, the value returned is just
+the result of the application of \texttt{plus} to \texttt{x} and
+\texttt{x}, for which the notation, as we have already seen, is
+\texttt{(plus x x)}.
 
 To use this function in \guru, try the following.  In your home
 directory, create a file \texttt{test.g}, and begin it with
@@ -454,26 +456,194 @@ Interpret (apply_twice double (S (S Z))).
 \subsubsection{Functions as outputs}
 
 Functions can be returned as output from other functions.  This is
-actually already possible with our previous example.  
-
-
-The central programming construct of \textsc{Guru} and
-other functional languages mentioned above is the first-class
-recursive function.  By first-class, we mean that functions can be
-inputs and outputs of other functions.  In that sense, a function is
-just like a piece of (inductive) data.  Unlike inductive data,
-however, functions cannot Here is an example, for defining the
-\texttt{plus} function on unary natural numbers.
+actually already possible with functions we have seen above.  For
+example, consider the \texttt{plus} function.  Its type, as revealed
+by a \texttt{Classify}-command, is 
 
 \begin{verbatim}
-  fun plus(n m : nat) : nat.
-    match n return nat with
-      Z => m
-    | S n' => (S (plus n' m))
-    end
+Fun(n : nat)(m : nat). nat
 \end{verbatim}
 
-\noindent The basic idea of adding unary natural numbers 
+\noindent Now try the following:
+
+\begin{verbatim}
+Classify (plus (S (S Z))).
+\end{verbatim}
+
+\noindent \guru\ will say that the classifier of this expression is:
+
+\begin{verbatim}
+Fun(m : nat). nat
+\end{verbatim}
+
+\noindent This example shows that we can apply functions to fewer than
+all the arguments they accept.  Such an application is called a
+\emph{partial application} of the function.  In this case,
+\texttt{plus} accepts two arguments, but we can apply it to just the
+first argument, in this case \texttt{(S (S Z))}.  The result is a
+function that is waiting for the second argument \texttt{m}, and will
+then return the result of adding two to m.  This point can be brought
+out with the following:
+
+\begin{verbatim}
+Define plus2 := (plus (S (S Z))).
+
+Interpret (plus2 (S (S (S Z)))).
+\end{verbatim}
+
+\noindent We define the \texttt{plus2} function to be the partial
+application of \texttt{plus} to \texttt{(S (S Z))}, and then interpret
+the application of \texttt{plus2} to three.  \guru\ will print five
+(in unary), as expected.
+
+For another example of using functions as outputs, here is a function
+to compose two functions, each of type \texttt{Fun(x:nat).nat}:
+
+\begin{verbatim}
+fun(f g : Fun(x:nat).nat). fun(x:nat). (f (g x))
+\end{verbatim}
+
+\noindent The inputs to this \texttt{fun}-term are functions \texttt{f} and \texttt{g}.
+The body, which computes the output value returned by the function, is
+
+\begin{verbatim}
+fun(x:nat). (f (g x))
+\end{verbatim}
+
+\noindent This is, of course, a function that takes in input \texttt{x} of type
+\texttt{nat}, and returns \texttt{(f (g x))}.  In \guru, what we have written
+as the definition of our composition function is equivalent to:
+
+\begin{verbatim}
+fun(f g : Fun(x:nat).nat)(x:nat). (f (g x))
+\end{verbatim}
+
+\noindent That is, due to partial applications, we can write our
+composition function as a function with three arguments: \texttt{f},
+\texttt{g}, and \textt{x}.  We can then just apply it to the first
+two, to get the composition.
+
+\subsubsection{Comments}
+
+This is not a bad place to describe the syntax for comments in \guru.  To
+comment out all text to the end of the line, we use \%.  For example:
+
+\begin{verbatim}
+Define plus2 := (plus (S (S Z))).  % This text here is in a comment.
+\end{verbatim}
+
+\noindent Comments can also be started and stopped by enclosing them
+betwee \texttt{\%-} and \texttt{-\%}, as in:
+
+\begin{verbatim}
+%- Comments can also be written using
+   this syntax. -%
+\end{verbatim}
+
+\noindent Comments can be placed anywhere in \guru\ input, including in the
+middle of expressions, like this:
+
+\begin{verbatim}
+Interpret (plus %- here is a comment -% Z).
+\end{verbatim}
+
+\subsection{Pattern matching}
+
+Like other functional languages that rely on inductive datatypes,
+\guru\ programs can use pattern matching to analyze data by taking it
+apart into its subdata.  To demonstrate this, we will write a simple
+function to test whether a \texttt{nat} is zero (\texttt{Z}) or not.
+For this, we need the definition of booleans, provided in
+\texttt{guru-lang/lib/bool.g}.  This file is included by
+\texttt{nat.g} (included by \texttt{plus.g}) is so we do not need to
+include \texttt{bool.g} explicitly.  It is worth noting that it is not
+an error in \guru\ to include a file multiple times: \guru\ keeps
+track of which files have been included (by their full pathnames), and
+ignores requests after the first one to include the file.  So suppose
+our \texttt{test.g} file in our home directory starts off as above:
+
+\begin{verbatim}
+Include "guru-lang/lib/plus.g".
+\end{verbatim}
+
+\noindent This will pull in the declaration of the booleans, which is:
+
+\begin{verbatim}
+Inductive bool : type :=
+  ff : bool
+| tt : bool.
+\end{verbatim}
+
+\noindent Just as for the declaration of \texttt{nat} above, this
+\texttt{Inductive}-command instructs \guru\ to add constructors
+\texttt{tt} (for true) and \texttt{ff} (for false), both of type
+\texttt{bool}.  Now we can define the \texttt{iszero} function as
+follows:
+
+\begin{verbatim}
+Define iszero := 
+  fun(x:nat). 
+    match x with 
+      Z => tt 
+    | S x' => ff
+    end.
+\end{verbatim}
+
+\noindent Let us walk through this definition.  First, we see it is
+written across several lines, with changing indentation.  Whitespace
+in \guru, as in most sensible languages, has no semantic impact.  So
+the indentation and line breaks are just (intended) to make it easier
+to read the code.  It would have the same meaning if we wrote it all
+on one line, like this:
+
+\begin{verbatim}
+Define iszero := fun(x:nat). match x with Z => tt | S x' => ff end.
+\end{verbatim}
+
+\noindent To return to the code: we have a \texttt{Define}-command,
+just as we have seen above.  We are defining \texttt{iszero} to be a
+certain \texttt{fun}-term.  This \texttt{fun}-term takes in input
+\texttt{x} of type \texttt{nat}, and then it matches on \texttt{x}.
+Here is where the pattern matching comes into play.  
+
+We have ``\texttt{match x with}''.  In this first part of the
+\texttt{match}-term, we are saying we want to pattern match on
+\texttt{x}.  We are allowed to match on anything whose type is an
+inductive type (i.e., declared with an \texttt{Inductive}-command).
+We cannot match on functions, for example, because they have
+\texttt{Fun}-types, which are not inductive.  The term we are matching
+on is called the \emph{scrutinee} (because the \texttt{match}-term is
+scrutinizing -- i.e., analyzing -- it).  
+
+Next come the \texttt{match}-clauses, separated by a bar (``\texttt{|}''):
+
+\begin{verbatim}
+      Z => tt 
+    | S x' => ff
+\end{verbatim}
+
+\noindent We have one clause for each constructor of the scrutinee's
+type.  The scrutinee (\texttt{x} in ``\texttt{match x with}'') has
+type \texttt{nat}, which has constructors \texttt{Z} and \texttt{S},
+so we have one clause for each of those constructors.  It is required
+in \guru\ to list the clauses in the same order as the constructors
+were declared in the \texttt{Inductive}-command which declared the
+datatype.  Our declaration of \texttt{nat} (back in
+Section~\ref{sec:natguru}) lists \texttt{Z} first and then \texttt{S},
+so that explains the ordering of the \texttt{match}-clauses here.
+
+Each \texttt{match}-case starts out with a pattern for the
+corresponding constructor.  The pattern starts with the constructor,
+and then lists different variables for each of the constructor's
+arguments.  So we have the patterns \texttt{Z} and \texttt{S x'}.  The
+first pattern has no variables, since \texttt{Z} takes no arguments.
+The second pattern has the single variable \texttt{x'}, for the sole
+argument of \texttt{S}.  These variables are called pattern variables.
+They are declared by the pattern, and their scope is the rest of the
+\texttt{match}-clause.
+
+After the pattern, each \texttt{match}-clause has ``\texttt{=>}'', and
+then the \emph{body} of the 
+
 
 \end{document}
-
