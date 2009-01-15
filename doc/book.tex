@@ -202,6 +202,11 @@ then see how to write additional proofs about dependently typed
 programs. Finally, we see how non-functional constructs like updatable
 arrays are handled in \guru\ via \emph{functional modeling}.
 
+Since this book is being used for a class, it contains a few
+references to matters of course organization.  Anyone reading it who
+is not part of such a class can, of course, just ignore those
+references.
+
 \section{Acknowledgments}
 
 The following people, listed alphabetically, have assisted me with
@@ -300,12 +305,16 @@ programs like addition.  So we begin with unary natural numbers.
 
 \guru's standard library includes a definition of unary natural
 numbers, and definitions of standard arithmetic functions operating on
-them.  To play with these, first start up a text editor, and create a
-new file called \texttt{test.g}.  Start this file with the following
-text:
+them.  To play with these, first create a subdirectory called
+\texttt{scratch} of your home directory where you will keep scratch
+\guru\ files (we will later use such a subdirectory for homework and
+the project, so we will start off that way for uniformity).  Then
+start up a text editor, and create a new file in your scratch
+subdirectory called \texttt{test.g}.  Start this file with the
+following text:
 
 \begin{verbatim}
-Include "guru-lang/lib/plus.g".
+Include "../guru-lang/lib/plus.g".
 \end{verbatim}
 
 \noindent This \texttt{Include}-command will tell \texttt{guru} to
@@ -325,10 +334,10 @@ this will evaluate to 4, written in unary.
 
 To run \texttt{guru} on your \texttt{test.g} file, first make sure
 you have saved your changes to it.  Then, start a shell, and run
-the command
+the following command in your home directory
 
 \begin{verbatim}
-guru-lang/bin/guru test.g
+guru-lang/bin/guru scratch/test.g
 \end{verbatim}
 
 \noindent This runs the \texttt{guru} tool on your file.  You should
@@ -387,6 +396,7 @@ datatypes in \guru: all data are inductive, constructed by applying
 constructors (like \texttt{S} and \texttt{Z}) to smaller data.
 
 \section{Non-recursive Functions}
+\label{ch2:nonrec}
 
 Suppose we want to define a doubling function, based on the
 \texttt{plus} function we used before.  We have not seen how to define
@@ -412,11 +422,12 @@ the result of the application of \texttt{plus} to \texttt{x} and
 \texttt{x}, for which the notation, as we have already seen, is
 \texttt{(plus x x)}.
 
-To use this function in \guru, try the following.  In your home
-directory, create a file \texttt{test.g}, and begin it with
+To use this function in \guru, try the following.  In your scratch
+subdirectory (of your home directory), create a file \texttt{test.g},
+and begin it with
 
 \begin{verbatim}
-Include "guru-lang/lib/plus.g".
+Include "../guru-lang/lib/plus.g".
 \end{verbatim}
 
 \noindent As for the example in Section~\ref{ch2:natguru} above,
@@ -431,7 +442,7 @@ Interpret (fun(x:nat).(plus x x) (S (S Z))).
 \guru\ on your file:
 
 \begin{verbatim}
-guru-lang/bin/guru test.g
+guru-lang/bin/guru scratch/test.g
 \end{verbatim}
 
 \noindent You should see it print out the expected result of doubling
@@ -673,7 +684,7 @@ ignores requests after the first one to include the file.  So suppose
 our \texttt{test.g} file in our home directory starts off as above:
 
 \begin{verbatim}
-Include "guru-lang/lib/plus.g".
+Include "../guru-lang/lib/plus.g".
 \end{verbatim}
 
 \noindent This will pull in the declaration of the booleans, which is:
@@ -765,6 +776,7 @@ Interpret (iszero Z).
 \end{verbatim}
 
 \section{Recursive Functions}
+\label{ch2:rec}
 
 We are finally in a position now to see how to define recursive
 functions.  \guru\ does not have iterative looping constructs like
@@ -803,10 +815,11 @@ the value that is being computed by the recursive call to
 Syntactically, there is nothing else new in the code.  But let us try
 to understand how it manages to add two unary natural numbers.  The
 code is based on the following two mathematical equations:
-\begin{eqnarray*}
+\begin{eqnarray}
+\label{ch2:eq1}
 0+ m & = & m \\
 (1+n')+m & = & 1+(n'+m)
-\end{eqnarray*}
+\end{eqnarray}
 
 \noindent These are certainly true statements about addition.  But
 how do they relate to the \texttt{fun}-term written above?  Let us
@@ -871,7 +884,92 @@ drawing on code from the \guru\ standard library (like the code for
 
 \section{Exercises}
 
+\begin{enumerate}
 
+\item The standard library files in \texttt{guru-lang/lib/} define
+several other functions that operate on unary natural numbers.  List
+at least three, and say what you think they do.
+
+\item The \texttt{plus} function defined above (Section~\ref{ch2:rec})
+analyzes its first argument.  Write a similar function \texttt{plus'}
+that also adds two natural numbers, but analyzes its second argument.
+Test your function by adding 2 and 3 (in unary), using the appropriate
+\texttt{Interpret}-command and \texttt{plus'}.
+
+\item Define a inductive datatype called \texttt{day}, with one
+constructor for each day of the week.  Then define a function
+\texttt{next\_day} which takes a \texttt{day} as input and returns a
+\texttt{day} as output.  Your function should return the next day of
+the week.  Test your function by getting the next day after Saturday
+(using an \texttt{Interpret}-command).
+
+\item Using the function \texttt{next\_day}, write a function \texttt{nth\_day}
+of type \texttt{Fun(d:day)(n:nat).day}.  Your function should return the \texttt{n}'th
+next day after the given day \texttt{d}.  For example, if \texttt{d} is Monday and
+\texttt{n} is 2, you should return Wednesday.  Test your function by getting
+the 2nd day after Monday.
+
+\item Look at the function \texttt{mult} defined in \texttt{mult.g}.
+Write mathematical equations corresponding to the \texttt{fun}-term
+for \texttt{mult}, like those labeled (\ref{ch2:eq1}) in
+Section~\ref{ch2:rec} above.  Give a brief informal explanation of why
+those equations are true mathematical facts.
+
+\item The following equations return a \texttt{tt} or \texttt{ff} depending
+on whether or not two \texttt{nat}s are in a certain relationship to each
+other.  What is that relationship?
+
+\begin{verbatim}
+(f Z Z) = ff
+(f (S x) Z) = tt
+(f Z (S y)) = tt
+(f (S x) (S y)) = (f x y)
+\end{verbatim}
+
+\noindent Define a function (in \guru) to implement these mathematical
+equations.  Hint: because the equations analyze each argument, you will
+need to use nested pattern matching.  Match first on one argument, and
+then in each resulting \texttt{match}-clause, match on the other.  Test
+your function on 2 and 3.
+
+\item The following mathematical equations define the
+\texttt{n}-fold iteration of a unary (``one argument'') function
+\texttt{f} on an argument \texttt{a}:
+
+\begin{verbatim}
+(iter Z f a) = a
+(iter (S n) f a) = f (iter n f a)
+\end{verbatim}
+
+\noindent First, write down the type (in \guru\ notation) that you
+expect \texttt{iter} to have.  Next implement \texttt{iter}, and test
+your function with this testcase: \texttt{(iter (S (S (S Z))) double
+(S Z))}, where \texttt{double} is the doubling function of
+Section~\ref{ch2:nonrec} above (before you run \guru\ on this: what
+do you think it will compute?).
+
+\item Write a function \texttt{first} which, given a function
+\texttt{P} of type \texttt{Fun(x:nat).bool} returns the smallest
+natural number \texttt{n} such that \texttt{(P n)} evaluates to
+\texttt{tt}.  Hint: you will probably need to write a second
+\emph{helper} function which takes as an additional argument the next
+number to try (for whether \texttt{P} returns \texttt{tt} or
+\texttt{ff} for that number).  Test your function with the following.
+Here, \texttt{eqnat} is a function, defined in \texttt{nat.g}, which
+takes two \texttt{nat}s as input and returns \texttt{tt} if they are
+equal, and \texttt{ff} otherwise).  Also, \texttt{nine} is defined in
+\texttt{nat.g} to be $9$ in unary.
+
+\begin{verbatim}
+Include "../guru-lang/lib/mult.g".
+
+Interpret (first fun(x:nat). (eqnat (mult x x) nine)).
+\end{verbatim}
+
+\noindent Give an informal description of the mathematical
+relationship between the value this returns and 9.
+
+\end{enumerate}
 
 \bibliographystyle{plain}
 \bibliography{the-bib}
