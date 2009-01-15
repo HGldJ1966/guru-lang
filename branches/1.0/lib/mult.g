@@ -26,6 +26,8 @@ Define mult_total : Forall (x y :nat).Exists(z:nat).{(mult x y) = z} :=
 		  hypjoin (mult x y) z by x1 u u' end
 	end.
 
+Total mult mult_total.
+
 Define multS : Forall (m n : nat). { (mult m (S n)) = (plus m (mult m n)) } :=
 	induction(m:nat) by x1 x2 IH 
         return Forall(n : nat). { (mult m (S n)) = (plus m (mult m n)) } with

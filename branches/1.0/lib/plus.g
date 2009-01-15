@@ -3,7 +3,7 @@ Include "P.g".
 
 Define plus :=
   fun plus(n m : nat) : nat.
-    match n return nat with
+    match n with
       Z => m
     | S n' => (S (plus n' m))
     end.
@@ -82,6 +82,8 @@ Define plus_total : Forall ( x  y : nat). Exists(z:nat).{(plus x y) = z} :=
 		existsi (S z') {(plus x y) = *}  
                   hypjoin (plus x y) (S z') by x1 u end	
 	end. 
+
+Total plus plus_total.
 
 Define plus_not_zero : Forall(n m : nat)(a:{n != Z}).{(plus n m) != Z} :=
 	induction(n:nat) by x1 x2 IH return Forall(m:nat)(a:{n != Z}).{(plus n m) != Z}  with
