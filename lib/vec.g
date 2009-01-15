@@ -2,7 +2,6 @@ Include "plus.g".
 Include "list2.g".
 Include "mult.g".
 Include "bool.g".
-Include "type_t.g".
 
 %Set "print_parsed".
 
