@@ -149,7 +149,7 @@ Where is your verification method?
 
 \begin{center}
 \begin{tikzpicture}
-\draw (0,5) -- (0,2.5) node[anchor=east,text=red] {\begin{tabular}{l}Verification\\ power\end{tabular}} -- (0,0) node[anchor=north,text=red] {Real code} -- (8,0) node[anchor=north,text=red] {Math};
+\draw (0,5) -- (0,2.5) node[anchor=east,text=blue] {\begin{tabular}{l}Verification\\ power\end{tabular}} -- (0,0) node[anchor=north,text=red] {Real code} -- (8,0) node[anchor=north,text=red] {Math};
 
 \fill (0,1) circle (2pt) node[right=2pt] {\small Model Checking} ;
 
@@ -171,17 +171,17 @@ Where is your verification method?
 \begin{center}
 \begin{tikzpicture}
 \draw (0,0) node[anchor=south west] {Real code} -- (10,0) node[anchor=south east] {Math. functions};
-\draw[thick,->>,color=red] (4,0.5) node[anchor=west,text=red] {\textsc{Guru}} -- (3.5,0.5) ;
+\draw[thick,->>,color=blue] (4,0.5) node[anchor=west,text=blue] {\textsc{Guru}} -- (3.5,0.5) ;
 \end{tikzpicture}
 
 \ 
 
 \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ 
 \begin{tabular}{l}
-\textcolor{red}{General recursion} \\
-\textcolor{red}{Dependently typed programs} \\
-\textcolor{red}{External theorems about programs }\\
-\textcolor{red}{Mutable state} \\
+\textcolor{blue}{General recursion} \\
+\textcolor{blue}{Dependently typed programs} \\
+\textcolor{blue}{External theorems about programs }\\
+\textcolor{blue}{Mutable state} \\
 No concurrency \\ 
 No aliasing (yet)
 \end{tabular}
@@ -190,6 +190,86 @@ No aliasing (yet)
 
 \end{frame}
 
+\begin{frame}
+  \frametitle{Basic \textsc{Guru} Design}
+
+\begin{itemize}
+
+\item Terms : Types.
+\item Proofs : Formulas.
+\item ``Full-spectrum'' dependency.
+\item Proofs and types can appear in terms.
+\begin{itemize}
+\item computationally irrelevant.
+\item erased by compilation, definitional equality.
+\end{itemize}
+
+\item Definitional equality is very weak (no $\beta$).
+
+\item Type checking decidable.
+
+\item Explicit casts.
+
+\ 
+
+\item \textcolor{blue}{Today:} 
+\begin{itemize}
+
+\item specificational data.
+\item ownership annotations.
+\item functional modeling.
+
+\end{itemize}
+
+\end{itemize}
+
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Specificational Data}
+
+\begin{itemize}
+
+\item Programmer can designate argument positions \texttt{spec}.
+
+\begin{itemize}
+\item for constructors, functions.
+\item \texttt{spec} \texttt{x} can only be used in a \texttt{spec} position.
+\item enforced separately from type checking.
+\end{itemize}
+
+\item \texttt{spec} args erased by compilation \textcolor{purple}{[Brady+03]}, def. equality.
+
+\item Improves efficiency, simplifies proofs.
+
+\end{itemize}
+\end{frame}
+
+\begin{frame}[containsverbatim]
+\frametitle{Example: Vector Append}
+\footnotesize
+\begin{verbatim}
+Inductive vec : Fun(A:type)(n:nat).type :=
+  vecn : Fun(A:type).<vec A Z>
+| vecc : Fun(A:type)(spec n:nat)(a:A)(l:<vec A n>).
+              <vec A (S n)>.
+
+vec_append : Fun(A:type)(spec n m:nat)
+                (l1 : <vec A n>)(l2 : <vec A m>).
+                <vec A (plus n m)>
+
+vec_append_assoc : 
+  Forall(A:type)(n1 : nat)(l1 : <vec A n1>)
+        (n2 n3 : nat)(l2 : <vec A n2>)(l3 : <vec A n3>).
+  { (vec_append (vec_append l1 l2) l3) =
+    (vec_append l1 (vec_append l2 l3)) }
+
+\end{verbatim}
+
+\framebox{Compiled to \textsc{C}: \texttt{gvec gvec\_append(gtype gA, gvec gl1, gvec gl2);}}
+
+\end{frame}
 
 
 \end{document}
