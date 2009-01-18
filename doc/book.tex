@@ -2,8 +2,9 @@
 \usepackage{times}
 \usepackage{url}
 \usepackage{fullpage}
+\usepackage{xspace}
 
-\newcommand{\guru}[0]{\textsc{Guru}}
+\newcommand{\guru}[0]{\textsc{Guru}\xspace}
 
 \begin{document}
 
@@ -112,8 +113,8 @@ such functionality in a pure language in a later chapter.
 
 \section{What is \guru?}
 
-\guru\ is a pure functional programming language, which is similar in
-some ways to Caml and Haskell.  But \guru\ also contains a language
+\guru is a pure functional programming language, which is similar in
+some ways to Caml and Haskell.  But \guru also contains a language
 for writing formal proofs demonstrating the properties of programs.
 So there are really two languages: the language of programs, and the
 language of proofs.  When the compiler checks a program, it computes a
@@ -127,12 +128,12 @@ formula the proof proves.  So we really have four kinds of expressions
 in \guru: programs (which we also call \emph{terms}) and their types;
 proofs and their formulas.
 
-\guru\ is inspired largely by the \textsc{Coq} theorem prover, used
+\guru is inspired largely by the \textsc{Coq} theorem prover, used
 for formalized mathematics and theoretical computer science, as well
-as program verification~\cite{coq}.  Like \textsc{Coq}, \guru\ has
+as program verification~\cite{coq}.  Like \textsc{Coq}, \guru has
 syntax for both proofs and programs, and supports dependent types.
-\guru\ does not have as complex forms of polymorphism and dependent
-types as \textsc{Coq} does. But \guru\ supports some features that are
+\guru does not have as complex forms of polymorphism and dependent
+types as \textsc{Coq} does. But \guru supports some features that are
 difficult or impossible for \textsc{Coq} to support, which are useful
 for practical program verification.  In \textsc{Coq}, the compiler
 must be able to confirm that all programs are \emph{uniformly
@@ -142,22 +143,22 @@ means there are some programs which really do terminate on all inputs
 that the compiler will not be able to confirm do so.  Furthermore,
 some programs, like web servers or operating systems, are not intended
 to terminate.  So that is a significant limitation.  Other features
-\guru\ has that \textsc{Coq} lacks include support for functional
+\guru has that \textsc{Coq} lacks include support for functional
 modeling of non-functional constructs like destructive updates of data
 structures and arrays; and better support for proving properties of
 dependently typed functions.
 
-So \guru\ is a verified programming language.  In this book, we will
+So \guru is a verified programming language.  In this book, we will
 also refer to the open-source project consisting of a compiler for
-\guru\ code, the standard library of \guru\ code, and other materials
-as ``\guru'' (or ``the \guru\ project'').  Finally, the compiler for
-\guru\ code, which includes a type- and proof-checker, as well as an
+\guru code, the standard library of \guru code, and other materials
+as ``\guru'' (or ``the \guru project'').  Finally, the compiler for
+\guru code, which includes a type- and proof-checker, as well as an
 interpreter, is called \texttt{guru}.  We will work with version 1.0
 of \guru.
 
 \section{Installing \guru}
 
-This book assumes you will be using \guru\ on a Linux computer, but it
+This book assumes you will be using \guru on a Linux computer, but it
 does not assume much familiarity with Linux.  To install \guru, first
 start a shell. Then run the folllowing \textsc{Subversion} command:
 
@@ -167,10 +168,10 @@ svn checkout http://guru-lang.googlecode.com/svn/branches/1.0 guru-lang
 
 \noindent This will create a subdirectory called \texttt{guru-lang} of
 your home directory.  This directory contains the \textsc{Java} source
-code for \guru\ version 1.0 itself (\texttt{guru-lang/guru}), the
-standard library written in \guru\ (\texttt{guru-lang/lib}), this
+code for \guru version 1.0 itself (\texttt{guru-lang/guru}), the
+standard library written in \guru (\texttt{guru-lang/lib}), this
 book's source code (\texttt{guru-lang/doc}), and a number of tests
-written in \guru\ (\texttt{guru-lang/tests}).  A few things in the
+written in \guru (\texttt{guru-lang/tests}).  A few things in the
 distribution currently depend on its being called \texttt{guru-lang},
 and residing in your home directory.
 
@@ -179,7 +180,7 @@ shell, you should change to the \texttt{guru-lang} directory.  Then
 run the command \texttt{make} from the shell.  This will invoke the
 \textsc{Java} compiler to compile the \textsc{Java} source files in
 \texttt{guru-lang/guru}.  After this is complete, you can run
-\texttt{guru-lang/bin/guru} from the shell to process \guru\ source
+\texttt{guru-lang/bin/guru} from the shell to process \guru source
 files.  This will be further explained in Section~\ref{ch2:natguru}
 below.
 
@@ -200,17 +201,22 @@ properties, rather the program contains proofs to help the type
 checker check that the code really meets its specification.  We will
 then see how to write additional proofs about dependently typed
 programs. Finally, we see how non-functional constructs like updatable
-arrays are handled in \guru\ via \emph{functional modeling}.
+arrays are handled in \guru via \emph{functional modeling}.
 
 Since this book is being used for a class, it contains a few
 references to matters of course organization.  Anyone reading it who
 is not part of such a class can, of course, just ignore those
-references.
+references.  Also, I will usually begin chapters with a
+\textbf{preview}, which gives an advance peek at the chapter's
+material; and end with a \textbf{summary}.  Feel free to skip
+especially the previews, if you prefer not to see the material without
+a full explanation: all the material is explained in detail in the
+chapter.
 
 \section{Acknowledgments}
 
 The following people, listed alphabetically, have assisted me with
-with either the theory or implementation of \guru\ or its standard
+with either the theory or implementation of \guru or its standard
 library: Morgan Deters, Henry Li, Todd Schiller, Timothy Simpson,
 Daniel Tratos, and Edwin Westbrook.  This research has been partially
 supported by the National Science Foundation under grant CCF-0448275.
@@ -231,6 +237,67 @@ concepts (inductive types, recursive functions, pattern matching, and
 function applications), which become richer in those richer
 programming settings.  So the syntax in this chapter will be enriched
 in later chapters.
+
+\section{Preview}
+
+For those who like an overview in advance, here briefly is the syntax
+for the programming features we will explore in this chapter. (For
+those who dislike reading things without a full explanation, just skip
+this section and you will see it all in great detail in the rest of
+the chapter.)
+
+\begin{itemize}
+
+\item Inductive datatypes are declared using a command like this
+one, for declaring the unary natural numbers:
+
+\begin{verbatim}
+Inductive nat : type :=
+  Z : nat
+| S : Fun(x:nat).nat.
+\end{verbatim}
+
+\item Applications of functions to arguments are written like the
+following, for calling the \texttt{plus} function (which is defined,
+not built-in) on \texttt{x} and \texttt{y}:
+
+\begin{verbatim}
+(plus x y)
+\end{verbatim}
+
+\item Non-recursive functions like this one to double an input
+\texttt{x} are written this way:
+
+\begin{verbatim}
+fun(x:nat). (plus x x)
+\end{verbatim}
+
+\item Pattern matching on inductive data is written as follows, where
+we have one \texttt{match}-clause for when \texttt{x} is \texttt{Z},
+and another for when it is \texttt{S x'} for some \texttt{x'}.  This
+is returning boolean true (\texttt{tt}) if \texttt{x} is \texttt{Z},
+and boolean false (\texttt{ff}) otherwise:
+
+\begin{verbatim}
+    match x with 
+      Z => tt 
+    | S x' => ff
+    end
+\end{verbatim}
+
+\item Recursive functions like \texttt{plus} can be written with this
+syntax:
+
+\begin{verbatim}
+  fun plus(n m : nat) : nat.
+    match n with
+      Z => m
+    | S n' => (S (plus n' m))
+    end
+\end{verbatim}
+
+\end{itemize}
+
 
 \section{Inductive Datatypes}
 
@@ -307,7 +374,7 @@ programs like addition.  So we begin with unary natural numbers.
 numbers, and definitions of standard arithmetic functions operating on
 them.  To play with these, first create a subdirectory called
 \texttt{scratch} of your home directory where you will keep scratch
-\guru\ files (we will later use such a subdirectory for homework and
+\guru files (we will later use such a subdirectory for homework and
 the project, so we will start off that way for uniformity).  Then
 start up a text editor, and create a new file in your scratch
 subdirectory called \texttt{test.g}.  Start this file with the
@@ -325,7 +392,7 @@ include the following additional command:
 Interpret (plus (S (S Z)) (S (S Z))).
 \end{verbatim}
 
-\noindent This \texttt{Interpret}-command tells \guru\ to run its
+\noindent This \texttt{Interpret}-command tells \guru to run its
 interpreter on the given expression.  The interpreter will evaluate
 the expression to a value, and then print the value.  This expression
 is an application of the function \texttt{plus}, which we will see how
@@ -360,7 +427,7 @@ Inductive nat : type :=
 
 \noindent This is an \texttt{Inductive}-command.  It instructs \guru\
 to declare the new inductive datatype \texttt{nat}.  The ``\texttt{nat
-: type}'' on the first line of the declaration just tells \guru\ that
+: type}'' on the first line of the declaration just tells \guru that
 \texttt{nat} is a type.  We will see other examples later which use
 more complicated declarations than just ``: \texttt{type}''.  In more
 detail, ``\texttt{nat} : \texttt{type}'' means that \texttt{type} is
@@ -389,8 +456,8 @@ a \emph{base} constructor.  In contrast, \texttt{S} does require a
 which requires a \texttt{T} as input is called a \emph{recursive}
 constructor.
 
-We should note finally that \guru\ does not provide decimal notation
-for unary natural numbers.  Indeed, \guru\ currently does not provide
+We should note finally that \guru does not provide decimal notation
+for unary natural numbers.  Indeed, \guru currently does not provide
 special syntax for describing any data.  There are no built-in
 datatypes in \guru: all data are inductive, constructed by applying
 constructors (like \texttt{S} and \texttt{Z}) to smaller data.
@@ -415,7 +482,7 @@ is the keyword which begins a function, also called a
 function, in parentheses.  In this case, there is just one argument,
 \texttt{x}.  Arguments must be listed with their types (with a colon
 in between).  In this case, the type is \texttt{nat}.  After the
-arguments we have a period, and then \emph{body} of the
+arguments we have a period, and then the \emph{body} of the
 \texttt{fun}-term.  The body just gives the code to compute the value
 returned by the function.  In this case, the value returned is just
 the result of the application of \texttt{plus} to \texttt{x} and
@@ -439,7 +506,7 @@ Interpret (fun(x:nat).(plus x x) (S (S Z))).
 \end{verbatim}
 
 \noindent Save this file, and then from your home directory run
-\guru\ on your file:
+\guru on your file:
 
 \begin{verbatim}
 guru-lang/bin/guru scratch/test.g
@@ -477,7 +544,7 @@ Interpret (double (S (S Z))).
 \noindent The \texttt{Define}-command assigns name \texttt{double} to
 the \texttt{fun}-term.  We can then refer to that function by
 the name \texttt{double}, as we do in the subsequent
-\texttt{Interpret}-command.  If you run \guru\ on \texttt{test.g},
+\texttt{Interpret}-command.  If you run \guru on \texttt{test.g},
 you will see the same result for this \texttt{Interpret}-command
 as we had previously: \texttt{(S (S (S (S Z))))}.
 
@@ -505,6 +572,7 @@ Define double_plus_a := fun(x y:nat). (plus (double x) (double y)).
 parenthetical group, followed by a colon, and then their type.
 
 \subsection{Function types}
+\label{ch2:func}
 
 You can see the classifier that \guru computes for the \texttt{double}
 function as follows.  In your \texttt{test.g} file (in your home
@@ -517,7 +585,7 @@ Define double := fun(x:nat).(plus x x).
 Classify double.
 \end{verbatim}
 
-\noindent If you (save your file and then) run \guru\ on \texttt{test.g},
+\noindent If you (save your file and then) run \guru on \texttt{test.g},
 it will print
 
 \begin{verbatim}
@@ -526,13 +594,13 @@ Fun(x : nat). nat
 
 \noindent This is a \texttt{Fun}-type.  \texttt{Fun}-types classify
 \texttt{fun}-term by showing the input names and types, and
-the output type.  We can see that \guru\ has computed the (correct)
+the output type.  We can see that \guru has computed the (correct)
 output type \texttt{nat} for our doubling function.
 
-Earlier it was mentioned that every expression in \guru\ has a
+Earlier it was mentioned that every expression in \guru has a
 classifier.  You may be curious to see what the classifier for
 \texttt{Fun(x : nat). nat} is.  So add the following to your
-\texttt{test.g} and re-run \guru\ on it:
+\texttt{test.g} and re-run \guru on it:
 
 \begin{verbatim}
 Classify Fun(x : nat). nat.
@@ -540,10 +608,10 @@ Classify Fun(x : nat). nat.
 
 \noindent You will see the result \texttt{type}.  If you ask \guru\
 for the classifier of \texttt{type}, it will tell you \texttt{tkind}.
-If you ask for the classifier of \texttt{tkind}, \guru\ will report a
+If you ask for the classifier of \texttt{tkind}, \guru will report a
 parse error, because \texttt{tkind} is not an expression.  So the
 classification hierarchy stops there.  We have the following
-classifications (this is not valid \guru\ syntax, but nicely shows the
+classifications (this is not valid \guru syntax, but nicely shows the
 classification relationships):
 
 \begin{verbatim}
@@ -566,7 +634,7 @@ Define apply_twice := fun(f:Fun(x:nat).nat)(a:nat). (f (f a)).
 difference from previous examples, of course, is that the type we list
 for \texttt{f} is a \texttt{Fun}-type.  An argument to a
 \texttt{fun}-term (or listed in a \texttt{Fun}-type) can have any
-legal \guru\ type, including, as here, a \texttt{Fun}-type. You can
+legal \guru type, including, as here, a \texttt{Fun}-type. You can
 test out this example like this (although before you run it, try to
 figure out what it will compute):
 
@@ -591,7 +659,7 @@ Fun(n : nat)(m : nat). nat
 Classify (plus (S (S Z))).
 \end{verbatim}
 
-\noindent \guru\ will say that the classifier of this expression is:
+\noindent \guru will say that the classifier of this expression is:
 
 \begin{verbatim}
 Fun(m : nat). nat
@@ -614,7 +682,7 @@ Interpret (plus2 (S (S (S Z)))).
 
 \noindent We define the \texttt{plus2} function to be the partial
 application of \texttt{plus} to \texttt{(S (S Z))}, and then interpret
-the application of \texttt{plus2} to three.  \guru\ will print five
+the application of \texttt{plus2} to three.  \guru will print five
 (in unary), as expected.
 
 For another example of using functions as outputs, here is a function
@@ -661,24 +729,26 @@ betwee \texttt{\%-} and \texttt{-\%}, as in:
    this syntax. -%
 \end{verbatim}
 
-\noindent Comments can be placed anywhere in \guru\ input, including in the
+\noindent Comments can be placed anywhere in \guru input, including in the
 middle of expressions, like this:
 
 \begin{verbatim}
 Interpret (plus %- here is a comment -% Z).
 \end{verbatim}
 
+\noindent Finally, it is legal to nest comments.
+
 \section{Pattern Matching}
 
 Like other functional languages that rely on inductive datatypes,
-\guru\ programs can use pattern matching to analyze data by taking it
+\guru programs can use pattern matching to analyze data by taking it
 apart into its subdata.  To demonstrate this, we will write a simple
 function to test whether a \texttt{nat} is zero (\texttt{Z}) or not.
 For this, we need the definition of booleans, provided in
 \texttt{guru-lang/lib/bool.g}.  This file is included by
 \texttt{nat.g} (included by \texttt{plus.g}) is so we do not need to
 include \texttt{bool.g} explicitly.  It is worth noting that it is not
-an error in \guru\ to include a file multiple times: \guru\ keeps
+an error in \guru to include a file multiple times: \guru keeps
 track of which files have been included (by their full pathnames), and
 ignores requests after the first one to include the file.  So suppose
 our \texttt{test.g} file in our home directory starts off as above:
@@ -696,7 +766,7 @@ Inductive bool : type :=
 \end{verbatim}
 
 \noindent Just as for the declaration of \texttt{nat} above, this
-\texttt{Inductive}-command instructs \guru\ to add constructors
+\texttt{Inductive}-command instructs \guru to add constructors
 \texttt{tt} (for true) and \texttt{ff} (for false), both of type
 \texttt{bool}.  Now we can define the \texttt{iszero} function as
 follows:
@@ -747,7 +817,7 @@ Next come the \texttt{match}-clauses, separated by a bar (``\texttt{|}''):
 type.  The scrutinee (\texttt{x} in ``\texttt{match x with}'') has
 type \texttt{nat}, which has constructors \texttt{Z} and \texttt{S},
 so we have one clause for each of those constructors.  It is required
-in \guru\ to list the clauses in the same order as the constructors
+in \guru to list the clauses in the same order as the constructors
 were declared in the \texttt{Inductive}-command which declared the
 datatype.  Our declaration of \texttt{nat} (back in
 Section~\ref{ch2:natguru}) lists \texttt{Z} first and then \texttt{S},
@@ -775,11 +845,60 @@ the expected value of \texttt{tt}:
 Interpret (iszero Z).
 \end{verbatim}
 
+\subsection{A note on parse errors}
+\label{ch2:err}
+
+\guru generally tries to provide detailed error messages.  One
+exception, unfortunately, is parse errors.  These are errors in
+syntax, for example, writing something like ``\texttt{(plus Z Z}''
+where the closing parenthesis is missing.  Let us see one example
+of the kind of error message \guru will give for a parse error.
+Suppose we write our \texttt{iszero} function, but forget to put
+a period after the list of arguments:
+
+\begin{verbatim}
+Define iszero := 
+  fun(x:nat) 
+    match x with 
+      Z => tt 
+    | S x' => ff
+    end.
+\end{verbatim}
+
+\noindent \guru will print an error message like the following
+in this case:
+
+\begin{verbatim}
+"/home/stump/guru-lang/doc/test.g", line 5, column 4: parse error.
+Expected "." parsing fun term
+\end{verbatim}
+
+The error message begins with the location of the error, including the
+file where the error occurred, the line number and column within that
+line:
+
+\begin{verbatim}
+"/home/stump/guru-lang/doc/test.g", line 5, column 4
+\end{verbatim}
+
+ \noindent Next comes a very short statement of the rough kind of
+error in question.  This is indeed a parse error, meaning that it is
+arose while trying to parse the text in \texttt{test.g} into a legal
+\guru expression.  Then comes the more detailed error message, which
+in this case as for most parse errors is pretty short:
+
+\begin{verbatim}
+Expected "." parsing fun term
+\end{verbatim}
+
+ \noindent This happens to be somewhat informative, but regrettably,
+especially for parse errors, that is not often the case.
+
 \section{Recursive Functions}
 \label{ch2:rec}
 
 We are finally in a position now to see how to define recursive
-functions.  \guru\ does not have iterative looping constructs like
+functions.  \guru does not have iterative looping constructs like
 \texttt{while}- or \texttt{for}-loops.  Instead, all looping is done
 by recursion.  Here is the code for \texttt{plus}, taken from
 \texttt{guru-lang/lib/plus.g}:
@@ -803,11 +922,11 @@ second distinctive feature of a recursive \texttt{fun}-term: after the
 argument list (``\texttt{(n m : nat)}''), there is colon and then the
 return type of the \texttt{fun}-term is listed (``\texttt{ : nat}'').
 Since \texttt{plus} returns a \texttt{nat}, that is the return type.
-The reason \guru\ requires us to list the return type here for a
+The reason \guru requires us to list the return type here for a
 recursive \texttt{fun}-term is that it makes it much easier to type
 check the term.  Wherever \texttt{plus} is called in the body of the
 function, we know exactly what its input types and output type are.
-If \guru\ allowed us to omit the output type here at the start of the
+If \guru allowed us to omit the output type here at the start of the
 \texttt{fun}-term, then the type checker would not know the type of
 the value that is being computed by the recursive call to
 \texttt{plus} in the second \texttt{match}-clause.
@@ -826,14 +945,14 @@ how do they relate to the \texttt{fun}-term written above?  Let us
 see how to transform them step by step into that \texttt{fun}-term.
 First, we should recognize that $0$ and $1+x$ are just different
 notation for zero and successor of $x$.  If we use the notation we
-have used in \guru\ so far for these, the mathematical equations
+have used in \guru so far for these, the mathematical equations
 turn into:
 \begin{eqnarray*}
 \texttt{Z}+ m & = & m \\
 (\texttt{S}\ n')+m & = & (\texttt{S}\ (n'+m))
 \end{eqnarray*}
 
-\noindent Now, we do not have infix notation in \guru\ for functions,
+\noindent Now, we do not have infix notation in \guru for functions,
 so let us replace the infix $+$ symbol with a prefix \texttt{plus}:
 
 \begin{eqnarray*}
@@ -873,13 +992,13 @@ numbers, which has \emph{constructors} \texttt{Z} for zero and
 \texttt{S} for the successor of a number;
 \item applications like \texttt{(S Z)} of a function (which happens to be a constructor) \texttt{S} to argument \texttt{Z},
 and like \texttt{(plus x y)} for applying the function \texttt{plus} to arguments \texttt{x} and \texttt{y};
-\item non-recursive, like the doubling function \texttt{fun(x:nat).(plus x x)}, and recursive ones, like \texttt{plus}; and
+\item non-recursive functions, like the doubling function \texttt{fun(x:nat).(plus x x)}, and recursive ones, like \texttt{plus}; and
 \item pattern matching, which allows us to analyze (i.e., take apart)
 a piece of data (the \emph{scrutinee}) into its subdata.
 \end{itemize}
 
- \noindent We have also seen how to run \guru\ on simple examples,
-drawing on code from the \guru\ standard library (like the code for
+ \noindent We have also seen how to run \guru on simple examples,
+drawing on code from the \guru standard library (like the code for
 \texttt{plus}).
 
 \section{Exercises}
@@ -941,11 +1060,11 @@ your function on 2 and 3.
 (iter (S n) f a) = f (iter n f a)
 \end{verbatim}
 
-\noindent First, write down the type (in \guru\ notation) that you
+\noindent First, write down the type (in \guru notation) that you
 expect \texttt{iter} to have.  Next implement \texttt{iter}, and test
 your function with this testcase: \texttt{(iter (S (S (S Z))) double
 (S Z))}, where \texttt{double} is the doubling function of
-Section~\ref{ch2:nonrec} above (before you run \guru\ on this: what
+Section~\ref{ch2:nonrec} above (before you run \guru on this: what
 do you think it will compute?).
 
 \item Write a function \texttt{first} which, given a function
@@ -954,10 +1073,14 @@ natural number \texttt{n} such that \texttt{(P n)} evaluates to
 \texttt{tt}.  Hint: you will probably need to write a second
 \emph{helper} function which takes as an additional argument the next
 number to try (for whether \texttt{P} returns \texttt{tt} or
-\texttt{ff} for that number).  Test your function with the following.
-Here, \texttt{eqnat} is a function, defined in \texttt{nat.g}, which
-takes two \texttt{nat}s as input and returns \texttt{tt} if they are
-equal, and \texttt{ff} otherwise).  Also, \texttt{nine} is defined in
+\texttt{ff} for that number).  
+
+\ 
+
+Test your function with the following commands.  Here, \texttt{eqnat}
+is a function, defined in \texttt{nat.g}, which takes two
+\texttt{nat}s as input and returns \texttt{tt} if they are equal, and
+\texttt{ff} otherwise).  Also, \texttt{nine} is defined in
 \texttt{nat.g} to be $9$ in unary.
 
 \begin{verbatim}
@@ -970,6 +1093,982 @@ Interpret (first fun(x:nat). (eqnat (mult x x) nine)).
 relationship between the value this returns and 9.
 
 \end{enumerate}
+
+\chapter{Equational Monomorphic Proving}
+\label{ch2}
+
+The material from the last chapter is probably not entirely alien to
+most readers, since, although the functional programming paradigm is
+quite a bit different from the iterative imperative programming which
+most computer scientists know best, it is, after all, still
+programming.  In this chapter, we will move farther afield from what
+is most of our experience as programmers, and enter the world of
+formal, machine-checked proofs about programs.  Proofs have a lot in
+common with typed programs.  Both are written according to certain
+rules of syntax, and both have a rigid compile-time semantics:
+programs must type check, and proofs must proof check.  In \guru, the
+compiler attempts to compute a formula for a proof in a very similar
+way as it computes a type for a program.  The formula in question is
+the one proved by the proof.
+
+Before we begin, it should be noted that the particular style of
+writing proofs used here is not the only one, and indeed, there are
+other styles which are more widely used.  For an important example,
+tools like \textsc{Coq} are based not on proofs directly, but rather
+on \emph{proof scripts}.  These are higher level scripts that instruct
+\textsc{Coq} on how to build the actual proof.  The level of
+indirection introduced by proof scripts can make life easier for us
+program provers, at least in the short run: there is less detail that
+needs to be written down in a proof script than in a proof.  But in
+the long run, proof scripts have serious problems: because they are
+indirect, they are very hard or impossible to read; and they can be
+quite brittle, breaking badly under even minor changes to the program
+or proof in question.  In contrast, fully detailed proofs make the
+proof information more explicit, and so are -- while still quite
+difficult to read, usually -- somewhat more readable than proof
+scripts.  Also, minor changes do not so immediately lead to broken
+proofs.
+
+The focus in this chapter is on equational reasoning.  In
+Chapter~\ref{ch5} we will look at logical reasoning.  The distinction
+I am drawing here is between reasoning which is primarily about the
+equational relationships between terms (that is equational reasoning);
+and reasoning which is primarily about the logical relationships
+between formulas.  An example of equational reasoning is proving that
+for all \texttt{nat}s \texttt{x}, \texttt{x} plus zero equals
+\texttt{x}.  An example of logical reasoning is proving that if
+\texttt{x} and \texttt{y} are non-zero, then so is \texttt{(plus x
+y)}.
+
+The most powerful and most difficult to master method of proof is
+proof by datatype induction, introduced in Chapter~\ref{ch4}.  Every
+program prover has to cope with this proof method, and learn to apply
+it effectively.  We will begin in this chapter, however, with much
+manageable forms of proof.
+
+For the next several chapters, we will be using very simple examples
+of programs, like the addition program that adds two numbers.  This is
+certainly not the most exciting program, but it seems to provide a
+good balance of simplicity and interesting theorems to prove.  Please
+be assured that we will get to more complex and realistic programming
+examples after we get the basics of monomorphic programming and
+proving down.
+
+\section{Preview}
+
+We consider two of the five kinds of formulas in \guru (the rest
+are introduced in the next chapter):
+
+\begin{itemize}
+
+\item equations, like \texttt{\{ (plus Z Z) = Z \}}.  This one states
+that zero (\texttt{Z}) plus zero equals zero.  There are also
+disequations $\{ t_1\texttt{ != } t_2 \}$ stating that two entities
+$t_1$ and $t_2$ are not equal.
+
+\item \texttt{Forall}-formulas, like \texttt{Forall(x:nat).\{ (plus Z
+x) = x\}}.  This one states that zero plus \texttt{x} equals
+\texttt{x}, for any \texttt{nat} \texttt{x}.  This formula is provable
+in \guru, since indeed, adding zero to any number just returns that number.
+
+\end{itemize}
+
+The forms of proof covered in this chapter are:
+
+\begin{itemize}
+
+\item $\texttt{join}\ t_1\ t_2$, where $t_1$ and $t_2$ are terms.
+This tries to prove the equation $\{ t_1 = t_2 \}$ just by evaluating
+$t_1$ and $t_2$ with the \guru interpreter, and seeing if the results
+are equal.  We use partial evaluation to evaluate terms which contain
+variables.
+
+\item \texttt{foralli(x:nat).P}, where \texttt{P} is another proof, is
+a \texttt{Forall}-introduction: it lets us prove
+the formula \texttt{Forall(x:nat).F}, when \texttt{P} is a proof of \texttt{F}
+using an arbitrary \texttt{x}, about which nothing is known.  If we
+have a proof \texttt{P} of a \texttt{Forall}-formula, we can
+instantiate the \texttt{Forall} quantifier, to replace the quantified
+variable with a value term $t$, using the syntax $[P\ t]$.
+
+\item \texttt{refl t}: this proves $\{ t = t \}$.
+
+\item \texttt{symm P}: if \texttt{P} proves $\{ t_1 = t_2 \}$ , then
+the \texttt{symm}-proof proves $\{ t_2 = t_1 \}$.
+
+\item \texttt{trans P1 P2}: if \texttt{P1} proves $\{ t_1 = t_2 \}$ and
+\texttt{P2} proves $\{ t_2 = t_3 \}$, then the \texttt{trans}-proof proves
+$\{ t_1 = t_3 \}$.
+
+\item \texttt{cong t* P}: if \texttt{P} proves $\{ t_1 = t_2 \}$, then
+the \texttt{cong}-proof proves $\{ t*[t_1] = t*[t_2]\}$, where $t*[t_1]$
+is our notation (not \guru's) for the result of substituting $t_1$ for
+a special variable $*$ occurring in \emph{term context} $t*$.
+
+\item \texttt{case}-proofs, which are syntactically quite similar
+to \texttt{match}-terms, and allow us to prove a theorem by cases
+on the form of a value in an inductive datatype.
+
+\end{itemize}
+
+\section{Proof by Evaluation}
+\label{ch3:eval}
+
+Probably the simplest form of proof in \guru, and other similar tools,
+in proof by evaluation.  For example, we have seen above that
+\texttt{(plus (S (S Z)) (S (S Z)))} evaluates using an
+\texttt{Interpret}-command to \texttt{(S (S (S (S Z))))}.  Let us
+write \texttt{two} for \texttt{(S (S Z))} and \texttt{four} for
+\texttt{(S (S (S (S Z))))} -- in fact, \texttt{nat.g} makes such
+definitions.  Then we can easily record this fact as a theorem, like
+this:
+
+\begin{verbatim}
+Define plus224 := join (plus two two) four.
+
+Classify plus224.
+\end{verbatim}
+
+ \noindent This code defines \texttt{plus224} to be a certain proof.
+The proof is a \texttt{join}-proof.  The syntax for such a proof is
+$\texttt{join}\ t_1\ t_2$, where $t_1$ and $t_2$ are terms.  Here,
+$t_1$ is \texttt{(plus two two)}, and $t_2$ is \texttt{four}.  If you
+run \guru on this example, it will print, in response to the
+\texttt{Classify}-command, the following:
+
+\begin{verbatim}
+{ (plus two two) = four }
+\end{verbatim}
+
+\noindent This is \guru syntax for an equation.  An equation is
+provable in \guru only if the left and right hand sides both diverge
+(run forever), or both converge to a common value.  A
+\texttt{join}-proof $\texttt{join}\ t_1\ t_2$ attempts to prove the
+equation $\{ t_1 = t_2 \}$ by evaluating $t_1$ and $t_2$ (using the
+interpreter), and checking to see if the results are equal.  In this
+case, they are, since \texttt{(plus two two)} evaluates to
+\texttt{four}, and of course, \texttt{four} also evaluates to
+\texttt{four}.
+
+Based on this description of how \texttt{join}-proofs work, we can
+already see how to prove some slightly less trivial theorems: we do not
+have to put a value like \texttt{four} on the right hand side, but instead,
+we can put some other term that evaluates to the same value as the left hand
+side.  So we could prove the formula
+
+\begin{verbatim}
+{ (plus two two) = (plus one three) }
+\end{verbatim}
+
+\noindent using this \texttt{join}-proof:
+
+\begin{verbatim}
+join (plus two two) (plus one three)
+\end{verbatim}
+
+\noindent Proof by evaluation may seem rather trivial, but since in
+\guru we are reasoning about programs based directly on their
+\emph{operational} behavior -- that is, on the behavior they exhibit
+when they are evaluated -- it is in some sense the cornerstone of all
+other forms of proof we might want to use.  Our reasoning about
+programs ultimately is based on running them.
+
+\section{\texttt{Foralli} and Proof by Partial Evaluation}
+\label{ch3:peval}
+
+Our next proof method is a slight extension of proof by evaluation,
+based on the following observation: we often do not need all the
+inputs to be known values in order to see how a program will run.  Let
+us recall, for example, the \texttt{plus} function:
+
+\begin{verbatim}
+  fun plus(n m : nat) : nat.
+    match n with
+      Z => m
+    | S n' => (S (plus n' m))
+    end
+\end{verbatim}
+
+\noindent We can see here that it is not necessary to know what
+\texttt{m} is in order to evaluate \texttt{(plus n m)}.  We do need to
+know what \texttt{n} is, because \texttt{plus} pattern-matches on it
+right away.  But the code for \texttt{plus} does not inspect
+\texttt{m} at all: it never pattern-matches on \texttt{m}, and it does
+not call any other functions which might do so.  That suggests that
+we should be able to prove theorems like
+
+\begin{verbatim}
+{ (plus Z m) = m }
+\end{verbatim}
+
+\noindent just by evaluating the application (i.e., \texttt{(plus Z m)}).  
+Since we usually think of evaluation as requiring all arguments to be
+known values, we call this proof by partial evaluation (as this is the
+name used in computer science for evaluating programs with some arguments
+left as unknowns).
+
+To demonstrate proof by evaluation, we have to be able to introduce an
+unknown value \texttt{m} into our proof.  One way to do this is with a
+\texttt{foralli}-proof.  This \texttt{foralli} stands for
+``Forall-introduction'', and it is a simple way to prove that some
+statement is true for every \texttt{m} of some type.  For our example,
+we will prove:
+
+\begin{verbatim}
+Forall(m:nat). { (plus Z m) = m}
+\end{verbatim}
+
+\noindent This is a \texttt{Forall}-formula.  It says that for every
+\texttt{m} of type \texttt{nat}, \texttt{(plus Z m) = m}.  Here is how
+we prove this formula in \guru, using \texttt{join} and \texttt{foralli}:
+
+\begin{verbatim}
+Define Zplus := foralli(m:nat). join (plus Z m) m.
+
+Classify Zplus.
+\end{verbatim}
+
+ \noindent If you run \guru on this, it will indeed print out, in response
+to the \texttt{Classify}-command:
+
+\begin{verbatim}
+Forall(m : nat) . { (plus Z m) = m }
+\end{verbatim}
+
+ \noindent Let us look at our \texttt{Zplus} proof in more detail.
+The proof begins with ``\texttt{foralli(m:nat)}''.  This is quite
+similar to a \texttt{fun}-term.  Just the way a \texttt{fun}-term
+shows how to compute an output from any input \texttt{m}, in a similar
+way a \texttt{foralli}-proof like this one shows how to prove a
+formula for any \texttt{m}.  Logically speaking, we are going to
+reason about an arbitrary \texttt{nat} \texttt{m}, about which we make
+no constraining assumptions other than that it is indeed a
+\texttt{nat}.  Since our reasoning will make no assumptions about
+\texttt{m}, it would work for any \texttt{nat} we chose to substitute
+for \texttt{m}.  It is in this way that it soundly proves a
+\texttt{Forall}-formula.  
+
+In this case, we are proving the formula $\{ \texttt{(plus Z m)} =
+\texttt{m} \}$.  That is done by the \texttt{join}-proof, which here
+is the body of the \texttt{foralli}-proof.  As we noted above, we can
+evaluate \texttt{(plus Z m)} to \texttt{m} without knowing anything
+about \texttt{m}.  This is because partial evaluation only needs to
+evaluate the pattern-match on the first argument (\texttt{Z}), and it
+can see that the first clause of the \texttt{match}-term is taken.
+
+\subsection{A note on classification errors}
+
+A \texttt{join}-proof works in the case we have just been considering,
+only because the first argument is a known value, and \texttt{plus}
+only inspects that first argument.  If we try switching the arguments,
+we will get a classification error:
+
+\begin{verbatim}
+Define plusZa := foralli(m:nat). join (plus m Z) m.
+
+Classify plusZ.
+\end{verbatim}
+
+ \noindent If you run this in \guru, you will get a pretty verbose error message
+(where I have truncated parts of it with ``...''):
+
+\begin{verbatim}
+"/home/stump/guru-lang/doc/test.g", line 20, column 37: classification error.
+Evaluation cannot join two terms in a join-proof.
+1. normal form of first term: match m by n_eq n_Eq return ...
+2. normal form of second term: m
+
+
+These terms are not definitionally equal (causing the error above):
+1. match m by n_eq n_Eq return ...
+2. m
+\end{verbatim}
+
+ \noindent Because dealing with compile-time errors is a constant part
+of our work in typed programming and even more so in proving, it is
+worth stopping to take a look at this one.  First, as for the parse
+error example in the previous chapter (Section~\ref{ch2:err}), the
+error message begins with the location where the error occurred, and a
+brief description of the kind of error it is.  This is a
+classification error, meaning that the expression in question is
+syntactically well-formed, but an error arose trying to compute a
+classifier for it.  Then comes the more detailed error message:
+
+\begin{verbatim}
+Evaluation cannot join two terms in a join-proof.
+1. normal form of first term: match m by n_eq n_Eq return ...
+2. normal form of second term: m
+\end{verbatim}
+
+ \noindent This says that the two terms $t_1$ and $t_2$ given to
+\texttt{join} do not evaluate to the same \emph{normal forms} -- that
+is, final values that cannot be further evaluated.  We use the
+terminology ``normal form'' here instead of ``value'', because in
+partial evaluation, we might be forced to stop (partially) evaluating
+before we get a value.  This typically happens when we try to
+pattern-match on an unknown.  Partial evaluation gets stuck in such a
+case, because it does not know what the unknown looks like, and so
+cannot proceed with the pattern-match.  The error message her is
+telling us that the left hand side evaluated to \texttt{match m by
+...}, while the right hand side evaluated to just \texttt{m}.  Indeed,
+this makes sense: the \texttt{plus} function wants to pattern-match on
+its first argument, which here is \texttt{m}, and that is where
+partial evaluation got stuck, just as I was mentioning.
+
+Finally, whenever an error is due to the failure of two expressions to be
+the same, we get a further piece of information:
+
+\begin{verbatim}
+These terms are not definitionally equal (causing the error above):
+1. match m by n_eq n_Eq return ...
+2. m
+\end{verbatim}
+
+\noindent In this case, that does not shed much light on the problem,
+but in other case, this information can be very useful.
+``Definitionally equal'' is \guru's terminology for being the same
+expression, ignoring certain trivial syntactic differences.  For
+example, \texttt{one} and \texttt{(S Z)} are definitionally equal,
+since \texttt{one} is defined to be \texttt{(S Z)}.  Differences in
+folding or unfolding definitions (going from \texttt{(S Z)} to
+\texttt{one} is folding, and vice versa is unfolding) are considered
+trivial, and so fall under definitional equality.
+
+\subsection{Terms, types, formulas, and proofs}
+
+This is a good place to highlight briefly the fact mentioned earlier
+that \guru has four distinct classes of expression:
+
+\begin{itemize}
+\item terms: these constitute programs and data, as described in Chapter~\ref{ch2}.  An example is \texttt{(plus Z Z)}.
+\item types: these classify terms.  Examples are \texttt{nat} and \texttt{Fun(x:nat).nat}.
+\item proofs: these prove formulas (and formulas classify proofs).  We
+have just seen the examples of \texttt{join}-proofs for partial
+evaluation and \texttt{foralli} to prove a universal.
+\item formulas: these make statements about terms (and, we will see
+later, also about types).  Examples we have seen so far are equations
+like \texttt{\{ (plus two two) = four \}}; and
+\texttt{Forall}-formulas (also called \emph{universal quantifications}
+or universal formulas), like \texttt{Forall(m:nat). \{ (plus Z m) = m
+\}}.
+\end{itemize}
+
+These classes use different syntax, except for a few commonalities
+like variables; and so we can generally tell just by looking at a
+\guru expression (and not needing to run \guru, for instance) what
+kind of expression it is: term, type, proof, or formula.  Terms and
+proofs are similar, and types and formulas are similar: the latter
+pair classifies the former pair.
+
+\subsection{Instantiating \texttt{Forall}-formulas}
+
+To return to our methods of proof: we have just defined (in
+Section~\ref{ch3:peval}) \texttt{Zplus} to be a proof of the following
+formula:
+
+\begin{verbatim}
+Forall(m:nat). { (plus Z m) = m }
+\end{verbatim}
+
+\noindent When we have a proof of a \texttt{Forall}-formula, we know
+that something is true for every value we can substitute for the
+quantified variable (\texttt{m} in this case).  This substitution is
+called an \emph{instantiation} of the \texttt{Forall}-formula.  There
+is a form of proof for instantiating \texttt{Forall}-formulas.  It is
+similar to application of a \texttt{fun}-term, but is written with
+square brackets.  To instantiate the formula proved above by
+\texttt{Zplus} with, for example, \texttt{three}, we write:
+
+\begin{verbatim}
+[Zplus three]
+\end{verbatim}
+
+\noindent So, our complete \texttt{test.g} file in our scratch
+subdirectory of our home directory -- just to refresh this after
+all the previous discussion -- can be written like this to demonstrate
+this instantiation:
+
+\begin{verbatim}
+Include "../guru-lang/lib/plus.g".
+
+Define Zplus := foralli(m:nat). join (plus Z m) m.
+
+Classify [Zplus three].
+\end{verbatim}
+
+\noindent In response to the \texttt{Classify}-command, \guru will print:
+
+\begin{verbatim}
+{ (plus Z three) = three }
+\end{verbatim}
+
+\noindent In this case, there is not a lot of point to instantiating
+this formula, since we could have proved the same formula just as
+easily by \texttt{join (plus Z three) three}.  Using instantiation is
+just for explanatory purposes.  We will see a bit later a situation
+where using instantiation in a case like this can be necessary.
+
+Now is not a bad time to see what classifies a formula:
+
+\begin{verbatim}
+Classify { (plus Z three) = three }.
+\end{verbatim}
+
+\noindent \guru will print: \texttt{formula}.  If you ask \guru what
+the classifier of \texttt{formula} is, it will say: \texttt{fkind}.
+There is no classifier of \texttt{fkind}, as it is not considered an
+expression.  So we see that we have these classification relationships
+for proofs and formulas:
+
+\begin{verbatim}
+[Zplus three]  :  { (plus Z three) = three }  :  formula  :  fkind
+\end{verbatim} 
+
+\noindent This is similar to the classifications described in
+Section~\ref{ch2:func} above for terms and types:
+
+\begin{verbatim}
+fun(x:nat).(plus x x)  :  Fun(x:nat).nat  :  type  :  tkind
+\end{verbatim} 
+
+ \noindent We call \texttt{formula} and \texttt{type} \emph{kinds}
+(the distinction between \texttt{tkind} and \texttt{fkind} is not
+important in the current version of \guru).  
+
+\section{Reflexivity, Symmetry and Transitivity}
+\label{ch3:equiv}
+
+The basic equivalence properties of equality are captured in the
+\texttt{refl}, \texttt{symm} and \texttt{trans} proof forms.  Suppose
+we have these definitions, similar to one we had in
+Section~\ref{ch3:eval} above:
+
+\begin{verbatim}
+Define plus224 := join (plus two two) four.
+Define plus413 := join four (plus one three).
+\end{verbatim}
+
+\noindent These proofs prove:
+
+\begin{verbatim}
+{ (plus two two) = four }
+{ four = (plus one three) }
+\end{verbatim}
+
+\noindent We can put these two proofs together using a \texttt{trans}-proof:
+
+\begin{verbatim}
+Classify trans plus224 plus413.
+\end{verbatim}
+
+\noindent \guru will respond with:
+
+\begin{verbatim}
+{ (plus two two) = (plus one three) }
+\end{verbatim}
+
+\noindent If we want to swap the left and right hand side of this equation, we put a \texttt{symm}
+around our existing proof:
+
+\begin{verbatim}
+Classify symm trans plus224 plus413.
+\end{verbatim}
+
+\noindent \guru will respond with:
+
+\begin{verbatim}
+{ (plus one three) = (plus two two) }
+\end{verbatim}
+
+\noindent Note that we do not use parentheses here.  \guru uses
+parentheses exclusively for application terms.  The parsing rules for
+\texttt{symm} and \texttt{trans} determine how things are grouped: the
+syntax is \texttt{symm P1} and \texttt{symm P1 P2}, where \texttt{P1}
+and \texttt{P2} are proofs.  Judicious use of indentation is used to
+improve readability.  These example show that there can be more than
+one way to prove something: we could have proved the theorems we just
+got using \texttt{trans} and \texttt{symm} a different way, namely
+with \texttt{join} directly.
+
+Here is an example of a \texttt{refl}-proof:
+
+\begin{verbatim}
+Classify refl (fun loop(b:bool):bool. (loop b) tt).
+\end{verbatim}
+
+\noindent This proves that
+
+\begin{verbatim}
+{  (fun loop(b : bool) : bool. (loop b) tt)
+ = (fun loop(b : bool) : bool. (loop b) tt) }
+\end{verbatim}
+
+\noindent This example is somewhat interesting, because the term
+\texttt{(fun loop(b : bool) : bool. (loop b) tt)} runs forever, as you
+will see if you run \guru with:
+
+\begin{verbatim}
+Interpret (fun loop(b : bool) : bool. (loop b) tt).
+\end{verbatim}
+
+\noindent In most cases, the work of \texttt{refl t} can be done with
+\texttt{join t t}, but when \texttt{t} runs for a long time or does
+not terminate, \texttt{refl} is preferable or even necessary.
+
+\subsection{Error messages with \texttt{trans}-proofs}
+
+It is very easy to make a mistake trying to connect two equational
+subproofs using \texttt{trans}.  Let us look at an example, so it
+is not shocking when such an error arises.  Suppose we have
+these proofs:
+
+\begin{verbatim}
+Define plus224 := join (plus two two) four.
+Define plus134 := join (plus one three) four.
+\end{verbatim}
+
+ \noindent We cannot, of course, glue them together with
+\texttt{trans}, because the right hand side of the equation proved by
+one must be the same as the left hand side of the equation proved by
+the other.  If we try the following, we will get an error:
+
+\begin{verbatim}
+Classify trans plus224 plus134.
+\end{verbatim}
+
+\noindent The error from \guru is:
+
+\begin{verbatim}
+"/home/stump/guru-lang/doc/test.g", line 12, column 14: classification error.
+A trans-proof is attempting to go from a to b and then b' to c,
+where b is not definitionally equal to b'.
+
+1. First equation:  { (plus two two) = four }
+2. Second equation: { (plus one three) = four }
+
+These terms are not definitionally equal (causing the error above):
+1. (S three)
+2. (plus one three)
+\end{verbatim}
+
+\noindent As above, we see the location of the error message first,
+and the fact that it is a classification error (i.e., the proof is in
+the correct syntax, but \guru encountered an error trying to compute a
+classifier for it).  The error message states that the right hand side
+of equation 1 is not definitionally equal to the left hand side of
+equation 2.  That is, they are not syntactically the same expression
+(ignoring certain minor syntactic differences).  Then we see the
+last part of the error message:
+
+\begin{verbatim}
+These terms are not definitionally equal (causing the error above):
+1. (S three)
+2. (plus one three)
+\end{verbatim}
+
+\noindent The first term listed is definitionally equal to \texttt{four},
+the right hand side of equation 1.  The second term is the left hand
+side of equation 2.  \guru expects these to be definitionally equal,
+but they are not.
+
+\section{Congruence}
+
+Along with reflexivity, symmetry, and transitivity, the main
+equational reasoning inference is \emph{congruence}.  Consider again
+our simple proof \texttt{plus224} from above:
+
+\begin{verbatim}
+Define plus224 := join (plus two two) four.
+\end{verbatim}
+
+\noindent As we have seen several times now, this proves:
+
+\begin{verbatim}
+{ (plus two two) = four }
+\end{verbatim}
+
+\noindent From this, we can also prove:
+
+\begin{verbatim}
+{ (S (plus two two)) = (S four) }
+\end{verbatim}
+
+\noindent That is, we can prove that the successor of two plus two is
+equal to the successor of four (namely five).  What we are doing is
+substituting the left and right hand sides of our first equation into
+a pattern \texttt{(S *)} to get the second equation.  The pattern is
+called a \emph{term context}, and it uses the special symbol $*$ to
+indicate the position or positions where the substitution should take
+place.  With these ideas, we can understand the \texttt{cong} form of
+proof in \guru which formalizes this congruence reasoning:
+
+\begin{verbatim}
+Classify cong (S *) plus224.
+\end{verbatim}
+
+\noindent \guru will respond with the following, as expected:
+
+\begin{verbatim}
+{ (S (plus two two)) = (S four) }
+\end{verbatim}
+
+\noindent As another demonstration of \texttt{cong}, try the following in \guru:
+
+\begin{verbatim}
+Classify cong (plus * *) plus224.
+\end{verbatim}
+
+\section{Reasoning by Cases}
+
+With the proof forms we have seen so far, we cannot prove very
+exciting theorems.  For interesting theorems, we usually have to use
+induction.  Induction involves a form of reasoning by cases.  So as a
+warmup for induction, we will consider now a proof construct for
+reasoning by cases, without doing induction.  This is the \texttt{case}
+proof construct.
+
+To demonstrate \texttt{case}-proofs, let us look at a definition of
+boolean negation:
+
+\begin{verbatim}
+Define not :=
+  fun(x:bool).
+    match x with
+      ff => tt
+    | tt => ff
+    end.
+\end{verbatim}
+
+\noindent This \texttt{Define}-command defines \texttt{not} to be a
+function (i.e., a \texttt{fun}-term) that takes input \texttt{x} of
+type \texttt{bool} and pattern-matches on it.  If \texttt{x} is
+\texttt{ff} (boolean true), then we return \texttt{tt} for its
+negation, and vice versa (if it is \texttt{tt}, we return
+\texttt{ff}).  Notice that we have to list the \texttt{match}-clauses
+in this order, since that is the order in which the constructors
+for the \texttt{bool} datatype are declared, in \texttt{bool.g}:
+
+\begin{verbatim}
+Inductive bool : type :=
+  ff : bool
+| tt : bool.
+\end{verbatim}
+
+We will now see how to prove the following slightly interesting
+theorem:
+
+\begin{verbatim}
+Forall(b:bool). { (not (not b)) = b }
+\end{verbatim}
+
+\noindent Informally, the reasoning needed to prove this theorem is
+very simple.  Suppose we have an arbitrary value \texttt{b} of type
+\texttt{bool}.  Either \texttt{b} is \texttt{ff} or it is \texttt{tt},
+given the declaration of the \texttt{bool} datatype.  So suppose
+\texttt{b} is \texttt{ff}.  Then \texttt{(not (not b))} is equal to
+\texttt{(not (not ff))}, which evaluates to \texttt{ff}, which is
+again equal to \texttt{b}.  So by transitivity of equality,
+\texttt{(not (not b)) = b}.  We can write this down (informally) with
+the following three equational steps:
+
+\begin{verbatim}
+(not (not b)) = (not (not ff)) = ff = b
+\end{verbatim}
+
+\noindent Similar reasoning applies in the case where \texttt{b} is
+\texttt{tt}.
+
+We can write this proof formally in \guru, as follows:
+
+\begin{verbatim}
+Define not_not : Forall(b:bool). { (not (not b)) = b } :=
+  foralli(b:bool).
+    case b with
+      ff => trans cong (not (not *)) b_eq
+            trans join (not (not ff)) ff
+                  symm b_eq
+    | tt => trans cong (not (not *)) b_eq
+            trans join (not (not tt)) tt
+                  symm b_eq           
+    end.
+\end{verbatim}
+
+\noindent You can find this theorem in \texttt{guru-lang/lib/bool.g}.
+We will walk through this and see how it works.  First, this is a
+\texttt{Define}-command, but it uses one feature of \texttt{Define}
+that we have not seen previously.  We can list a classifier that the
+defined expression is supposed to have, and \guru will check for us
+that it does.  So what we have written is of the form:
+
+\begin{verbatim}
+Define not_not : expected_classifier := proof.
+\end{verbatim}
+
+\noindent \guru will compute a formula for the proof, and then make
+sure that that formula is definitionally equal (i.e., equal ignoring a
+few minor syntactic variations, like folding and unfolding defined
+symbols) to \texttt{expected\_classifier}.
+
+Looking now at the actual proof that is given in the definition, it
+is:
+
+\begin{verbatim}
+  foralli(b:bool).
+    case b with
+      ff => trans cong (not (not *)) b_eq
+            trans join (not (not ff)) ff
+                  symm b_eq
+    | tt => trans cong (not (not *)) b_eq
+            trans join (not (not tt)) tt
+                  symm b_eq           
+    end.
+\end{verbatim}
+
+\noindent This is a \texttt{foralli}-proof (see
+Section~\ref{ch3:peval} above).  We are assuming an arbitrary value
+\texttt{b} of type \texttt{bool}, just as in our informal proof above.
+The body of the \texttt{foralli}-proof is a \texttt{case}-proof, again
+corresponding to our informal case reasoning above.  The syntax for a
+\texttt{case}-proof is very similar to the syntax for a
+\texttt{match}-term.  We are performing a case analysis on the
+scrutinee \texttt{b}, and we have one clause for each form of
+\texttt{b}.  The body of each \texttt{case}-clause gives the proof of
+the theorem in the case where \texttt{b} equals the pattern listed for
+the clause.  To understand this better, let us look at the proof given
+as the body of the clause for \texttt{ff}:
+
+\begin{verbatim}
+trans cong (not (not *)) b_eq
+trans join (not (not ff)) ff
+      symm b_eq
+\end{verbatim}
+
+ \noindent This consists of the following three subproofs, which are
+glued together with \texttt{trans} (Section~\ref{ch3:equiv}):
+
+\begin{enumerate}
+\item \texttt{cong (not (not *)) b\_eq}
+\item \texttt{join (not (not ff)) ff}
+\item \texttt{symm b\_eq}
+\end{enumerate}
+
+\noindent Let us try to compute what theorem is proved by each of
+these subproofs.  They all use familiar syntax, except that at this
+point, we have not seen what \texttt{b\_eq} is.  This is an
+\emph{assumption variable} introduced by the \texttt{case}-proof.  If
+the scrutinee is a symbol (as \texttt{b} is), then the
+\texttt{case}-proof introduces two assumption variables about
+\texttt{b}: \texttt{b\_eq} and \texttt{b\_Eq}.  We will not use the
+second until quite a bit later.  The variable \texttt{b\_eq} can be
+used as a proof in the body of each \texttt{case}-clause that the
+scrutinee is equal to the pattern.  For indeed, when this code is run,
+if we enter the body of the clause for \texttt{ff}, say, that can only
+be because \texttt{b} is, in fact, \texttt{ff}.  So for the first
+of our three subproofs, let us determine what formula it proves.
+Our assumption variable \texttt{b\_eq} proves
+
+\begin{verbatim}
+{ b = ff }
+\end{verbatim}
+
+\noindent and we are applying \texttt{cong} to this proof.  So the
+first subproof (i.e., ``\texttt{cong (not (not *)) b\_eq}'') proves
+
+\begin{verbatim}
+{ (not (not b)) = (not (not ff)) }
+\end{verbatim}
+
+\noindent The second subproof is a \texttt{join}-proof, proving
+
+\begin{verbatim}
+{ (not (not ff)) = ff }
+\end{verbatim}
+
+\noindent Finally, the third subproof is \texttt{symm b\_eq}.  We
+know \texttt{symm P} just switches the left and right hand side
+of the equation proved by \texttt{P}.  So here, our \texttt{symm}-proof
+proves
+
+\begin{verbatim}
+{ ff = b }
+\end{verbatim}
+
+\noindent We can see that putting these three steps together with transitivity
+corresponds to the three informal equational reasoning steps we saw above:
+
+\begin{verbatim}
+(not (not b)) = (not (not ff)) = ff = b
+\end{verbatim}
+
+\noindent This does indeed prove \texttt{\{ (not (not b)) = b \}}, as
+required, and completes the proof in the \texttt{ff}
+\texttt{case}-clause.  The proof in the \texttt{tt}
+\texttt{case}-clause is similar, except that there, our assumption
+variable \texttt{b\_eq} proves
+
+\begin{verbatim}
+{ b = tt }
+\end{verbatim}
+
+\noindent and the rest of the proof uses \texttt{tt} instead of \texttt{ff}
+appropriately.
+
+\section{Summary}
+
+The forms of proof we have seen in this chapter are:
+
+\begin{itemize}
+
+\item proof by evaluation and proof by partial evaluation, both
+written in \guru using the syntax \texttt{join t1 t2}, which tries to
+prove \texttt{\{ t1 = t2 \}} by evaluating the two terms to a common
+normal form.  A normal form is an expression which cannot evaluate
+further, either because it is a value like three or because evaluation
+is stuck trying to pattern match on a variable (during partial
+evaluation).
+
+\item \texttt{foralli}-proofs and instantiation proofs, the latter
+written like term applications except with square brackets instead
+of parentheses.  These are for proving a \texttt{Forall}-formula,
+and for substituting a value for the quantified variable in a proven
+\texttt{Forall}-formula, respectively.
+
+\item equivalence reasoning and congruence reasoning, using
+\texttt{refl}, \texttt{symm}, \texttt{trans}, and \texttt{cong}.
+
+\item \texttt{case}-proofs for reasoning by cases on the form
+of a piece of inductive data.
+
+\end{itemize}
+
+\section{Exercises}
+
+\begin{enumerate}
+
+\item Include \texttt{guru-lang/lib/mult.g}, and prove the following
+theorems by evaluation.  Here, \texttt{lt} is less-than and \texttt{le}
+is less-than-or-equal on \texttt{nat}s, defined in \texttt{nat.g}:
+\begin{itemize}
+\item \texttt{ \{ (mult zero three) = zero \}}
+\item \texttt{ \{ (lt zero three) = tt \}}
+\item \texttt{ \{ (le one three) = tt \}}
+\end{itemize}
+
+\item Now prove the following, using \texttt{foralli} and \texttt{join}:
+\begin{verbatim}
+Forall(x:nat). { (mult Z x) = Z }
+\end{verbatim}
+
+\item Prove the following formula using \texttt{foralli} and
+\texttt{join}:
+
+\begin{verbatim}
+Forall(x : nat)(y : nat) . { (lt Z (plus (S x) y)) = tt }
+\end{verbatim}
+
+\noindent Note that you can introduce multiple variables in a
+\texttt{foralli}-proof in a similar way as you accept multiple inputs
+in a \texttt{fun}-term.
+
+\item The \texttt{and} function defined in \texttt{bool.g} computes
+the conjunction of two \texttt{bool}s.  Prove the following theorem
+about \texttt{and}:
+
+\begin{verbatim}
+Forall(x:bool). { (and ff x) = ff }
+\end{verbatim}
+
+\item Formulate and prove the theorem that \texttt{and}'ing any
+boolean with itself just returns that same value.
+
+\item Prove the following formula using \texttt{foralli} and
+then a \texttt{case}-proof scrutinizing the universally quantified 
+variable \texttt{x}:
+
+\begin{verbatim}
+Forall(x : nat) . { (le Z x) = tt }
+\end{verbatim}
+
+\item Consider the following datatype for buildings on The University of Iowa Pentacrest:
+
+\begin{verbatim}
+Inductive penta : type :=
+  MacBride : penta
+| MacLean : penta
+| Schaeffer : penta
+| Jessup : penta
+| OldCapitol : penta.
+\end{verbatim}
+
+\begin{itemize}
+
+\item Define a function \texttt{clockwise} that takes a \texttt{penta}
+as input, and returns the next building in clockwise order (looking
+down on the Pentacrest) around the perimeter.  We will consider the
+Old Capitol to be clockwise from itself.
+
+\item Similarly, define a function \texttt{counter} that returns the
+next building in counter-clockwise order, again considering the Old
+Capitol to be counter-clockwise from itself.
+
+\item Formulate and prove the theorem that going clockwise and then
+counter-clockwise gets you back to the same building.
+
+\end{itemize}
+
+\end{enumerate}
+
+\chapter{Inductive Equational Monomorphic Proving}
+\label{ch4}
+
+This chapter is not ready yet.
+
+\chapter{Logical Monomorphic Proving}
+\label{ch5}
+
+This chapter is not ready yet.
+
+\section{Preview}
+
+The remaining kinds of formulas in \guru\ are:
+
+\begin{itemize}
+
+\item Implications, which say that \texttt{F1} implies \texttt{F2},
+are written as \texttt{Forall(u:F1).F2}.  This can be thought of as
+saying that for any proof \texttt{u} of \texttt{F1}, \texttt{F2} is
+true.
+
+\item \texttt{Exists}-formulas, like \texttt{Exists(y:nat). \{ (plus y
+(S Z)) = Z \}}.  This one states that there is a \texttt{nat}
+\texttt{y} such that \texttt{y} plus one (that is, ``\texttt{(S Z)}'')
+equals zero.  This is not provable in \guru, because for natural
+numbers, there is no number we can add to one to get zero.  Of course,
+if we had negative numbers, we could prove this.  But we are making a
+statement about \texttt{nat}s \texttt{y}, not integers \texttt{y}.
+
+\item Conjunctions, which assert that \texttt{F1} and \texttt{F2} are
+both true, are written as \texttt{Exists(u:F1).F2}. This can be
+thought of as saying that there exists a proof \texttt{u} of
+\texttt{F1} such that \texttt{F2} is true.
+
+\end{itemize}
+
+The forms of proof covered in this chapter are:
+
+\begin{itemize}
+\item \texttt{existsi t F* P}, where \texttt{t} is a term, \texttt{F*}
+is a formula context, and \texttt{P} is a proof.  This is to prove the
+formula \texttt{Exists(x:nat).F*[x]}.  The situation is that we have a
+term \texttt{t} and a proof \texttt{P} that that term has a certain
+property.  The property is described using a formula context, which is
+a formula containing the special symbol $*$.
+
+\item \texttt{existse P1 P2}.  If \texttt{P1} is a proof of
+the formula \texttt{Exists(x:nat).F}, and if \texttt{P2} is a proof of the formula
+\texttt{Forall(x:nat)(u:F).F2} for some \texttt{F2} not mentioning
+\texttt{x}, then the \texttt{existse}-proof also proves \texttt{F2}.
+\end{itemize}
 
 \bibliographystyle{plain}
 \bibliography{the-bib}
