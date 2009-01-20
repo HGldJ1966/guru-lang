@@ -182,9 +182,9 @@ Where is your verification method?
 \textcolor{blue}{General recursion} \\
 \textcolor{blue}{Dependently typed programs} \\
 \textcolor{blue}{External theorems about programs }\\
-\textcolor{blue}{Mutable state} \\
+\textcolor{blue}{Unaliased mutable state} \\
 No concurrency \\ 
-No aliasing (yet)
+No aliasing (for mutable state)
 \end{tabular}
 
 \end{center}
@@ -306,7 +306,7 @@ fun fill(A:type)(a:A)(n:nat):<list A>.
 
 \begin{itemize}
 \item This type checks, but needs \texttt{inc}/\texttt{dec} to compile.
-\item By default, inputs \texttt{unowned} by function.
+\item By default, inputs \texttt{unowned} by caller.
 \item Function must consume each input exactly once.
 \end{itemize}
 \end{frame}
@@ -361,7 +361,6 @@ fun fill(A:type)(\framebox{owned} a:A)(\framebox{owned} n:nat):<list A>.
 \item \texttt{dec} subdata.
 \item $O(d)$ time, where $d$ is arity of constructor.
 \end{itemize}
-\item \texttt{match} takes ownership of subdata.
 \item Around 4x faster than \texttt{malloc}/\texttt{free}.
 \item For generic code:
 \begin{itemize}
@@ -398,7 +397,7 @@ fun fill(A:type)(\framebox{owned} a:A)(\framebox{owned} n:nat):<list A>.
 \frametitle{Character-Indexed Mutable Arrays}
 
 \begin{itemize}
-\item Model \texttt{charvec} as \texttt{<vec A 127>}.
+\item Model \texttt{charvec} as \texttt{<vec A 128>}.
 \item Interface is: 
 
 
