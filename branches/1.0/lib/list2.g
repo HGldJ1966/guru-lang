@@ -1,4 +1,5 @@
-Include "nat.g".
+Include "plus.g".
+Include "unit.g".
 
 %Set "print_parsed".
 
@@ -554,3 +555,10 @@ Define all : Fun(A C:type)(owned c:C)
                 (f:Fun(owned c:C)(owned a:A).bool)(owned l:<list A>).bool :=
   fun(A C:type)(owned c:C)(f:Fun(owned c:C)(owned a:A).bool).
     (foldr A bool C c fun(owned c:C)(owned a:A)(b:bool).(and (f c a) b) tt).
+
+Define fill : Fun(A:type)(owned a:A)(owned n:nat).<list A> :=
+  fun fill(A:type)(owned a:A)(owned n:nat):<list A>.
+    match n with
+      Z => (nil A)
+    | S n' => (cons A inc a (fill A a n'))
+    end.

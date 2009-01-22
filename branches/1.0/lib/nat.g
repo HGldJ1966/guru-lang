@@ -223,12 +223,12 @@ Define Sneq_neq : Forall(a b:nat)(u:{ (S a) != (S b) }).{ a != b } :=
 
 Define lt : Fun(owned a b:nat).bool :=
 	fun lt(owned a b:nat) : bool.
-		match a by x y return bool with
-		Z => match b by x y return bool with
+		match a with
+		Z => match b with
 			Z => ff
 			| S b' => tt
 			end
-		| S a' => match b by x y return bool with
+		| S a' => match b with
 			Z => ff
 			| S b' => (lt a' b')
 			end

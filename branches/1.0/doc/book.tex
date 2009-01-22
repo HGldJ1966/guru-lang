@@ -225,7 +225,7 @@ supported by the National Science Foundation under grant CCF-0448275.
 
 Like most other functional programming languages, the heart of the
 \guru's programming language is very compact and simple: we can define
-inductive datatype, write (recursive) functions, decompose inductive
+inductive datatypes, write (recursive) functions, decompose inductive
 data using a simple pattern-matching construct, and apply (aka, call)
 functions.  That is essentially it.  Recursion is such a powerful idea
 that even with such a simple core, we can write arbitrarily rich and
@@ -323,18 +323,18 @@ example like this:
 
 \noindent A few questions arise.  How do we represent zero?  By zero
 marks?  It is then hard to tell if we have written zero or just not
-written anything at all.  We will $Z$ for zero.  Also, how does this
-fit the pattern of an inductive datatype?  That is, how are bigger
-pieces of data (i.e., bigger numbers) obtained incrementally and
-uniquely from smaller ones?  One answer is that a number like five can
-be viewed as built up from its \emph{predecessor} 4 by the
-\emph{successor} operation, which we will write $S$.  The successor
-operation just adds one to a natural number.  In this book, we will
-write the \emph{application} of a function $f$ to an input argument
-$x$ as $f\ x$ or $(f\ x)$.  This is in contrast to other common
-mathematical notation, where we write $f(x)$ for function application.
-So the five-fold application of the successor operation to zero,
-representing the number 5, is written this way:
+written anything at all.  We will write \texttt{Z} for zero.  Also,
+how does this fit the pattern of an inductive datatype?  That is, how
+are bigger pieces of data (i.e., bigger numbers) obtained
+incrementally and uniquely from smaller ones?  One answer is that a
+number like five can be viewed as built up from its \emph{predecessor}
+4 by the \emph{successor} operation, which we will write $S$.  The
+successor operation just adds one to a natural number.  In this book,
+we will write the \emph{application} of a function $f$ to an input
+argument $x$ as $f\ x$ or $(f\ x)$.  This is in contrast to other
+common mathematical notation, where we write $f(x)$ for function
+application.  So the five-fold application of the successor operation
+to zero, representing the number 5, is written this way:
 
 \[ (S\ (S\ (S\ (S\ (S\ Z))))) \]
 
@@ -746,10 +746,10 @@ apart into its subdata.  To demonstrate this, we will write a simple
 function to test whether a \texttt{nat} is zero (\texttt{Z}) or not.
 For this, we need the definition of booleans, provided in
 \texttt{guru-lang/lib/bool.g}.  This file is included by
-\texttt{nat.g} (included by \texttt{plus.g}) is so we do not need to
+\texttt{nat.g} (included by \texttt{plus.g}), so we do not need to
 include \texttt{bool.g} explicitly.  It is worth noting that it is not
-an error in \guru to include a file multiple times: \guru keeps
-track of which files have been included (by their full pathnames), and
+an error in \guru to include a file multiple times: \guru keeps track
+of which files have been included (by their full pathnames), and
 ignores requests after the first one to include the file.  So suppose
 our \texttt{test.g} file in our home directory starts off as above:
 
@@ -1144,7 +1144,7 @@ The most powerful and most difficult to master method of proof is
 proof by datatype induction, introduced in Chapter~\ref{ch4}.  Every
 program prover has to cope with this proof method, and learn to apply
 it effectively.  We will begin in this chapter, however, with much
-manageable forms of proof.
+more manageable forms of proof.
 
 For the next several chapters, we will be using very simple examples
 of programs, like the addition program that adds two numbers.  This is
@@ -1215,7 +1215,7 @@ on the form of a value in an inductive datatype.
 \label{ch3:eval}
 
 Probably the simplest form of proof in \guru, and other similar tools,
-in proof by evaluation.  For example, we have seen above that
+is proof by evaluation.  For example, we have seen above that
 \texttt{(plus (S (S Z)) (S (S Z)))} evaluates using an
 \texttt{Interpret}-command to \texttt{(S (S (S (S Z))))}.  Let us
 write \texttt{two} for \texttt{(S (S Z))} and \texttt{four} for
@@ -1425,7 +1425,7 @@ These terms are not definitionally equal (causing the error above):
 \end{verbatim}
 
 \noindent In this case, that does not shed much light on the problem,
-but in other case, this information can be very useful.
+but in other cases, this information can be very useful.
 ``Definitionally equal'' is \guru's terminology for being the same
 expression, ignoring certain trivial syntactic differences.  For
 example, \texttt{one} and \texttt{(S Z)} are definitionally equal,
@@ -1502,11 +1502,11 @@ Classify [Zplus three].
 { (plus Z three) = three }
 \end{verbatim}
 
-\noindent In this case, there is not a lot of point to instantiating
-this formula, since we could have proved the same formula just as
-easily by \texttt{join (plus Z three) three}.  Using instantiation is
-just for explanatory purposes.  We will see a bit later a situation
-where using instantiation in a case like this can be necessary.
+\noindent In this case, there is no need for instantiation, since we
+could have proved the same formula just as easily by \texttt{join
+(plus Z three) three}.  Using instantiation is just for explanatory
+purposes.  We will see a bit later a situation where using
+instantiation in a case like this can be necessary.
 
 Now is not a bad time to see what classifies a formula:
 
