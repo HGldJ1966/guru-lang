@@ -38,6 +38,31 @@ Define gs_ctxt_tot : Forall(symbols:symbols_t).Exists(G:ctxt).
     existsi G { (gs_ctxt symbols) = *}
       join (gs_ctxt symbols) G.
 
+
+Define diffids_insert_next
+ : Forall(n:var)(symbols symbols':symbols_t)
+         (s:string)(t:trm)
+         (n':var)
+         (a:{(v2n n') = (S (v2n n))})
+         (I1:@<diffids (gs_ctxt symbols)>)
+         (I2:@<idsbnd1 n (gs_ctxt symbols)>)
+         (u:{ symbols' = (trie_insert s (mkpair n t) symbols)}).
+     @<diffids symbols'> :=
+  foralli(n:var)(symbols symbols':symbols_t)
+         (s:string)(t:trm)
+         (n':var)
+         (a:{(v2n n') = (S (v2n n))})
+         (I1:@<diffids (gs_ctxt symbols)>)
+         (I2:@<idsbnd1 n (gs_ctxt symbols)>)
+         (u:{ symbols' = (trie_insert s (mkpair n t) symbols)}).
+    abbrev e = (mkpair var trm n t) in
+    existse [trie_insert_interp symbols_e symbols symbols' s e symm u] 
+    foralli(l1 l2 : <list <pair string symbols_e>>)
+           (u: { (trie_interp symbols') = (append l1 (cons (mkpair s (mkpair n t)) l2)) }).
+      show u
+        
+      end.
+
 Define trusted symbols_ok_insert_next
  : Forall(n:var)(symbols symbols':symbols_t)
          (s:string)(t:trm)

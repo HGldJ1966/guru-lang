@@ -10,7 +10,7 @@ Inductive vec : Fun(A:type)(n:nat).type :=
 | vecc : Fun(A:type)(spec n:nat)(a:A)(l:<vec A n>).
               <vec A (S n)>.
 
-Define spec vec_append :=
+Define vec_append :=
 fun vec_append(A:type)(spec n m:nat)(l1 : <vec A n>)(l2 : <vec A m>):
               <vec A (plus n m)>.
     match l1 with

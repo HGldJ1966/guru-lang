@@ -7,6 +7,7 @@ public class Interpret extends Command {
     }
 
     public void process(Context ctxt) {
+	t.classify(ctxt,Expr.NO_APPROX,true);
 	Expr e = t.eval(ctxt);
 	e.print(ctxt.w,ctxt);
 	ctxt.w.println("");

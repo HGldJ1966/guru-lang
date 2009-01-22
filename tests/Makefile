@@ -1,5 +1,8 @@
 go:	wordhist
 
+vec_test:
+	java -cp .. guru.Main vec_test.g
+
 strange_vec:	
 	java -cp .. guru.Main strange_vec.g
 

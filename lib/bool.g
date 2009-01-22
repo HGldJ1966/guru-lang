@@ -22,7 +22,7 @@ Define and3 :=
 
 Define not :=
   fun(x:bool).
-    match x return bool with
+    match x with
       ff => tt
     | tt => ff
     end.
@@ -160,12 +160,13 @@ Define neqEqbool : Forall(x y:bool)(u:{ x != y }).{ (eqbool x y) = ff } :=
   end.
 
 Define not_total : Forall(x:bool).Exists(z:bool).{ (not x) = z } :=
-  induction(x:bool) by xp xt IHx return Exists(z:bool).{ (not x) = z } with
+  foralli(x:bool).
+    case x with
     ff => existsi tt { (not x) = * }
-                  trans cong (not *) xp
+                  trans cong (not *) x_eq
                         join (not ff) tt
   | tt => existsi ff { (not x) = * }
-                  trans cong (not *) xp
+                  trans cong (not *) x_eq
                         join (not tt) ff
   end.
 
@@ -316,6 +317,17 @@ Define not_tot :=
     ff => existsi tt {(not x) = *} hypjoin (not x) tt by a end
   | tt => existsi ff {(not x) = *} hypjoin (not x) ff by a end
   end.
+
+Define not_not : Forall(b:bool). { (not (not b)) = b } :=
+  foralli(b:bool).
+    case b with
+      ff => trans cong (not (not *)) b_eq
+            trans join (not (not ff)) ff
+                  symm b_eq
+    | tt => trans cong (not (not *)) b_eq
+            trans join (not (not tt)) tt
+                  symm b_eq           
+    end.
 
 Define iff_tot : Forall(x y:bool).Exists(z:bool). {(iff x y) = z} :=
   induction(x:bool) by ux ign ign 
