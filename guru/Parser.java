@@ -385,6 +385,8 @@ public class Parser {
             c = readDumpDependence();
         else if (tryToEat("Total"))
             c = readTotal();
+        else if (tryToEat("Echo"))
+            c = readEcho();
 	else
 	    handleError("Unexpected start of a command.");
 	c.pos = pos;
@@ -635,6 +637,16 @@ public class Parser {
 	cmd.f = new File(readString());
 	cmd.root = root;
 	eat(".", "Include");
+	return cmd;
+    }
+
+    protected Echo readEcho() throws IOException
+    {
+	Echo cmd = new Echo();
+	if (!eat_ws())
+	    handleError("Unexpected end of input parsing a Include.");
+	cmd.s = readString();
+	eat(".", "Echo");
 	return cmd;
     }
     

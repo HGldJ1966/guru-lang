@@ -67,6 +67,8 @@ Define to_nat_tot
           cast a by symm inj <vec * **> vv join a a]
   end.
 
+Total to_nat to_nat_tot.
+
 Inductive to_bv_t : type :=
   mk_to_bv_t : Fun(spec l:nat)(v:<bv l>).to_bv_t.
 
@@ -668,3 +670,22 @@ Define to_nat_append
              by inj <vec ** *> v1_Eq end
      end
      l1 v1].
+
+Define to_nat_neq 
+  : Forall(l:nat)(v1:<bv l>)(v2:<bv l>)
+          (u:{ (eqnat (to_nat v1) (to_nat v2)) = ff }).
+      { (eqbv v1 v2) = ff } :=
+  foralli(l:nat)(v1:<bv l>)(v2:<bv l>)
+         (u:{ (eqnat (to_nat v1) (to_nat v2)) = ff }).
+  case (eqbv l v1 v2) by x y with
+    ff => x
+  | tt => 
+    contra
+      trans
+        trans symm u
+        trans cong (eqnat (to_nat *) (to_nat v2)) 
+                    [eqbv_eq l v1 v2 x]
+              [x_eqnat_x (to_nat l v2)]
+        clash tt ff
+      { (eqbv v1 v2) = ff }
+  end.

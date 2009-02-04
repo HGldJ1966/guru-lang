@@ -318,6 +318,8 @@ Define not_tot :=
   | tt => existsi ff {(not x) = *} hypjoin (not x) ff by a end
   end.
 
+Total not not_tot.
+
 Define not_not : Forall(b:bool). { (not (not b)) = b } :=
   foralli(b:bool).
     case b with

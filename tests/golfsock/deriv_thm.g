@@ -78,3 +78,34 @@ Define trusted idsbnd1_lookup_nothing
 Define trusted lookup_nothing_append1 
   : Forall(n:var)(G1 G2:ctxt)(u : { (lookup n (append G1 G2)) = nothing }).
      { (lookup n G1) = nothing } := truei.
+
+Define lookup_strengthen
+  : Forall(n n':var)(T:trm)(G1 G2:ctxt)
+          (u1 : { (vlt n n') = tt }) .
+        { (lookup n (append G1 G2)) = (lookup n (append G1 (ctxtc n' T G2))) } := 
+  foralli(n n':var)(T:trm)(G1 G2:ctxt)
+         (u1 : { (vlt n n') = tt }).
+    [induction(G1:ctxt) 
+     return { (lookup n (append G1 G2)) = (lookup n (append G1 (ctxtc n' T G2))) } with
+       nil _ => 
+           hypjoin (lookup n (append G1 G2)) (lookup n (append G1 (ctxtc n' T G2)))
+           by G1_eq [to_nat_neq wordlen n' n
+                       [neqEqnat (v2n n') (v2n n)
+                           symm
+                           [lt_implies_neq (v2n n) (v2n n') 
+                               hypjoin (lt (v2n n) (v2n n')) tt by u1 end]]] end
+     | cons _ a' G1' => 
+         case a' with
+           mkpair _ _ m T' =>
+           case (eqvar m n) by u2 ign with
+             ff => 
+             hypjoin (lookup n (append G1 G2)) (lookup n (append G1 (ctxtc n' T G2)))
+             by a'_eq G1_eq u2 [G1_IH G1'] end
+           | tt => 
+             hypjoin (lookup n (append G1 G2)) (lookup n (append G1 (ctxtc n' T G2)))
+             by a'_eq G1_eq u2 end
+           end
+         end
+     end
+     G1].
+      

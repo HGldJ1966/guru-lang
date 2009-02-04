@@ -26,6 +26,8 @@ public class Command {
 
     public static final int CHECK_TRUSTED = 18;
 
+    public static final int ECHO = 19;
+
     protected int which;
     public Position pos;
 

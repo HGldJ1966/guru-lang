@@ -1,11 +1,20 @@
 trie:
-	java -cp .. guru.Main trie.g
+	time java -cp .. guru.Main trie.g
+
+plus:
+	time java -cp .. guru.Main plus.g
 
 word:
 	java -cp .. guru.Main word.g
 
 vec:
 	java -cp .. guru.Main vec.g
+
+bv:
+	time java -cp .. guru.Main bv.g
+
+list2:
+	time java -cp .. guru.Main list2.g
 
 msort:
 	java -cp .. guru.Main msort.g
