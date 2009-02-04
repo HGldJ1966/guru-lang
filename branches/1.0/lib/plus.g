@@ -9,29 +9,28 @@ Define plus :=
     end.
 
 Define plusZ : Forall(n:nat). { (plus n Z) = n } :=
-  induction(n:nat) by x1 x2 IH return { (plus n Z) = n } with
-    Z => trans cong (plus * Z) x1
+  induction(n:nat) return { (plus n Z) = n } with
+    Z => trans cong (plus * Z) n_eq
          trans join (plus Z Z) Z
-               symm x1
-  | S n' => trans cong (plus * Z) x1
+               symm n_eq
+  | S n' => trans cong (plus * Z) n_eq
             trans join (plus (S n') Z) (S (plus n' Z))
-            trans cong (S *) [IH n']
-                  symm x1
+            trans cong (S *) [n_IH n']
+                  symm n_eq
   end.
 
 Define plusS : Forall(n m : nat). { (plus n (S m)) = (S (plus n m))} :=
-	induction (n:nat) by x1 x2 IH return Forall(m:nat).{ (plus n (S m)) = (S (plus n m))} with
+	induction (n:nat) return Forall(m:nat).{ (plus n (S m)) = (S (plus n m))} with
 		Z => foralli(m : nat).
-		     trans cong (plus * (S m)) x1
-		     trans join (plus Z (S m)) (S m)
-		     trans join (S m) (S (plus Z m))
-		     cong (S (plus * m)) symm x1
+		     trans cong (plus * (S m)) n_eq
+		     trans join (plus Z (S m)) (S (plus Z m))
+		     cong (S (plus * m)) symm n_eq
 		| S n' => foralli(m : nat).
-			trans cong (plus * (S m)) x1
+			trans cong (plus * (S m)) n_eq
 			trans join (plus (S n') (S m)) (S (plus n' (S m)))
-			trans cong (S *) [IH n' m]
+			trans cong (S *) [n_IH n' m]
 			trans join (S (S (plus n' m))) (S (plus (S n') m))
-			cong (S (plus * m)) symm x1
+			cong (S (plus * m)) symm n_eq
 	end.
 
 Define plusS_hop : Forall(n m : nat). {(plus (S n) m) = (plus n (S m))} :=
@@ -39,19 +38,19 @@ Define plusS_hop : Forall(n m : nat). {(plus (S n) m) = (plus n (S m))} :=
     hypjoin (plus (S n) m) (plus n (S m)) by [plusS n m] end.
 
 Define plus_comm : Forall (n m :nat). { (plus n m) = (plus m n) } :=
-	induction (n : nat) by x1 x2 IH return Forall(m : nat).{ (plus n m) = (plus m n) } with
-		Z => foralli(m : nat).
-			trans cong (plus * m) x1
-			trans join (plus Z m) m
-			trans cong * symm [plusZ m]
-			cong (plus m *) symm x1
-		|S n' => foralli(m : nat).
-			trans cong (plus * m) x1
-			trans join (plus (S n') m) (S (plus n' m))
-			trans cong (S *)  [IH n' m]
-			trans cong * symm [plusS m n']
-			cong (plus m *) symm x1
-	end.
+induction (n : nat) return Forall(m : nat).{ (plus n m) = (plus m n) } with
+  Z => foralli(m : nat).
+       trans cong (plus * m) n_eq
+       trans join (plus Z m) m
+       trans cong * symm [plusZ m]
+             cong (plus m *) symm n_eq
+| S n' => foralli(m : nat).
+          trans cong (plus * m) n_eq
+          trans join (plus (S n') m) (S (plus n' m))
+          trans cong (S *)  [n_IH n' m]
+          trans cong * symm [plusS m n']
+                cong (plus m *) symm n_eq
+end.
 
 Define plus_assoc : Forall(x y z:nat). { (plus (plus x y) z) = (plus x (plus y z)) } :=
   induction(x:nat) by x1 x2 IH return

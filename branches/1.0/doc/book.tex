@@ -1,5 +1,6 @@
 \documentclass{book}[12pt]
 \usepackage{times}
+\usepackage{comment}
 \usepackage{url}
 \usepackage{fullpage}
 \usepackage{xspace}
@@ -9,6 +10,8 @@
 \setlength{\pdfpagewidth}{\paperwidth}
 
 \newcommand{\guru}[0]{\textsc{Guru}\xspace}
+
+\newtheorem{hint}{Theorem Proving Hint}
 
 \begin{document}
 
@@ -134,7 +137,7 @@ proofs and their formulas.
 
 \guru is inspired largely by the \textsc{Coq} theorem prover, used
 for formalized mathematics and theoretical computer science, as well
-as program verification~\cite{coq}.  Like \textsc{Coq}, \guru has
+as program verification~\cite{coq,coqart}.  Like \textsc{Coq}, \guru has
 syntax for both proofs and programs, and supports dependent types.
 \guru does not have as complex forms of polymorphism and dependent
 types as \textsc{Coq} does. But \guru supports some features that are
@@ -1361,6 +1364,7 @@ evaluate the pattern-match on the first argument (\texttt{Z}), and it
 can see that the first clause of the \texttt{match}-term is taken.
 
 \subsection{A note on classification errors}
+\label{ch3:err}
 
 A \texttt{join}-proof works in the case we have just been considering,
 only because the first argument is a known value, and \texttt{plus}
@@ -1723,6 +1727,7 @@ Classify cong (plus * *) plus224.
 \end{verbatim}
 
 \section{Reasoning by Cases}
+\label{ch3:case}
 
 With the proof forms we have seen so far, we cannot prove very
 exciting theorems.  For interesting theorems, we usually have to use
@@ -2025,7 +2030,761 @@ counter-clockwise gets you back to the same building.
 \chapter{Inductive Equational Monomorphic Proving}
 \label{ch4}
 
-This chapter is not ready yet.
+In this chapter, we take our first look at proof by induction in
+\guru.  We will use induction to prove equational theorems about
+monomorphic functions.  In later chapters we will prove more complex
+theorems about polymorphic and dependently typed functions, but
+beginning with this simple setting will make induction in \guru easier
+to master.  When we wish to prove properties of recursive functions --
+which are, of course, the most interesting functions and the ones we
+have to use to accomplish most non-trivial tasks -- we generally need
+induction.  Proof by induction and definition by recursion are very
+similar.  Indeed, a deeper understanding of the connection helps in
+mastering induction, so we will start with that.  Then we will see
+several examples of proof by induction in \guru.
+
+\section{Preview}
+
+The syntax for \texttt{induction}-proofs is demonstrated by this 
+skeleton for induction on a \texttt{nat} \texttt{n}:
+
+\begin{verbatim}
+  induction(n:nat) return F with
+    Z => P1
+  | S n' => P2
+  end
+\end{verbatim}
+
+\noindent This will prove \texttt{Forall(n:nat).F}, where \texttt{F}
+is a formula mentioning \texttt{n}; assuming that \texttt{P1} and
+\texttt{P2} are the base and step case proofs of \texttt{F}.  In each
+of these (\texttt{P1} and \texttt{P2}), two special variables are
+available, which the \texttt{induction}-proof automatically declares:
+
+\begin{itemize}
+\item \texttt{n\_eq}: in the body of each clause, this is an assumption that
+\texttt{n} equals the pattern of the clause (\texttt{Z} or \texttt{(S n')},
+respectively).
+\item \texttt{n\_IH}: in the step case (\texttt{P2}), this serves as a
+proof of the induction hypothesis.  It proves
+\texttt{Forall(n:nat).F}, but may only be instantiated with
+\texttt{n'}, the subdatum (smaller piece of data) of \texttt{n}.
+\end{itemize}
+
+
+\section{Induction and Terminating Recursion}
+\label{ch4:indrec}
+
+In \guru, we are allowed to define functions by \emph{general
+recursion}: we can make recursive calls on any inputs we want, even if
+that means the function might not terminate.  For example, we saw the
+following simple example of a looping function in Chapter~\ref{ch2}:
+
+\begin{verbatim}
+fun loop(b:bool):bool. (loop b)
+\end{verbatim}
+
+\noindent This function calls itself recursively on the input it was
+given.  Hence, when we call this function on an argument \texttt{b},
+it will loop forever, as it tries again and again to evaluate
+the term \texttt{(loop b)}.
+
+If we want to define a function that terminates on all inputs,
+however, we cannot use recursion in an unrestricted manner.  A typical
+simple restriction to ensure (uniform) termination is the following:
+
+\begin{itemize}
+\item The function has a single input called the \emph{parameter of
+recursion}.
+\item In every recursive call in the function's code, the argument
+passed for the parameter of recursion is smaller than the input
+parameter.  In more detail, recursive calls can only be made on the
+parameter of recursion's subdata, obtained via pattern matching.
+\end{itemize}
+
+\noindent Functions that satisfy this requirement are called
+\emph{structurally terminating}.  For example, the \texttt{plus}
+function we saw is structurally terminating:
+
+\begin{verbatim}
+  fun plus(n m : nat) : nat.
+    match n with
+      Z => m
+    | S n' => (S (plus n' m))
+    end
+\end{verbatim}
+
+\noindent The parameter of recursion is input \texttt{n}.  In the
+recursive call in the second \texttt{match}-clause, the argument given
+for the parameter of recursion is \texttt{n'}. This is indeed the
+subdatum of \texttt{n}, obtained by pattern-matching.  So
+\texttt{plus} is structurally terminating.  Functions like this are
+indeed guaranteed to terminate for all inputs (as long as any other
+functions they call are also terminating), because the argument given
+for the parameter of recursion cannot get smaller and smaller forever:
+eventually there are no more subdata to extract.  In the case of
+\texttt{nat}, for example, we eventually reach \texttt{Z}, which has
+no subdata.
+
+We will be interested later in proving termination of functions like
+\texttt{plus}.  For now, though, the reason to consider structurally
+terminating functions is that they are very similar to induction
+proofs.  Indeed, proof by induction can be thought of as the
+structurally terminating recursive construction of a proof.  For
+example, for natural number induction, which the reader has probably
+seen in a discrete mathematics class, our goal is to prove that some
+formula $\phi(x)$ mentioning $x$ is true for all natural numbers $x$.
+Proof by induction tells us that to do this, it is sufficient to
+prove:
+
+\begin{itemize}
+\item $\phi(Z)$
+\item $\phi(n)$ implies $\phi(S\ n)$.
+\end{itemize}
+
+\noindent The first case is called the base case, while the second is
+called the inductive (or step) case.  Informally, proof by induction
+is sound for the following reason.  Every natural number $x$ is
+constructed by applying $S$ some finite number of times (possibly
+zero) to $Z$.  To prove $\phi(x)$ for a particular such $x$, we must
+merely use the second fact above $n$ times, starting with the first
+fact.  For example, if we want to prove $\phi(S\ (S\ (S\ Z)))$ (that is,
+$\phi(3)$), we reason like this:
+
+\begin{itemize}
+\item We have $\phi(Z)$ by the first fact above.
+\item We get $\phi(S\ Z)$ from $\phi(Z)$, which we just derived, using the second fact above.
+\item We get $\phi(S\ (S\ Z))$ from $\phi(S\ Z)$, which we just derived, using the second fact above.
+\item We get $\phi(S\ (S\ (S\ Z)))$ from $\phi(S\ (S\ Z))$, which we just derived, using the second fact above.
+\end{itemize}
+
+Another way to view what is happening with proof by induction is to
+think of the step case as making a recursive call to the proof.  That
+is, we are trying to prove $\phi(S\ n)$, but we are allowed to use the
+assumption, usually called the \emph{induction hypothesis} (IH), that
+$\phi(n)$ holds.  Here we can see the structural decrease in the
+\emph{parameter of induction} from $(S\ n)$ to $n$.  This is similar to
+what we saw in the case of structural termination of recursive
+functions.  When we appeal to the induction hypothesis, it is like we
+are making a structurally recursive call to the proof we are in the
+middle of writing.  Even though this looks like circular reasoning, it
+is sound for the same reason that structurally terminating functions
+terminate: the argument given for the parameter of induction is
+getting structurally smaller.  This cannot happen forever, so
+eventually the self-referential reasoning will ``bottom out''; that
+is, will terminate in a base case.
+
+Most students who have not studied induction previously find it takes
+a while to get used to.  We will continue to try to provide intuition
+for why induction is sound, as we turn now to simple examples of
+induction proofs in \guru.
+
+\section{A First Example of Induction, Informally}
+\label{ch4:indinf}
+
+In Section~\ref{ch3:peval}, we proved the following formula in \guru
+using partial evaluation and \texttt{foralli}:
+
+\begin{verbatim}
+Forall(m:nat). { (plus Z m) = m}
+\end{verbatim}
+
+\noindent We also saw in Section~\ref{ch3:err} that a similar proof
+did not succeed in proving 
+
+\begin{verbatim}
+Forall(m:nat). { (plus m Z) = m}
+\end{verbatim}
+
+\noindent The reason is that as we have defined it, \texttt{plus}
+performs a pattern-match on its first argument.  For the theorem we
+succeeded in proving, the first argument is \texttt{Z}, and so partial
+evaluation can evaluate the pattern-match, even though the second
+argument is just a variable \texttt{m}.  For the theorem we failed to
+prove, partial evaluation gets stuck trying to pattern-match on the
+variable \texttt{m}, and so the proof cannot go through.
+
+Here, we will see how to prove the second theorem by induction.  Let us
+begin with a proof in English, and then see how this can be written in
+\guru.  We wish to prove \texttt{Forall(m:nat).\{ (plus m Z) = m\}} by
+induction on \texttt{m}.  For this, as described in Section~\ref{ch4:indrec},
+it suffices to prove the following base case and step case:
+
+\begin{itemize}
+\item \texttt{\{(plus Z Z) = Z \}}
+\item If \texttt{\{(plus n Z) = n \}}, then also \texttt{\{(plus (S n) Z) = (S n) \}}
+\end{itemize}
+
+\noindent The base case is easily proved by partial evaluation.  For
+the step case, we first assume \texttt{\{(plus n Z) = n \}}.  This is
+the induction hypothesis.  Now we must prove, under this assumption,
+that \texttt{\{(plus (S n) Z) = (S n) \}}.  We can prove by partial
+evaluation that
+
+\begin{verbatim}
+{ (plus (S n) Z) = (S (plus n Z)) }
+\end{verbatim}
+
+\noindent This follows because, as we noted before, \texttt{plus} is
+pattern-matching on its first argument, so partial evaluation can
+proceed past that pattern-match, up to the recursive call. Now using
+our induction hypothesis and congruence, we can prove
+
+\begin{verbatim}
+(S (plus n Z)) = (S n)
+\end{verbatim}
+
+\noindent Chaining the two equational steps we have done with transitivity,
+we conclude the desired formula:
+\begin{verbatim}
+{ (plus (S n) Z) = (S n) }
+\end{verbatim}
+
+\section{Example Induction in \guru}
+\label{ch4:indguru}
+
+Now let us write the above proof in \guru.  In fact, since the theorem
+we are proving, while simple, turns out to be rather important, we
+already have a proof of it in \texttt{guru-lang/lib/plus.g}:
+
+\begin{verbatim}
+Define plusZ : Forall(n:nat). { (plus n Z) = n } :=
+  induction(n:nat) return { (plus n Z) = n } with
+    Z => trans cong (plus * Z) n_eq
+         trans join (plus Z Z) Z
+               symm n_eq
+  | S n' => trans cong (plus * Z) n_eq
+            trans join (plus (S n') Z) (S (plus n' Z))
+            trans cong (S *) [n_IH n']
+                  symm n_eq
+  end.
+\end{verbatim}
+
+\noindent Let us walk through this.  First, this is a
+\texttt{Define}-command, just like ones we have already seen.  We are
+defining \texttt{plusZ}, and instructing \guru to confirm that what we
+are defining it to equal has the classifier listed between the colon
+and the colon-equals, namely \texttt{Forall(n:nat).\{ (plus n Z) = n
+\}}.  Then, after the colon-equals, comes the proof:
+
+\begin{verbatim}
+  induction(n:nat) return { (plus n Z) = n } with
+    Z => trans cong (plus * Z) n_eq
+         trans join (plus Z Z) Z
+               symm n_eq
+  | S n' => trans cong (plus * Z) n_eq
+            trans join (plus (S n') Z) (S (plus n' Z))
+            trans cong (S *) [n_IH n']
+                  symm n_eq
+  end.
+\end{verbatim}
+
+\noindent This begins with the \texttt{induction} keyword.  Next comes
+the parameter of induction, with its type.  Notice that this looks
+very similar to the argument list for a \texttt{fun}-term.  We will
+see more complex versions of the argument list later, but this is
+typical for now.  Then comes a \texttt{return}-clause, consisting of
+the \texttt{return} keyword, followed by the classifier \texttt{\{
+(plus n Z) = n \}}.  This classifier is the formula proved, for all
+\texttt{n}, by the induction proof.  Each clause of the
+\texttt{induction}-proof must prove this formula.  \guru requires a
+\texttt{return}-clause here for the same reason that it requires
+recursive \texttt{fun}-terms to specify their return type: it makes
+bottom-up type checking easy.  Without this \texttt{return}-clause,
+\guru would have to infer the induction hypothesis.  With the
+\texttt{return}-clause, however, the induction hypothesis can be
+easily computed.
+
+After the \texttt{return}-clause, we have the keyword \texttt{with},
+as for pattern-matching and \texttt{case}-proofs.  Then come the
+\texttt{induction}-clauses, one for each constructor of the datatype,
+in the order the constructors are listed in the datatype's declaring
+\texttt{Inductive}-command.  Let us look at the bodies of those
+\texttt{induction}-clauses.
+
+\subsection{The base case}
+
+The first subproof is for when \texttt{n} is zero:
+
+\begin{verbatim}
+trans cong (plus * Z) n_eq
+trans join (plus Z Z) Z
+      symm n_eq
+\end{verbatim}
+
+\noindent This proof consists of three subproofs, glued together with \texttt{trans}:
+
+\begin{itemize}
+\item \texttt{cong (plus * Z) n\_eq}
+\item \texttt{join (plus Z Z) Z}
+\item \texttt{symm n\_eq}
+\end{itemize}
+
+\noindent Remember that we are obliged to prove \texttt{\{ (plus n Z)
+= n \}} in this clause (and in the clause for \texttt{S}).  Just as in
+a \texttt{case}-proof (Section~\ref{ch3:case}), we get an assumption
+variable \texttt{n\_eq} that we can use in each clause as a proof that
+the parameter of induction (i.e., \texttt{n}) equals the pattern in
+the clause.  So in the body of the clause for \texttt{Z}, we have
+
+\begin{verbatim}
+n_eq : { n = Z }
+\end{verbatim}
+
+\noindent The first step uses \texttt{n\_eq} and congruence to prove:
+
+\begin{verbatim}
+{ (plus n Z) = (plus Z Z) }
+\end{verbatim}
+
+\noindent The second step uses proof by evaluation (i.e., \texttt{join})
+to prove:
+
+\begin{verbatim}
+{ (plus Z Z) = Z }
+\end{verbatim}
+
+\noindent Finally, the third step proves
+
+\begin{verbatim}
+{ Z = n }
+\end{verbatim}
+
+\noindent Chaining these steps together, we have this reasoning:
+
+\begin{verbatim}
+(plus n Z)   =   (plus Z Z)   =   Z   =   n
+\end{verbatim}
+
+\noindent Notice that this is a bit more detailed than in the informal proof above,
+because we have to map from \texttt{n} to \texttt{Z} and back using \texttt{n\_eq}.
+
+\subsection{The step case}
+
+The second subproof of our example \texttt{induction}-proof is for when \texttt{n}
+is \texttt{(S n')}:
+
+\begin{verbatim}
+trans cong (plus * Z) n_eq
+trans join (plus (S n') Z) (S (plus n' Z))
+trans cong (S *) [n_IH n']
+      symm n_eq
+\end{verbatim}
+
+\noindent Just as in the base case, we must map from \texttt{n} to \texttt{(S n')} and back
+using \texttt{n\_eq}.  That is what is happening in the first and last of the four subproofs
+glued together by \texttt{trans}.  So let us look at the middle two:
+
+\begin{itemize}
+\item \texttt{join (plus (S n') Z) (S (plus n' Z))}
+\item \texttt{cong (S *) [n\_IH n']}
+\end{itemize}
+
+\noindent The first is a proof by partial evaluation, corresponding to
+the first step we took above in our informal proof
+(Section~\ref{ch4:indinf}).  The second uses congruence and the
+induction hypothesis.  The induction hypothesis is \texttt{n\_IH},
+whose name is automatically derived from the name of the parameter of
+induction, as for \texttt{n\_eq}.  In the \guru formalization of induction,
+the induction hypothesis proves exactly the same theorem as the proof.
+So in this case, we have
+
+\begin{verbatim}
+n_IH : Forall(n:nat) . { (plus n Z) = n }
+\end{verbatim}
+
+\noindent But as discussed above, the use of the induction hypothesis
+is restricted.  We can only instantiate the \texttt{Forall}-quantifier
+here with a strict subterm (subdatum) of the parameter of induction.
+The \guru compiler will ensure that this restriction is met, and
+report an error if the induction hypothesis is not instantiated
+accordingly.  So in our subproof, we have \texttt{[n\_IH n']} for the
+instantiation of the \texttt{Forall}-formula with \texttt{n'}.  Since
+\texttt{n'} is indeed a strict subterm (from the pattern of the
+\texttt{induction}-clause for \texttt{n}), this is a legal use of the
+induction hypothesis.  Finally, we use \texttt{cong} similarly to the
+way we used congruence in our informal proof above.
+
+\section{A Second Example Induction Proof in Guru}
+
+Let us look now at a second example \texttt{induction}-proof.  The
+proof we will be constructing in this section can also be found as the
+lemma \texttt{plusS} in \texttt{guru-lang/lib/nat.g}.  We wish to
+prove the formula
+
+\begin{verbatim}
+Forall(n m : nat). { (plus n (S m)) = (S (plus n m))}
+\end{verbatim}
+
+\noindent Here we are faced with a small puzzle: we have two universally
+quantified variables \texttt{n} and \texttt{m}, so which one should be
+our parameter of induction?  Furthermore, whichever variable we select
+for the parameter of induction, how do we handle the other variable?
+The answers to these questions are relatively easy to reach for this
+example, but for other more complicated ones can be trickier.  The
+basic hint we should always keep in mind is:
+
+\begin{hint}
+\label{hint:indrec}
+As a first idea, we should choose our parameter of induction to be a
+variable which is used as the parameter of recursion (see
+Section~\ref{ch4:indinf}) for one of the functions in our theorem. 
+\end{hint}
+
+\noindent Of course, this hint only applies when a function has a
+(structurally decreasing) parameter of recursion.  Not all interesting
+recursive functions do.  Also, this hint does not tell us exactly what
+to do when there are multiple functions mentioned in the theorem,
+since then we may have several different variables all used as
+parameters of recursion.  Nevertheless, induction and recursion do go
+hand in hand, and so a rough rule of thumb is to perform induction on
+a variable which is analyzed by recursion.
+
+To return to our second example theorem: of our two variables,
+\texttt{n} and \texttt{m}, only one is used as a parameter of
+recursion by a call to \texttt{plus}: this is \texttt{n}.  Our
+definition of \texttt{plus} analyzes its first argument, and we pass
+\texttt{n} as this argument in both recursive calls in the theorem
+(i.e., \texttt{(plus n (S m))} on the left hand side of the equation,
+and \texttt{(plus n m)} on the right).  So following Theorem Proving
+Hint~\ref{hint:indrec}, we should try doing induction on \texttt{n}.
+So we start our proof with ``\texttt{induction(n:nat).}''.  Now we
+must list the \texttt{return}-clause for our \texttt{induction}-proof,
+as described in our first example above.  This \texttt{return}-clause
+must give the rest of the formula being proved.  So our
+\texttt{induction}-proof starts with:
+
+\begin{verbatim}
+induction(n:nat) 
+  return Forall(m : nat). { (plus n (S m)) = (S (plus n m))}
+\end{verbatim}
+
+\noindent The theorem we are proving, also called our \emph{goal}
+formula, begins with ``\texttt{Forall(n m:nat).}'', which \guru views
+as definitionally equal to ``\texttt{Forall(n
+:nat). Forall(m:nat).}''.  That explains why, once we have started
+proving our goal formula with ``\texttt{induction(n:nat)}'', the
+\texttt{return}-clause starts with a \texttt{Forall}-quantification of
+the variable \texttt{m}.
+
+There is really no choice what to write next; we have to have clauses
+for each way of constructing the \texttt{nat} \texttt{n} (after the
+keyword \texttt{with}):
+
+\begin{verbatim}
+induction(n:nat) 
+  return Forall(m : nat). { (plus n (S m)) = (S (plus n m))}
+with
+  Z => ...
+| S n' => ...
+end
+\end{verbatim}
+
+\noindent We are not ready yet to fill in the bodies of the clauses,
+where I have written ``...'' (not \guru syntax).  A good strategy for
+developing a proof like this is to put something -- anything, or
+almost anything -- in for those ``...'', so that \guru can parse our
+proof and start trying to classify it.  I find this is more effective
+and less frustrating than writing a large proof and then trying to get
+it to go through the \guru compiler all at once.  It is better to
+write the proof incrementally, and get each piece of it through \guru,
+since then the inevitable error messages you are dealing with are ones
+concerning the proof you are just focused on writing (not one you
+wrote twenty minutes ago when you started your proof).  A good
+placeholder to put instead of ``...'' is \texttt{truei}.  This proves
+the formula \texttt{True}.  It is indeed a proof, so the \guru parser
+can parse it.  Of course, it does not prove the right theorem yet, so
+we will definitely get a classification error.  But that is alright,
+since we will gradually fill in more and more of the proof properly,
+and eventually eliminate all those errors.  This gives rise to:
+
+\begin{hint}
+\label{hint:truei}
+Write down a skeletal proof using \texttt{truei} as a placeholder
+for missing subproofs, and gradually refine it to a proof that
+can pass \guru's proof checker by replacing those uses of
+\texttt{truei} with the correct subproof.
+\end{hint}
+
+\noindent So in this example, we could write the following
+\texttt{Classify}-command:
+
+\begin{verbatim}
+Classify
+induction(n:nat) 
+  return Forall(m : nat). { (plus n (S m)) = (S (plus n m))}
+with
+  Z => truei
+| S n' => truei
+end.
+\end{verbatim}
+
+\noindent If we run this through \guru, as expected we will get this
+classification error:
+
+\begin{verbatim}
+"/home/stump/guru-lang/doc/ch4.g", line 7, column 2: classification error.
+The classifier computed for the body of a case in an induction-proof
+is different from the expected one.
+1. computed classifier: True
+2. expected classifier: Forall(m : nat) . { (plus n (S m)) = (S (plus n m)) }
+3. the case: Z
+
+These terms are not definitionally equal (causing the error above):
+1. Forall(m : nat) . { (plus n (S m)) = (S (plus n m)) }
+2. True
+\end{verbatim}
+
+\noindent This exactly describes what we knew would happen: we have
+put a proof of \texttt{True} in each of the clauses of our
+\texttt{induction}-proof, where a proof of \texttt{Forall(m : nat)
+. \{ (plus n (S m)) = (S (plus n m)) \}} was expected.  
+
+Now, let us start refining our proof by replacing some of these
+\texttt{truei}-proofs with the correct proofs for the cases.
+When \texttt{n} is \texttt{Z}, we know that \texttt{(plus n m)} equals
+\texttt{m}, and similarly \texttt{(plus n (S m))} equals \texttt{(S m)}.
+That is because of how \texttt{plus} partially evaluates when its first
+argument is \texttt{Z}.  So our proof for the \texttt{Z} case is similar
+to proofs we did above.  We start it with \texttt{foralli}, to introduce
+the universal variable \texttt{m}:
+
+\begin{verbatim}
+Classify
+induction(n:nat) 
+  return Forall(m : nat). { (plus n (S m)) = (S (plus n m))}
+with
+  Z => 
+  foralli(m:nat).
+  trans cong (plus * (S m)) n_eq
+       trans join (plus Z (S m)) (S (plus Z m))
+             cong (S (plus * m)) symm n_eq
+| S n' => truei
+end.
+\end{verbatim}
+
+\noindent When we run this proof through \guru, we get this error message:
+
+\begin{verbatim}
+"/home/stump/guru-lang/doc/ch4.g", line 25, column 2: classification error.
+The classifier computed for the body of a case in an induction-proof
+is different from the expected one.
+1. computed classifier: True
+2. expected classifier: Forall(m : nat) . { (plus n (S m)) = (S (plus n m)) }
+3. the case: (S n')
+
+These terms are not definitionally equal (causing the error above):
+1. Forall(m : nat) . { (plus n (S m)) = (S (plus n m)) }
+2. True
+\end{verbatim}
+
+\noindent Notice that item (3) listed in the message has changed from
+our first error message.  \guru proof-checks the
+\texttt{induction}-clauses in order starting with the one which is
+textually first.  We have successfully gotten the proof for the
+\texttt{Z} case through the proof checker, since our error message now
+concerns the second case (the one for \texttt{(S n')}).
+
+Now we are ready to tackle the \texttt{S} case.  We can expect we will
+need to use our induction hypothesis, since we make a recursive call
+in the \texttt{S} case for \texttt{plus}, and uses of the induction
+hypothesis tend to mirror recursive calls.  Let us see informally
+what our reasoning will be:
+
+{\small
+\begin{verbatim}
+(plus (S n') (S m)) = (S (plus n' (S m))) = (S (S (plus n' m))) = (S (plus (S n') m))
+\end{verbatim}
+}
+
+\noindent The first step is by partial evaluation.  The second step
+uses the induction hypothesis to get:
+
+\begin{verbatim}
+{ (plus n' (S m)) = (S (plus n' m)) }
+\end{verbatim}
+
+\noindent The second step then uses congruence.  The third step is
+again by partial evaluation.  Formalizing this reasoning in \guru, we get
+the following final proof, which successfully checks:
+
+\begin{verbatim}
+Classify
+induction(n:nat) 
+  return Forall(m : nat). { (plus n (S m)) = (S (plus n m))}
+with
+  Z => 
+  foralli(m:nat).
+  trans cong (plus * (S m)) n_eq
+       trans join (plus Z (S m)) (S (plus Z m))
+             cong (S (plus * m)) symm n_eq
+| S n' => 
+  foralli(m : nat).
+  trans cong (plus * (S m)) n_eq
+  trans join (plus (S n') (S m)) (S (plus n' (S m)))
+  trans cong (S *) [n_IH n' m]
+  trans join (S (S (plus n' m))) (S (plus (S n') m))
+        cong (S (plus * m)) symm n_eq
+end.
+\end{verbatim}
+
+\noindent We have a new subproof in the \texttt{S n'} clause,
+corresponding to the informal proof we just did above.  We have to map
+from \texttt{n} to \texttt{(S n')} using the assumption variable
+\texttt{n\_eq}, just as above.  Then we do some partial evaluation
+(with \texttt{join}), then use the appropriately instantiated
+induction hypothesis (that is \texttt{[n\_IH\ n' m]}), do some more
+partial evaluation, and then map back from \texttt{(S n')} to
+\texttt{n}.
+
+\section{Commutativity of Addition in \guru}
+
+As a final example, let us use the lemmas proved in the previous
+two sections to prove commutativity of addition:
+
+\begin{verbatim}
+Forall(n m:nat). { (plus n m) = (plus m n) }
+\end{verbatim}
+
+\noindent The proof is in \texttt{guru-lang/lib/plus.g}, and it uses the
+following lemmas, which we proved above and which are also defined in \texttt{plus.g}:
+
+\begin{verbatim}
+plusZ : Forall(n:nat). { (plus n Z) = n }
+plusS : Forall(n m : nat). { (plus n (S m)) = (S (plus n m))}
+\end{verbatim}
+
+\noindent Indeed, we proved those lemmas just so we could prove commutativity of \texttt{plus}.
+The informal reasoning is as follows.  We proceed by induction on \texttt{n}, and then in
+each case assume arbitrary \texttt{m}.  So for the base case we must prove
+
+\begin{verbatim}
+(plus Z m) = (plus m Z)
+\end{verbatim}
+
+\noindent The left hand side partial-evaluates to \texttt{m}, while the right hand side is
+equal to \texttt{m} by our \texttt{plusZ} lemma.  
+
+For the step case, we must prove
+
+\begin{verbatim}
+(plus (S n') m) = (plus m (S n'))
+\end{verbatim}
+
+\noindent under the assumption (the induction hypothesis) that
+\texttt{\{(plus n' m) = (plus m n')\}}.  Our equational reasoning is
+as follows:
+
+\begin{verbatim}
+(plus (S n') m) = (S (plus n' m)) = (S (plus m n')) = (plus m (S n'))
+\end{verbatim}
+
+\noindent The first step is by partial evaluation.  The second is by
+the induction hypothesis (and congruence).  The third is by our
+\texttt{plusS} lemma.  That concludes our informal proof.
+
+The proof in \guru mirrors this reasoning, although in a bit more
+detailed way:
+
+\begin{verbatim}
+induction (n : nat) return Forall(m : nat).{ (plus n m) = (plus m n) } with
+  Z => foralli(m : nat).
+       trans cong (plus * m) n_eq
+       trans join (plus Z m) m
+       trans cong * symm [plusZ m]
+             cong (plus m *) symm n_eq
+| S n' => foralli(m : nat).
+          trans cong (plus * m) n_eq
+          trans join (plus (S n') m) (S (plus n' m))
+          trans cong (S *)  [n_IH n' m]
+          trans cong * symm [plusS m n']
+                cong (plus m *) symm n_eq
+end
+\end{verbatim}
+
+\noindent This is not terribly fun to read, but we can spot the uses
+of the induction hypothesis \texttt{[n\_IH n' m]} in the \texttt{(S
+n')} case, and the uses of \texttt{plusZ} and \texttt{plusS}.
+
+\section{Summary}
+
+We have seen several examples of \texttt{induction}-proofs for proving
+equations about monomorphic programs like \texttt{plus}.
+\texttt{Induction}-proofs are similar to structurally terminating
+recursive functions: uses of the induction hypothesis are like
+recursive calls, which construct the desired proof for a structurally
+smaller piece of data.  We have seen also several theorem proving
+hints, which can help make it easier to tackle a proof.
+
+\section{Exercises}
+
+As you browse through the \guru standard library, you will come across
+proof methods we have not seen yet, particularly \texttt{hypjoin}.
+For these exercises, you should use only the proof methods we have
+seen so far in this book.
+
+\begin{enumerate}
+
+\item Include \texttt{guru-lang/lib/mult.g} and prove by induction on
+\texttt{n}:
+
+\begin{verbatim}
+Forall(n:nat).{ (mult n Z) = Z }
+\end{verbatim}
+
+\item Including \texttt{guru-lang/lib/plus.g}, prove the following,
+but do not use induction.  Just use existing theorems in \texttt{plus.g}
+(in particular, \texttt{plus\_assoc} and \texttt{plus\_comm}):
+
+\begin{verbatim}
+Forall(x y z:nat). { (plus x (plus y z)) = (plus z (plus y x)) }
+\end{verbatim}
+
+\item Again including \texttt{mult.g}, prove the following by induction, first
+determining which variable you should do induction on:
+
+\begin{verbatim}
+Forall(x y z :nat).{(mult (plus x y) z) = (plus (mult x z) (mult y z))}
+\end{verbatim}
+
+Hint: my proof uses the lemma \texttt{plus\_assoc} from \texttt{guru-lang/lib/plus.g}
+(and that is the only lemma I need).
+
+\item The exclusive-or function is defined as \texttt{xor} in \texttt{guru-lang/lib/bool.g}.
+Prove the following (this does not need induction):
+
+\begin{verbatim}
+Forall(x y : bool). { (xor (not x) y) = (not (xor x y)) } 
+\end{verbatim}
+
+\item The \texttt{mod2} function defined in
+\texttt{guru-lang/lib/pow.g} takes a \texttt{nat} \texttt{n} as input,
+and returns \texttt{ff} if \texttt{n} is even, and \texttt{tt} if
+\texttt{n} is odd.  In this problem, we will prove the following non-trivial
+property of \texttt{mod2}:
+
+\begin{verbatim}
+Forall(n m : nat). { (mod2 (plus n m)) = (xor (mod2 n) (mod2 m)) }
+\end{verbatim}
+
+\noindent An intuitive way to view this theorem is as saying how the
+parity of numbers is combined when the numbers are added.  When we add
+an even number and an even number we get another even number; when we
+add odd and even we get odd; and when we add odd and odd we get even.
+With \texttt{ff} for even and \texttt{tt} for odd, we see that this
+description corresponds to exclusive-or: \texttt{ff} (even) and
+\texttt{ff} (even) gives \texttt{ff} (even); \texttt{ff} (even) and
+\texttt{tt} (odd) gives \texttt{tt} (odd); and \texttt{tt} (odd) and
+\texttt{tt} (odd) gives \texttt{tt} (odd).  This is, of course, a fact
+about addition of numbers.
+
+\ 
+
+To prove this theorem, first identify which variable you should
+most likely do induction on.  During the course of the proof, I found
+I needed to use the lemma proved in the previous problem.
+
+\end{enumerate}
 
 \chapter{Logical Monomorphic Proving}
 \label{ch5}
@@ -2073,6 +2832,20 @@ the formula \texttt{Exists(x:nat).F}, and if \texttt{P2} is a proof of the formu
 \texttt{Forall(x:nat)(u:F).F2} for some \texttt{F2} not mentioning
 \texttt{x}, then the \texttt{existse}-proof also proves \texttt{F2}.
 \end{itemize}
+
+\begin{comment}
+\noindent Sometimes while we are incrementally developing a proof, it is useful
+to see exactly what formula some subproof proves.  There is a way to do that in
+\guru.  You simply use a \texttt{show}-proof.  The syntax is:
+
+\begin{verbatim}
+show P1 ... Pn end
+\end{verbatim}
+
+\noindent where \texttt{P1} through \texttt{Pn} are proofs.  \guru will compute
+the classifiers for those proofs and print them.  It will then stop any other
+classification, as if we had a classification error.  
+\end{comment}
 
 \bibliographystyle{plain}
 \bibliography{the-bib}

@@ -10,8 +10,6 @@ Inductive list : Fun(A:type).type :=
 Define isnil := fun(A:type)(owned l:<list A>). 
                   match l with nil A' => tt | cons A' a' l' => ff end.
 
-Set "refine_cases".
-
 Define foldr : Fun(A B C: type)(owned cookie:C)
                   (fcn: Fun(owned cookie:C)(owned x:A)(y:B).B)
                   (b:B)(owned l : <list A>).B :=
@@ -23,8 +21,6 @@ Define foldr : Fun(A B C: type)(owned cookie:C)
    | cons A' a' l' => (fcn cookie a' 
                          (foldr A B C cookie fcn b l'))
    end. 
-
-Unset "refine_cases".
 
 Define foldrTot : Forall(A B C : type)
                         (cookie:C)(f:Fun(cookie:C)(x:A)(y:B).B)
@@ -247,6 +243,8 @@ Define length_tot
                  (foldr unit fun(cookie:Unit)(owned a:A)(b:nat).(S b) Z l)
             u.
 
+Total length length_tot.
+
 Define length_append
   : Forall(A:type)(l1 l2:<list A>).
      { (length (append l1 l2)) = (plus (length l1) (length l2)) } :=
@@ -280,6 +278,30 @@ Define length_eq_Z
       clash Z (S terminates (length l') by length_tot)
     { l = nil }
   end.
+
+Define length_eq_S 
+  : Forall(A:type)(l:<list A>)(n:nat)
+          (u:{ (length l) = (S n)}).
+    Exists(a:A)(l':<list A>).
+     { l = (cons a l') } :=
+  foralli(A:type)(l:<list A>)(n:nat)
+         (u:{ (length l) = (S n)}).
+    case l with
+      nil _ => 
+      contra
+        trans 
+          trans join Z (length nil)
+          trans cong (length *) symm l_eq
+                u
+          clash (S n) Z
+      Exists(a:A)(l':<list A>).
+         { l = (cons a l') } 
+    | cons _ a l' => 
+      existsi a Exists(l':<list A>).
+                   { l = (cons * l') } 
+      existsi l' {l = (cons a *) } 
+        l_eq
+    end.
 
 Define singleton_eq_append 
  : Forall(A:type)(a1 a2:A)(l1 l2:<list A>)
@@ -316,6 +338,110 @@ Define singleton_eq_append
          join (append nil (cons a2 l2)) (cons a2 l2)
   l2nil.
           
+Define eq_append_split 
+ : Forall(A:type)(l1 l2 l1' l2' : <list A>)
+         (u1:{ (le (length l1) (length l1')) = tt })
+         (u2:{ (append l1 l2) = (append l1' l2')}).
+    Exists(lh : <list A>)
+          (u3 : { l1' = (append l1 lh) }).
+      { l2 = (append lh l2') } :=
+ foralli(A:type).
+ induction(l1:<list A>) 
+ return Forall(l2 l1' l2' : <list A>)
+              (u1:{ (le (length l1) (length l1')) = tt })
+              (u2:{ (append l1 l2) = (append l1' l2')}).
+        Exists(lh : <list A>)
+              (u3 : { l1' = (append l1 lh) }).
+          { l2 = (append lh l2') } 
+ with
+   nil _ => 
+   foralli(l2 l1' l2' : <list A>)
+          (u1:{ (le (length l1) (length l1')) = tt })
+          (u2:{ (append l1 l2) = (append l1' l2')}).
+     existsi l1'
+         Exists(u3 : { l1' = (append l1 *) }).
+           { l2 = (append * l2') } 
+         andi hypjoin l1' (append l1 l1') by l1_eq end
+              hypjoin l2 (append l1' l2') by l1_eq u2 end
+ | cons _ a l1a => 
+   foralli(l2 l1' l2' : <list A>)
+          (u1:{ (le (length l1) (length l1')) = tt })
+          (u2:{ (append l1 l2) = (append l1' l2')}).
+   existse [le_S4 (length A l1a) (length A l1')
+             symm
+             trans symm u1
+             trans cong (le (length *) (length l1')) l1_eq
+                   join (le (length (cons a l1a)) (length l1')) (le (S (length l1a)) (length l1'))]
+   foralli(c:nat)(u3:{ (length l1') = (S c) }).
+   existse [length_eq_S A l1' c u3]
+   foralli(a':A)(l1'a:<list A>)(l1'_eq:{ l1' = (cons a' l1'a) }).
+     abbrev P = hypjoin (cons a (append l1a l2)) (cons a' (append l1'a l2'))
+                by l1'_eq l1_eq u2 end in
+     existse [l1_IH l1a l2 l1'a l2' 
+                 symm
+                 trans symm u1
+                 trans cong (le (length *) (length l1')) l1_eq
+                 trans cong (le (length (cons a l1a)) (length *)) l1'_eq
+                 trans join (le (length (cons a l1a)) (length (cons a' l1'a))) (le (S (length l1a)) (S (length l1'a)))
+                       [S_le_S (length A l1a) (length A l1'a)]
+               inj (cons ** *) P]  
+     foralli(lh:<list A>)(u4:{l1'a = (append l1a lh) })(u5:{l2 = (append lh l2')}).
+       existsi lh
+         Exists(u6 : { l1' = (append l1 *)}). { l2 = (append * l2') }
+       andi trans l1'_eq
+            trans cong (cons * l1'a) inj (cons * **) symm P
+            trans cong (cons a *) u4
+            trans join (cons a (append l1a lh)) (append (cons a l1a) lh)
+                  cong (append * lh) symm l1_eq
+       u5
+ end.
+
+Define eq_length_append 
+ : Forall(A:type)(l1 l2 l1' l2':<list A>)
+         (u1:{ (length l1) = (length l1') })
+         (u2:{ (append l1 l2) = (append l1' l2') }).
+    Exists(u3 : { l1 = l1' }). { l2 = l2' } :=
+  foralli(A:type).
+  induction(l1:<list A>) 
+  return Forall(l2 l1' l2':<list A>)
+               (u1:{ (length l1) = (length l1') })
+               (u2:{ (append l1 l2) = (append l1' l2') }).
+          Exists(u3 : { l1 = l1' }). { l2 = l2' } 
+  with
+    nil _ => 
+    foralli(l2 l1' l2':<list A>)
+           (u1:{ (length l1) = (length l1') })
+           (u2:{ (append l1 l2) = (append l1' l2') }).
+     abbrev l1'_eq = [length_eq_Z A l1' trans symm u1 
+                                        trans cong (length *) l1_eq
+                                              join (length nil) Z] in
+     andi symm trans l1'_eq symm l1_eq
+       trans join l2 (append nil l2)
+       trans cong (append * l2) symm l1_eq
+       trans u2
+       trans cong (append * l2') l1'_eq
+             join (append nil l2') l2'
+  | cons _ a l1a => 
+    foralli(l2 l1' l2':<list A>)
+           (u1:{ (length l1) = (length l1') })
+           (u2:{ (append l1 l2) = (append l1' l2') }).
+    existse [length_eq_S A l1' (length A l1a)
+               trans symm u1
+               trans cong (length *) l1_eq
+                     join (length (cons a l1a)) (S (length l1a))]
+    foralli(a':A)(l1a':<list A>)(l1'_eq:{l1' = (cons a' l1a')}).
+    abbrev P = hypjoin (cons a (append l1a l2)) (cons a' (append l1a' l2'))
+               by u2 l1_eq l1'_eq end in
+    existse
+      [l1_IH l1a l2 l1a' l2' inj (S *) hypjoin (S (length l1a)) (S (length l1a')) by u1 l1_eq l1'_eq end
+         inj (cons ** *) P]
+      foralli(u3a: { l1a = l1a' })(u4: { l2 = l2' }).
+         andi trans l1_eq
+              trans cong (cons * l1a) inj (cons * **) P
+              trans cong (cons a' *) u3a
+                    symm l1'_eq
+          u4
+  end.
 
 Define eqlist : Fun(A:type)(eqA:Fun(owned x1 x2:A).bool)
                    (owned l1 l2:<list A>)

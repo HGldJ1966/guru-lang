@@ -46,21 +46,41 @@ Define diffids_insert_next
          (a:{(v2n n') = (S (v2n n))})
          (I1:@<diffids (gs_ctxt symbols)>)
          (I2:@<idsbnd1 n (gs_ctxt symbols)>)
-         (u:{ symbols' = (trie_insert s (mkpair n t) symbols)}).
-     @<diffids symbols'> :=
+         (u1:{ symbols' = (trie_insert s (mkpair n t) symbols)}).
+     @<diffids (gs_ctxt symbols')> :=
   foralli(n:var)(symbols symbols':symbols_t)
          (s:string)(t:trm)
          (n':var)
          (a:{(v2n n') = (S (v2n n))})
          (I1:@<diffids (gs_ctxt symbols)>)
          (I2:@<idsbnd1 n (gs_ctxt symbols)>)
-         (u:{ symbols' = (trie_insert s (mkpair n t) symbols)}).
+         (u1:{ symbols' = (trie_insert s (mkpair n t) symbols)}).
+
+  %- begin proof of diffids -%
+  foralli(l1' l2':<list symbols_e>)
+         (n':var)
+         (t':trm)
+         (u2:{ (gs_ctxt symbols') = (append l1' (ctxtc n' t' l2')) }).
     abbrev e = (mkpair var trm n t) in
-    existse [trie_insert_interp symbols_e symbols symbols' s e symm u] 
-    foralli(l1 l2 : <list <pair string symbols_e>>)
-           (u: { (trie_interp symbols') = (append l1 (cons (mkpair s (mkpair n t)) l2)) }).
-      show u
-        
+    existse [trie_insert_interp symbols_e symbols symbols' s e symm u1] 
+    foralli(L1 L2 : <list <pair string symbols_e>>)
+           (u3: { (trie_interp symbols') = (append L1 (cons (mkpair s (mkpair n t)) L2)) }).
+      abbrev u3a = [trie_interp_range2 symbols_e symbols' s (mkpair var trm n t) 
+                      L1 L2 u3] in
+      abbrev l1 = (map <pair string symbols_e> symbols_e Unit unit fun(u:Unit). (snd string symbols_e) L1) in
+      abbrev l2 = (map <pair string symbols_e> symbols_e Unit unit fun(u:Unit). (snd string symbols_e) L2) in
+      abbrev len1 = (length symbols_e l1) in
+      abbrev len1' = (length symbols_e l1') in
+      case (lt len1' len1) by C1 ign with
+        ff => 
+        case (lt len1 len1') by C3 ign with
+          ff => 
+          abbrev C2 = hypjoin (eqnat len1 len1') tt
+                      by C3 [lt_ff_implies_le len1' len1 C1] end in
+          show C2 end
+        | tt => truei
+        end
+      | tt => truei
       end.
 
 Define trusted symbols_ok_insert_next

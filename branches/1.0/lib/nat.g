@@ -286,6 +286,8 @@ Define lt_total : Forall(a:nat)(b:nat).Exists(q:bool).{ (lt a b) = q} :=
 		end b join b b]
 	end.	
 	
+Total lt lt_total.
+
 Define le_total : Forall(x y:nat).Exists(z:bool).{(le x y) = z} :=
 	foralli(x y:nat).
 		existse [lt_total x y] foralli(ltr:bool)(ltr':{(lt x y) = ltr}).
@@ -297,7 +299,7 @@ Define le_total : Forall(x y:nat).Exists(z:bool).{(le x y) = z} :=
 		trans cong (or ltr *) eqr'
 		orr'.
 	
-	
+Total le le_total.	
 		
 Define not_zero_implies_lt : Forall(a:nat)(u:{a != Z}).{ (lt Z a) = tt} :=
 	induction(a:nat) by x1 x2 IH return Forall(u:{a != Z}).{ (lt Z a) = tt} with
@@ -699,6 +701,19 @@ Define le_S3 : Forall(a b:nat)(u:{ (le a b) = tt }).{ (le a (S b)) = tt } :=
     [le_S2 a (S b) symm trans symm u
                               join (le a b)
                                    (le (S a) (S b))].
+
+Define le_S4 : Forall(a b:nat)(u:{ (le (S a) b) = tt}).
+                Exists(c:nat). { b = (S c) } :=
+  foralli(a b:nat)(u:{ (le (S a) b) = tt}).
+    case b with
+      Z => contra 
+             trans 
+               trans symm u
+                     hypjoin (le (S a) b) ff by b_eq end
+             clash ff tt
+           Exists(c:nat). { b = (S c) }
+    | S b' => existsi b' { b = (S *) } b_eq
+    end.
 
 Define lt_ff_implies_le : Forall (a b:nat)(u:{(lt a b) = ff}).{(le b a) = tt} :=
 	induction(a:nat) by x1 x2 IH return Forall(b:nat)(u:{(lt a b) = ff}).{(le b a) = tt} with
