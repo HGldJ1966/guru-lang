@@ -1416,7 +1416,7 @@ partial evaluation, we might be forced to stop (partially) evaluating
 before we get a value.  This typically happens when we try to
 pattern-match on an unknown.  Partial evaluation gets stuck in such a
 case, because it does not know what the unknown looks like, and so
-cannot proceed with the pattern-match.  The error message her is
+cannot proceed with the pattern-match.  The error message here is
 telling us that the left hand side evaluated to \texttt{match m by
 ...}, while the right hand side evaluated to just \texttt{m}.  Indeed,
 this makes sense: the \texttt{plus} function wants to pattern-match on
@@ -2789,7 +2789,27 @@ I needed to use the lemma proved in the previous problem.
 \chapter{Logical Monomorphic Proving}
 \label{ch5}
 
-This chapter is not ready yet.
+The last two chapters focused on equational proofs about monomorphic
+programs.  That is, we were just trying to prove universally
+quantified equations, like \texttt{Forall(x y:nat).\{(plus x y) =
+(plus y x)\}}.  Of course, there are other kinds of logical statements
+we would like to make.  For one simple example, we might like to prove
+that if \texttt{x} plus \texttt{y} equals zero, then \texttt{x} must
+be zero, for \texttt{x} and \texttt{y} of type \texttt{nat} (of
+course, \texttt{y} must also be zero in this case).  An ``if-then''
+statement is called an \emph{implication}.  In \guru, implications are
+written with \texttt{Forall}.  So the statement would be written this
+way in \guru:
+
+\begin{verbatim}
+Forall(x y:nat)(u : { (plus x y) = Z }). { x = Z }
+\end{verbatim}
+
+\noindent We need some other proof constructs to reason in the
+presence of implications.  These will be introduced in this chapter.
+We will also see \emph{conjunctions}, for ``and'' statements; and
+existential formulas, for saying that something exists with a certain
+property.  As usual, we will try these out with several examples.
 
 \section{Preview}
 
@@ -2825,13 +2845,390 @@ is a formula context, and \texttt{P} is a proof.  This is to prove the
 formula \texttt{Exists(x:nat).F*[x]}.  The situation is that we have a
 term \texttt{t} and a proof \texttt{P} that that term has a certain
 property.  The property is described using a formula context, which is
-a formula containing the special symbol $*$.
+a formula containing the special symbol $*$.  A shorthand for proving
+a conjunction (written as an \texttt{Exists}-formula) is \texttt{andi P1 P2}.
 
 \item \texttt{existse P1 P2}.  If \texttt{P1} is a proof of
 the formula \texttt{Exists(x:nat).F}, and if \texttt{P2} is a proof of the formula
 \texttt{Forall(x:nat)(u:F).F2} for some \texttt{F2} not mentioning
 \texttt{x}, then the \texttt{existse}-proof also proves \texttt{F2}.
+
+\item \texttt{clash t1 t2}.  If t1 and t2 are values built with
+different constructors, like \texttt{(S x)} and \texttt{Z}, this
+proves the disequation \texttt{\{ t1 != t2 \}}.  We will also see how
+to use \texttt{symm} and \texttt{trans} with disequations.
+
+\item \texttt{contra P F}.  If \texttt{P} proves \texttt{\{ t != t
+\}}, then this proof proves \texttt{F}.  It is used to prove any
+formula \texttt{F} you happen to need in your proof, if you have
+derived a contradictory statement (i.e., \texttt{\{ t != t \}}).
+
 \end{itemize}
+
+\section{Reasoning with Implication}
+
+An \emph{implication} is an if-then formula.  It says if formula
+\texttt{F1} is true, then so is \texttt{F2}.  An example is, ``x is
+zero, then x plus x equals zero.''  In \guru, implications are written
+using \texttt{Forall}.  The example implication just mentioned is written
+
+\begin{verbatim}
+Forall(u : { x = Z }). { (plus x x) = Z}
+\end{verbatim}
+
+\noindent You can think of this as saying, for all proofs \texttt{u} of
+\texttt{\{ x = Z \}}, we have \texttt{\{(plus x x) = Z\}}.  Using
+\texttt{Forall} for implications makes formulas a little more concise
+than they might otherwise be.  For example, we can write:
+
+\begin{verbatim}
+Forall(x:nat)(u : { x = Z }). { (plus x x) = Z}
+\end{verbatim}
+
+\noindent This quantifies over \texttt{x} of type \texttt{nat}, and
+then continues with the example implication.  This idea of combining
+implication and universal quantification comes from other languages,
+for example \textsc{Coq}~\cite{coq}.
+
+We reason with implications in exactly the same way as universal
+quantifications.  To prove an implication, we use \texttt{foralli}.
+For example, here is the proof of our example formula:
+
+\begin{verbatim}
+Define plusZ' :=
+foralli(x:nat)(u : { x = Z }). 
+  trans cong (plus * *) u
+        join (plus Z Z) Z.
+\end{verbatim}
+
+\noindent Here, \texttt{u} is an arbitrary proof of \texttt{\{x =
+Z\}}.  So \texttt{u} acts as an assumption that \texttt{\{x = Z\}}.
+We use this assumption to transform \texttt{x} into \texttt{Z} in
+\texttt{(plus x x)}.  This is done by the \texttt{cong}-proof.  Then
+we can join \texttt{(plus Z Z)} with \texttt{Z}.
+
+To use an implication, we instantiate it using the square brackets
+notation.  This makes for a rather convenient notation for
+instantiating theorems.  For example, to use this \texttt{plusZ'}
+theorem we have just proved, we can write:
+
+\begin{verbatim}
+[plusZ' Z refl Z]
+\end{verbatim}
+
+\noindent Here, we are instiating \texttt{x} in the theorem with
+\texttt{Z} (the first argument), and \texttt{u} with \texttt{refl Z}
+(the second argument.
+
+\section{Existential Introduction}
+
+An existential formula is one that states that there is a value
+\texttt{x} of some type \texttt{T} which satisfies a stated property.
+Here is an example:
+
+\begin{verbatim}
+Forall(x:nat). Exists(y:nat). { (le x y) = (le y x) }
+\end{verbatim}
+
+\noindent In English, this formula says, ``for all \texttt{x} of type
+\texttt{nat}, there exists a \texttt{y} of type \texttt{nat} such that
+the (boolean) value returned by \texttt{(le x y)} is equal to that
+returned by \texttt{(le y x)}.''  In other words, for every
+\texttt{nat} \texttt{x}, there is a \texttt{nat} \texttt{y} such that
+\texttt{x} is less than \texttt{y} if and only if \texttt{y} is less
+than \texttt{x}.  The only number with this property, in fact, is
+\texttt{x} itself.
+
+To prove an existential, we must specify a value that has the
+property.  That value is called the \emph{witness} of the existential.
+So in this case, we will specify \texttt{x} as the witness, since
+\texttt{\{(le x x) = (le x x)\}}.  Notice that this last formula
+has four occurrences of \texttt{x} in it.  Two of these we wish
+to view as occurrences of our witness, and two are part of the
+property.  This is indicated by using a \emph{formula context},
+which is a formula with a $*$ in it: 
+
+\begin{verbatim}
+{ (le x *) = (le * x) }
+\end{verbatim}
+
+\noindent To prove our existential, we will use an
+\texttt{existsi}-proof, to introduce the existential.  The syntax for
+an \texttt{existsi}-proof is \texttt{existsi t F* P}, where \texttt{t}
+is the witness, \texttt{F*} is the formula context corresponding to
+the property the witness is supposed to have, and \texttt{P} is a
+proof that \texttt{t} has that property.  In particular, \texttt{P} is
+a proof of the formula \texttt{F*[t]}, which is the formula you get if
+you substitute the witness \texttt{t} for the $*$ in \texttt{F*}.  So
+here, we will write:
+
+\begin{verbatim}
+existsi x { (le x *) = (le * x) } P
+\end{verbatim}
+
+\noindent where \texttt{P} is a proof of
+
+\begin{verbatim}
+{ (le x x) = (le x x) }
+\end{verbatim}
+
+\noindent The complete proof in \guru is:
+
+\begin{verbatim}
+Define ltcomm : Forall(x:nat).Exists(y:nat). { (le x y) = (le y x) } :=
+  foralli(x:nat).
+    existsi x { (le x *) = (le * x) } refl (le x x)
+\end{verbatim}
+
+\noindent We start off with \texttt{foralli}, to introduce the
+variable \texttt{x} for an arbitrary \texttt{nat}.  Then comes our
+\texttt{existsi}-proof.  We can just use \texttt{refl (le x x)} as
+the proof \texttt{P} of \texttt{\{(le x x) = (le x x)\}} mentioned
+above.
+
+You can see the importance of the formula context in \texttt{existsi}-proofs
+by considering this modification of the proof:
+
+\begin{verbatim}
+foralli(x:nat).
+  existsi x { (le x *) = (le * *) } refl (le x x)
+\end{verbatim}
+
+\noindent The only change is that we are using a different formula
+context, one with three $*$s instead of two.  The formula proved by
+this proof is
+
+\begin{verbatim}
+Forall(x:nat).Exists(y:nat). { (le x y) = (le y y) }
+\end{verbatim}
+
+\noindent This says something quite different from the formula proved
+above.
+
+\subsection{Another example}
+\label{ch5:existsi2}
+
+Let us prove this formula:
+
+\begin{verbatim}
+Forall(x:nat). Exists(y:nat). { (le x y) = tt}
+\end{verbatim}
+
+\noindent In English, this formula says, ``for all \texttt{x} of type
+\texttt{nat}, there exists a \texttt{y} of type \texttt{nat} such that
+\texttt{x} is less than or equal to \texttt{y}.''  This uses the
+\texttt{le} function for less-than-or-equal-to on the unary natural
+numbers.  That function is defined in \texttt{guru-lang/lib/nat.g}.
+
+To prove this formula, we must just show how to find, for every
+\texttt{nat} \texttt{x}, a \texttt{nat} \texttt{y} such that
+\texttt{x} is less than or equal to y \texttt{y}.  Of course, for any
+\texttt{x}, there are an infinite number of numbers that would serve
+for such a \texttt{y}: all the numbers greater than or equal to
+\texttt{x}.  We must just pick one of them to serve as the witness of
+the existential quantification (i.e., the value that has the desired
+property).  We will pick \texttt{x} as the witness, since there is a
+theorem \texttt{x\_le\_x} defined in \texttt{guru-lang/lib/nat.g}
+which proves:
+
+\begin{verbatim}
+Forall(a:nat).{ (le a a) = tt}
+\end{verbatim}
+
+In \guru, our proof looks like this:
+
+\begin{verbatim}
+Define existsle : Forall(x:nat).Exists(y:nat). {(le x y) = tt } :=
+  foralli(x:nat). existsi x { (le x *) = tt } [x_le_x x].
+\end{verbatim}
+
+\noindent We are proving the theorem, which we call \texttt{existsle},
+by first introducing the variable \texttt{x} for an arbitrary
+\texttt{nat} using \texttt{foralli}.  Then we have our
+\texttt{existsi}-proof, with the witness \texttt{x}, the formula
+context \texttt{\{(le x *) = tt\}}, and the proof \texttt{[x\_le\_x x]},
+which instantiates the \texttt{x\_le\_x} theorem with \texttt{x} to
+conclude \texttt{\{(le x x) = tt \}}.
+
+\section{Existential Elimination}
+
+If we have a proof of an \texttt{Exists}-formula, stating that there
+is a value which has a certain property, we can make use of that proof
+as follows.  We may introduce a new variable \texttt{x} for the value
+that is stated to exists.  We may also assume that this \texttt{x} has
+the stated property.  In \guru, this is done using an
+\texttt{existse}-proof.  The syntax is unfortunately a little
+cumbersome, although this is a problem with how existential
+elimination has been done in logic for around 80 years.  We write
+\texttt{existse P1 P2}, where for any type \texttt{T}:
+
+\begin{itemize}
+\item \texttt{P1} proves \texttt{Exists(x:T).F}.
+\item \texttt{P2} proves \texttt{Forall(x:T)(u:F).F'}, where
+\texttt{x} may not be mentioned by the formula \texttt{F'}.
+\end{itemize}
+
+\noindent The role of \texttt{P1} is clear enough: this is our proof
+of the existential.  The role of \texttt{P2} is a bit more puzzling.
+It proves some other formula \texttt{F'}, but the proof is allowed to
+make use of arbitrary \texttt{x} of type \texttt{T}, and an assumption
+\texttt{u} that \texttt{x} has property \texttt{F}.  This corresponds
+to the informal intuition above: we introduce a variable \texttt{x}
+for the value that is stated to exist, along with an assumption that
+\texttt{x} has the stated property.  The formula proven (\texttt{F'})
+is not allowed to mention \texttt{x}, because the entire
+\texttt{existse}-proof then proves \texttt{F'} (and if \texttt{F'}
+mentioned \texttt{x}, that \texttt{x} would be used outside its scope,
+which is the \texttt{Forall}-formula).
+
+Here is a simple example of existential elimination.  In
+Section~\ref{ch5:existsi2} just above, we proved: 
+
+\begin{verbatim}
+Forall(x:nat). Exists(y:nat). { (le x y) = tt}
+\end{verbatim}
+
+\noindent So for any value \texttt{x} of type \texttt{nat}, there is a
+value \texttt{y} of type \texttt{nat} such that \texttt{x} is less
+than or equal to \texttt{y}.  Let us introduce variable \texttt{y} for
+this value, and assume that \texttt{\{(le x y) = tt\}}.  Since
+\texttt{y} is less than \texttt{(S y)}, we can conclude that
+\texttt{(lt x (S y))}.  Taking \texttt{(S y)} as our witness, we may
+conclude that there exists a \texttt{z} such that \texttt{(lt x z)}.
+This informal argument proves, in a somewhat roundabout way:
+
+\begin{verbatim}
+Forall(x:nat). Exists(y:nat). { (lt x y) = tt}
+\end{verbatim}
+
+\noindent We may write this proof in \guru, making use of several lemmas
+from \texttt{guru-lang/lib/nat.g}:
+
+\begin{verbatim}
+lt_S : Forall(a:nat).{ (lt a (S a)) = tt}
+
+lelt_trans : Forall(a b c:nat)(u:{ (le a b) = tt })(v:{ (lt b c) = tt }).
+               { (lt a c) = tt }
+\end{verbatim}
+
+\noindent The proof is:
+
+\begin{verbatim}
+0. Define existslt : Forall(x:nat). Exists(z:nat). {(lt x z) = tt } :=
+1.   foralli(x:nat).
+2.   existse [existsle x]
+3.     foralli(y:nat)(u:{(le x y) = tt}).
+4.         existsi (S y) { (lt x *) = tt }
+5.           [lelt_trans x y (S y) u [lt_S y]].
+\end{verbatim}
+
+\noindent Let us walk through this line by line (the line numbers are
+not valid \guru syntax).
+
+\begin{enumerate}
+\item Introduce our arbitrary \texttt{x} of type \texttt{nat}.
+\item Use existential elimination.  The proof \texttt{[existslt x]} is
+our instantiation of the previously proved theorem.  It proves
+\texttt{Exists(y:nat).\{(le x y) = tt\}}.  This is the first proof that
+\texttt{existse} requires, namely, the proof that something exists which
+has a certain property.
+\item The second proof \texttt{existse} requires begins here and
+stretches for the rest of the proof.  This proof begins by assuming
+arbitrary \texttt{y} of type \texttt{nat}, along with an assumption
+\texttt{u} that \texttt{\{(le x y) = tt\}}.
+\item Now we use \texttt{existsi} to prove the formula
+\texttt{Exists(z:nat).\{(lt x z) = tt\}}.  There is no mention of the
+variable \texttt{z} in the proof itself.  In fact, by default \guru
+names the variable \texttt{x}, keeping track of the fact that this
+\texttt{x} is different from other variables in scope which might have
+the same name.
+\item Here we instantiate \texttt{lelt\_trans}.  We provide five arguments
+corresponding to \texttt{lelt\_trans} five inputs:
+\begin{itemize}
+\item \texttt{x} for \texttt{a:nat}
+\item \texttt{y} for \texttt{b:nat}
+\item \texttt{(S y)} for \texttt{c:nat}
+\item \texttt{u} for \texttt{u:\{ (le a b) = tt \}}
+\item \texttt{[lt\_S y]} for \texttt{v:\{ (lt b c) = tt \}}
+\end{itemize}
+
+\noindent The \texttt{lelt\_trans}-proof then proves the desired \texttt{\{(lt x (S y)) = tt\}}.
+\end{enumerate}
+
+\section{Proving a Function Terminates}
+
+One of the most basic properties one might want to prove about a
+recursively defined function is that it terminates for all inputs.
+When the function is structurally terminating (see
+Section~\ref{ch4:indrec}), this can be easily done by induction.  To
+do this, we must first formalize the statement that the function
+terminates.  In \guru, this is done by stating that for all inputs to
+the function, there exists an output of the function on those inputs.
+For example, here is the formalized statement that \texttt{plus}
+terminates on all inputs:
+
+\begin{verbatim}
+Forall(x  y : nat). Exists(z:nat).{(plus x y) = z}
+\end{verbatim}
+
+\noindent Quantifiers in \guru range over values of the given types.
+So this says that for all values \texttt{x} and \texttt{y} of type
+\texttt{nat}, there exists a value \texttt{z} such that \texttt{(plus
+x y)} equals \texttt{z}.  As stated earlier, if an equality between
+terms is provable in \guru, it implies that the two terms either both
+diverge (run forever) or both converge to a common value.  Since the
+variable \texttt{z} ranges over values, this implies that
+\texttt{(plus x y)} converges to \texttt{z}.
+
+The proof in \texttt{guru-lang/lib/plus.g} that \texttt{plus} is total
+is called \texttt{plus\_total}:
+
+\begin{verbatim}
+induction (x : nat) return Forall(y:nat). Exists(z:nat).{(plus x y) = z} with
+  Z => foralli(y:nat).
+       existsi y {(plus x y) = *}
+       trans cong (plus * y) x_eq
+             join (plus Z y) y
+| S x' => foralli(y:nat).
+          existse [x_IH x' y] foralli(z':nat)(u:{(plus x' y) = z'}). 
+	    existsi (S z') {(plus x y) = *}  
+            trans cong (plus * y) x_eq
+            trans join (plus (S x') y) (S (plus x' y))
+                  cong (S *) u
+	end. 
+\end{verbatim}
+
+\noindent We will not walk through this in all detail, but focus just
+on the clause for \texttt{(S x')}.  Here, we use an instantiation of
+the induction hypothesis, \texttt{[x\_IH x' y]}, to prove:
+
+\begin{verbatim}
+Exists(z:nat). {(plus x' y) = z}
+\end{verbatim}
+
+\noindent The \texttt{existse}-proof's second subproof, which begins
+\texttt{foralli(z':nat)}, picks up from this existential formula.  It
+introduces a variable \texttt{z'} for the value \texttt{z} such that
+\texttt{\{(plus x' y) = z\}}.  It is fine to use a different name
+(here \texttt{z'}) for the variable introduced by \texttt{foralli}
+than for the variable mentioned by the \texttt{Exists}-formula (here
+\texttt{z}).  The rest of the clause is:
+
+\begin{verbatim}
+existsi (S z') {(plus x y) = *}  
+trans cong (plus * y) x_eq
+trans join (plus (S x') y) (S (plus x' y))
+      cong (S *) u
+\end{verbatim}
+
+\noindent The reasoning here is as follows.  If \texttt{\{(plus x' y)
+= z'\}}, then \texttt{(plus (S x') y)} can be shown to be equal to
+\texttt{(S z')}; and so \texttt{\{(plus x y) = (S z')\}}.  This
+reasoning is done by the last three lines of the subproof.  So we will
+take \texttt{(S z')} as our witness for the existential statement that
+there exists \texttt{z} such that \texttt{\{(plus x y) = z}.  That is
+why the \texttt{existsi}-proof begins with \texttt{(S z')}: that is
+the witness.
 
 \begin{comment}
 \noindent Sometimes while we are incrementally developing a proof, it is useful
