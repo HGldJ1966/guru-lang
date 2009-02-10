@@ -71,15 +71,17 @@ Define plus_assoc : Forall(x y z:nat). { (plus (plus x y) z) = (plus x (plus y z
 end.
 
 Define plus_total : Forall ( x  y : nat). Exists(z:nat).{(plus x y) = z} :=
-	induction (x : nat) by x1 x2 IH 
-          return Forall(y:nat). Exists(z:nat).{(plus x y) = z} with
+	induction (x : nat) return Forall(y:nat). Exists(z:nat).{(plus x y) = z} with
 	Z => foralli(y:nat).
              existsi y {(plus x y) = *}
-		hypjoin (plus x y) y by x1 end
+		trans cong (plus * y) x_eq
+                      join (plus Z y) y
 	| S x' => foralli(y:nat).
-		existse [IH x' y] foralli(z':nat)(u:{(plus x' y) = z'}). 
+		existse [x_IH x' y] foralli(z':nat)(u:{(plus x' y) = z'}). 
 		existsi (S z') {(plus x y) = *}  
-                  hypjoin (plus x y) (S z') by x1 u end	
+                  trans cong (plus * y) x_eq
+                  trans join (plus (S x') y) (S (plus x' y))
+                        cong (S *) u
 	end. 
 
 Total plus plus_total.
