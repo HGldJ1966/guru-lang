@@ -36,6 +36,8 @@ Define pow_total : Forall(b e : nat).Exists(z:nat).{(pow b e) = z} :=
 		u'
 	end.
 
+Total pow pow_total.
+
 
 Define pow_not_zero : Forall(b e : nat)(u:{ b != Z }).{(pow b e) != Z} :=
 	foralli(b:nat).induction(e:nat) by x1 x2 IH return Forall(u:{ b != Z }).{(pow b e) != Z} with

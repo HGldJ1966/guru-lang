@@ -84,6 +84,8 @@ Define eqnatTot : Forall(n m:nat).Exists(x:bool). { (eqnat n m) = x } :=
         end
 end.
 
+Total eqnat eqnatTot.
+
 %Set "comment_vars".
 
 Define eqnatTot_test
@@ -204,6 +206,15 @@ Define eqnat_refl : Forall(x:nat).{ (eqnat x x) = tt } :=
                   [IH x']
   end.
 
+Define eqnat_symm : Forall(x y:nat). { (eqnat x y) = (eqnat y x) } :=
+  foralli(x y:nat).
+  case (eqnat x y) by u ign with
+    ff => trans u
+                symm [neqEqnat y x symm [eqnatNeq x y u]]
+  | tt => trans cong (eqnat * y) [eqnatEq x y u]
+                cong (eqnat y *) symm [eqnatEq x y u]
+  end.                
+
 Define eqnatDef := eqnatEq.
 
 Define Sneq_neq : Forall(a b:nat)(u:{ (S a) != (S b) }).{ a != b } :=
@@ -266,6 +277,12 @@ Define x_le_x : Forall(a:nat).{ (le a a) = tt} :=
 			trans join (or ff (eqnat a a)) (eqnat a a)
 			[x_eqnat_x a].
 
+Define leZ : Forall(a:nat). { (le Z a) = tt } :=
+  foralli(a:nat).
+  case a with
+    default nat => hypjoin (le Z a) tt by a_eq end
+  end.
+
 Define lt_total_helper : Forall(b:nat).Exists(q:bool).{(lt Z b) = q} :=
 	induction(b:nat) by x1 x2 IH return Exists(q:bool).{(lt Z b) = q} with
 	Z => existsi ff {(lt Z b) = *} trans cong (lt Z *) x1 join (lt Z Z) ff
@@ -307,22 +324,21 @@ Define not_zero_implies_lt : Forall(a:nat)(u:{a != Z}).{ (lt Z a) = tt} :=
 	| S a' => foralli(u:{a != Z}). trans cong (lt Z *) x1 join (lt Z (S a')) tt
 	end.
 
-Define lt_implies_not_zero : Forall(a:nat)(b:nat)(u:{(lt a b) = tt}).{b != Z} :=
-	foralli(a:nat).induction(b:nat) by x1 x2 IH return Forall(u:{(lt a b) = tt}).{b != Z} with
-	Z => foralli(u:{(lt a b) = tt}).
-		[induction(c:nat) by y1 y2 IH2 return Forall(v:{c=a}).{b != Z} with
-			Z => foralli(v:{c=a}).
-				contra clash trans join (lt a b) (lt a b) u 
-					trans cong (lt * b) symm v trans cong (lt * b) y1 trans cong (lt Z *) x1 join (lt Z Z) ff
-				{b != Z}
-			| S c' => foralli(v:{c=a}).
-				contra clash trans join (lt a b) (lt a b) u 
-					trans cong (lt * b) symm v trans cong (lt * b) y1 trans cong (lt (S c') *) x1 join (lt (S c') Z) ff
-					{b != Z}
-		end a join a a]
-	| S b' => foralli(u:{(lt a b) = tt}).
-			trans x1 clash (S b') Z
-	end.	
+Define lt_implies_not_zero : Forall(a b:nat)(u:{(lt a b) = tt}).{b != Z} :=
+	foralli(a b:nat)(u:{(lt a b) = tt}).
+        case b with
+          Z => 
+          case a with
+            default nat => 
+              contra
+                 trans symm u
+                 trans hypjoin (lt a b) ff by b_eq a_eq end
+                       clash ff tt
+               { b != Z }
+          end
+       | S b' => trans b_eq
+                       clash (S b') Z
+       end.
 
 Define lt_implies_neq : Forall(a b:nat)(u:{ (lt a b) = tt }).{ a != b } :=
   foralli(a b:nat)(u:{ (lt a b) = tt }).
@@ -522,13 +538,18 @@ Define lt_ltff : Forall(a b:nat)(u:{ (lt a b) = tt }).{ (lt b a) = ff } :=
       end
   end.
 
-Define le_Z1 : Forall(a : nat)(u:{(le a Z) = tt}).{a = Z} :=
-	induction(a:nat) by x1 x2 IH return Forall(u:{(le a Z) = tt}).{a =Z } with
-	Z => foralli(u:{(le a Z) = tt}).x1
-	| S a' => foralli(u:{(le a Z) = tt}).
-		contra trans symm u trans cong (le * Z) x1 trans join (le (S a') Z) ff clash ff tt
-		{a =Z }
-	end.
+Define le_Z1 : Forall(x:nat)(u:{(le x Z) = tt}). { x = Z} :=
+  foralli(x:nat)(u:{(le x Z) = tt}).
+  case x with
+    Z => x_eq
+  | S x' => 
+    contra 
+      trans symm u
+      trans cong (le * Z) x_eq
+      trans join (le (S x') Z) ff
+            clash ff tt
+    { x = Z }
+  end.
 
 Define Z_le : Forall(a:nat).{ (le Z a) = tt} :=
 	induction(a:nat) by x1 x2 IH return {(le Z a) = tt} with
