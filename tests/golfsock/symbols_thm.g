@@ -38,7 +38,7 @@ Define gs_ctxt_tot : Forall(symbols:symbols_t).Exists(G:ctxt).
     existsi G { (gs_ctxt symbols) = *}
       join (gs_ctxt symbols) G.
 
-
+%-
 Define diffids_insert_next
  : Forall(n:var)(symbols symbols':symbols_t)
          (s:string)(t:trm)
@@ -82,6 +82,7 @@ Define diffids_insert_next
         end
       | tt => truei
       end.
+-%
 
 Define trusted symbols_ok_insert_next
  : Forall(n:var)(symbols symbols':symbols_t)

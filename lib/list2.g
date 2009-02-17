@@ -34,9 +34,9 @@ Define foldrTot : Forall(A B C : type)
       return Exists(z:B). {(foldr cookie f b l) = z } with
         nil A' => existsi b {(foldr cookie f b l) = *}
                    hypjoin (foldr cookie f b l) b by u end
-      | cons A' a' l' => existse [IH cast l' by symm v]
+      | cons _ a' l' => existse [IH l']
                          foralli(z:B)(u1:{(foldr cookie f b l') = z}).
-                           existse [fTot cast a' by symm inj <list *> v z]
+                           existse [fTot a' z]
                            foralli(z':B)(u2:{(f cookie a' z) = z'}).
                              existsi z' {(foldr cookie f b l) = *}
                                trans hypjoin 

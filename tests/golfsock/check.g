@@ -2,8 +2,8 @@
 Include trusted "deriv_thm.g".
 
 Include "symbols_thm.g".
-%Include trusted "bndtrm_thm.g".
-Include "bndtrm_thm.g".
+Include trusted "bndtrm_thm.g".
+%Include "bndtrm_thm.g".
 Include "gs_io.g".
 Include "checkh.g".
 
