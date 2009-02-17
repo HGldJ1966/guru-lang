@@ -23,6 +23,13 @@ Define print_nat :=
     | S n' => let ign = (print_char CS) in (print_nat n')
     end.
 
+Define print_nat_unique :=
+  fun print_nat_unique(unique_owned n:nat):Unit.
+    match n with
+      Z => (print_char CZ)
+    | S n' => let ign = (print_char CS) in (print_nat_unique n')
+    end.
+
 Define nat_to_string :=
   fun nat_to_string(owned n:nat):string.
     match n with

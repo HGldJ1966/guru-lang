@@ -1,4 +1,7 @@
-go:	wordhist
+go:	test_cell
+
+test_cell:
+	../bin/guru cell.g test_cell.g
 
 vec_test:
 	java -cp .. guru.Main vec_test.g

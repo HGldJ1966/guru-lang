@@ -19,14 +19,11 @@ Define minus_tot : Forall(a b:nat)(u:{ (lt a b) = ff }).Exists(c:nat).{ (minus a
         Z =>
           foralli(u:{ (lt a b) = ff }).
             existsi a { (minus a b) = * }
-              trans cong (minus a *) bp
-                    join (minus a Z) a
+              hypjoin (minus a b) a by bp end
       | S b' =>
           foralli(u:{ (lt a b) = ff }).
             contra trans symm u
-                   trans cong (lt * b) ap
-                   trans cong (lt Z *) bp
-                   trans join (lt Z (S b')) tt
+                   trans hypjoin (lt a b) tt by ap bp end
                          clash tt ff
               Exists(c:nat).{ (minus a b) = c }
       end
@@ -35,8 +32,7 @@ Define minus_tot : Forall(a b:nat)(u:{ (lt a b) = ff }).Exists(c:nat).{ (minus a
         Z =>
           foralli(u:{ (lt a b) = ff }).
             existsi a { (minus a b) = * }
-              trans cong (minus a *) bp
-                    join (minus a Z) a
+              hypjoin (minus a b) a by bp end
       | S b' =>
           foralli(u:{ (lt a b) = ff }).
             abbrev lt_a'_b' = trans symm [S_lt_S a' b']
@@ -46,10 +42,7 @@ Define minus_tot : Forall(a b:nat)(u:{ (lt a b) = ff }).Exists(c:nat).{ (minus a
             existse [IHa a' b' lt_a'_b']
               foralli(c':nat)(cpf:{ (minus a' b') = c' }).
                 existsi c' { (minus a b) = * }
-                  trans cong (minus * b) ap
-                  trans cong (minus (S a') *) bp
-                  trans join (minus (S a') (S b'))
-                             (minus a' b')
+                  trans hypjoin (minus a b) (minus a' b') by ap bp end
                         cpf
       end
   end.

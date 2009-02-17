@@ -315,6 +315,7 @@ syntax:
 
 
 \section{Inductive Datatypes}
+\label{ch2:ind}
 
 At the heart of functional programming languages like \textsc{Caml}
 and \textsc{Haskell} -- but not functional languages like
@@ -3664,6 +3665,83 @@ step case I made use of lemmas \texttt{S\_le\_S} and \texttt{leZ} from
 \texttt{nat.g}.
 
 \end{enumerate}
+
+\chapter{Polymorphic Programming and Proving}
+
+Up until now, we have limited ourselves to monomorphic programming,
+where programs operate just on particular specified types of data.
+With polymorphic programming, also known as generic programming, we
+can write functions that operate polymorphically (or generically) for
+any type of data.  This kind of polymorphism, the only kind we will
+study in this book, is crucial for implementing generic data
+structures, which can hold any type of data.  Such data structures
+are, of course, of central importance for achieving code reuse.  We do
+not wish to code up a different list datatype for every new type of
+data we might wish to store in a list.  With a generic list datatype,
+we design one datatype for lists of any single type of data, and write
+functions operating on such lists.  With verified programming, we of
+course also have the burden of writing proofs about those programs.
+Naturally, those proofs are also generic, proving theorems for any
+kind of data stored in the generic data structure. 
+
+\section{Preview}
+
+The main differences we find moving to generic programming are:
+
+\begin{itemize}
+
+\item polymorphic datatypes are described using datatype constructors,
+also just called type constructors.  A type constructor constructs a
+type when applied, at the type level, to some arguments (here, just
+other types).  The notation for type-level application uses angle
+brackets.  So for example, \texttt{<list nat>} is \guru notation for
+applying the type constructor \texttt{list} to the type \texttt{nat}
+to get the type of lists which store \texttt{nat}s.
+
+\item pattern-matching will automatically equate type variables $A$ in
+the type of the scrutinee with corresponding variables $A'$ in the
+type of the pattern.  
+
+\item the class of examples we can consider becomes much richer,
+because we are now working with data structures -- i.e., structures
+designed to hold other data -- rather than basic data like
+\texttt{nat}s and \texttt{bool}s.
+
+\end{itemize}
+
+\section{Polymorphic Datatypes}
+
+In \guru, we use polymorphic datatypes to implement generic data
+structures.  Polymorphic datatypes are declared like monomorphic
+datatypes, using an \texttt{Inductive}-command.  The difference is
+that they use type variables in several places, instead of particular
+types.  We will begin by looking at one of the simplest polymorphic
+datatypes, the type for polymorphic lists.  We are all familiar with
+various list datatypes in object-oriented programming languages.
+Lists in functional languages are implemented a bit differently,
+because they must be described as inductive datatypes, where bigger
+data are incrementally and uniquely built from smaller data (see
+Section~\ref{ch2:ind}).  Before we look at the polymorphic type, let
+us consider how we would implement a monomorphic datatype for lists of
+\texttt{nat}s.  On this view, lists are usually considered to be built
+up from the empty list by gradually adding \texttt{nat}s to the front
+of the list.  We just add one \texttt{nat} at a time to the front.
+The constructor to do this is traditionally called \texttt{cons}
+(going back to \textsc{LISP}).  The constructor for the empty 
+
+For example, here is the
+declaration from \texttt{guru-lang/lib/list.g} for the polymorphic
+\texttt{list} datatype:
+
+\begin{verbatim}
+Inductive list : Fun(A:type).type :=
+  nil : Fun(A:type).<list A>
+| cons : Fun(A:type)(a:A)(l:<list A>). <list A>.
+\end{verbatim}
+
+\noindent To help as we try to understand this declaration, let
+us consider how we might 
+
 
 \bibliographystyle{plain}
 \bibliography{the-bib}

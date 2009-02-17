@@ -288,6 +288,8 @@ public abstract class Expr {
     }
 
     // do not drop annotations, treat as specificational
+    //
+    // type family abbrev's are not expanded.
     public Expr defExpandTop(Context ctxt) {
 	return defExpandTop(ctxt, false, true);
     }
@@ -514,13 +516,14 @@ public abstract class Expr {
 
     public boolean isTypeOrKind(Context ctxt) {
 	Expr tmp = defExpandTop(ctxt);
+
 	if (tmp.construct == VAR) {
             if(ctxt.getClassifier((Var)tmp) == null)
                 System.err.println("NULL classifier for: "+tmp.toString(ctxt));
 	    return ctxt.getClassifier((Var)tmp).construct == TYPE;
         }
 	if (tmp.construct == CONST) 
-	    return ctxt.isTypeCtor((Const)tmp);
+	    return ctxt.isTypeCtor((Const)tmp) || ctxt.isTypeFamilyAbbrev((Const)tmp);
 	
 	return isTypeOrKind(tmp.construct);
     }
