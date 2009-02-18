@@ -1,5 +1,5 @@
 Include "char.g".
-Include "list2.g".
+Include "list.g".
 
 Define string := <list char>.
 Define stringn := (nil char).

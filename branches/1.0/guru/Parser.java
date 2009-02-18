@@ -1095,7 +1095,7 @@ public class Parser {
         Case e = new Case();
 	e.pos = new Position(linenum, column, file);
         
-	String errm = ("Pattern in match does not begin with a"
+	String errm = ("Pattern in case does not begin with a"
 		       +" known constant.");
 	try {
 	    e.c = readConst();

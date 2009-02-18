@@ -1,5 +1,5 @@
 Include "plus.g".
-Include "list2.g".
+Include "list.g".
 Include "mult.g".
 Include "bool.g".
 
