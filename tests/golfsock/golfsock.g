@@ -263,6 +263,6 @@ Unset "check_spec_terminates". %- not behaving properly during compilation -%
 %Set "debug_refine_cases".
 %Set "expand_vars".
 
-Set "print_trusted_details".
+%Set "print_trusted_details".
 
 Compile main to "golfsock.c".

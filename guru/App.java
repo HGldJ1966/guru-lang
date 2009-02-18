@@ -100,7 +100,7 @@ public class App extends Expr{
 	    err_tgt.handleError
 		(ctxt,
 		 "A term does not accept enough arguments to apply to"
-		 +" argument "+(new Integer(arg))+".\n"+
+		 +" argument "+(new Integer(arg+1))+".\n"+
 		 "1. The classifier of the head at that point:\n"
 		 +cl.toString(ctxt)
 		 +"\n2. The application: "+toString(ctxt));
@@ -120,7 +120,7 @@ public class App extends Expr{
 	       either. */
 	    if (ctxt.getFlag("debug_classify_apps")) {
 		ctxt.w.println("(About to classify argument "+
-			       (new Integer(arg)).toString());
+			       (new Integer(arg+1)).toString());
 		ctxt.w.flush();
 	    }
 
@@ -137,7 +137,7 @@ public class App extends Expr{
 		err_tgt.handleError
 		    (ctxt,
 		     "In an application, the classifier of argument "
-		     +(new Integer(arg))+
+		     +(new Integer(arg+1))+
 		     " is not definitionally equal\nto the expected one:\n"
 		     +"1. the argument: "+X[arg].toString(ctxt)+"\n"
 		     +"2. argument's classifier: "+xc.toString(ctxt)+"\n"

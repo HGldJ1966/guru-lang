@@ -9,8 +9,7 @@
 	pdfauthor={Aaron Stump},
 	pdftitle={Verified Programming in Guru},
 	colorlinks,
-	linkcolor={red}
-]{hyperref}
+	linkcolor={red}]{hyperref}
 
 
 \special{papersize=8.5in,11in}
@@ -3666,6 +3665,7 @@ step case I made use of lemmas \texttt{S\_le\_S} and \texttt{leZ} from
 
 \end{enumerate}
 
+
 \chapter{Polymorphic Programming and Proving}
 
 Up until now, we have limited ourselves to monomorphic programming,
@@ -3710,28 +3710,41 @@ designed to hold other data -- rather than basic data like
 \end{itemize}
 
 \section{Polymorphic Datatypes}
+\label{ch6:lists}
 
 In \guru, we use polymorphic datatypes to implement generic data
 structures.  Polymorphic datatypes are declared like monomorphic
 datatypes, using an \texttt{Inductive}-command.  The difference is
 that they use type variables in several places, instead of particular
-types.  We will begin by looking at one of the simplest polymorphic
-datatypes, the type for polymorphic lists.  We are all familiar with
-various list datatypes in object-oriented programming languages.
-Lists in functional languages are implemented a bit differently,
-because they must be described as inductive datatypes, where bigger
-data are incrementally and uniquely built from smaller data (see
-Section~\ref{ch2:ind}).  Before we look at the polymorphic type, let
-us consider how we would implement a monomorphic datatype for lists of
-\texttt{nat}s.  On this view, lists are usually considered to be built
-up from the empty list by gradually adding \texttt{nat}s to the front
-of the list.  We just add one \texttt{nat} at a time to the front.
-The constructor to do this is traditionally called \texttt{cons}
-(going back to \textsc{LISP}).  The constructor for the empty 
+types.  We will begin by looking at a representative and frequently
+used polymorphic datatype, the type for polymorphic lists.  We are all
+familiar with various list datatypes in object-oriented programming
+languages.  Lists in functional languages are implemented a bit
+differently, because they must be described as inductive datatypes,
+where bigger data are incrementally and uniquely built from smaller
+data (see Section~\ref{ch2:ind}).  
 
-For example, here is the
-declaration from \texttt{guru-lang/lib/list.g} for the polymorphic
-\texttt{list} datatype:
+Before we look at the polymorphic type, let us consider how we would
+implement a monomorphic datatype \texttt{nlist} for lists of
+\texttt{nat}s.  As an inductive datatype, lists are usually considered
+to be built up from the empty list by gradually adding elements
+(\texttt{nat}s for \texttt{nlist}s) one at a time to the front of the
+list.  The constructor to do this is traditionally called
+\texttt{cons} (going back to \textsc{LISP}).  The constructor for the
+empty list is \texttt{nil}.  Here is the declaration in \guru for
+this:
+
+\begin{verbatim}
+Inductive nlist : type :=
+  nil : nlist
+| cons : Fun(n:nat)(l:nlist).nlist.
+\end{verbatim}
+
+\noindent The value in \guru for the list ``1,2,3'' would then be
+\texttt{(cons one (cons two (cons three nil)))}.  We apply
+\texttt{cons} three times to incrementally grow our final list from
+the starting list \texttt{nil}, the empty list.  Now let us see how to
+declare the polymorphic \texttt{list} datatype:
 
 \begin{verbatim}
 Inductive list : Fun(A:type).type :=
@@ -3739,11 +3752,625 @@ Inductive list : Fun(A:type).type :=
 | cons : Fun(A:type)(a:A)(l:<list A>). <list A>.
 \end{verbatim}
 
-\noindent To help as we try to understand this declaration, let
-us consider how we might 
+\noindent This is similar to the definition for \texttt{nlist}: we
+still have constructors \texttt{nil} and \texttt{cons}, for example.
+But obviously, there are some significant differences.  The first line
+of the \texttt{Inductive}-command declares \texttt{list} to have
+classifier \texttt{Fun(A:type).type}.  This makes \texttt{list} a
+\emph{type constructor}.  We can think of it as a function that takes
+an input \texttt{A} which is a type, and returns a type as output.
+The input type \texttt{A} is the type for elements of the list, and
+the output type is they type for lists of \texttt{A}s.  
 
+Let us look now at the types of the constructors.  The type for
+\texttt{nil} says that \texttt{nil} takes an input \texttt{A} which is
+a type, and then returns an output of type \texttt{<list A>}.  This
+notation, with the angle brackets, is for applying a type constructor
+to arguments.  Such an application is called a \emph{type-level}
+application, since it takes place at the level of types; in
+particular, it produces a type as output.  Here, \texttt{list} is the
+type constructor, and the argument is \texttt{A}.  Since \texttt{A}
+has classifier \texttt{type}, and since \texttt{list} expects its
+argument to have classifier \texttt{type}, this application (i.e.,
+\texttt{<list A>}) is allowed, and has classifier \texttt{type}.
+Sometime classifiers like \texttt{type} and \texttt{Fun(A:type).type},
+which classify types and type constructors, are called \emph{kinds}
+(see also Section~\ref{ch2:func}, where the classification hierarchy
+for terms is mentioned).
 
-\bibliographystyle{plain}
-\bibliography{the-bib}
+Finally, we have the type for \texttt{cons}, which is
+\texttt{Fun(A:type)(a:A)(l:<list A>).<list A>}.  This type says that
+\texttt{cons} takes three inputs: a \texttt{type} \texttt{A}, a value
+\texttt{a} of type \texttt{A}, and a list \texttt{l} of \texttt{A}s.
+Then \texttt{cons} produces as output another list of \texttt{A}s.
+Here we see how type variables like \texttt{A} enable us to describe
+generic datatypes.  For any type \texttt{A} we like, we can pass a
+piece of data ``\texttt{a}'' of type \texttt{A} to \texttt{cons}, to
+be stored in the list.  Notice that a single list can hold data of
+just a single type \texttt{A}.  Such lists are sometimes called
+\emph{homogeneous}.  We cannot store a \texttt{nat} and a
+\texttt{bool} in the same list.  Lists that allow different types of
+data in the same list are sometimes called \emph{heterogeneous}.  As
+an example of how the datatype works, here is the value that we will
+write for the list ``1,2,3'':
+
+\begin{verbatim}
+(cons nat one (cons nat two (cons nat three (nil nat))))
+\end{verbatim}
+
+\noindent The sole argument to \texttt{nil} is a type, and the first
+argument to \texttt{cons} is a type.  Here, the type is \texttt{nat}.
+It is a bit annoying that \texttt{nat} is repeated all these times,
+and it would be an improvement to \guru if it could be instead
+inferred from the types of the data values like \texttt{one} that are
+stored in the list.  Functional programming languages like
+\textsc{OCaml} and \textsc{Haskell} provide powerful type inference
+mechanisms to support polymorphic programming without type annotations
+in code such as these uses of \texttt{nat} as arguments here.
+Unfortunately, in the presence of the kind of polymorphism supported
+by \guru, the problem of inferring a type for a term with no type
+annotations is provably unsolvable (similarly to the way the more
+familiar \emph{halting problem}, of whether or not a Turing machine
+halts, is unsolvable).  So type inference is necessarily limited or
+approximate in some way for such languages.  At the moment, \guru does
+not attempt to provide such type inference, and we must live with
+writing annotations like type arguments to polymorphic functions.
+
+\section{Polymorphic Functions}
+\label{ch6:func}
+
+Programming with polymorphic data is similar to programming with
+monomorphic data, except that we use type variables.  For example, let
+us write an \texttt{append} function, for concatenating two
+polymorphic lists.  As a warmup, here is code for appending
+monomorphic \texttt{nlist}s, where we will rename the constructors
+slightly so that they do not clash with those for \texttt{list}s:
+
+\begin{verbatim}
+Inductive nlist : type :=
+  nnil : nlist
+| ncons : Fun(n:nat)(l:nlist).nlist.
+
+Define nappend : Fun(l1 l2:nlist).nlist :=
+  fun(l1 l2:nlist).
+    match l1 with
+      nnil => l2
+    | ncons n l1' => (ncons n (nappend l1' l2))
+    end.
+\end{verbatim}
+
+\noindent The basic idea behind this function can perhaps be easier
+seen via these equations:
+
+\begin{verbatim}
+(nappend nnil l2) = l2
+(nappend (ncons n l1') l2) = (ncons n (nappend l1' l2))
+\end{verbatim}
+
+\noindent If the first list is empty, then we just return the second
+(that is what the first equation says).  If the first list consists of
+a \texttt{nat} \texttt{n} followed by a sublist \texttt{l1'}, then we
+recursively append the sublist to l2.  This is done with
+\texttt{(nappend l1' l2)} in the second equation.  Then we put
+\texttt{n} at the front of the result.  This code has the effect of
+working through the first list completely until it reaches
+\texttt{nnil}, which it replaces with \texttt{l2}.  So the first list
+is rebuilt starting with \texttt{l2} instead of with \texttt{nnil}.
+
+Now let us see the polymorphic version of \texttt{append}, working on
+polymorphic lists.  We can include the definition of \texttt{list}
+given in the previous section from \texttt{guru-lang/lib/list.g}.  Because
+some of the theorems in that file take a while to check, it is helpful
+to do the include of \texttt{list.g} like this:
+
+\begin{verbatim}
+Include trusted "../guru-lang/lib/list.g".
+\end{verbatim}
+
+\noindent The ``\texttt{trusted}'' option tells \guru not to check any
+proofs that are \texttt{Define}d in the included file or recursively
+any files that file includes.  A better long-term solution is to
+implement separate compilation for \guru, where once a file has been
+checked, a summary of its declarations and definitions is created
+which can be used later without rechecking the file.  This has not
+been implemented yet, however.  When \guru terminates, it will print a
+list (which can get rather long) of all the theorems whose proofs it
+is trusting due to the use of ``\texttt{trusted}''.  To return: the
+code for \texttt{append} can be written as follows.  Note that a much
+more complicated definition is given in \texttt{list.g}, for reasons
+which we will explain later.  We call our version here
+\texttt{append'} to avoid a name conflict.
+
+\begin{verbatim}
+Define append' : Fun(A:type)(l1 l2:<list A>).<list A> :=
+  fun append'(A:type)(l1 l2:<list A>):<list A>.
+    match l1 with
+      nil _ => l2
+    | cons _ a l1' => (cons A a (append' A l1' l2))
+    end.
+\end{verbatim}
+
+\noindent There are, clearly, several differences from the monomorphic
+\texttt{nappend} defined above.  First, \texttt{append'} takes a type
+\texttt{A} as its first argument.  The second and third arguments are
+then of type \texttt{<list A>}, meaning that they are lists whose
+elements are of type \texttt{A}.  Then \texttt{append'} returns a list
+of \texttt{A}s.  Other differences include the fact that \texttt{A} is
+passed as an argument to \texttt{cons}, and also in the recursive call
+to \texttt{append}.  This makes sense from a classification
+perspective, since \texttt{cons} and \texttt{append} require a type as
+their first arguments, and that type has to match up in the
+appropriate way with later arguments.  One feature we have not
+discussed yet is used for the patterns of the cases.  Here, an
+underscore is written for the type argument (the first argument to
+\texttt{nil} and \texttt{cons}).  There is no special meaning to
+underscore: it is just another pattern variable in this case.  I am
+using underscore here just to indicate informally that that variable
+is not used later.  So it is essentially an ignored variable.  Again,
+this is all informal: \guru does not check that it is ignored.  
+
+The one subtle point we must note here is that for the second pattern,
+say, to classify, it must be the case that the pattern variable
+\texttt{a} has classifier \texttt{\_}\,.  This is because
+\texttt{cons}'s type says that the first argument is some type, here
+\texttt{\_}\,, and the second argument then has that type.  So
+\texttt{a} really has type \texttt{\_}\,.  How then can we treat it as
+if it has type \texttt{A}, for example when we pass it to
+\texttt{cons} in the body of the clause for \texttt{cons}?  Because
+\guru automatically equates \texttt{\_} and \texttt{A} in this
+situation.  The algorithm \guru uses is the following.  
+
+\begin{enumerate}
+\item Compute the type, call it $T_S$, for the scrutinee.  Here, the
+scrutinee is \texttt{l1}, and its type is \texttt{<list A>}.
+\item Then for each clause, compute the type, call it $T_P$, for the
+clause's pattern.  In the clause for \texttt{cons}, for example, the
+type of the pattern is \texttt{<list \_>}.
+\item Match $T_S$ against $T_P$.  That is, treat $T_P$ as a pattern,
+and pattern match it against $T_S$.  Pattern variables occurring in
+$T_P$ are considered variables which can be instantiated by this
+pattern matching.  So here, we are matching \texttt{<list A>} against
+\texttt{<list \_>}, where \texttt{\_} is considered an instantiable
+variable (because \texttt{\_} is a variable in the pattern
+\texttt{cons \_ a l1'}).  The instantiation that makes these two types
+equal is the one which maps \texttt{\_} to \texttt{A}.
+\item Extend definitional equality in the body of the clause to equate
+any variables instantiated by pattern matching with whatever they were
+instantiated to.  So in the body of the clause for \texttt{cons}, definitional
+equality is extended to equate \texttt{\_} and \texttt{A}.
+\item Now classify the body of the case with the extended definitional
+equality.  This explains why \texttt{(cons A a)} type checks in the
+body of the \texttt{cons}-clause: once we have given \texttt{A} as the
+first argument to \texttt{cons}, the second argument is expected to have
+type \texttt{A}; the given second argument ``\texttt{a}'' actually has
+type \texttt{\_}\,; but these are considered definitionally equal in this
+case, so the application type checks.
+\end{enumerate}
+
+We will see later situations where this simple algorithm is not
+sufficient, particularly for dependently type programming.  In those
+situations, explicit type casts are used in code, which begin with the
+keyword \texttt{cast}.  You will see some of these in library files,
+including \texttt{list.g} (for reasons explained in
+Section~\ref{ch6:compile}).  But for polymorphic programming as we
+usually encounter it (certainly in \textsc{OCaml} or \textsc{Haskell}
+without some of its recent extensions to the type system), this is
+enough to make the connection between the type of the scrutinee and
+the type of the pattern, in a fully automatic way.
+
+\section{Polymorphic Proving}
+
+Let us now prove that \texttt{append'} is associative.  The theorem we wish to prove
+is written this way in \guru:
+
+\begin{verbatim}
+Forall(A:type)(l1 l2 l3 : <list A>). 
+  { (append' l1 (append' l2 l3)) = (append' (append' l1 l2) l3) }
+\end{verbatim}
+
+\noindent There are two points to explain here.  First, we are
+quantifying over a type \texttt{A}, similarly to the way our code for
+\texttt{append'} above takes in a type \texttt{A}.  The second point,
+which is somewhat subtle, is in the phrasing of the equation we are
+proving.  Notice that here, unlike in our code above, no type argument
+is given to \texttt{append'}.  We just call \texttt{append'} with the
+two lists.  Here we are seeing in action one of the main features of
+\guru over related proving environments like \textsc{Coq}.  Equations
+are always stated and proved between terms without any type
+annotations.  In fact, \guru's definitional equality erases type
+annotations from terms.  So \texttt{(nil bool)} and \texttt{(nil nat)}
+are considered definitionally equal, when we compare classifiers.  In
+fact, note that when we drop their type annotations, we get just
+\texttt{nil}, with no parentheses.
+
+The rationale for this approach is that we are interested in reasoning
+about the computational behavior of programs, which in \guru does not
+depend on type annotations.  So we may reason about the programs with
+their annotations dropped.  Practically speaking, this greatly
+simplifies reasoning about code with annotations, since they are
+erased for purposes of equational reasoning.  Tools like \textsc{Coq}
+do not erase such annotations, which then clutter proofs.  The problem
+becomes much worse with dependently typed programming, where programs
+contain much more complex annotations than just a few type arguments
+here for polymorphic programming.
+
+\begin{verbatim}
+Define append'_assoc : 
+  Forall(A:type)(l1 l2 l3 : <list A>). 
+    { (append' l1 (append' l2 l3)) = (append' (append' l1 l2) l3) } :=
+foralli(A:type).
+induction(l1:<list A>) 
+return Forall(l2 l3 : <list A>).
+        { (append' l1 (append' l2 l3)) = (append' (append' l1 l2) l3) } 
+with
+  nil _ => 
+  foralli(l2 l3 : <list A>). 
+    trans cong (append' * (append' l2 l3)) l1_eq
+    trans join (append' nil (append' l2 l3)) (append' (append' nil l2) l3)
+          cong (append' (append' * l2) l3) symm l1_eq
+| cons _ a l1' =>
+  foralli(l2 l3 : <list A>).
+    trans cong (append' * (append' l2 l3)) l1_eq
+    trans join (append' (cons a l1') (append' l2 l3))
+               (cons a (append' l1' (append' l2 l3)))
+    trans cong (cons a *) [l1_IH l1' l2 l3]
+    trans join (cons a (append' (append' l1' l2) l3))
+               (append' (append' (cons a l1') l2) l3)
+          cong (append' (append' * l2) l3) symm l1_eq
+end.
+\end{verbatim}
+
+\noindent This proof does not use any features we have not already
+discussed.  The algorithm described in the previous section for
+connecting the scrutinee's type and the pattern's type is used here
+also for the clauses of the \texttt{induction}-proof (the same
+algorithm is used for \texttt{case}-proofs, too).  We do induction on
+the first list \texttt{l1}, following Hint~\ref{hint:indrec}, since
+\texttt{l1} is used twice in an analyzed argument position, here the
+first argument position of \texttt{append} (while \texttt{l2} is used
+once and \texttt{l3} not at all in such a position).  Otherwise, we
+just perform straightforward equational reasoning, where as explained
+just above, we do not need to include the type annotations in any of
+the terms we use in equational reasoning.  In particular, we give
+completely unannotated terms to \texttt{join} and \texttt{cong}.
+
+\section{The Fold-Right Function}
+
+An important polymorphic function often defined on lists is the
+fold-right function, which we will call \texttt{foldr'}; the name is
+to avoid a conflict with a more complex version \texttt{foldr} defined
+in \texttt{guru-lang/lib/list.g}, which we will discuss below.  The
+basic idea is that \texttt{foldr'} should take a function
+``\texttt{f}'' of type \texttt{Fun(a:A)(b:B).B} and a starting value
+\texttt{b} of type \texttt{B}.  It will iterate \texttt{f} over the
+elements of the list, starting with value \texttt{b} and accumulating
+a resulting value of type \texttt{B} for the whole list.  For example,
+given a list like ``a1,a2,a3'' of elements of type \texttt{A},
+\texttt{foldr'} with \texttt{f} and \texttt{b} will return:
+
+\begin{verbatim}
+(f a1 (f a2 (f a3 b)))
+\end{verbatim}
+
+\noindent We will see in just a moment why this is useful, but let
+us first write the type for \texttt{foldr'}:
+
+\begin{verbatim}
+Fun(A B:type)
+   (f:Fun(a:A)(b:B).B)
+   (b:B)
+   (l:<list A>).B 
+\end{verbatim}
+
+\noindent I have split this across multiple lines for readability.  We can
+see that we must first take in the types \texttt{A} and \texttt{B}.  Then
+we take in the function \texttt{f} and the starting value \texttt{b},
+and finally the list of \texttt{A}s.  The code for \texttt{foldr'} is
+easy to write:
+
+\begin{verbatim}
+fun foldr'(A B:type)(f:Fun(a:A)(b:B).B)(b:B)(l:<list A>):B.
+  match l with
+    nil _ => b
+  | cons _ a l' => (f a (foldr' A B f b l'))
+  end.
+\end{verbatim}
+
+\noindent When the list \texttt{l} is empty, we return our starting
+value \texttt{b}.  When it consists of an element ``\texttt{a}'' and a
+sublist \texttt{l'}, we apply \texttt{f} to \texttt{a} and also to the
+result of folding \texttt{f} on \texttt{l'}.
+
+\subsection{Using \texttt{foldr'} to compute length}
+
+As a simple example, we can use \texttt{foldr'} to give a very concise
+(and non-recursive) definition of a function to compute the length of
+a list:
+
+\begin{verbatim}
+Define length' :=
+   fun(A:type)(l:<list A>).
+     (foldr' A nat fun(a:A)(n:nat).(S n) Z l).
+\end{verbatim}
+
+\noindent First we should confirm that this type checks.  For example,
+the third argument's type is \texttt{Fun(a:A)(n:nat).nat}, which is
+correct given that the first two arguments are \texttt{A} and
+\texttt{nat}.  To understand how this definition of \texttt{length}
+works, let us look at what \texttt{foldr'} will return for a list
+``a,b,c''.  Writing \texttt{F} for the function
+\texttt{fun(a:A)(n:nat).(S n)}, the returned value is computed by:
+
+\begin{verbatim}
+(F a (F b (F c Z)))
+\end{verbatim}
+
+\noindent The starting value we have given \texttt{foldr'} is the
+fourth argument, \texttt{Z}.  So we see ``\texttt{Z}'' at the right of
+the expression just above.  Then we have the iteration of \texttt{F}
+through the data of the list.  We can easily see that \texttt{\{ (F x
+y) = (S y) \}} for all \texttt{x} and \texttt{y}.  Transforming the
+above expression one step at a time (just for emphasis), we see that
+the expression is indeed equal to the length of the list (namely,
+three):
+
+\begin{verbatim}
+(F a (F b (F c Z))) =
+(S (F b (F c Z))) =
+(S (S (F c Z))) =
+(S (S (S Z)))
+\end{verbatim}
+
+\subsection{Using \texttt{foldr'} to map a function}
+
+Another common operation in polymorphic functional programming with
+lists is to transform an input list of \texttt{A}s into a list of
+\texttt{B}s by applying a function \texttt{f} of type
+\texttt{Fun(x:A).B} to the elements of the input list.  This operation
+is called \emph{map}.  We can implement a version of this called
+\texttt{map'} using \texttt{foldr'}, as follows:
+
+\begin{verbatim}
+Define map' := 
+  fun(A B:type)(f:Fun(x:A).B)(l:<list A>).
+    (foldr' A <list B> fun(x:A)(l2:<list B>).(cons B (f x) l2) (nil B) l).
+\end{verbatim}
+
+\noindent The second argument to \texttt{foldr'} is always the type of
+the data that is being computed by the function we are folding across the
+list's data.  We wish to compute a list of \texttt{B}s from a list of \texttt{A}s,
+so the final result we want from our folding operation is of type \texttt{<list B>}.
+That explains the second argument to \texttt{foldr'}.  For the third, we can confirm
+it has the correct type:
+
+\begin{verbatim}
+Fun(x:A)(l2:<list B>).<list B>
+\end{verbatim}
+
+\noindent This fits the pattern for these functions: their types
+should be of the form \texttt{Fun(x:X)(b:Y).Y}, for some types
+\texttt{X} and \texttt{Y}.  The function we are folding takes in the
+element of the list first, as \texttt{x} of type \texttt{A}, and it
+takes the result of folding the function over a sublist (\texttt{L},
+say), and returns the result of folding the function over
+\texttt{(cons A a L)}.  So we just use \texttt{cons} to put together
+\texttt{(f x)} and the result \texttt{l2} of mapping the sublist.
+Our starting value for this folding operation is \texttt{(nil B)},
+the empty list at type \texttt{B}.
+
+\subsection{Some complications due to compilation}
+\label{ch6:compile}
+
+If you look in \texttt{guru-lang/lib/list.g}, you will see first our
+definition of polymorphic lists (from Section~\ref{ch6:lists}), and
+definitions of functions \texttt{foldr}, \texttt{map}, and
+\texttt{length} that behave just like the functions with similar names
+that we have defined above.  But the definitions are more complicated,
+and indeed a bit ugly.  For example, \texttt{foldr} is declared to
+have this type:
+
+\begin{verbatim}
+Fun(A B C: type)(owned cookie:C)
+   (fcn: Fun(owned cookie:C)(owned x:A)(y:B).B)
+   (b:B)(owned l : <list A>).B
+\end{verbatim}
+
+\noindent This is similar to, but not the same as, the type for
+\texttt{foldr'} that we have above:
+
+\begin{verbatim}
+Fun(A B: type)
+   (f: Fun(owned x:A)(y:B).B)
+   (b:B)(owned l : <list A>).B
+\end{verbatim}
+
+\noindent The difference (other than the different name for the
+function which is being folded -- a purely syntactic difference with
+no semantic import) is that the type of \texttt{foldr} takes three
+types, \texttt{A}, \texttt{B}, and \texttt{C}; where \texttt{foldr'}
+takes just \texttt{A} and \texttt{B}.  Then \texttt{foldr} expects a
+\emph{cookie} of type \texttt{C}, and the function \texttt{fcn} that
+it takes as its fifth input expects to be called with such a cookie. 
+Furthermore, the keyword \texttt{owned}, which we have not seen up to
+now, is used in several places.  What is going on?
+
+What is going on is that we are, for the first time, encountering code
+that is actually intended to be compiled to C code and executed
+efficiently.  Up until now, all the code we have considered is not
+intended for compilation to C, but rather just in specifying such
+code.  After all, what computation do we really want to do with unary
+natural numbers?  Efficient computations should be done with machine
+integers, which we will discuss in a later section.  Unary
+\texttt{nat}s are much better than machine integers for specification,
+however, since they are much easier to reason with.  The boolean
+datatype is used heavily in practice, but it is so simple it turns out
+to constitute a special case: it is just an enumeration, and those can
+be handled specially during compilation to C code.  But with the list
+datatype, we actually encounter a non-trivial datatype that we wish to
+use in compiled code.  So here, we run into several issues in \guru as
+it currently stands, that must be dealt with.  These issues are not
+fundamental to the language; we could change \guru so that we did not
+have to deal with them.  But it turns out there are some reasons for
+not doing so, even though it results in somewhat less pleasant code.
+We will explore all three of these issues in more detail later.  For
+now, this is just a preview so we can handle the code in
+\texttt{lib/list.g}.
+
+\begin{enumerate}
+\item When \guru programs are compiled to C, memory is managed using
+reference counting, not garbage collection as is typical in other
+memory-safe languages (a memory-safe language is, at least roughly,
+one where we it is not possible to read uninitialized memory or read
+or write freed memory).  \guru uses ownership annotations like
+\texttt{owned} here to help reduce the cost of reference counting.
+
+\item When compiling \texttt{fun}-terms to C, the compiler requires
+that they do not contain any free variables.  For example, a
+\texttt{fun}-term like \texttt{fun(x:nat).(plus x y)} is disallowed by
+the compiler.  Such \texttt{fun}-terms are supported by functional
+languages like \textsc{OCaml} and \textsc{Haskell}, and indeed, many
+would consider them crucial to the functional programming methodology.
+They are disallowed in the current version of \guru for reasons again
+related to memory management.  A language that supports (compilation
+of) functions with free variables is said to support \emph{closures}
+(this is the name of the compiler technique used to support functions
+with free variables).
+
+\item In code which will be compiled, again for reasons related to
+memory management, it is sometimes necessary to use explicit type
+casts, even though the algorithm presented at the end of
+Section~\ref{ch6:func} succeeds in connecting the type of the
+scrutinee with the type of a pattern in a \texttt{match}-term.
+The syntax for these casts is
+
+\begin{verbatim}
+cast t by P
+\end{verbatim}
+
+\noindent where \texttt{t} is a term of type \texttt{T}, and \texttt{P} is
+a proof of \{ \texttt{T} = \texttt{T'}\}, for some type \texttt{T'}.  The
+\texttt{cast} then has type \texttt{T'}.  
+
+\end{enumerate}
+
+\noindent So, our \texttt{foldr} code includes some \texttt{owned}
+annotations related to memory management.  The type \texttt{C} for
+cookies is to accomodate functions that might want to rely on
+auxiliary data.  If \guru supported closures, we would not need these
+cookies, since auxiliary data could be included in the function itself
+via free variables.  Since we do not support closures, the auxiliary
+data must be passed in via a cookie, which is some other data
+structure that exists just to hold that auxiliary data.
+
+The functions \texttt{foldr} and \texttt{map} in \texttt{lib/list.g}
+are written to use cookies, just in case the functions being folded or
+mapped need to use cookies.  The \texttt{length} function just uses a
+trivial cookie \texttt{unit} of type \texttt{Unit}, defined in
+\texttt{lib/unit.g}.  For purposes of proving lemmas about these
+functions, it should be possible to:
+
+\begin{itemize}
+
+\item Ignore ownership annotations completely in your proofs.  You
+should never have to type a keyword like \texttt{owned} anywhere in
+your proofs.  This is because these annotations are dropped out by
+definitional equality inside proofs (though not inside terms).
+
+\item Reason about those functions as if they had the simpler
+definitions above.  They do the same thing, except that they pass
+cookies around in some cases where the simpler definitions do not.
+\end{itemize}
+
+\noindent When writing new code using these functions, we can also
+avoid ownership annotations by using the \texttt{spec} option with the
+\texttt{Define}-command.  For example, the following definition uses
+\texttt{foldr} (the one from \texttt{lib/list.g} with cookies) to
+define a function \texttt{concat} that takes a list whose elements are
+lists of \texttt{A}s and appends all those elements to get just a list
+of \texttt{A}s.  Without the \texttt{spec} option just after the
+\texttt{Define} keyword, this will not type check in \guru due to the
+lack of ownership annotations:
+
+\begin{verbatim}
+Define spec concat : Fun(A:type)(l:<list <list A>>).<list A> :=
+  fun(A:type)(l:<list <list A>>).
+    (foldr <list A> <list A> Unit unit 
+       fun(u:Unit)(l1 l2:<list A>).(append A l1 l2) 
+       (nil A) l).
+\end{verbatim}
+
+\begin{comment}
+\section{Termination Casts}
+
+Termination of higher-order functions is typically conditional on
+termination of any functional arguments they take in.  For example,
+the \texttt{member} function, defined in \texttt{lib/list.g}, has this
+type (dropping some ownership annotations):
+
+\begin{verbatim}
+Fun(A:type)(x:A)(l:<list A>)
+   (eqA:Fun(owned x1 x2:A).bool).
+ bool
+\end{verbatim}
+
+\noindent So \texttt{member} takes in a type \texttt{A}, an element
+\texttt{x} of type \texttt{A}, and a list \texttt{l} of \texttt{A}s.
+The goal is to test whether or not \texttt{x} is a member of
+\texttt{l}.  For this to be possible, however, \texttt{member} needs a
+function \texttt{eqA} to test equality of elements of type \texttt{A}.
+Without such a function, \texttt{member} has no way to check whether
+\texttt{x} is equal to an element \texttt{a} of the list.
+
+Termination of \texttt{member} is predicated on termination of this
+\texttt{eqA} function: if it were to diverge, then so would
+\texttt{member}.  So \texttt{member} is, in fact, a partial function.
+It terminates on some inputs (namely those where \texttt{eqA} is
+terminated), but diverges on other (where \texttt{eqA} is diverging
+and the list is non-empty).  
+\end{comment}
+
+\section{Exercises}
+
+The usual restriction on using proof methods discussed in the book so far applies.
+
+\begin{enumerate}
+\item Prove the following theorem about the \texttt{fill} function in \texttt{guru-lang/lib/list.g}:
+
+\begin{verbatim}
+Forall(A:type)(a:A)(n m:nat).
+      { (fill a (plus n m)) = (append (fill a n) (fill a m)) }
+\end{verbatim}
+
+\noindent In the code for \texttt{fill}, you will see \texttt{inc a}.
+This \texttt{inc} is for incrementing a reference count.  In proofs,
+\texttt{inc a} is definitionally equal to \texttt{a}.
+
+\noindent HINT: I proved this using induction on one of the variables
+(which one would it most likely be?), and I did not need any other
+lemmas.
+
+\item Prove that \texttt{fill} is total.
+
+\item Prove the following theorem, which states that mapping
+``\texttt{f}'' and then mapping ``\texttt{g}'' is the same as mapping
+their composition.  Note how \texttt{fun}-terms are written with
+annotations dropped, on the right hand side of the equation (for the
+composition of ``\texttt{f}'' and ``\texttt{g}'').  The type for cookies
+is taken to be just \texttt{Unit}, for simplicity.
+
+\begin{verbatim}
+Forall(A B C:type)
+      (f:Fun(u:Unit)(x:A).B)
+      (g:Fun(u:Unit)(x:B).C)
+      (l:<list A>).
+  { (map unit g (map unit f l)) = (map unit fun(u x).(g u (f u x)) l) } 
+\end{verbatim}
+
+\noindent HINT: my proof is by induction on one of the variables (which?), and
+uses no other lemmas.
+
+\end{enumerate}
+
+\bibliographystyle{plain} \bibliography{the-bib}
 
 \end{document}

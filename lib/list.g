@@ -447,22 +447,16 @@ Define eqlist : Fun(A:type)(eqA:Fun(owned x1 x2:A).bool)
                    (owned l1 l2:<list A>)
                    .bool :=
   fun eqlist(A:type)(eqA:Fun(owned x1 x2:A).bool)(owned l1 l2:<list A>):bool.
-  match l1 by l1p l1t return bool with
+  match l1 by l1p l1t with
     nil A1 =>
-      match l2 by l2p l2t return bool with
+      match l2 by l2p l2t with
         nil A2 => tt
       | cons A2 h2 t2 => ff
       end
   | cons A1 h1 t1 =>
-      match l2 by l2p l2t return bool with
-        nil A2 =>
-          ff
-      | cons A2 h2 t2 =>
-          abbrev h1cast = cast h1 by symm inj <list *> l1t in
-          abbrev t1cast = cast t1 by cong <list *> symm inj <list *> l1t in
-          abbrev h2cast = cast h2 by symm inj <list *> l2t in
-          abbrev t2cast = cast t2 by cong <list *> symm inj <list *> l2t in
-          (and (eqA h1cast h2cast) (eqlist A eqA t1cast t2cast))
+      match l2 by l2p l2t with
+        nil A2 => ff
+      | cons A2 h2 t2 => (and (eqA h1 h2) (eqlist A eqA t1 t2))
       end
   end.
 
@@ -629,13 +623,9 @@ Define member : Fun(A:type)
             (owned x:A)
             (owned l:<list A>)
             (eqA:Fun(owned x1 x2:A).bool):bool.
-  match l by lp lt return bool with
-    nil A' =>
-      ff
-  | cons A' h t =>
-      abbrev hcast = cast h by symm inj <list *> lt in
-      abbrev tcast = cast t by cong <list *> symm inj <list *> lt in
-      (or (eqA x hcast) (member A x tcast eqA))
+  match l with
+    nil A' => ff
+  | cons A' h t => (or (eqA x h) (member A x t eqA))
   end.
 
 Define member_total : Forall(A:type)
@@ -644,7 +634,7 @@ Define member_total : Forall(A:type)
                             (eqA:Fun(x1 x2:A).bool)
                             (eqA_total:Forall(x1 x2:A).Exists(o:bool).{ (eqA x1 x2) = o }).
                       Exists(z:bool).
-                        { (member ! x l eqA) = z } :=
+                        { (member x l eqA) = z } :=
   foralli(A:type)
          (x:A).
     induction(l:<list A>) by lp lt IHl return Forall(eqA:Fun(x1 x2:A).bool)
@@ -676,6 +666,8 @@ Define member_total : Forall(A:type)
                     trans cong (or (eqA x h) *) zrpf
                           zpf
     end.
+
+Total member member_total.
 
 Define all : Fun(A C:type)(owned c:C)
                 (f:Fun(owned c:C)(owned a:A).bool)(owned l:<list A>).bool :=
