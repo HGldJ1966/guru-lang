@@ -70,7 +70,7 @@ Define plus_assoc : Forall(x y z:nat). { (plus (plus x y) z) = (plus x (plus y z
                   cong (plus * (plus y z)) symm x1
 end.
 
-Define plus_total : Forall ( x  y : nat). Exists(z:nat).{(plus x y) = z} :=
+Define plus_total : Forall (x y : nat). Exists(z:nat).{(plus x y) = z} :=
 	induction (x : nat) return Forall(y:nat). Exists(z:nat).{(plus x y) = z} with
 	Z => foralli(y:nat).
              existsi y {(plus x y) = *}

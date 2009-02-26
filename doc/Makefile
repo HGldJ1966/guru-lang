@@ -7,3 +7,7 @@ all:
 #	latex book.tex
 	pdflatex book.tex
 
+bib:
+	bibtex book
+	latex book.tex
+	pdflatex book.tex

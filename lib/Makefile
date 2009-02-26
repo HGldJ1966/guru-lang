@@ -1,3 +1,6 @@
+bst:
+	time ../bin/guru bst.g
+
 trie:
 	time java -cp .. guru.Main trie.g
 

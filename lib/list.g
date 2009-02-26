@@ -680,3 +680,21 @@ Define fill : Fun(A:type)(owned a:A)(owned n:nat).<list A> :=
       Z => (nil A)
     | S n' => (cons A inc a (fill A a n'))
     end.
+
+
+Define length_fill : Forall (A : type) (a : A) (n : nat) .
+  { (length (fill a n)) = n } :=
+  foralli (A : type) (a : A) .
+  induction (n : nat) return { (length (fill a n)) = n }
+  with
+      Z    =>
+        trans cong (length (fill a *)) n_eq
+        trans join (length (fill a Z)) Z
+              symm n_eq
+    | S x' =>
+        trans cong (length (fill a *)) n_eq
+        trans join (length (fill a (S x'))) (S (length (fill a x')))
+        trans cong (S *) [n_IH x']
+              symm n_eq
+  end
+.
