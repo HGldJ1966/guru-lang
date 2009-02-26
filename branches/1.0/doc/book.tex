@@ -2783,7 +2783,7 @@ With \texttt{ff} for even and \texttt{tt} for odd, we see that this
 description corresponds to exclusive-or: \texttt{ff} (even) and
 \texttt{ff} (even) gives \texttt{ff} (even); \texttt{ff} (even) and
 \texttt{tt} (odd) gives \texttt{tt} (odd); and \texttt{tt} (odd) and
-\texttt{tt} (odd) gives \texttt{tt} (odd).  This is, of course, a fact
+\texttt{tt} (odd) gives \texttt{ff} (even).  This is, of course, a fact
 about addition of numbers.
 
 \ 
@@ -4180,8 +4180,8 @@ Fun(A B C: type)(owned cookie:C)
 
 \begin{verbatim}
 Fun(A B: type)
-   (f: Fun(owned x:A)(y:B).B)
-   (b:B)(owned l : <list A>).B
+   (f: Fun(x:A)(y:B).B)
+   (b:B)(l : <list A>).B
 \end{verbatim}
 
 \noindent The difference (other than the different name for the
@@ -4369,7 +4369,584 @@ Forall(A B C:type)
 \noindent HINT: my proof is by induction on one of the variables (which?), and
 uses no other lemmas.
 
+\item Using \texttt{foldr} defined in \texttt{guru-lang/lib/list.g},
+define a function \texttt{some} with the same type as the function
+\texttt{all} defined at the bottom of \texttt{lib/list.g}.  This
+function \texttt{some} should return \texttt{tt} if the given function
+\texttt{f} returns \texttt{tt} for some element of the list, and
+\texttt{ff} otherwise.  In contrast, the \texttt{all} function returns
+\texttt{tt} if \texttt{f} returns \texttt{tt} for all elements of the
+list, and \texttt{ff} otherwise.
+
+\item Write down two universally quantified formulas in \guru syntax,
+where each one mentions two functions from \texttt{\{ foldr, length,
+append, foldr, all, some, fill \}}, and where you believe the formula
+to be provable in \guru.  Your formulas should not be trivially
+provable, in the sense that they should not be provable using only
+\texttt{foralli} and \texttt{join}: \texttt{induction} or at least
+\texttt{case}-proofs should be required to prove the formulas.  
+
+\ 
+
+Optional: prove one of the formulas you have written.
+
 \end{enumerate}
+
+\chapter{Dependently Typed Programming}
+
+In the preceding chapters, we have seen how to write monomorphic and
+later polymorphic programs, and to prove properties about their
+operational (i.e., run-time) behavior.  Those proofs are external to
+programs, in the sense that they reside outside the code for the
+functions in question, and from that external position prove
+operational properties of the code.  With external verification,
+proofs and programs are distinct and separate artifacts.
+
+In this chapter, we study internal verification, where a program and a
+proof are written as a single combined artifact.  Syntactically this
+artifact is a program (i.e., a term), but it contains proofs inside
+it.  These proofs are there to demonstrate to the type checker that
+the code has a semantically rich type, called a \emph{dependent type}.
+The semantic richness and the dependency of these types arises because
+dependent types are allowed to mention (``depend on'') terms.  We have
+seen in the previous chapter how types can mention other types: the
+type \texttt{<list A>} of lists of \texttt{A}s mentions the type
+\texttt{A}.  More concretely, \texttt{<list nat>} mentions the type
+\texttt{nat}.  With dependent types, we can have a type like
+\texttt{<vec A n>}, where \texttt{n} is a \texttt{nat}, and hence a
+term.  This \texttt{<vec A n>} is the type for lists (``vectors'') of
+\texttt{A}s of length \texttt{n}.  A dependent datatype like this is
+also sometimes called an \emph{indexed} type (where \texttt{vec} is
+considered to be indexed by \texttt{n}).  The length \texttt{n} is
+present in the type, which allows the expression of more complex
+relationships between the types of program data than we have seen up
+to now.  For example, we may write an append function on vectors that
+takes a \texttt{<vec A n>} and a \texttt{<vec A m>} as inputs, and
+produces a \texttt{<vec A (plus n m)>} as output.  At various places
+in the code for this vector append function, it is necessary to use a
+proof to convince the \guru type checker that two types are
+equivalent.  For example, we might need to convince the type checker
+that \texttt{<vec A (plus n m)>} and \texttt{<vec A (plus m n)>} are
+equivalent.  We can do this using congruence and commutativity of
+\texttt{plus}.
+
+Programming with dependent types has been studied intensively in the
+past few years, with a number of different research languages for
+dependently typed programming proposed
+~\cite{nanevski+08,norell07,pasalic+07,sheard06,licata+05,chenxi05,wsw-icfp05,mcbride+04}.
+The motivation for this is that programming with rich dependent types
+seems to be closer to more traditional programming than a combination
+of traditional programming and external theorem proving, and still can
+give stronger correctness properties than are possible with
+traditional type checking.  The \textsc{ghc} implementation of
+\textsc{Haskell} has recently added support for a limited kind of
+dependent types called Guarded Algebraic Datatypes
+(GADTs)~\cite{Jones+06}.  Dependent types arose much earlier than
+these works, in type theoretic formulations of logic.  A well-known
+example is Martin-L\"of type theory~\cite{ml84}.
+
+Because practical dependently typed programming is rather new, there
+is not yet consensus on effective methodology for using it.  One
+question is, when to use dependent types and when to use external
+verification (assuming a language supports both, as \guru does).  One
+simple practical answer is that it can quickly become infeasible to
+use external verification for large functions.  Certainly in \guru,
+external verification relies heavily on partial evaluation, which will
+become unbearable with functions more than a few tens of lines long:
+otherwise we will end up \texttt{join}ing one gigantic program term
+with another, which will bloat proofs unacceptably.  In such cases,
+dependent types are very useful, because we need never write a proof
+about the large function.  Instead, we give it a rich type which
+captures some critical properties of it, the way the type mentioned
+above for vector append captures the property that the length of the
+output list is equal to the sum of the lengths of the input lists.
+
+\section{Preview}
+
+In this chapter we will see how to define dependent types like
+\texttt{<vec A n>}, and how to write dependently typed programs
+operating on such types.  In the next chapter we will discuss external
+verification of dependently typed programs.
+
+\begin{itemize}
+\item A dependent type like \texttt{vec} is declared using an \texttt{Inductive}-command like this:
+\begin{verbatim}
+Inductive vec : Fun(A:type)(n:nat).type :=
+  vecn : Fun(A:type).<vec A Z>
+| vecc : Fun(A:type)(spec n:nat)(a:A)(l:<vec A n>).
+              <vec A (S n)>.
+\end{verbatim}
+
+\item Proofs of type equivalence enter code in \texttt{cast}-terms, mentioned at the end
+of the last chapter.
+
+\item Previously, we have seen how \texttt{match}-terms,
+\texttt{case}-proofs, and \texttt{induction}-proofs introduce an
+assumption variable like \texttt{n\_eq} for a match on ``\texttt{n}''.
+This variable proves that the scrutinee is equal to the pattern in
+each clause of the expression.  These expressions also have a second
+assumption variable, which is \texttt{n\_Eq} for ``\texttt{n}''.  This
+proves that the scrutinee's type is equal to the pattern's type.
+These assumptions can be needed to reason based on the fact that
+indices to the scrutinee's type are equal to corresponding indices of
+the pattern's type.  Injectivity, embodied in \texttt{inj}-proofs, is
+used to go from the proof that the types are equal to the proof that
+the indices are equal.
+
+\end{itemize}
+
+\section{Indexed Datatypes}
+
+The declaration for the indexed datatype \texttt{vec} for vectors
+(i.e., lists) of \texttt{A}s of length \texttt{n} in \guru is:
+
+\begin{verbatim}
+Inductive vec : Fun(A:type)(n:nat).type :=
+  vecn : Fun(A:type).<vec A Z>
+| vecc : Fun(A:type)(n:nat)(a:A)(l:<vec A n>).
+              <vec A (S n)>.
+\end{verbatim}
+
+\noindent You can find this declaration in
+\texttt{guru-lang/lib/vec.g}.  In the first line, we declare
+\texttt{vec} to be a type constructor, similarly to the declaration we
+have in Section~\ref{ch6:lists} for \texttt{list}.  Here we see that
+\texttt{vec}'s classifier (its \emph{kind}) is
+\texttt{Fun(A:type)(n:nat).type}.  So when we apply \texttt{vec} --
+which is done at the type level using angle brackets, as we saw for
+\texttt{list} -- we will have to supply two arguments: a type and a
+\texttt{nat}.  So for example, \texttt{<vec nat Z>} is a correct
+type-level application of \texttt{vec}, and will have classifier
+\texttt{type}.  So \texttt{<vec nat Z>} is a type.
+
+Now let us look at the declarations of the constructors, \texttt{vecn}
+and \texttt{vecc}.  This \texttt{vecn} corresponds to \texttt{nil} for
+lists: it creates the vector of \texttt{A}s of length zero.  That is
+indeed what its type tells us.  Given \texttt{A} that is a type,
+\texttt{vecn} will return a value of type \texttt{<vec A Z>}.  To
+extend a vector by adding a new element to the front, we use
+\texttt{vecc}, corresponding to \texttt{cons} for lists.  This takes
+in a type \texttt{A}, a \texttt{nat} ``\texttt{n}'', an element
+\texttt{a} of type \texttt{A} (this is the element to add to the front
+of the vector), and a subvector \texttt{l}.  The subvector should have
+type \texttt{<vec A n>}.  Since ``\texttt{n}'' is the length of the
+subvector, the length for the new vector being built by \texttt{vecc}
+is \texttt{(S n)}.  This is because we have added one element to the
+front of ``\texttt{l}'', thus yielding a list whose length is one
+greater than \texttt{l}'s.
+
+The interpretation of ``\texttt{n}'' in \texttt{<vec A n>} as the
+length of the vector is not machine-checked.  We have given the index
+\texttt{n} this interpretation informally.  We have not proven any
+theorem relating this \texttt{n} to the length of the vector as
+computed by some \texttt{length} function.  
+
+Here is an example value built using \texttt{vecc} and
+\texttt{vecn}:
+
+\begin{verbatim}
+(vecc nat (S Z) three (vecc nat Z four (vecn nat)))
+\end{verbatim}
+
+\noindent This value has type \texttt{<vec nat (S (S Z))>}.  This is a
+vector of length two (the ``\texttt{(S (S Z))}'' in this type).  The
+data stored in this vector are \texttt{three} and \texttt{four} (so
+the list looks like ``3,4'').  We have a type annotation \texttt{nat}
+in three places.  We also have annotations \texttt{Z} and \texttt{(S
+Z)} for the lengths of sublists.  These are given as the second
+argument to \texttt{vecc} in each case.  
+
+\section{Programming with Indexed Types}
+
+Let us now see how to write the append function on vectors.  As mentioned above,
+we wish to write this function so that it has the following type:
+
+\begin{verbatim}
+Fun(A:type)(n m:nat)(l1 : <vec A n>)(l2 : <vec A m>).<vec A (plus n m)>
+\end{verbatim}
+
+\noindent We will take in \texttt{A} that is the type of elements in
+the vectors, ``\texttt{n}'' and ``\texttt{m}'' that are the lengths of
+the vectors, and then the vectors themselves.  We will return a vector
+of length \texttt{(plus n m)}.  This function will behave very
+similarly to append on \texttt{list}s, except for the presence of the
+indices to \texttt{vec} for the lengths of the lists.  It is these
+which require some extra work for dependently typed programs.  
+
+Just like \texttt{list} append, \texttt{vec} append will use the first
+list as its parameter of recursion.  Let us think for a moment about
+the base case, when this vector \texttt{l1} is the empty vector.  In
+this case, we wish just to return \texttt{l2}.  This is exactly what
+\texttt{list} append does.  Our only difficulty is with the types.
+Our ``\texttt{l2}'' has type \texttt{<vec A m>}, but we are supposed
+to return (from \texttt{vec} append) a value of type \texttt{<vec A
+(plus n m)>}.  Of course, we are in the case where \texttt{l1} is
+empty, so its length ``\texttt{n}'' is equal to zero.  That means
+that the type \texttt{<vec A (plus n m)>} is actually equal to \texttt{<vec A m>},
+since in this case:
+
+\begin{verbatim}
+(plus n m)  =  (plus Z m)  =  m
+\end{verbatim}
+
+\noindent We just need to prove that type equality to \guru.  This can be
+done by standard \guru equational reasoning with \texttt{cong}, \texttt{join},
+and the rest, as long as we can get that proof that \texttt{\{ n = Z\}}.  How
+do we do that?  
+
+\subsection{The assumption variable for types}
+\label{ch7:assumpvar}
+
+We have seen how all the constructs in \guru that have clauses --
+\texttt{match}-terms, \texttt{case}-proofs, and
+\texttt{induction}-proofs -- make available an assumption variable
+in each clause that says that the scrutinee is equal to the pattern.
+For example, in Section~\ref{ch3:case}, we saw this simple \texttt{case}-proof:
+
+\begin{verbatim}
+Define not_not : Forall(b:bool). { (not (not b)) = b } :=
+  foralli(b:bool).
+    case b with
+      ff => trans cong (not (not *)) b_eq
+            trans join (not (not ff)) ff
+                  symm b_eq
+    | tt => trans cong (not (not *)) b_eq
+            trans join (not (not tt)) tt
+                  symm b_eq           
+    end.
+\end{verbatim}
+
+\noindent In each clause, the assumption variable \texttt{b\_eq} is
+automatically declared.  In the \texttt{ff}-clause its classifier is
+\texttt{\{ b = ff \}}, while in the \texttt{tt}-clause its classifier
+is \texttt{\{ b = tt \}}.  So \texttt{b\_eq} serves as a proof of the
+assumption that the scrutinee matches the pattern in each clause.
+
+For dependently typed programs, we need to reason about indices to
+types.  For this purpose, clausal constructs in \guru provide a second
+assumption variable.  Where the first assumption variable proves, in
+each clause, that the scrutinee is equal to the pattern of the clause,
+the second assumption variable proves that the scrutinee's type is
+equal to the pattern's type.  Where the first assumption variable is
+automatically named \texttt{x\_eq} for scrutinee ``\texttt{x}'', the
+second is automatically named \texttt{x\_Eq}.  
+
+For monomorphic code, this assumption is never interesting, since the
+types involved do not have any structure.  For example, in the
+\texttt{not\_not} proof above, the second assumption variable, whic is
+automatically named \texttt{b\_Eq}, proves \texttt{\{ bool = bool\}}.
+This is because the type of the scrutinee ``\texttt{b}'' is
+\texttt{bool}, and the type of the patterns (\texttt{ff} and
+\texttt{tt}) is \texttt{bool}.  Let us return to the code for
+\texttt{vec} append to see a more interesting example.
+
+\subsection{Starting the base case of vector append}
+
+Here is the code for vector append (found in
+\texttt{guru-lang/lib/vec.g}), not including the clause for
+\texttt{vecc}:
+
+\begin{verbatim}
+fun vec_append(A:type)(n m:nat)(l1 : <vec A n>)(l2 : <vec A m>):
+              <vec A (plus n m)>.
+    match l1 with
+      vecn _ => cast l2 by
+                cong <vec A *>
+                 symm trans cong (plus * m)
+                              inj <vec ** *> l1_Eq
+                            join (plus Z m) m
+   | vecc _ n' x l1' => ...
+   end.
+\end{verbatim}
+
+\noindent The function begins as we would expect based on the type it
+is supposed to have.  It does a \texttt{match} on \texttt{l1}.  As for
+polymorphic \texttt{match}-terms, \guru makes the connection between
+\texttt{\_} and \texttt{A}, and declares them definitionally equal in
+the bodies of the clauses (see Section~\ref{ch6:func}).  We then see a
+\texttt{cast}-term.  The syntax of such terms is \texttt{cast t by P},
+where ``\texttt{t}'' is a term and \texttt{P} is a proof.  If
+``\texttt{t}'' has type \texttt{T}, and \texttt{P} proves \texttt{\{T
+= T'\}}, then the whole \texttt{cast}-term has type \texttt{T'}.  In
+other words, a \texttt{cast}-term is used to change the type of
+\texttt{t} from \texttt{T} to \texttt{T'}, where \texttt{P} proves
+these types are equal.  In our case here, the goal is to change the
+type of \texttt{l2} from \texttt{<vec A m>} to \texttt{<vec A (plus n
+m)>}.  Let us walk through the proof to see how this is done.
+
+First, if we use \texttt{show} on the \texttt{trans}-proof, we will
+see it proves these equational steps:
+
+\begin{verbatim}
+1. (plus n m) =
+
+2. (plus Z m) =
+
+3. m
+\end{verbatim}
+
+\noindent The only new part of the \texttt{trans}-proof is how we obtain
+the fact that \texttt{\{n = Z\}}.  This is done with an \texttt{inj}-proof,
+\texttt{inj <vec ** *> l1\_Eq}, which we explain next.
+
+\subsection{Injectivity reasoning}
+
+Suppose we have a proof \texttt{P} that \texttt{\{(S x) = (S y)\}}.
+This should mean that \texttt{\{x = y\}}, but up until now, we have
+not seen how to conclude this in \guru.  The way to do so is to use
+\emph{injectivity} reasoning.  Term and type constructors are
+injective.  A function $f$ is injective iff $f(x) = f(y)$ implies $x =
+y$.  In other words, the only way $f$ can map $x$ and $y$ to the same
+output is if $x$ and $y$ are the same input.  If $x \neq y$, then
+$f(x) \neq f(y)$.
+
+In \guru, injectivity reasoning is done with \texttt{inj}-proofs.  The
+general syntax is slightly complicated, so let us start with our
+example using successor.  If \texttt{P} proves \texttt{\{(S x) = (S
+y)\}}, the \texttt{inj (S *) P} proves \texttt{\{x = y\}}.  We use a
+context here to indicate which position is of interest to us (marked
+with $*$, as for congruence).
+
+The general syntax of an \texttt{inj}-proof is \texttt{inj C P}, where
+\texttt{C} is an \emph{injectivity context} and \texttt{P} is a proof.
+An injectivity context is a constructor term or a type with a hole $*$
+in it, indicating a position of interest.  In addition, a second hole
+$**$ is used to indicate positions we wish to ignore.  The use of the
+injectivity context is as follows.  We check that the proof \texttt{P}
+proves a formula of the form \texttt{\{C[e,e1,\ldots,en] =
+C[e',e1',\ldots,en']\}}, where \texttt{C[e,e1,\ldots,en]} means the
+expression obtained by substituting \texttt{e} for the first hole and
+\texttt{ei} for the $i$'th occurrence of the second hole in
+\texttt{C}.  In other words, the left and right hand sides of the
+equation proved by \texttt{P} share a common top-level structure
+described by \texttt{C}, differing in one place we care about
+(indicated with $*$) and several places we do not (indicated by $**$).
+Then the \texttt{inj}-proof proves \texttt{\{e = e'\}}.
+
+\subsection{Finishing the base case of vector append}
+
+Now we may return to the base case of vector append, to understand the
+proof used to cast \texttt{l2} from type \texttt{<vec A m>} to
+\texttt{<vec A (plus n m)>}:
+
+\begin{verbatim}
+cong <vec A *>
+  symm trans cong (plus * m)
+               inj <vec ** *> l1_Eq
+             join (plus Z m) m
+\end{verbatim}
+
+\noindent The \texttt{inj}-proof here uses the second assumption
+variable \texttt{l1\_Eq} (see Section~\ref{ch7:assumpvar}).  This
+variable has the following classifier:
+
+\begin{verbatim}
+{ <vec A n> = <vec _ Z> }
+\end{verbatim}
+
+\noindent The left hand side is the type of the scrutinee
+``\texttt{l1}'', while the right hand side is the type of the pattern
+\texttt{(vecn \_)}.  From this we wish to conclude that \texttt{\{n =
+Z\}}.  We must tell \texttt{inj} to disregard the difference between
+\texttt{A} and \texttt{\_} in the first argument position of the two
+expressions.  For that we use \texttt{**}, so we have \texttt{<vec **
+*>} as our context.  The only other point to note in our proof is that
+we use \texttt{cong} with a type context \texttt{<vec A *>}.  This
+works exactly as \texttt{cong} with a term context.  Here, the
+\texttt{cong}-proof goes from a proof that \texttt{\{m = (plus n m)\}}
+(note the use of \texttt{symm} to get this from the
+\texttt{trans}-proof) to a proof that:
+
+\begin{verbatim}
+<vec A m> = <vec A (plus n m)>
+\end{verbatim}
+
+\noindent This is what we need to cast \texttt{l2} to be able to
+return it in the base case.
+
+\subsection{Finishing vector append}
+
+The full code for vector append is:
+
+\begin{verbatim}
+fun vec_append(A:type)(n m:nat)(l1 : <vec A n>)(l2 : <vec A m>):
+              <vec A (plus n m)>.
+  match l1 with
+    vecn _ => cast l2 by
+              cong <vec A *>
+                symm trans cong (plus * m)
+                             inj <vec ** *> l1_Eq
+                           join (plus Z m) m
+  | vecc _ n' x l1' => 
+     cast
+        (vecc A (plus n' m) x (vec_append A n' m l1' l2)) 
+     by cong <vec A *>
+           trans symm join (plus (S n') m)
+                           (S (plus n' m))
+                 cong (plus * m)
+                   symm inj <vec ** *> l1_Eq
+    end.
+\end{verbatim}
+
+\noindent Let us look now at the \texttt{vecc}-clause.  In this case,
+\texttt{l1} is a \texttt{vecc}-term, where the subvector is
+\texttt{l1'}, of type \texttt{<vec \_ n'>}.  The data at the front of
+the vector is \texttt{x} of type \texttt{\_}.  The type of this pattern
+is then
+
+\begin{verbatim}
+<vec _ (S n')>
+\end{verbatim}
+
+\noindent As remarked for the base case, \guru makes the connection
+between \texttt{\_} and \texttt{A}.  But we need to help \guru make
+the connection between the length \texttt{n} of \texttt{l1} and
+\texttt{(S n')}.  This is again done by injectivity reasoning: at
+the very end of the body of this clause, we have again \texttt{inj <vec ** *> l1\_Eq},
+proving in this case that
+
+\begin{verbatim}
+{ n = (S n') }
+\end{verbatim}
+
+\noindent Let us see what the \texttt{cast} is doing.  First, we
+should figure out what type the term has which is being cast.  The term is
+
+\begin{verbatim}
+(vecc A (plus n' m) x (vec_append A n' m l1' l2)) 
+\end{verbatim}
+
+\noindent From the type of \texttt{vec\_append} specified at the very
+start of the recursive \texttt{fun}-term, we can compute that the term
+\texttt{(vec\_append A n' m l1' l2)} has type \texttt{<vec A (plus n'
+m)>}.  Notice how, in this term, the indices \texttt{n'} and
+\texttt{m} have to relate to the types of \texttt{l1'} and
+\texttt{l2}.  Once we have specified to \texttt{vec\_append} that the
+lengths of the vectors are \texttt{n'} and \texttt{m}, then we really
+need to give vectors whose types say they have those lengths.  Turning
+now to the entire \texttt{vecc}-term, we can compute that it has this
+type:
+
+\begin{verbatim}
+<vec A (S (plus n' m))>
+\end{verbatim}
+
+\noindent This is because we are adding an element \texttt{x} to the
+front of the vector built by the recursive call to
+\texttt{vec\_append}.  We have already seen that that vector has type
+\texttt{<vec A (plus n' m)>}.  Adding one to that length leads to the
+type \texttt{<vec A (S (plus n' m))>}.
+
+So the \texttt{cast}-term is changing the type of this \texttt{vecc}-term
+from 
+
+\begin{verbatim}
+<vec A (S (plus n' m))>
+\end{verbatim}
+
+\noindent to
+
+\begin{verbatim}
+<vec A (plus n m)>
+\end{verbatim}
+
+\noindent The critical part of this, of course, is changing from
+\texttt{(S (plus n' m))} to \texttt{(plus n m)}, which we well know
+how to do at this point, using equational reasoning.
+
+\section{Binary Search Trees}
+
+As another example, we will define an indexed datatype for binary
+search trees in such a way that any value of that datatype truly
+satisfies the binary search tree property: if we go left from a node
+with data $x$ in the tree, we will only ever see data less than or
+equal to $x$; and if we go right, we will see data greater than or
+equal to $x$.  To enforce these invariants, the solution here is to
+index the type of binary search trees by lower and upper bounds on the
+data stored in the tree.  To do this in a generic way, we do not build
+in the comparison, \texttt{le}, but allow it to be specified by users
+of our datatype.  So our type for binary search trees is:
+
+\begin{verbatim}
+<bst A le l u>
+\end{verbatim}
+
+\noindent Here, \texttt{A} is the type for data stored in the tree,
+\texttt{le} is the comparator, and \texttt{l} and \texttt{u} are
+the lower and upper bounds, respectively.  Here is the declaration
+for this datatype:
+
+\begin{verbatim}
+Inductive bst : Fun(A:type)(le:Fun(a b:A).bool)(l u : A).type :=
+  leaf : Fun(A:type)(le:Fun(a b:A).bool)(a:A).
+            <bst A le a a>
+| node : Fun(A:type)(le:Fun(a b:A).bool)
+            (a l1 u1 l2 u2:A)
+            (t1 : <bst A le l1 u1>)
+            (t2 : <bst A le l2 u2>)
+            (q1:{ (le u1 a) = tt})
+            (q2:{ (le a l2) = tt}).
+            <bst A le l1 u2>.
+\end{verbatim}
+
+\noindent We are supposing here that we always have two children, and
+that leaves store data.  In the next chapter, we will revisit these
+assumptions.  Let us walk through this declaration.  First, the kind
+for \texttt{bst} is declared to be:
+
+\begin{verbatim}
+Fun(A:type)(le:Fun(a b:A).bool)(l u : A).type
+\end{verbatim}
+
+\noindent This means that for \texttt{<bst A le l u>} to be a type, we
+must have \texttt{le} be a function that takes two \texttt{A}s as
+inputs, and produces a \texttt{bool} telling whether or not the first
+is less than the second.  The lower and upper bounds (\texttt{l} and
+\texttt{u}) must have type \texttt{A}, naturally.  The type for
+\texttt{leaf} says that a leaf storing data ``\texttt{a}'' has lower
+and upper bounds \texttt{a}: the return type for \texttt{leaf} is
+\texttt{<bst A le \framebox{a} \framebox{a}>}.  
+
+The type for \texttt{node} is more complicated.  The basic idea is
+that we want to make a new tree with left and right subtrees
+\texttt{t1} and \texttt{t2}, respectively, where the new tree stores
+data ``\texttt{a}'' (at the top of the tree).  Here is where we
+enforce our invariants that going left should give you data less than
+or equal to ``\texttt{a}'', while going right should give you greater
+than or equal data.  Let \texttt{l1} and \texttt{u1} be the lower and
+upper bounds on the data in \texttt{t1}.  Then \texttt{u1} should be
+less than or equal to ``\texttt{a}''.  Similarly, if \texttt{l2} and
+\texttt{u2} are lower and upper bounds on the data in \texttt{t2}, we
+should have ``\texttt{a}'' less than or equal to \texttt{l2}.  When
+\texttt{node} is applied, proofs of these facts must be given, for the
+parameters \texttt{q1} and \texttt{q2}.  We then get a new tree with
+lower bound \texttt{l1} and upper bound \texttt{u2}.
+
+Programming with datatypes like \texttt{bst} that have such strong
+invariants is not easy.  For example, we might wish to write a
+function \texttt{insert}, to insert a piece of data in the
+\texttt{bst}.  If we were using external verification, we would have
+one modestly tricky piece of code to write, and one more complicated
+theorem proving that the tree produced by inserting a piece of data
+into a binary search tree is again a binary search tree.  With our
+indexed \texttt{bst} datatype, the proof and the program have to be
+combined, resulting in a single, more compact artifact that the
+separate proof and program, but one that is more complicated, perhaps,
+than either of them separately would be.
+
+\section{Summary}
+
+We have seen how to design indexed datatypes for internal
+verification.  In some cases, our indices simply provide information
+about the data, as the length index for vectors does, without
+constraining the data at all.  Such information can be used for
+internal verification of functions operating on the data, such as
+verifying the relationship between input and output lengths to the
+vector append function.  In other cases, like the binary search tree
+example, indices are actually used to help state constraints on the
+data.  We have seen how to use injectivity and casts to work with
+indexed data in \guru programs.  In the next chapter, we will see how
+to prove properties of dependently typed functions.
 
 \bibliographystyle{plain} \bibliography{the-bib}
 
