@@ -277,6 +277,8 @@ Define x_le_x : Forall(a:nat).{ (le a a) = tt} :=
 			trans join (or ff (eqnat a a)) (eqnat a a)
 			[x_eqnat_x a].
 
+Define le_refl := x_le_x.
+
 Define leZ : Forall(a:nat). { (le Z a) = tt } :=
   foralli(a:nat).
   case a with
