@@ -4948,6 +4948,40 @@ data.  We have seen how to use injectivity and casts to work with
 indexed data in \guru programs.  In the next chapter, we will see how
 to prove properties of dependently typed functions.
 
+\section{Exercises}
+
+\begin{enumerate}
+
+\item Declare an indexed datatype \texttt{slist} for sorted lists of
+\texttt{nat}s.  Your declaration should make \texttt{<slist n>} a type
+for any \texttt{nat} \texttt{n}.  Your datatype should be designed in
+such a way that if \texttt{L} is of type \texttt{<slist n>}, then
+either \texttt{L} is empty and \texttt{n} is zero (``\texttt{Z}''), or
+else \texttt{L} is the head of the list.
+
+\item Define a function \texttt{insert} which takes a \texttt{nat} \texttt{x} and
+a sorted list, and returns a new sorted list where \texttt{x} has been inserted.
+In more detail, your function's type should begin like this:
+
+\begin{verbatim}
+Fun(x n:nat)(l:<slist n>).
+\end{verbatim}
+
+\noindent It should return a sorted list.  The first question you
+should try to answer is, what index to \texttt{slist} will be used in
+the return type?  Mine uses a certain arithmetic function applied to
+\texttt{x} and \texttt{n}.  Writing \texttt{insert} then requires
+several lemmas about this arithmetic function, which you can find
+proved already in one of the files in the standard library
+(\texttt{guru-lang/lib/*g}).
+
+\item Explain in English what the type of \texttt{vec\_cat}, defined
+in \texttt{lib/vec.g}, is saying about what that function does.
+Similarly, explain what the type of \texttt{vec\_get}, also defined in
+\texttt{lib/vec.g}, says about what that function does.
+
+\end{enumerate}
+
 \bibliographystyle{plain} \bibliography{the-bib}
 
 \end{document}
