@@ -1,6 +1,9 @@
 bst:
 	time ../bin/guru bst.g
 
+minmax-le:
+	../bin/guru minmax-le.g
+
 trie:
 	time java -cp .. guru.Main trie.g
 

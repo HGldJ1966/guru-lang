@@ -3063,6 +3063,7 @@ which instantiates the \texttt{x\_le\_x} theorem with \texttt{x} to
 conclude \texttt{\{(le x x) = tt \}}.
 
 \section{Existential Elimination}
+\label{ch5:existse}
 
 If we have a proof of an \texttt{Exists}-formula, stating that there
 is a value which has a certain property, we can make use of that proof
@@ -4473,7 +4474,7 @@ verification of dependently typed programs.
 \begin{verbatim}
 Inductive vec : Fun(A:type)(n:nat).type :=
   vecn : Fun(A:type).<vec A Z>
-| vecc : Fun(A:type)(spec n:nat)(a:A)(l:<vec A n>).
+| vecc : Fun(A:type)(n:nat)(a:A)(l:<vec A n>).
               <vec A (S n)>.
 \end{verbatim}
 
@@ -4508,10 +4509,11 @@ Inductive vec : Fun(A:type)(n:nat).type :=
 \end{verbatim}
 
 \noindent You can find this declaration in
-\texttt{guru-lang/lib/vec.g}.  In the first line, we declare
-\texttt{vec} to be a type constructor, similarly to the declaration we
-have in Section~\ref{ch6:lists} for \texttt{list}.  Here we see that
-\texttt{vec}'s classifier (its \emph{kind}) is
+\texttt{guru-lang/lib/vec.g} (ignoring for now the \texttt{spec}
+keyword that appears in one place there).  In the first line, we
+declare \texttt{vec} to be a type constructor, similarly to the
+declaration we have in Section~\ref{ch6:lists} for \texttt{list}.
+Here we see that \texttt{vec}'s classifier (its \emph{kind}) is
 \texttt{Fun(A:type)(n:nat).type}.  So when we apply \texttt{vec} --
 which is done at the type level using angle brackets, as we saw for
 \texttt{list} -- we will have to supply two arguments: a type and a
@@ -4765,6 +4767,7 @@ works exactly as \texttt{cong} with a term context.  Here, the
 return it in the base case.
 
 \subsection{Finishing vector append}
+\label{ch7:vec_append}
 
 The full code for vector append is:
 
@@ -4981,6 +4984,986 @@ Similarly, explain what the type of \texttt{vec\_get}, also defined in
 \texttt{lib/vec.g}, says about what that function does.
 
 \end{enumerate}
+
+\chapter{Specificationality and Dependently Typed Proving}
+
+In this chapter, we discuss an important feature of \guru for
+dependently typed programming, which is \emph{specificationality}.
+Arguments to term constructors and to recursive functions can be
+designated as specificational.  This means that they are only to be
+used when type checking code, and they will disappear, just like type
+annotations, when reasoning about code.  Indices to indexed types are
+very often specificational.  For example, code working with vectors
+typically does not need the length of the vector to compute a desired
+output value.  The length is really just specificational, allowing us
+to state properties about operations on vectors by relating indices of
+input and output vectors (as we did in the type of vector append).
+The one rule about specificational data, naturally enough, is that
+non-specificational data cannot be computed from specificational data.
+\guru enforces this be disallowing pattern matching (in code) on
+specificational data, and by requiring that specificational data can
+be passed to term constructors or to recursive functions only in
+positions which have been designated (by the term constructor or the
+function) as specificational.  It is fine, however, to use
+non-specificational data in a specificational argument position.
+Specificationality makes external verification of dependently typed
+code easier, since specificational data are dropped during equational
+reasoning.  We will see examples of that in this chapter, as we
+consider proving properties of dependently typed functions.
+
+\section{Preview}
+
+\begin{itemize}
+
+\item We will see how to mark arguments as specificational using the
+\texttt{spec} keyword, and how this feature is used with vectors and
+binary search trees.
+
+\item Specificationality is also useful for a rather rarely used
+feature of \guru, which is \texttt{existse\_term}.  This is like
+\texttt{existse}, but is a term construct, rather than a proof
+construct.  The name we introduce for the value which has been proven
+to exist must be marked as specificational, since we must prohibit
+non-specificational values from being computed from it.
+
+\item We will see examples of proving properties of dependently typed
+code.  The main differences to note are that specificational data are
+considered annotations, similar to type annotations, and are dropped
+during equational reasoning; and that the form of
+\texttt{induction}-proofs is generalized to allow quantification over
+indices used by the type of the parameter of induction.  So to induct
+over a vector, we will start with ``\texttt{induction(n:nat)(l:<vector
+A n>)}''.  Without this extra generality, we would typically not be
+able to apply the induction hypothesis, for typing reasons.
+
+\item We will also introduce \texttt{hypjoin}, which tries to join
+terms (similarly to \texttt{join}), except that it also performs
+substitutions using a given set of proven equations.
+
+\end{itemize}
+
+\section{Specificationality for Datatypes}
+
+The vector datatype we saw in the last chapter is indexed by the
+length of the vector.  The types of functions can then state
+non-trivial semantic properties via relationships between indices to
+input and output vectors.  For example, the type of vector append
+state a non-trivial property of the input and output vectors by
+stating that the length index of the output vector is the sum of the
+length indices of the input vectors.  In this example and many others,
+we can regard the index as just being part of the specification of the
+function.  The function itself does not pattern match on indices, or
+perform other operations with them that would affect the output value
+computed.  Hence, these indices are typically computationally
+irrelevant, just like type annotations.  So we should be able to drop
+them during compilation and during theorem proving, if we wish.  Of
+course, to do this we need a way to distinguish between arguments (to
+recursive functions and term constructors) that are only
+specificational, like the length of a vector, and arguments that are
+computational, in the sense that the final output value may depend on
+them.  \guru provides a mechanism for distinguishing computational
+arguments and specificational arguments, using the \texttt{spec}
+keyword.  
+
+\subsection{Specificationality for vectors}
+
+Let us look at the declaration of \texttt{vec} as it actually appears
+in \texttt{lib/vec.g}:
+
+\begin{verbatim}
+Inductive vec : Fun(A:type)(n:nat).type :=
+  vecn : Fun(A:type).<vec A Z>
+| vecc : Fun(A:type)(spec n:nat)(a:A)(l:<vec A n>).
+              <vec A (S n)>.
+\end{verbatim}
+
+\noindent The argument \texttt{n} to \texttt{vecc} is labeled
+specificational with the \texttt{spec} keyword.  This keyword is
+itself an annotation that will be dropped during theorem proving by
+definitional equality.  It just indicates that arguments given for
+\texttt{n} are specificational, and computational values should not
+depend on them.  
+
+For an example of how this works, consider a vector storing just the
+natural number \texttt{two}.  With its type annotations, this is
+written just as it would be without the \texttt{spec} annotation:
+
+\begin{verbatim}
+(vecc nat Z two (vecn nat))
+\end{verbatim}
+
+\noindent If we had not marked the length argument to \texttt{vecc} as
+specificational, then dropping annotations would result in this term,
+where the length \texttt{Z} still remains in the term:
+
+\begin{verbatim}
+(vecc Z two (vecn nat))
+\end{verbatim}
+
+\noindent But with the \texttt{spec} keyword in our declaration of
+\texttt{vec}, the length is considered an annotation, and dropping
+annotations actually yields the pleasantly simplified:
+
+\begin{verbatim}
+(vecc two vecn)
+\end{verbatim}
+
+The vector append function may now also mark the lengths of its input
+vectors as specificational.  From \texttt{lib/vec.g}, we have the
+following, where \texttt{P1} and \texttt{P2} are standing in for the
+same two proofs we had in the previous chapter for
+\texttt{vec\_append} (see Section~\ref{ch7:vec_append}):
+
+\begin{verbatim}
+Define vec_append :=
+fun vec_append(A:type)(spec n m:nat)(l1 : <vec A n>)(l2 : <vec A m>):
+              <vec A (plus n m)>.
+    match l1 with
+      vecn _ => cast l2 by P1
+    | vecc _ n' x l1' => 
+       cast
+          (vecc A (plus n' m) x (vec_append A n' m l1' l2)) 
+       by P2
+    end.
+\end{verbatim}
+
+\noindent Note the use of the \texttt{spec} keyword where \texttt{n}
+and \texttt{m} are declared.  When \guru type checks this
+\texttt{fun}-term, it will make sure that \texttt{n} and \texttt{m}
+are only used in specificational argument positions of applications.
+We can confirm by eye that indeed they are: \texttt{n} is not used
+anywhere.  For \texttt{m}, it is used as the third argument, which is
+specificational, to the recursive call to \texttt{vec\_append}; and
+also in the application of \texttt{plus}.  But that application is
+itself used in a specificational position, and hence satisfies the
+criteria on use of specificational data: they may only appear in
+specificational argument positions.  The length \texttt{n'} of
+\texttt{l1'} in the \texttt{vecc}-clause is also specificational
+(since the declaration of \texttt{vecc} says it is), but it is also
+used only in specificational positions.
+
+When the code for \texttt{vec\_append} is compiled, all data in
+specificational argument positions are dropped.  So the term
+\texttt{(plus n' m)} will not be evaluated at run-time, since it is
+used (only) in a specificational argument position to \texttt{vecc}.
+It is important that \texttt{(plus n' m)} will be dropped in this
+case, since otherwise \texttt{vec\_append} would run in time quadratic
+in the length of the first input list: we would execute an addition
+that takes time linear in this length for each recursive call.  With
+\texttt{(plus n' m)} dropped, however, the function runs in time
+linear in the length of the first input list.
+
+Similarly, when it is time to reason externally about
+\texttt{vec\_append}, we will do so using its unannotated version,
+which it definitionally equals:
+
+\begin{verbatim}
+fun vec_append(l1 l2).
+    match l1 with
+      vecn => l2 
+    | vecc x l1' => (vecc x (vec_append l1' l2)) 
+    end.
+\end{verbatim}
+
+\noindent Notice that terms of the form \texttt{cast t by P} are
+replaced by just \texttt{t} when we drop annotations.  Specificational
+input variables have been dropped from the \texttt{fun}-term, and
+similarly from patterns in \texttt{match}-terms.  Again, this code is
+clearly much more succinct and easier to manage, for external
+reasoning, than the annotated version, and we might wish we could
+write only this.  Annotations are the price of internal reasoning.
+
+\subsection{Specificationality for binary search trees}
+
+At the end of the previous chapter, we considered a polymorphic
+datatype of binary search trees.  Here, we will work with the
+following monomorphic datatype of binary search trees of
+\texttt{nat}s:
+
+\begin{verbatim}
+Inductive bst : Fun(l u : nat).type :=
+  leaf : Fun(a:nat).<bst a a>
+| node : Fun(a l1 u1 l2 u2:nat)
+            (t1 : <bst l1 u1>)
+            (t2 : <bst l2 u2>)
+            (q1:{ (le u1 a) = tt})
+            (q2:{ (le a l2) = tt}).
+            <bst l1 u2>.
+\end{verbatim}
+
+\noindent Similarly to what we had before, the type \texttt{<bst l u>}
+is for binary search trees whose data are bounded between \texttt{l}
+and \texttt{u}.  The \texttt{node} constructor takes a piece of data
+``\texttt{a}'' to store at the root of the new tree, and then subtrees
+\texttt{t1} and \texttt{t2}.  Those have their own lower and upper
+bounds, namely \texttt{l1} and \texttt{u1}, \texttt{l2} and
+\texttt{u2}.  
+
+One problem with this design arises because data are stored at the
+leaves, and nodes must have exactly two subtrees.  So we cannot have,
+for instance, a tree with just two pieces of data in it.  We can have
+a leaf, which has one piece of data, or a node built from two leaves,
+which has three; but nothing in between.  Using specificationality, we
+can solve this problem.  Let us make our lower and upper bounds
+specificational data.  This is surely sensible, since the bounds
+themselves are not intended to have any computational role: they are
+just used to help enforce (at compile time) the binary search tree
+property.  What will our datatype look like then?  Clearly the
+arguments \texttt{l1},\texttt{u1},\texttt{l2}, and \texttt{u2} to
+\texttt{node} should be specificational.  The interesting question is,
+what about the argument to \texttt{leaf}?  If we make it
+specificational, then computationally speaking, leaves do not store
+any data.  The argument to \texttt{leaf} is specificational,
+indicating which lower and upper bounds the leaf should be viewed as
+having.  (Indeed, we could imagine a different definition where
+\texttt{leaf} takes possibly distinct specificational lower and upper
+bounds as arguments, instead of just the single argument \texttt{a}.)
+The definition with \texttt{spec} annotations is:
+
+\begin{verbatim}
+Inductive bst : Fun(l u : nat).type :=
+  leaf : Fun(spec a:nat).<bst a a>
+| node : Fun(a:nat)(spec l1 u1 l2 u2:nat)
+            (t1 : <bst l1 u1>)
+            (t2 : <bst l2 u2>)
+            (q1:{ (le u1 a) = tt})
+            (q2:{ (le a l2) = tt}).
+            <bst l1 u2>.
+\end{verbatim}
+
+\noindent To build a tree storing just \texttt{two}, say, we could
+write:
+
+\begin{verbatim}
+(node two two two two two (leaf two) (leaf two) 
+      [x_le_x two] [x_le_x two])
+\end{verbatim}
+
+\noindent This is definitionally equal (dropping annotations) to just:
+
+\begin{verbatim}
+(node two leaf leaf)
+\end{verbatim}
+
+\noindent The type annotation and the lower and upper bounds have all
+dropped away, since the corresponding argument positions of
+\texttt{leaf} and \texttt{node} are specificational.  Proofs (using
+the \texttt{x\_le\_x} lemma from \texttt{lib/nat.g}, which says that
+any \texttt{x} is less than or equal to itself) are considered
+annotations, too, so they have also disappeared.  Of course, we could
+wish to write just the simple unannotated term instead of the much
+more verbose annotated one, but the annotations are the cost of our
+static guarantee that the node satisfies the binary search tree
+property.  Finally, to build a tree storing just \texttt{one} and
+\texttt{two}, which was not possible to do with the previous design
+for \texttt{bst}, without specificationality; we can write:
+
+\begin{verbatim}
+(node one one one two two (leaf one)
+  (node two two two two two (leaf two) (leaf two) 
+      [x_le_x two] [x_le_x two])
+  [x_le_x one]
+  join (le one two) tt)
+\end{verbatim}
+
+\section{Existential Elimination in Terms}
+
+Specificationality is useful for accomodating a rarely used feature of
+\guru, the \texttt{existse\_term} construct.  This allows us to do an
+existential elimination inside a term.  Our interest here is not so
+much in \texttt{existse\_term}, as in the utility of
+specificationality in bridging between proofs and terms in dependently
+typed code.  
+
+Recall the \texttt{existe} proof construct (Section~\ref{ch5:existse},
+where the syntax is \texttt{existse P1 P2}, with:
+
+\begin{itemize}
+\item \texttt{P1 : Exists(x:A).F1}
+\item \texttt{P2 : Forall(x : A)(u:F1).F2}
+\end{itemize}
+
+\noindent The whole \texttt{existse}-expression is then a proof of
+\texttt{F2}.  In contrast, the \texttt{existse\_term P t} is a term
+(not a proof), of type \texttt{B}, when:
+
+\begin{itemize}
+\item \texttt{P : Exists(x:A).F}
+\item \texttt{t : Fun(spec x : A)(u:F).B}
+\end{itemize}
+
+\noindent The two constructs are clearly based on the same idea of a
+universal hypothetical interpretation of existentials.  In the case of
+\texttt{existse\_term}, the subterm \texttt{t} takes in the value
+proven to exist, together with a proof that that value has the
+property described by \texttt{F}.  Here, when we introduce the name
+\texttt{x} for that value, the \texttt{existse\_term}-construct
+requires that we mark \texttt{x} as specificational.  This ensures
+that our computational results cannot depend on the witness to the
+existential.  So \texttt{existse\_term P t} can be treated as
+definitionally equal to just \texttt{t}, similarly to the way
+\texttt{cast t by P} is definitionally equal to just \texttt{t}: the
+witness introduced by \texttt{P} is computationally irrelevant, and
+hence \texttt{P} can be treated as computationally irrelevant, too.
+This is consistent with the view of proofs as computationally
+irrelevant where they are used in other places in terms.
+
+\section{Induction Over Indexed Datatypes}
+\label{ch8:bst_bounds}
+
+Proving properties about values of indexed datatypes and about
+dependently typed code is similar to the proving we have done up to
+now, with two new points to note.  First, the form of
+\texttt{induction}-proofs is generalized just slightly, so that we may
+quantify over not just the parameter of induction, but also over
+indices mentioned in its type.  This gives us extra generality in our
+induction hypothesis, without which we would not be able to apply it,
+in many cases. Second, proofs and specificational data occurring in
+terms are computationally irrelevant, and hence drop out during
+external reasoning, just like type annotations do when reasoning about
+polymorphic programs.
+
+For an example, let us prove a property of our \texttt{bst} datatype,
+which partially shows that we have designed it correctly.  The
+property is that if we have a \texttt{bst} with lower bound \texttt{l}
+and upper bound \texttt{u}, then \texttt{l} is really less than or
+equal to \texttt{u}.  Stated in \guru, the property is:
+
+\begin{verbatim}
+Forall(l u:nat)(b:<bst l u>). { (le l u) = tt}
+\end{verbatim}
+
+\noindent Unfortunately, this is a sad case where
+Hint~\ref{hint:indrec} misleads us.  The only universal variable used
+as a parameter of recursion in a function mentioned in our theorem is
+\texttt{l}, as the first argument to \texttt{le}.  But in fact, we
+would get nowhere doing induction on \texttt{l} in this case.  This is
+an easy lemma, if we prove it by induction on \texttt{b}.  I cannot
+think of a good rule of thumb to help guide us here, except to observe
+that this is really a property of our binary search trees, not of
+their lower and upper bounds.  But how we know this, or what it means
+for this to be ``really'' a property of \texttt{b} rather than
+\texttt{l} or \texttt{u} is something I do not know.
+
+Leaving aside these difficulties, let us try the proof by induction on
+\texttt{b}.  Suppose we begin the following way, which will turn out
+not to work:
+
+\begin{verbatim}
+  foralli(l u:nat).
+  induction(b:<bst l u>) return { (le l u) = tt}
+\end{verbatim}
+
+\noindent All will be well in the base case.  But in the step case,
+for when \texttt{b} is a \texttt{node}-value, we will run into difficulty
+applying our induction hypothesis.  There, we will have \texttt{b} of
+the form \texttt{(node a l1 u1 l2 u2 t1 t2 q1 q2)}, where
+
+\begin{itemize}
+\item \texttt{t1 : <bst l1 u1>}
+\item \texttt{t2 : <bst l2 u2>}
+\end{itemize}
+
+\noindent Since \texttt{t1} and \texttt{t2} are subtrees of \texttt{b}, the requirement
+that the induction hypothesis be used only for structurally smaller trees is fulfilled.
+But we have a problem with typing.  The induction hypothesis for the proof as we have
+begun it is:
+
+\begin{verbatim}
+Forall(b:<bst l u>). { (le l u) = tt }
+\end{verbatim}
+
+\noindent We may only instantiate this with a subtree of type
+\texttt{<bst l u>}.  But our subtrees \texttt{t1} and \texttt{t2} have
+different types (e.g., \texttt{<bst l1 u1>} for \texttt{t1}).  So typing
+constraints will not be satisfied if we try to instantiate the induction
+hypothesis with a proof-level application like \texttt{[b\_IH t1]}, and
+we will not be able to complete our proof.
+
+The induction hypothesis we need to avoid this problem is one which includes
+the lower and upper bounds:
+
+\begin{verbatim}
+Forall(l u:nat)(b:<bst l u>). { (le l u) = tt }
+\end{verbatim}
+
+\noindent Since the lower and upper bounds are now included in the
+quantification, a proof like \texttt{[b\_IH l1 u1 t1]} will now pass
+the proof checker: we have instantiated the bounds in a way that
+allows us to instantiate the tree with \texttt{t1}.  \guru's
+\texttt{induction} proof construct allows us to write this
+\texttt{induction}-proof in such a way that we get this more general
+induction hypothesis.  The straightforward syntax is demonstrated
+below, as well as the easy bodies of the clauses (note that
+\texttt{le\_trans} is for transitivity of \texttt{le}, from
+\texttt{lib/nat.g}):
+
+\begin{verbatim}
+  induction(l u:nat)(b:<bst l u>) return { (le l u) = tt}
+    with
+    leaf _ => trans cong (le l *) inj <bst ** *> b_Eq
+                    [le_refl l] 
+  | node a _ u1 l2 _ t1 t2 q1 q2 => 
+    [le_trans l a u
+       [le_trans l u1 a [b_IH l u1 t1] q1]
+       [le_trans a l2 u q2 [b_IH l2 u t2]]]
+  end.
+\end{verbatim}
+
+\noindent This proof is called \texttt{bst\_bounds} in \texttt{lib/bst.g}.
+
+\section{Dependently Typed Proving}
+
+As mentioned, proofs and specificational data drop out of terms during
+external reasoning about them.  Consider the following code for testing
+whether or not a piece of data is in a \texttt{bst}:
+
+\begin{verbatim}
+Define bst_in : Fun(x:nat)(spec l u:nat)(t:<bst l u>). bool :=
+  fun bst_in(x:nat)(spec l u:nat)(t:<bst l u>): bool.
+    match t with
+      leaf _ => ff
+    | node a l1 u1 l2 u2 t1 t2 q1 q2 =>
+      match (eqnat x a) with
+        ff => 
+          match (le x a) with
+            ff => (bst_in x l2 u2 t2)
+          | tt => (bst_in x l1 u1 t1)
+          end
+      | tt => tt
+      end
+    end.
+\end{verbatim}
+
+\noindent Let us prove the following theorem about this piece of code:
+
+\begin{verbatim}
+Forall(x l u:nat)(t:<bst l u>)(u:{(bst_in x t) = tt}). { (le l x) = tt }
+\end{verbatim}
+
+\noindent That is, if \texttt{x} is in \texttt{bst} \texttt{t} with
+lower bound \texttt{l} and upper bound \texttt{u}, then \texttt{l}
+must be less than or equal to \texttt{x} (of course, \texttt{x} must
+be also less than or equal to \texttt{u}, but we do not prove that
+here for simplicity).  Let us write our proof using refinement.  You
+can find this proof in \texttt{lib/bst-spec.g}, as
+\texttt{bst\_in\_le1} (\texttt{bst-spec.g} is just temporary, to avoid
+confusion with \texttt{bst.g} as it is being used by homework 3
+currently).  Our starting point is just to write down the initial
+\texttt{foralli} and \texttt{induction} parts:
+
+\begin{verbatim}
+ foralli(x:nat).
+ induction(l u:nat)(t:<bst l u>) return
+   Forall(u:{(bst_in x t) = tt}). { (le l x) = tt } with
+   leaf _ => truei
+ | node a l1 u1 l2 u2 t1 t2 q1 q2 => truei
+end.
+\end{verbatim}
+
+\subsection{The base case}
+
+Let us fill in the base case of this proof.  There, we have that
+\texttt{t} is a leaf, but our assumption \texttt{u} tells us that
+\texttt{x} is in \texttt{t}.  This will give us a contradiction, since
+our code for \texttt{bst\_in} says that no data is stored in a leaf.
+We prove this using unannotated terms, as we do for all theorem
+proving.  The proof looks like this (with the equational steps to be
+shown just below):
+
+\begin{verbatim}
+ foralli(x:nat).
+ induction(l u:nat)(t:<bst l u>) return
+   Forall(u:{(bst_in x t) = tt}). { (le l x) = tt } with
+   leaf _ => 
+     foralli(u:{(bst_in x t) = tt}).
+     contra
+       trans symm u
+       trans cong (bst_in x *) t_eq
+       trans join (bst_in x leaf) ff
+             clash ff tt
+     { (le l x) = tt }
+ | node a l1 u1 l2 u2 t1 t2 q1 q2 => truei
+end.
+\end{verbatim}
+
+\noindent The equational steps are:
+
+\begin{verbatim}
+1. tt =
+
+2. (bst_in x t) =
+
+3. (bst_in x leaf) =
+
+4. ff !=
+
+5. tt
+\end{verbatim}
+
+\noindent Here we can clearly see that all the specificational data --
+in this case, the lower and upper bounds -- have been dropped from the
+\texttt{bst\_in}-terms.
+
+\subsection{\texttt{Case}-proofs in the step case}
+
+For the step case, where the tree \texttt{t} is a \texttt{node}-value,
+we will do case splits following the pattern matches in
+\texttt{bst\_in}, and then fill in the proofs in each case.  Putting
+in just the case splits to begin with, we can write the following,
+where \texttt{P1} is the proof of the base case considered above:
+
+\begin{verbatim}
+ induction(l u:nat)(t:<bst l u>) return
+   Forall(u:{(bst_in x t) = tt}). { (le l x) = tt } with
+   leaf _ => P1
+ | node a l1 u1 l2 u2 t1 t2 q1 q2 => 
+     foralli(u:{(bst_in x t) = tt}).
+     case (eqnat x a) by v1 _ with
+       ff =>
+       case (le x a) by v2 _ with
+         ff => truei
+       | tt => truei
+       end
+     | tt => truei
+     end
+  end.
+\end{verbatim}
+
+\noindent Notice that in our two \texttt{case}-proofs, we use
+\texttt{by}-clauses to introduce names -- \texttt{v1} for the first
+\texttt{case}-proof, \texttt{v2} for the second -- for the assumptions
+that the scrutinee equals the pattern in each clause (see
+Section~\ref{ch5:case} for more on \texttt{by}-clauses).  So for example,
+at the point where the first \texttt{truei} is, we have:
+
+\begin{itemize}
+\item \texttt{v1 : \{(eqnat x a) = ff\}}
+\item \texttt{v2 : \{(le x a) = ff\}}
+\end{itemize}
+
+\noindent It is burdensome to have to pick and remember the names
+\texttt{v1} and \texttt{v2}, which is why \guru assigns the standard
+names ending with ``\texttt{\_eq}'' (and ``\texttt{\_Eq}'' for the
+equality between the type of the scrutinee and the type of the
+pattern) when it is reasonable to do so (when the scutinee is a
+symbol).  
+
+\subsection{The first subcase}
+
+The reasoning for the situation of the first \texttt{truei} is as
+follows (using conventional mathematical notation for
+less-than-or-equal-to).  We need to show $\texttt{l} \le \texttt{x}$.
+We first observe that it suffices to show $\texttt{l1} \le
+\texttt{x}$.  This is because \guru considers \texttt{l1}
+definitionally equal to \texttt{l} in the \texttt{node}-clause, after
+applying the algorithm of Section~\ref{ch6:func}.  In more detail, the
+type of the scrutinee (here, the parameter of induction) is
+\texttt{<bst l u>}.  The type of the pattern is \texttt{<bst l1 u1>}.
+The algorithm of Section~\ref{ch6:func} tries to pattern match the
+latter against the former, where pattern variables may be instantiated
+by the pattern matching.  Here the pattern variables are \texttt{l1}
+and \texttt{u1}.  We can indeed make the \texttt{bst}-types identical
+by mapping \texttt{l1} to \texttt{l} and \texttt{u1} to \texttt{u}.
+
+Continuing now with the inequality reasoning: we wish to show
+$\texttt{l1} \le \texttt{x}$.  Since $x \le a$ is false, we can
+conclude, using a lemma somewhat verbosely called
+\texttt{le\_ff\_implies\_le} in \texttt{lib/nat.g}, that $a \le x$ is
+true.  We have $\texttt{u1} \le a$ by the assumption \texttt{q1},
+since our \texttt{node} constructor (which introduces \texttt{q1} as a
+pattern variable here) requires a proof that the upper bound of the
+left subtree is less than or equal to the data \texttt{a} stored by
+the node.  Also, by the \texttt{bst\_bounds} lemma which we proved in
+Section~\ref{ch8:bst_bounds}, we have that $\texttt{l1} \le
+\texttt{u1}$.  So we have this chain of inequalities, which we can
+glue together with \texttt{le\_trans}:
+
+\[ \texttt{l1} \ \ \le\ \ \texttt{u1} \ \ \le \ \ \texttt{a} \ \ \le \ \ \texttt{x} \]
+
+\noindent The proof in \guru syntax is:
+
+\begin{verbatim}
+[le_trans l1 a x 
+   [le_trans l1 u1 a [bst_bounds l1 u1 t1] q1]
+   [le_ff_implies_le x a v2]]
+\end{verbatim}
+
+\noindent We have nested (proof-level) applications of
+\texttt{le\_trans}.  The outer application goes from \texttt{l1} to
+\texttt{a} to \texttt{x}.  The inner one goes from \texttt{l1} to
+\texttt{u1} to \texttt{a}.  This corresponds to grouping our
+inequalities above like this:
+
+\[ (\texttt{l1} \ \ \le\ \ \texttt{u1} \ \ \le \ \ \texttt{a}) \ \ \le \ \ \texttt{x} \]
+
+\noindent That is, we first (corresponding to the inner
+\texttt{le\_trans}) go from \texttt{l1} to \texttt{a}, and then to
+\texttt{x}.
+
+\subsection{The third subcase}
+
+Our proof currently looks like this:
+
+\begin{verbatim}
+ induction(l u:nat)(t:<bst l u>) return
+   Forall(u:{(bst_in x t) = tt}). { (le l x) = tt } with
+   leaf _ => 
+     foralli(u:{(bst_in x t) = tt}).
+     contra
+       trans symm u
+       trans cong (bst_in x *) t_eq
+       trans join (bst_in x leaf) ff
+             clash ff tt
+     { (le l x) = tt }
+ | node a l1 u1 l2 u2 t1 t2 q1 q2 => 
+     foralli(u:{(bst_in x t) = tt}).
+     case (eqnat x a) by v1 _ with
+       ff =>
+       case (le x a) by v2 _ with
+         ff => [le_trans l1 a x 
+                  [le_trans l1 u1 a [bst_bounds l1 u1 t1] q1]
+                  [le_ff_implies_le x a v2]]
+       | tt => truei
+       end
+     | tt => truei
+     end
+  end
+\end{verbatim}
+
+\noindent Let us fill in the third subcase, where we have the second
+\texttt{truei} in the proof just listed.  We will come back to the
+second subcase after that.  In the third case, we are in a situation
+where \texttt{(eqnat x a)} has returned \texttt{tt}.  From this, we
+should be able to conclude that \texttt{\{x = a\}}, and indeed, there
+is a lemma in \texttt{lib/nat.g} to that effect:
+
+\begin{verbatim}
+eqnatEq : Forall(n m:nat)(u:{(eqnat n m) = tt}). { n = m } 
+\end{verbatim}
+
+\noindent We have $\texttt{l1} \le \texttt{u1} \le \texttt{a}$ using
+\texttt{bst\_bounds} and \texttt{q1}, so we just need to use
+\texttt{le\_trans} and then congruence to change ``\texttt{a}'' to
+\texttt{x}.  The proof in \guru is:
+
+\begin{verbatim}
+trans cong (le l *) [eqnatEq x a v1]
+      [le_trans l1 u1 a
+         [bst_bounds l1 u1 t1]
+             q1]
+\end{verbatim}
+
+\subsection{The second subcase}
+\label{ch8:longpf}
+
+Our proof now looks like this:
+
+\begin{verbatim}
+ induction(l u:nat)(t:<bst l u>) return
+   Forall(u:{(bst_in x t) = tt}). { (le l x) = tt } with
+   leaf _ => 
+     foralli(u:{(bst_in x t) = tt}).
+     contra
+       trans symm u
+       trans cong (bst_in x *) t_eq
+       trans join (bst_in x leaf) ff
+             clash ff tt
+     { (le l x) = tt }
+ | node a l1 u1 l2 u2 t1 t2 q1 q2 => 
+     foralli(u:{(bst_in x t) = tt}).
+     case (eqnat x a) by v1 _ with
+       ff =>
+       case (le x a) by v2 _ with
+         ff => [le_trans l1 a x 
+                  [le_trans l1 u1 a [bst_bounds l1 u1 t1] q1]
+                  [le_ff_implies_le x a v2]]
+*      | tt => truei
+       end
+     | tt => 
+       trans cong (le l *) [eqnatEq x a v1]
+             [le_trans l1 u1 a
+                [bst_bounds l1 u1 t1]
+                q1]
+     end
+  end
+\end{verbatim}
+
+\noindent We have one \texttt{truei} left to fill in, on the line
+marked (not \guru syntax) with a $*$.  I have saved this subcase
+for last, because to prove it, we will make use of a new proof method
+in \guru called \texttt{hypjoin}.  Let us try to do the proof with
+the methods we know, and see where we run into trouble.  In this 
+subcase, we have the following assumptions:
+
+\begin{itemize}
+\item \texttt{u: \{(bst\_in x t) = tt\}}
+\item \texttt{v1 : \{(eqnat x a) = ff\}}
+\item \texttt{v2 : \{(le x a) = tt\}}
+\end{itemize}
+
+\noindent This corresponds to the case in our \texttt{bst\_in} code
+where we look for \texttt{x} in the left subtree \texttt{t1}, since
+\texttt{x} is less than or equal to the data \texttt{a} stored at the
+root of the tree \texttt{t}.  So \texttt{(bst\_in x t)} is equal to
+\texttt{(bst\_in x t1)} in this case.  Our assumption \texttt{u} tells
+us that \texttt{(bst\_in x t)} equals \texttt{tt}, so we can use
+\texttt{trans} (and \texttt{symm}) to conclude \texttt{\{(bst\_in x
+t1) = tt\}}.  At that point, we may apply our induction hypothesis to
+conclude that $\texttt{l1} \le \texttt{x}$.
+
+This informal reasoning is easily formalized in \guru, except for the
+step where we prove
+
+\begin{verbatim}
+{ (bst_in x t) = (bst_in x t1) }
+\end{verbatim}
+
+\noindent Let us try to prove that in \guru using our assumptions
+\texttt{u},\texttt{v1}, and \texttt{v2} listed above, and see what
+goes wrong.  Certainly our first step is to change \texttt{t} to
+\texttt{(node a t1 t2)}, with this proof:
+
+\begin{verbatim}
+cong (bst_in x *) t_eq
+\end{verbatim}
+
+\noindent Now we have \texttt{(bst\_in x (node a t1 t2))}, and we would
+like to prove this equals \texttt{(bst\_in x t1)}.  That is only true,
+of course, because of the way the pattern matches go when evaluating
+\texttt{(bst\_in x (node a t1 t2))}, as described by our assumptions
+\texttt{v1} and \texttt{v2}.  The proof is intolerably verbose:
+
+{\small
+\begin{verbatim}
+trans join (bst_in x (node a t1 t2)) 
+           match (eqnat x a) with
+              ff => match (le x a) with
+                      ff => (bst_in x t2)
+                    | tt => (bst_in x t1)
+                    end
+           | tt => tt
+           end
+trans cong match * with
+              ff => match (le x a) with
+                      ff => (bst_in x t2)
+                    | tt => (bst_in x t1)
+                    end
+           | tt => tt
+           end
+        v1
+trans join match ff with
+              ff => match (le x a) with
+                      ff => (bst_in x t2)
+                    | tt => (bst_in x t1)
+                    end
+           | tt => tt
+           end
+      match (le x a) with
+        ff => (bst_in x t2)
+      | tt => (bst_in x t1)
+      end
+trans cong match * with
+             ff => (bst_in x t2)
+           | tt => (bst_in x t1)
+           end
+        v2
+      join match tt with
+             ff => (bst_in x t2)
+           | tt => (bst_in x t1)
+           end
+      (bst_in x t1)         
+\end{verbatim}
+}
+
+\noindent The problem here is we have had to repeat parts of the full
+code for \texttt{bst\_in} several times, as we alternate partial
+evaluation (via \texttt{join}) and congruence reasoning to take into
+account how \texttt{(eqnat x a)} and \texttt{(le x a)} are assumed in
+this case to have evaluated.  This is clearly unacceptable, as it
+results in a large proof which is dependent on the exact details of
+the way \texttt{bst\_in} is written.  Any change to \texttt{bst\_in},
+even one which does not change its observable pattern of recursive
+calls, will break this proof.  Fortunately, there is a better way.
+
+\section{\texttt{Hypjoin}}
+
+As you have no doubt observed, proof in \guru is largely a very manual
+process.  True, \texttt{join} allows us to take fairly large
+equational steps all at once, but other than that, we have so far seen
+no automation to help us prove theorems, until now.  \guru implements
+one fairly powerful automated theorem proving method, called
+\texttt{hypjoin}.  The theory and implementation of \texttt{hypjoin}
+are due to Adam Petcher~\cite{petcher08}.  The syntax is:
+
+\begin{verbatim}
+hypjoin t1 t2 by P1 ... Pn end
+\end{verbatim}
+
+\noindent In other words, we give \texttt{hypjoin} two terms,
+\texttt{t1} and \texttt{t2}, and as many proofs \texttt{P1} through
+\texttt{Pn} as we like, between the \texttt{by} and \texttt{end}
+keywords.  Then \texttt{hypjoin} will try to prove that \texttt{t1}
+equals \texttt{t2}, using the formulas proved by \texttt{P1} through
+\texttt{Pn}.  Those formulas are required to be equations.  The
+remarkable property of \texttt{hypjoin} is that, under some natural
+assumptions about termination of recursive functions used in
+\texttt{t1}, \texttt{t2} and the equations; and assuming the equations
+are consistent (a contradiction cannot be derived); then
+\texttt{hypjoin} will succeed if and only if there is a proof that
+\texttt{t1} equals \texttt{t2} which uses just equational reasoning
+(including \texttt{cong}), \texttt{join}, and the given equations.  In
+other words, \texttt{hypjoin} is \emph{sound} -- if it claims
+\texttt{\{t1 = t2\}} is provable, then it really is -- and also
+complete -- if they are provably equal in the way described, then
+\texttt{hypjoin} will indeed report that they are.
+
+Here is a very simple example demonstrating the use of \texttt{hypjoin}.
+Consider the following theorem about \texttt{le}, called \texttt{leZ} in
+\texttt{lib/nat.g}:
+
+\begin{verbatim}
+Forall(a:nat). { (le Z a) = tt }
+\end{verbatim}
+
+\noindent We can easily prove this by case-splitting on \texttt{a}, and then
+using equational reasoning:
+
+\begin{verbatim}
+foralli(a:nat). 
+  case a with
+    Z => trans cong (le Z *) a_eq
+               join (le Z Z) tt
+  | S a' => trans cong (le Z *) a_eq
+                  join (le Z (S a')) tt
+  end
+\end{verbatim}
+
+\noindent Since the subproofs in the two clauses are both the kind
+that \texttt{hypjoin} is supposed to be able to find automatically, we
+can use \texttt{hypjoin} to simplify this proof:
+
+\begin{verbatim}
+foralli(a:nat). 
+  case a with
+    Z => hypjoin (le Z a) tt by a_eq end
+  | S a' => hypjoin (le Z a) tt by a_eq end
+  end.
+\end{verbatim}
+
+\noindent In each case, we are instructing \texttt{hypjoin} to try to
+join \texttt{(le Z a)} and \texttt{tt}, using the equation proved by
+\texttt{a\_eq}.  Essentially, \texttt{hypjoin} evaluates the two terms
+just the way \texttt{join} would, but where \texttt{join} would get
+stuck pattern-matching on a variable (or other non-value),
+\texttt{hypjoin} tries to keep going by replacing the scrutinee of the
+pattern-match using one of the equations.  In this example, in the
+first case, \texttt{a\_eq} proves \texttt{\{a = Z\}}.  To see how this
+works in detail, we need to recall that the definition of \texttt{le} in
+\texttt{lib/nat.g} is:
+
+\begin{verbatim}
+Define le : Fun(a b:nat).bool :=
+   fun (a b: nat). (or (lt a b) (eqnat a b)).
+\end{verbatim}
+
+\noindent So \texttt{hypjoin} will evaluate \texttt{(le Z a)} first
+like this (writing \texttt{-->*} for evaluation):
+
+\begin{verbatim}
+1. (le Z a)}                  -->* 
+2. (or (lt Z a) (eqnat Z a))  -->*
+3. (or match a with
+          Z => ff
+       | S a' => tt
+       end
+       match a with
+          Z => tt
+       | S a' => ff
+       end)                  
+\end{verbatim}
+          
+\noindent The \texttt{match}-terms come from the definitions of
+\texttt{lt} and \texttt{eqnat}.  At this point, regular evaluation is
+stuck, since we are matching in both cases on a variable, namely
+``\texttt{a}''.  But where \texttt{join} would stop here,
+\texttt{hypjoin} continues by substituting \texttt{Z} for \texttt{a},
+since the proof \texttt{a\_eq} given to \texttt{hypjoin} proves
+\texttt{\{a = Z\}}.  So we continue with:
+                
+\begin{verbatim}
+4. (or match Z with
+          Z => ff
+       | S a' => tt
+       end
+       match Z with
+          Z => tt
+       | S a' => ff
+       end)                   -->*
+5. (or ff tt)                 -->*
+6. tt
+\end{verbatim}
+
+\noindent The evaluation performed by \texttt{hypjoin} in the other
+case is similar, except we end up substituting \texttt{(S a')} for
+\texttt{a}.
+
+\subsection{Default clauses}
+
+As a final finishing touch, since the subproofs (of our original proof
+for \texttt{leZ}) in the case where \texttt{a} is \texttt{Z} and where
+\texttt{a} is \texttt{(S a')} are syntactically identical, we can use
+a \texttt{default} clause for the \texttt{case}-proof to write the
+subproof just once.  The syntax is that you can begin a
+\texttt{case}-proof (or \texttt{match}-term, or
+\texttt{induction}-proof) with a clause whose pattern is just
+``\texttt{default}''.  The body of the clause will be repeated for all
+constructors which do not have a subsequent pattern in the
+\texttt{case}-proof.  If the \texttt{default} clause is the only one
+given (as it will be in our case here), you must write
+``\texttt{default c}'' for the pattern, where \texttt{c} is the type
+constructor for the type of the scrutinee.  In this case, \texttt{c} is
+just \texttt{nat}, and our proof looks like this:
+
+\begin{verbatim}
+  foralli(a:nat).
+  case a with
+    default nat => hypjoin (le Z a) tt by a_eq end
+  end.
+\end{verbatim}
+
+\subsection{Finishing the \texttt{bst} proof}
+
+To return to the final missing subcase of our \texttt{bst} proof, we
+can replace the page-long proof listed in Section~\ref{ch8:longpf}
+with just one call to \texttt{hypjoin}, resulting in this short proof
+(invoking the induction hypothesis) for the missing case of our
+theorem:
+
+\begin{verbatim}
+[t_IH l1 u1 t1 
+   symm
+   trans symm u
+         hypjoin (bst_in x t) (bst_in x t1)
+         by v1 v2 t_eq end]
+\end{verbatim}
+
+\section{Summary}
+
+We have seen how the \texttt{spec} keyword may be used in \guru to
+designate certain argument positions of term constructors or recursive
+functions as specificational.  Specificational data and proofs are
+treated as annotations (like type annotations from polymorphic
+programming), and are dropped during compilation and during theorem
+proving.  This greatly reduces clutter when reasoning externally about
+dependently typed code.  We have seen how a more general form of
+\texttt{induction}-proof is used when doing induction over an indexed
+datatype.  We have also seen a rather complex theorem about the
+dependently typed function \texttt{bst\_in} for checking if a piece of
+data is in a \texttt{bst}.  During the course of our proof, we saw the
+\texttt{hypjoin} proof construct, which extends the reach of partial
+evaluation as provided by \texttt{join}, to make use of equational
+hypotheses proven by a set of proofs given to \texttt{hypjoin}.
 
 \bibliographystyle{plain} \bibliography{the-bib}
 
