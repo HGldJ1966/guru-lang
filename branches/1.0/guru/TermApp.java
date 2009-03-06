@@ -357,7 +357,7 @@ public class TermApp extends App{
 			   +anno_t.isI(ctxt)
 			   +"\n5. head is ctor:"
 			   +(anno_t.head.construct == CONST ? 
-			     ctxt.isTermCtor((Const)anno_t.head) : "false"));
+			     (new Boolean(ctxt.isTermCtor((Const)anno_t.head))).toString() : "false"));
 	    ctxt.w.flush();
 	}
 
