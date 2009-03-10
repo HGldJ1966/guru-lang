@@ -174,8 +174,14 @@ public class EtaExpand {
 
 	    Expr cT = expand(src.getClassifier(c),false,null);
 
-	    if (src.isOpaque(c)) { // should be a defined term, not type
+	    if (src.isOpaque(c) && src.isDefined(c)) {
+		if (src.isTypeFamilyAbbrev(c)) 
+		    return c;
 		Expr t = src.getDefBody(c);
+		if (c.isTypeOrKind(src)) 
+		    /* so that we recognize later that c is a type 
+		       or kind (by looking at its definition) */
+		    t = expand(t.defExpandTop(src),false,c);
 		dst.define(c, cT, t, src.getDefBodyNoAnnos(c));
 		dst.makeOpaque(c);
 		return c;
@@ -290,7 +296,7 @@ public class EtaExpand {
 	    Expr nt = expand(i.t,false,null);
 	    if (nt == i.t)
 		return e;
-	    Expr ret = new Inc(nt);
+	    Expr ret = new Inc(nt,i.T);
 	    ret.pos = e.pos;
 	    return ret;
 	}
@@ -300,7 +306,7 @@ public class EtaExpand {
 	    Expr nt = expand(d.t,false,null);
 	    if (nI == d.I && nt == d.t)
 		return e;
-	    Expr ret = new Dec(nI,nt);
+	    Expr ret = new Dec(nI,nt,d.T);
 	    ret.pos = e.pos;
 	    return ret;
 	}

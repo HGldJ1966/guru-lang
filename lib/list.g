@@ -1,3 +1,5 @@
+%Set "show_includes".
+
 Include "plus.g".
 Include "unit.g".
 

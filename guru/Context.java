@@ -3,9 +3,8 @@ import java.util.*;
 import java.io.*;
 
 
-public class Context {
+public class Context extends FlagManager {
 
-    protected HashMap flags;
     protected HashMap typeCtors;
     protected HashMap typeCtorsKind;
     protected HashMap typeCtorsTermCtors;
@@ -29,8 +28,6 @@ public class Context {
     protected HashSet trustedDefs;
     protected HashMap specData;
 
-    public PrintStream w;
-
     public Expr star, starstar, type, tkind, fkind, formula, abort;
     public Var tmpvar;
 
@@ -39,7 +36,6 @@ public class Context {
     public Expr noteq1, noteq2;
 
     public Context() {
-	flags = new HashMap(256);
 	typeCtors = new HashMap(256);
 	typeCtorsKind = new HashMap(256);
 	typeCtorsTermCtors = new HashMap(256);
@@ -71,15 +67,12 @@ public class Context {
 	formula = new Formula();
 	abort = new Abort(new Bang());
 	tmpvar = new Var("tmp");
-	w = new PrintStream(new BufferedOutputStream(System.out));
 	
 	eval = true;
     }
 
     // create a copy of the given context
     public Context(Context prev) {
-	flags = prev.flags;
-	w = prev.w;
 	typeCtors = prev.typeCtors;
 	typeCtorsKind = prev.typeCtorsKind;
 	typeCtorsTermCtors = prev.typeCtorsTermCtors;
@@ -490,21 +483,6 @@ public class Context {
 			  "Internal error: cannot find classifier for this "
 			  +"constant: "+c.toString(this));
 	return cc.isFormula(this);
-    }
-
-    public void setFlag(String flag) {
-	flags.put(flag, new Boolean(true));
-    }
-
-    public void unsetFlag(String flag) {
-	flags.put(flag, new Boolean(false));
-    }
-
-    public boolean getFlag(String flag) {
-	Boolean b = (Boolean)flags.get(flag);
-	if (b == null)
-	    return false;
-	return b.booleanValue();
     }
 
     // get all the Consts for type ctors, in the order they were added

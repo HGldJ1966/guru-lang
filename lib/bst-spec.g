@@ -20,32 +20,6 @@ Define bst_bounds : Forall(l u:nat)(b:<bst l u>). { (le l u) = tt} :=
        [le_trans a l2 u q2 [b_IH l2 u t2]]]
   end.
 
-Define bst_insert 
-  : Fun(spec l u : nat)
-       (t:<bst l u>)
-       (x:nat).
-       <bst (min x l) (max x u)> :=
-  fun bst_insert(spec l u : nat)
-                (t:<bst l u>)
-                (x:nat):
-      <bst (min x l) (max x u)>.
-    match t with
-      leaf a =>
-      cast
-        (node x (min x a) (min x a) (max x a) (max x a)
-          (leaf (min x a)) (leaf (max x a)) 
-          [min_le_lemma x a] [max_le_lemma x a])
-      by cong <bst (min x l) (max x *)>
-              trans inj <bst * **> t_Eq
-                    symm inj <bst ** *> t_Eq
-    | node a _ u1 l2 _ t1 t2 q1 q2 => 
-      match (le a x) by q3 _ with
-        ff => abort <bst (min x l) (max x u)>                      % case 3
-      | tt => abort <bst (min x l) (max x u)>                      % case 4
-      end
-    end.
-             
-
 Define bst_in : Fun(x:nat)(spec l u:nat)(t:<bst l u>). bool :=
   fun bst_in(x:nat)(spec l u:nat)(t:<bst l u>): bool.
     match t with

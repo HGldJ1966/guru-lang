@@ -1,3 +1,6 @@
+bst-spec:
+	time ../bin/guru bst-spec.g
+
 bst:
 	time ../bin/guru bst.g
 

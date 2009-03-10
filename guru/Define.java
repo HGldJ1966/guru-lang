@@ -7,6 +7,7 @@ public class Define extends Command {
     public boolean trusted;
     public boolean type_family_abbrev;
     public boolean predicate;
+    public boolean abbrev;
 
     public Const c;
     public Expr A;
@@ -18,7 +19,7 @@ public class Define extends Command {
     }
 
     public Define(boolean spec, boolean trusted, boolean type_family_abbrev,
-		  boolean predicate, 
+		  boolean predicate, boolean abbrev,
 		  Const c, Expr A, Expr G, Expr G_no_annos) {
 	super(DEFINE);
 	this.spec = spec;
@@ -29,13 +30,14 @@ public class Define extends Command {
 	this.trusted = trusted;
 	this.type_family_abbrev = type_family_abbrev;
 	this.predicate = predicate;
+	this.abbrev = abbrev;
     }
 
     public void process(Context ctxt) {
 
-	boolean spec_mode = G.isProof(ctxt) || spec || predicate;
+	boolean spec_mode = G.isProof(ctxt) || spec || predicate || abbrev;
 
-	boolean dont_classify = trusted && (A != null) && G.isProof(ctxt);
+	boolean dont_classify = abbrev || (trusted && (A != null) && G.isProof(ctxt));
 
 	Expr cG = null;
 	if (dont_classify) 
