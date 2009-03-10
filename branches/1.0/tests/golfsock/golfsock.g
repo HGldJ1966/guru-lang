@@ -254,7 +254,6 @@ Unset "check_spec_terminates". %- not behaving properly during compilation -%
 %Set "debug_add_lets".
 %Set "debug_split_by_arity".
 %Set "comment_vars".
-%Set "Debug_compiler".
 %Set "debug_uniquify_vars".
 %Set "comment_vars". 
 %Set "debug_classify_casts".
@@ -264,5 +263,7 @@ Unset "check_spec_terminates". %- not behaving properly during compilation -%
 %Set "expand_vars".
 
 %Set "print_trusted_details".
+
+%Set "Debug_compiler".
 
 Compile main to "golfsock.c".

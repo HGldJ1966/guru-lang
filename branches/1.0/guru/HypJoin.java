@@ -9,6 +9,9 @@ public class HypJoin extends Expr{
     public Expr [] Ps;
     public boolean mark = false;
     
+    private Expr stuck;
+    private Expr[] stucks;
+
     private class UnorderableException extends Exception {}
     private class OrderingRestartRequiredException extends Exception {}
     private class InconsistentException extends Exception
@@ -571,6 +574,14 @@ public class HypJoin extends Expr{
     	int subtermCount = getEvaluationSubtermsCount(ctxt, theExpr);
     	Expr[] subtermsArr = new Expr[subtermCount];
     	
+	if (ctxt.getFlag("debug_hypjoin_normalize")) {
+	    ctxt.w.println("(Hyjpoin.normalizeWithCompleteRules");
+	    ctxt.w.print("theExpr = ");
+	    theExpr.print(ctxt.w,ctxt);
+	    ctxt.w.println("");
+	    ctxt.w.flush();
+	}
+
     	for(int i = 0; i < subtermCount; ++i)
     	{
     		Expr curSubterm = getSubterm(ctxt, theExpr, i);
@@ -590,17 +601,47 @@ public class HypJoin extends Expr{
     		normSubtermsExpr = buildExpr(ctxt, theExpr, subtermsArr);
     	}
     	
+	if (ctxt.getFlag("debug_hypjoin_normalize")) {
+	    ctxt.w.print("normSubtermsExpr = ");
+	    normSubtermsExpr.print(ctxt.w,ctxt);
+	    ctxt.w.println("");
+	    ctxt.w.flush();
+	}
+
+
     	Expr rewrittenExpr = orderedRewrite(ctxt, normSubtermsExpr, completeAtoms, boundVars);
     	Expr evaldExpr = boundVarPreservingEval(ctxt, rewrittenExpr, boundVars);
 
+	Expr ret = normSubtermsExpr;
+
     	if(!evaldExpr.defEq(ctxt, normSubtermsExpr))
     	{
-    		return normalizeWithCompleteRules(ctxt, evaldExpr, completeAtoms, boundVars);
+	    ret = normalizeWithCompleteRules(ctxt, evaldExpr, completeAtoms, boundVars);
+
     	}
-    	else
-    	{
-    		return normSubtermsExpr;
-    	}
+
+	if (stuck == null) {
+	    if (ret.construct == Expr.MATCH)
+		if (normSubtermsExpr.construct != Expr.MATCH)
+		    stuck = normSubtermsExpr;
+		else if (theExpr.construct != Expr.MATCH)
+		    stuck = theExpr;
+	    if (stuck != null && ctxt.getFlag("debug_hypjoin_normalize")) {
+		ctxt.w.print("stuck = ");
+		stuck.print(ctxt.w,ctxt);
+		ctxt.w.println("");
+		ctxt.w.flush();
+	    }
+	}
+
+	if (ctxt.getFlag("debug_hypjoin_normalize")) {
+	    ctxt.w.print("ret = ");
+	    ret.print(ctxt.w,ctxt);
+	    ctxt.w.println(")");
+	    ctxt.w.flush();
+	}
+
+	return ret;
     }
     
     private int getLPO_ConstructValue(Context ctxt, Expr e)
@@ -1214,6 +1255,7 @@ public class HypJoin extends Expr{
     {
 
     	Expr[] result = new Expr[theExprs.length];
+	stucks = new Expr[theExprs.length];
     	
     	Stack emptyBoundVars = new Stack();
     	VarOrder theVarOrder = new VarOrder();
@@ -1233,7 +1275,10 @@ public class HypJoin extends Expr{
 		    		Expr curExpr = theExprs[exprIndex];
 		    		curExpr = curExpr.dropAnnos(ctxt);
 		    		curExpr = removeAbbrev(ctxt, curExpr);
+				stuck = null;
 		    		result[exprIndex] = normalizeWithCompleteRules(ctxt, curExpr, completePs, emptyBoundVars);
+				stucks[exprIndex] = stuck;
+				
 		    	}
 		    	
 		    	return result;
@@ -1382,6 +1427,10 @@ public class HypJoin extends Expr{
 			int i = 0;
     	}
     	
+	if (ctxt.getFlag("trust_hypjoins")) {
+	    return new Atom(true, t1, t2);
+	}
+
 		Atom[] proofAtoms = getAtomArray(ctxt, Ps);
 		normalize(ctxt, proofAtoms);
 
@@ -1398,10 +1447,15 @@ public class HypJoin extends Expr{
         
         handleError(ctxt,
       		    "Evaluation cannot join two terms" 
-      		    +" in a hypjoin proof.\n"
-      		    +"1. Normal form of first term: "+normExprs[0].toString(ctxt)+"\n"
-      		    +"2. Normal form of second term: "+normExprs[1].toString(ctxt)+"\n"
-      		    +"3. Normal form of equations:\n" + getArrString(ctxt, proofAtoms));
+      		    +" in a hypjoin proof.\n\n"
+      		    +(stucks[0] == null ? 
+		      "1. Normal form of the first term: "+normExprs[0].toString(ctxt) :
+		      "1. While evaluating the first term, the following term gets stuck: "+stucks[0].toString(ctxt))
+      		    +(stucks[1] == null ? 
+		      "\n\n2. Normal form of the second term: "+normExprs[1].toString(ctxt) :
+		      "\n\n2. While evaluating the second term, the following term gets stuck: "+stucks[1].toString(ctxt)+"\n"));
+
+	    //	    +"\n3. Normal form of equations:\n" + getArrString(ctxt, proofAtoms));
    
     
       	return null;

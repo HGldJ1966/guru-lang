@@ -105,7 +105,7 @@ public class SplitByArity {
 	case Expr.INC: {
 	    Inc i = (Inc)e;
 	    Expr nt = process(i.t);
-	    Expr ret = new Inc(nt);
+	    Expr ret = new Inc(nt,i.T);
 	    ret.pos = e.pos;
 	    return ret;
 	}
@@ -113,7 +113,7 @@ public class SplitByArity {
 	    Dec d = (Dec)e;
 	    Expr nI = process(d.I);
 	    Expr nt = process(d.t);
-	    Expr ret = new Dec(nI,nt);
+	    Expr ret = new Dec(nI,nt,d.T);
 	    ret.pos = e.pos;
 	    return ret;
 	}

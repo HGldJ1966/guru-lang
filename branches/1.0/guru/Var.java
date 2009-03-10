@@ -101,6 +101,10 @@ public class Var extends Expr{
 	if (ctxt.isMacroDefined((Var)this)) 
 	    return ctxt.getDefBody(this).dropAnnos(ctxt);
 
+	if (ctxt.getClassifier(this) == null)
+	    // this can only happen in an unannotated term we parsed in
+	    return this;
+
 	if (ctxt.isAssumption(this))
 	    return new Bang();
 

@@ -338,7 +338,7 @@ public abstract class Expr {
 	    pos.print(System.out);
 	    System.out.print(": ");
 	}
-	System.out.println("classification error.\n"+msg);
+	System.out.println("classification error.\n\n"+msg);
 	ctxt.printDefEqErrorIf();
 	System.exit(2);
     }

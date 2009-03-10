@@ -202,6 +202,11 @@ public class FunTerm extends FunAbstraction {
     public Expr classify(Context ctxt, int approx, boolean spec) {
 	checkClassifiers(ctxt, approx, spec);
 	if (r != null) {
+	    if (T == null)
+		handleError(ctxt, "A recursive fun-term is missing its return type.\n"
+			    +"1. the recursive function: "+r.toString(ctxt));
+     
+
 	    Expr T1 = new FunType(vars, types, owned, ret_stat, T);
 	    T1.classify(ctxt, approx, spec); /* needed to set up spec 
 						annotations in term apps
