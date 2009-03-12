@@ -4,12 +4,12 @@ import java.util.*;
 
 public class ParserBase {
     
-    PushbackReader pr;
-    int linenum;
-    int column;
-    int prev_column;
-    String file;
-    File root;
+    protected PushbackReader pr;
+    protected int linenum;
+    protected int column;
+    protected int prev_column;
+    protected String file;
+    protected File root;
 
     protected static final boolean using_metavars = false;
 
@@ -140,8 +140,11 @@ public class ParserBase {
     protected void eat(String kw, String parsing_what) throws IOException {
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing "+parsing_what);
-	if (!tryToEat(kw))
+	if (!tryToEat(kw)) {
+	    if (kw == "\n")
+		handleError("Expected newline parsing "+parsing_what);
 	    handleError("Expected \""+kw+"\" parsing "+parsing_what);
+	}
     }
 
     protected boolean tryToEat(String kw) 
@@ -159,12 +162,19 @@ public class ParserBase {
 	c = getc();
 	while (c != -1 && cur < kw.length) {
 	    char b = kw[cur++];
+
+	    /*System.out.print("tryToEat c = ");
+	    System.out.print((char)c);
+	    System.out.print("b = ");
+	    System.out.println(b);  */
+	    
 	    if ((char)c != b) {
 		ungetc(c);
 		for (int j = cur-2; j >= 0; j--)
 			ungetc(kw[j]);
 			
-		
+		//System.out.println("tryToEat returning false (1).");
+
 		return false;
 	    }
 	    c = getc();
@@ -172,14 +182,17 @@ public class ParserBase {
 	int j = kw.length - 1;
 	ungetc(c);
 	if (Character.isLetterOrDigit(kw[j]))
-	    if (!Character.isWhitespace((char)c) && LegalIdChar((char)c)) {
+	    if (c != -1 && !Character.isWhitespace((char)c) && LegalIdChar((char)c)) {
 		// a keyword ending in a letter or number is being
 		// followed by a character allowed for variables, thus
 		// yielding an identifier, not a keyword.
 		for ( ; j>=0; j--)
 		    ungetc(kw[j]);
+		//System.out.println("tryToEat returning false with c = "+(char)c);
 		return false;
 	    }
+
+	//	System.out.println("ate "+java.util.Arrays.toString(kw));
 	return true;
     }
 
