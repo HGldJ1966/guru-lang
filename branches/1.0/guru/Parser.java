@@ -298,7 +298,7 @@ public class Parser extends ParserBase {
 	allow_stars = false;
 	if (!eat_ws())
 	    return null;
-	Position pos = new Position(linenum, column, file);
+	Position pos = getPos(); 
 	Command c = null;
 	if (tryToEat("Define")) 
 	    c = readDefine();
@@ -1019,7 +1019,7 @@ public class Parser extends ParserBase {
     protected Case readCase(boolean in_match) throws IOException
     {
         Case e = new Case();
-	e.pos = new Position(linenum, column, file);
+	e.pos = getPos();
         
 	String errm = ("Pattern in case does not begin with a"
 		       +" known constant.");
@@ -1253,14 +1253,14 @@ public class Parser extends ParserBase {
 	    if (!eat_ws())
 		handleError("Unexpected end of input parsing a match term.");
 	    
-	    Position p = new Position(linenum, column, file);
+	    Position p = getPos();
 	    e.x1 = readBindingVar();
 	    e.x1.pos = p;
 	    
 	    if (!eat_ws())
 		handleError("Unexpected end of input parsing a match term.");
 	    
-	    p = new Position(linenum, column, file);
+	    p = getPos();
 	    e.x2 = readBindingVar();
 	    e.x1.pos = p;
 
@@ -1274,7 +1274,7 @@ public class Parser extends ParserBase {
 		     : ((Const)e.t).name);
 		e.x1 = new Var(n+"_eq");
 		e.x2 = new Var(n+"_Eq");
-		Position p = new Position(linenum, column, file);
+		Position p = getPos();
 		e.x1.pos = p;
 		e.x2.pos = p;
 	    }
@@ -1550,7 +1550,7 @@ public class Parser extends ParserBase {
         }
 	else {
 	    e.x2 = new Var(e.x1.name+"_eq");
-	    e.x2.pos = new Position(linenum, column, file);
+	    e.x2.pos = getPos();
 	}
 
 	ctxt.pushVar(e.x2);
@@ -1572,7 +1572,7 @@ public class Parser extends ParserBase {
     {
 	Var x;
 	Expr U, G;
-        Position pos = new Position(linenum, column, file);
+        Position pos = getPos();
 
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing a abbrev term.");
@@ -1637,7 +1637,7 @@ public class Parser extends ParserBase {
     protected Expr readIdentifier (boolean binding_occurrence) 
 	throws IOException
     {
-        Position pos = new Position(linenum, column, file);
+        Position pos = getPos();
         String theVarName = readID();
 
 	if (theVarName.charAt(0) == '_' && using_metavars) 

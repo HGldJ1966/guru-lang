@@ -73,7 +73,7 @@ public class IncludeHelper {
     }
 
     // call this when you are done processing the included file
-    protected void finished(FlagManager fm) {
+    public void finished(FlagManager fm) {
 	included = true;
 	includeHash.put(ifile,new Boolean(true));
 	if (fm.getFlag("show_includes")) {
