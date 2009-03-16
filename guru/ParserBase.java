@@ -137,6 +137,29 @@ public class ParserBase {
 	return s;
     }
     
+    protected String read_until_newline_delim(String delim) 
+	throws IOException 
+    {
+        StringBuffer code_str = new StringBuffer();
+
+	int c;
+	char ch;
+	do{
+            c=getc();
+            ch=(char) c;
+	    if (c == -1) 
+		handleError("Unexpected end of delimited text.\n\n"
+			    +"1. the text read (starts on next line):\n"
+			    +code_str.toString());
+	    if (ch == '\n') {
+		/* check to see if we have reached our delimiter */
+		if (tryToEat(delim))
+		    return code_str.toString();
+            }
+            code_str.append(ch);
+        } while(true);
+    }
+
     protected void eat(String kw, String parsing_what) throws IOException {
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing "+parsing_what);
