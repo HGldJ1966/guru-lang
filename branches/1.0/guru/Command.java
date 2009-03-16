@@ -52,7 +52,8 @@ public class Command {
     }
 
     public void handleError(Context ctxt, String msg) {
-	pos.print(System.out);
+	if (pos != null)
+	    pos.print(System.out);
 	System.out.println(": command processing error.\n"+msg);
 	ctxt.printDefEqErrorIf();
         int retval = (which == DEFINE) ? 3 : 4;
