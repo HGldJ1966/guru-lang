@@ -52,6 +52,15 @@ public abstract class Expr {
 	System.exit(2);
     }
 
+    public void compileError(int i, Context ctxt, String msg) {
+	if (pos != null) {
+	    pos.print(System.out);
+	    System.out.print(": ");
+	}
+	System.out.println("compilation error, stage "+(new Integer(i)).toString()+".\n\n"+msg);
+	System.exit(2);
+    }
+
     abstract public void print(java.io.PrintStream w, Context ctxt);
    
     public String posToString() {
@@ -71,6 +80,37 @@ public abstract class Expr {
 	return s.toString();
     }
 
+    protected void comment_expr(int i, Context ctxt) {
+	String stage_num = (new Integer(i)).toString();
+	if (ctxt.getFlag("debug_stage"+stage_num)) {
+	    ctxt.cw.println("/*");
+	    ctxt.cw.println(" * stage "+stage_num);
+	    ctxt.cw.println(" *");
+	    ctxt.cw.println("\n");
+	    print(ctxt.cw,ctxt);
+	    ctxt.cw.println("\n*/");
+	    ctxt.cw.println("");
+	    ctxt.cw.flush();
+	}
+    }
+
+    public void compile(Context ctxt) {
+	comment_expr(0,ctxt);
+
+	simulate(ctxt, pos);
+
+	comment_expr(1,ctxt);
+    }
+
+    public boolean consumable() {
+	if (T.construct == UNTRACKED ||
+	    T.construct == TYPE ||
+	    T.construct == FUN_TYPE)
+	    return false;
+	
+	return true;
+    }
+	
     abstract public Expr simpleType(Context ctxt);
 
     // must define for types only
@@ -87,15 +127,21 @@ public abstract class Expr {
 	return null;
     }
 
-    // must define for types only
+    // must define for types and terms which are not fun-terms, only
     public boolean nonBindingOccurrence(Context ctxt, Sym s) {
 	classifyError(ctxt,"Internal error: checking for a non-binding variable occurrence is not implemented.\n\n"
 		    +"1. the expression: "+toString(ctxt));
 	return false;
     }
 
+    final public Expr stage1(Context ctxt) {
+	compileError(1,ctxt,"Internal error: stage 1 compilation is not implemented.\n\n"
+		     +"1. the expression: "+toString(ctxt));
+	return null;
+    }
+
     // must define for well-typed terms only.  This returns null if an abort is evaluated.
-    public Sym simulate(Context ctxt) {
+    public Sym simulate(Context ctxt, Position p) {
 	simulateError(ctxt,"Internal error: simulation is not implemented.\n\n"
 		    +"1. the expression: "+toString(ctxt));
 	return null;

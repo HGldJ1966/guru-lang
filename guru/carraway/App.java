@@ -12,6 +12,12 @@ public class App extends Expr {
 	super(APP);
     }
 
+    public App(Sym head, Expr[] args){
+	super(APP);
+	this.head = head;
+	this.args = args;
+    }
+
     public void print(java.io.PrintStream w, Context ctxt) {
 	w.print("(");
 	head.print(w,ctxt);
@@ -54,35 +60,61 @@ public class App extends Expr {
 	return F.rettype.applySubst(ctxt);
     }
 
-    public Sym simulate(Context ctxt) {
+    public Sym simulate(Context ctxt, Position p) {
 	FunType f = (FunType) ctxt.getType(head);
 
 	Sym[] rs = new Sym[args.length];
-	for (int i = 0, iend = args.length; i < iend; i++) 
-	    rs[i] = args[i].simulate(ctxt);
+	for (int i = 0, iend = args.length; i < iend; i++) {
+	    rs[i] = args[i].simulate(ctxt,pos);
+
+	    if (rs[i] == null)
+		return null;
+	}
 
 	Collection[] rs_pinnedby = new Collection[args.length];
-	for (int i = 0, iend = args.length; i < iend; i++) 
-	    if (f.consumes[i] && 
-		f.types[i].construct != UNTRACKED &&
-		f.types[i].construct != TYPE) {
+	for (int i = 0, iend = args.length; i < iend; i++) {
+	    if (f.consumes[i] && f.types[i].consumable()) {
 		// this is a reference we are supposed to consume
-		Position p = ctxt.wasDropped(rs[i]);
-		if (p != null) 
+		Position pp = ctxt.wasDropped(rs[i]);
+		if (pp != null) 
 		    simulateError(ctxt,"A reference that was already consumed is being consumed again.\n\n"
 				  +"1. the reference created at: "+rs[i].posToString()
-				  +"\n\n2. first consumed at: "+p.toString());
+				  +"\n\n2. first consumed at: "+pp.toString());
 		rs_pinnedby[i] = ctxt.dropRef(rs[i], pos);
 	    }
+	    ctxt.setSubst(f.vars[i],rs[i]);
+	}
 	
 	for (int i = 0, iend = args.length; i < iend; i++) 
-	    if (rs_pinnedby[i].size() > 0) {
+	    if (rs_pinnedby[i] != null && rs_pinnedby[i].size() > 0) {
 		Iterator it = rs_pinnedby[i].iterator();
 		simulateError(ctxt,"A pinned reference is being consumed.\n\n"
 			      +"1. the reference created at: "+rs[i].posToString()
 			      +"\n\n2. pinned by the reference created at: "+((Sym)it.next()).posToString());
 	    }
 
-	return ctxt.newRef(pos);
+	Expr rettype = f.rettype.applySubst(ctxt);
+
+	Sym ret = ctxt.newRef(pos);
+	if (rettype.construct == PIN) {
+	    // we need to make sure this does not depend on any consumed references
+
+	    Pin pi = (Pin)rettype;
+
+	    for (int i = 0, iend = pi.pinned.length; i < iend; i++) {
+		Position pp = ctxt.wasDropped(pi.pinned[i]);
+		if (pp != null)
+		    simulateError(ctxt,"The return type of a function depends on a consumed reference.\n\n"
+				  +"1. the function: "+head.toString(ctxt)
+				  +"\n\n2. its type: "+f.toString(ctxt)
+				  +"\n\n3. the consumed reference was created at: "+pi.pinned[i].posToString()
+				  +"\n\n4. it was consumed at: "+pp.toString());
+	    }
+
+	    ctxt.pin(ret,pi.pinned);
+	}
+
+	return ret;
     }
+
 }

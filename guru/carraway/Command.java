@@ -13,6 +13,7 @@ public class Command {
     public static final int SET = 6;
     public static final int UNSET = 7;
     public static final int INCLUDE = 8;
+    public static final int INIT = 9;
 
     protected int which;
     public Position pos;

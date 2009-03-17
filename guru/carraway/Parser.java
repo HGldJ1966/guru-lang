@@ -36,6 +36,8 @@ public class Parser extends guru.ParserBase {
 	    c = readPrimitive();
 	else if (tryToEat("Datatype"))
 	    c = readDatatype();
+	else if (tryToEat("Init"))
+	    c = readInit();
 	else if (tryToEat("Global"))
 	    c = readGlobal();
 	else if (tryToEat("Function"))
@@ -55,9 +57,9 @@ public class Parser extends guru.ParserBase {
     protected Attribute readAttribute() throws IOException {
 	Attribute a = new Attribute();
 	a.s = readIdentifier(true);
-	if (!eat_ws())
-	    handleError("Unexpected end of file reading an Attribute-command");
-	eat(".", "Attribute");
+	
+	eat(".","Attribute");
+	
 	return a;
     }
 
@@ -69,6 +71,12 @@ public class Parser extends guru.ParserBase {
 	eat("<<","Primitive");
 	a.delim = readID();
 	a.code = read_until_newline_delim(a.delim);
+	return a;
+    }
+
+    protected Init readInit() throws IOException {
+	Init a = new Init();
+	a.init = readPrimitive();
 	return a;
     }
 
@@ -85,36 +93,41 @@ public class Parser extends guru.ParserBase {
 	Datatype c = new Datatype();
 	c.tp = readIdentifier(true);
 	ctxt.declareConst(c.tp); // for benefit of run-time types
-	eat(":=","Datatype");
-	boolean first = true;
-	int cur = 0;
-	ArrayList ctors = new ArrayList();
-	ArrayList types = new ArrayList();
-	while (true) {
-	    eat_ws();
-	    if (tryToEat("."))
+	eat_ws();
+
+	if (tryToEat("with")) 
+	    c.del = readPrimitive();
+	else {
+	    eat(":=","Datatype");
+	    boolean first = true;
+	    int cur = 0;
+	    ArrayList ctors = new ArrayList();
+	    ArrayList types = new ArrayList();
+	    while (true) {
+		eat_ws();
+		if (tryToEat("."))
 		break;
-	    if (first)
-		first = false;
-	    else
-		eat("|","Datatype");
-	    ctors.add(readIdentifier(true));
-	    eat(":","Datatype");
-
-	    types.add(readCtorType());
+		if (first)
+		    first = false;
+		else
+		    eat("|","Datatype");
+		ctors.add(readIdentifier(true));
+		eat(":","Datatype");
+		
+		types.add(readCtorType());
+	    }
+	    
+	    int iend = ctors.size();
+	    c.ctors = new Sym[iend];
+	    c.types = new Expr[iend];
+	    c.rttypes = new Expr[iend];
+	    for (int i = 0; i < iend; i++) {
+		c.ctors[i] = (Sym)ctors.get(i);
+		CtorType d = (CtorType)types.get(i);
+		c.types[i] = d.T;
+		c.rttypes[i] = d.R;
+	    }
 	}
-
-	int iend = ctors.size();
-	c.ctors = new Sym[iend];
-	c.types = new Expr[iend];
-	c.rttypes = new Expr[iend];
-	for (int i = 0; i < iend; i++) {
-	    c.ctors[i] = (Sym)ctors.get(i);
-	    CtorType d = (CtorType)types.get(i);
-	    c.types[i] = d.T;
-	    c.rttypes[i] = d.R;
-	}
-
 	return c;
     }
 
@@ -371,19 +384,27 @@ public class Parser extends guru.ParserBase {
 	    eat("(",where);
 
 	    eat_ws();
-	    if (tryToEat("^")) {
-		specs.add(new Boolean(true));
-		eat_ws();
-		consumes.add(new Boolean(tryToEat("!")));
-	    }
-	    else if (tryToEat("!")) {
+	    if (ctortype) {
+		// ctors always consume their inputs
 		specs.add(new Boolean(tryToEat("^")));
-		eat_ws();
 		consumes.add(new Boolean(true));
 	    }
 	    else {
-		specs.add(new Boolean(false));
-		consumes.add(new Boolean(false));
+		// this is not a ctor, so it need not consume it input.
+		if (tryToEat("^")) {
+		    specs.add(new Boolean(true));
+		    eat_ws();
+		    consumes.add(new Boolean(!tryToEat("!")));
+		}
+		else if (tryToEat("!")) {
+		    specs.add(new Boolean(tryToEat("^")));
+		    eat_ws();
+		    consumes.add(new Boolean(false));
+		}
+		else {
+		    specs.add(new Boolean(false));
+		    consumes.add(new Boolean(true));
+		}
 	    }
 	    
 	    Sym s = readIdentifier(true);
@@ -451,7 +472,7 @@ public class Parser extends guru.ParserBase {
 
 	readInputs(vars,types,rttypes,specs,consumes,"Fun-type",true);
 
-        e1.rettype = e2.rettype = readType();
+        e1.rettype = e2.rettype = readIdentifier(false);
 
 	int iend = vars.size();
 

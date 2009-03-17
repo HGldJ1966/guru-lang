@@ -2,9 +2,14 @@ package guru.carraway;
 import guru.Position;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Vector;
 import java.util.HashSet;
 import java.util.HashMap;
 import java.util.Stack;
+import java.io.PrintStream;
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
+import java.io.FileNotFoundException;
 
 public class Context extends guru.FlagManager {
     protected HashMap consts; // indexed by name
@@ -20,12 +25,22 @@ public class Context extends guru.FlagManager {
     protected HashMap pinning;
     protected HashMap pinnedby;
     protected HashMap primitives;
-    protected HashSet refs;
-    protected HashMap dropped;
+    protected HashMap inits;
+    protected HashMap dels;
 
+    protected HashMap refs;
+    protected HashMap checkpoint_refs;
+    protected Vector changed_refs;
     protected int refnum;
 
-    public Context() {
+    protected int varnum;
+
+    protected String cur_file;
+    public PrintStream cw;
+    public String file_suffix;
+
+    public Context(String file_suffix) {
+	this.file_suffix = file_suffix;
 	consts = new HashMap(256);
 	vars = new HashMap(256);
 	globals = new HashMap(256);
@@ -39,10 +54,49 @@ public class Context extends guru.FlagManager {
 	primitives = new HashMap(256);
 	pinning = new HashMap(256);
 	pinnedby = new HashMap(256);
-	refs = new HashSet(256);
-	dropped = new HashMap(256);
-	
+	inits = new HashMap(256);
+	dels = new HashMap(256);
+
+	refs = new HashMap(256);
+	checkpoint_refs = null;
+	changed_refs = new Vector();
 	refnum = 0;
+	varnum = 0;
+    }
+
+    // return an error message if there was a problem opening the compiler output file determined by f.
+    public String setCurrentFile(String f) {
+	if (cw != null) {
+	    cw.flush();
+	    cw.close();
+	}
+	cur_file = f;
+	if (f == null)
+	    return null;
+	if (f.length() < 3)
+	    return new String("The included file name is too short.");
+	String suf = f.substring(f.length() - 2, f.length());
+	if (!suf.equals(file_suffix))
+	    return new String("The included file does not end with the expected suffix."
+			      +"\n\n1. the expected suffix: "+file_suffix
+			      +"\n\n2. the file name: "+f);
+	
+	String n = f.substring(0, f.length() - 2) + ".c";
+	
+	try {
+	    cw = new PrintStream(new BufferedOutputStream(new FileOutputStream(n)));
+	}
+	catch(FileNotFoundException e) {
+	    return new String("Could not open the included file.");
+	}
+
+	cw.println("// produced by carraway\n");
+
+	return null;
+    }
+
+    public String getCurrentFile() {
+	return cur_file;
     }
 
     protected void declareConst(Sym s) {
@@ -107,6 +161,15 @@ public class Context extends guru.FlagManager {
 	primitives.put(s,code);
     }
 
+    public Sym getDeleteFunction(Sym s) {
+	return (Sym)dels.get(s);
+    }
+
+    public void addDatatype(Sym tp, Sym del) {
+	declareConst(tp);
+	dels.put(tp,del);
+    }
+
     public void addDatatype(Sym tp, Sym[] cs, Expr[] ctypes, Expr[] rtypes) {
 	for (int i = 0, iend = cs.length; i < iend; i++) {
 	    declareConst(cs[i]);
@@ -134,7 +197,7 @@ public class Context extends guru.FlagManager {
     }
 
     public boolean isDatatype(Sym tp) {
-	return tpctors.containsKey(tp);
+	return tpctors.containsKey(tp) || dels.containsKey(tp);
     }
 
     public Sym[] getCtors(Sym tp) {
@@ -184,13 +247,112 @@ public class Context extends guru.FlagManager {
 	return (Sym)subst.get(s);
     }
 
-    /* create a new reference and add it to the refs data structure.
+    public static class InitH {
+	public Sym init;
+	public FunType F;
+	public String code;
+	public InitH(Sym init, FunType F, String code) {
+	    this.init = init;
+	    this.F = F;
+	    this.code = code;
+	}
+    }
+
+    protected String name(String n) {
+	int iend = n.length() + 1;
+	char[] buf = new char[iend];
+	buf[0] = 'g';
+	for (int i = 1; i < iend; i++) {
+	    char c = n.charAt(i-1);
+	    if (c <= 47) 
+		c += 65;
+	    else if (c >= 58 && c <= 64)
+		c += 97-58;
+	    if ((c >= 91 && c <= 94) || c == 96)
+		c += 104-91;
+	    else if (c >= 123)
+		c -= 4;
+	    buf[i] = c;
+	}
+	return new String(buf);
+    }
+
+    /* return the pos of a previously added FunType iff we already had one
+       registered for this pair of scrut_tp, pat_var_tp. */
+    public Position addInit(Sym init, Sym scrut_tp, Sym pat_var_tp, FunType F, String code) {
+	boolean ret = false;
+	HashMap m = (HashMap)inits.get(scrut_tp);
+	if (m == null) {
+	    m = new HashMap(256);
+	    inits.put(scrut_tp,m);
+	}
+	InitH h = (InitH)m.get(pat_var_tp);
+	if (h != null)
+	    return h.F.pos;
+	
+	h = new InitH(init,F,code);
+	m.put(pat_var_tp,h);
+	return null;
+    }
+
+    public InitH getInit(Sym scrut_tp, Sym pat_var_tp) {
+	HashMap m = (HashMap)inits.get(scrut_tp);
+	if (m == null) 
+	    return null;
+	return (InitH)m.get(pat_var_tp);
+    }
+
+    public static class RefStat {
+	public Sym ref;
+	public boolean created; // if false, it means the ref was dropped
+	public Position pos; // if dropped, where
+	public RefStat(Sym ref, boolean created, Position pos) {
+	    this.ref = ref;
+	    this.created = created;
+	    this.pos = pos;
+	}
+    }
+
+    public void checkpointRefs() {
+	checkpoint_refs = new HashMap(refs);
+	changed_refs = new Vector();
+    }
+
+    // return a Collection of RefStats for refs whose status changed since last checkpoint or restore operation.
+    public Collection restoreRefs() {
+	Vector cur_stat = new Vector();
+	HashSet included = new HashSet(256);
+	Iterator it = changed_refs.iterator();
+	while (it.hasNext()) {
+	    Sym r = (Sym)it.next();
+	    if (included.contains(r))
+		continue;
+	    included.add(r);
+	    cur_stat.add(refs.get(r));
+	}
+
+	changed_refs = new Vector();
+	refs = checkpoint_refs;
+
+	return cur_stat;
+    }
+
+    /* create a new reference and add it to the refs data structure(s).
        The position is the one to associate with the new reference. */
     public Sym newRef(Position p) {
 	String name = "reference-"+(new Integer(refnum++)).toString();
 	Sym r = new Sym(name);
 	r.pos = p;
-	refs.add(r);
+	RefStat s = new RefStat(r,true,null);
+	refs.put(r, s);
+	changed_refs.add(r);
+	return r;
+    }
+
+    public Sym newVar(Position p) {
+	String name = "tmp-"+(new Integer(varnum++)).toString();
+	Sym r = new Sym(name);
+	r.pos = p;
 	return r;
     }
 
@@ -212,8 +374,18 @@ public class Context extends guru.FlagManager {
 	}
     }
 
+    public boolean isPinning(Sym r) {
+	HashSet v = (HashSet)pinning.get(x);
+	if (v == null) 
+	    return false;
+	return (v.size() > 0);
+    }
+
     public Position wasDropped(Sym r) {
-	return (Position)dropped.get(r);
+	RefStat s = (RefStat)refs.get(r);
+	if (s == null)
+	    return null;
+	return s.pos;
     }
 
     /* drop the given reference, returning a Collection of references
@@ -235,7 +407,9 @@ public class Context extends guru.FlagManager {
 		q.remove(r);
 	    }
 	}
-	dropped.put(r,p);
+	RefStat s = new RefStat(r,false,p);
+	refs.put(r,s);
+	changed_refs.add(r);
 	return v;
     }
     

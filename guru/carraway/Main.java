@@ -6,10 +6,11 @@ public class Main {
 
     public static void main(String[] args)
     {
-	Context ctxt = new Context();
+	Context ctxt = new Context(".w");
+
 	for (int i = 0; i < args.length; i++) 
 	    if (args[i].equals("--help")) {
-		System.out.println("carraway [input files].");
+		System.out.println("carraway <input files>.");
 		System.exit(0);
 	    }
 	    else {

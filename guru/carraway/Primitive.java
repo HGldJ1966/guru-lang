@@ -6,7 +6,7 @@ public class Primitive extends Command {
     String delim, code;
 
     public Primitive() {
-	super(ATTRIBUTE);
+	super(PRIMITIVE);
     }
 
     public void process(Context ctxt) {
@@ -21,13 +21,18 @@ public class Primitive extends Command {
 
     public void print(java.io.PrintStream w, 
 		      Context ctxt) {
-	w.print("Primitive "+s.toString(ctxt)+" : ");
+	w.print("Primitive ");
+	print_h(w,ctxt);
+    }
+
+    public void print_h(java.io.PrintStream w, 
+			Context ctxt) {
+	w.print(s.toString(ctxt)+" : ");
 	T.print(w,ctxt);
 	w.print(" <<");
 	w.println(delim);
 	w.println(code);
 	w.println(delim);
     }
-
 
 }
