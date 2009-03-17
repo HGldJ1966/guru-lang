@@ -10,6 +10,7 @@ public class Global extends Command {
 
     public void process(Context ctxt) {
 	ctxt.addGlobal(c,t.simpleType(ctxt),t);
+	t.compile(ctxt);
     }
 
     public void print(java.io.PrintStream w, 

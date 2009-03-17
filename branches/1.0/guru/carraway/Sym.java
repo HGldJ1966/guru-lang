@@ -1,4 +1,5 @@
 package guru.carraway;
+import guru.Position;
 
 public class Sym extends Expr {
     public String name;
@@ -61,7 +62,11 @@ public class Sym extends Expr {
 	return this;
     }
 
-    public Sym simulate(Context ctxt) {
+    public Sym simulate(Context ctxt, Position p) {
+	if (ctxt.isCtor(this)) 
+	    // 0-ary constructors create new references
+	    return ctxt.newRef(p);
 	return (Sym)applySubst(ctxt);
     }
+
 }

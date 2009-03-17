@@ -38,8 +38,14 @@ public class Include extends Command {
 
 	Parser P = new Parser(trusted);
 
+	String prev_file = ctxt.getCurrentFile();
+
 	try {
-	    P.openFile(h.ifile.getPath());
+	    String s = h.ifile.getPath();
+	    P.openFile(s);
+	    String err1 = ctxt.setCurrentFile(s);
+	    if (err1 != null)
+		handleError(ctxt, err1);
 	} 
 	catch (Exception e) {
 	    handleError(ctxt, "Error opening file:\n"+e.toString());
@@ -65,6 +71,7 @@ public class Include extends Command {
 		ctxt.w.flush();
 	    }
 	}
+	ctxt.setCurrentFile(prev_file);
     	h.finished(ctxt);
     }
     

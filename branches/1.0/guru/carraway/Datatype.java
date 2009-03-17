@@ -6,36 +6,76 @@ public class Datatype extends Command {
     Expr[] types;
     Expr[] rttypes;
 
+    public Primitive del;
+
     public Datatype() {
 	super(DATATYPE);
     }
 
     public void process(Context ctxt) {
-	ctxt.addDatatype(tp,ctors,types,rttypes);
+	if (del != null) {
+	    String s = ctxt.name("delete_"+tp.name);
+	    if (!del.s.name.equals(s))
+		handleError(ctxt,"The delete function given for a datatype is not named as required."
+			    +"\n\n1. the given name: "+del.s.toString(ctxt)
+			    +"\n\n2. the required name: "+s);
+	    
+	    /* build expected type */
+	    
+	    FunType F = new FunType();
+	    F.vars = new Sym[2];
+	    F.types = new Expr[2];
+	    F.specs = new boolean[2];
+	    F.consumes = new boolean[2];
+	    
+	    F.vars[0] = new Sym("A");
+	    F.vars[1] = new Sym("r");
+	    
+	    F.types[0] = new Type();
+	    F.types[1] = tp;
+	    
+	    F.specs[0] = F.specs[1] = false;
+	    F.consumes[0] = F.consumes[1] = true;
+	    
+	    if (!del.T.eqType(ctxt,F)) 
+		handleError(ctxt, "The type given for the delete function for an attribute is not of the expected form.\n\n"
+			    +"1. the type given: "+del.T.toString(ctxt)
+			    +"\n\n2. the expected form: "+F.toString(ctxt));
+	    
+	    del.process(ctxt);
+	    ctxt.addDatatype(tp,del.s);
+	}
+	else
+	    ctxt.addDatatype(tp,ctors,types,rttypes);
     }
 
-    public void print(java.io.PrintStream w, 
-		      Context ctxt) {
+    public void print(java.io.PrintStream w, Context ctxt) {
 	w.print("Datatype ");
 	tp.print(w,ctxt);
-	w.print(" = ");
-	boolean first = true;
-	for (int i = 0, iend = ctors.length; i < iend; i++) {
-	    w.println("");
-	    if (first) {
-		w.print("   ");
-		first = false;
-	    }
-	    else
-		w.print(" | ");
-	    ctors[i].print(w,ctxt);
-	    w.print(" : ");
-	    types[i].print(w,ctxt);
-	    if (rttypes[i] != null) {
-		w.print(" & ");
-		rttypes[i].print(w,ctxt);
-	    }
+	if (del != null) {
+	    w.println(" with ");
+	    del.print_h(w,ctxt);
 	}
-	w.println(".");
+	else {
+	    w.print(" := ");
+	    boolean first = true;
+	    for (int i = 0, iend = ctors.length; i < iend; i++) {
+		w.println("");
+		if (first) {
+		    w.print("   ");
+		    first = false;
+		}
+		else
+		    w.print(" | ");
+		ctors[i].print(w,ctxt);
+		w.print(" : ");
+		types[i].print(w,ctxt);
+		if (rttypes[i] != null) {
+		    w.print(" & ");
+		    rttypes[i].print(w,ctxt);
+		}
+	    }
+	    w.println(".");
+	}
     }
 }
