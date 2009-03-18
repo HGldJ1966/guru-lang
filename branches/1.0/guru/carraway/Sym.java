@@ -10,12 +10,23 @@ public class Sym extends Expr {
     }
 
     public void print(java.io.PrintStream w, Context ctxt) {
+	if (!ctxt.getFlag("print_vars_subst")) {
+	    w.print(name);
+	    return;
+	}
 	Sym s = ctxt.getSubst(this);
 	if (s != null)
 	    s.print(w,ctxt);
 	else
 	    w.print(name);
     }    
+
+    public String refString(Context ctxt) {
+	return ((ctxt.getFlag("debug_refs") ?
+		toString(ctxt) + ", " : 
+		"the reference was ")
+		+"created at: "+posToString());
+    }
 
     public Expr simpleType(Context ctxt) {
 	Expr T = ctxt.getType(this);
@@ -45,7 +56,7 @@ public class Sym extends Expr {
 	return s1 == s2;
     }
 
-    public boolean nonBindingOccurrence(Context ctxt, Sym s) {
+    public boolean nonBindingOccurrence_h(Context ctxt, Sym s) {
 	Sym s1 = ctxt.getSubst(this);
 	if (s1 != null)
 	    return s1.nonBindingOccurrence(ctxt,s);
@@ -58,11 +69,11 @@ public class Sym extends Expr {
     public Expr applySubst(Context ctxt) {
 	Sym s1 = ctxt.getSubst(this);
 	if (s1 != null)
-	    s1.applySubst(ctxt);
+	    return s1.applySubst(ctxt);
 	return this;
     }
 
-    public Sym simulate(Context ctxt, Position p) {
+    public Sym simulate_h(Context ctxt, Position p) {
 	if (ctxt.isCtor(this)) 
 	    // 0-ary constructors create new references
 	    return ctxt.newRef(p);

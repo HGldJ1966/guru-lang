@@ -6,6 +6,8 @@ public class Case extends Expr {
     public Sym[] vars;
     public Expr body;
 
+    Position lastpos;
+
     public Case(){
 	super(CASE);
     }
@@ -26,21 +28,49 @@ public class Case extends Expr {
     }
 
     // Match will take care of checkpointing the state.
-    public Sym simulate(Context ctxt, Position p) {
-	if (vars.length == 0)
-	    return body.simulate(ctxt,pos);
+    public Sym simulate_h(Context ctxt, Position p) {
+	Sym ret = null;
+	if (vars.length == 0) 
+	    ret = body.simulate(ctxt,pos);
+	else {
+	    FunType f = (FunType)ctxt.getType(c);
+	    
+	    // introduce references for the pattern vars of consumable type
+	    
+	    Sym[] fprev = new Sym[vars.length];
+	    Sym[] prev = new Sym[vars.length];
+	    for (int i = 0, iend = vars.length; i < iend; i++) {
+		Expr T = f.types[i].applySubst(ctxt);
+		fprev[i] = ctxt.getSubst(f.vars[i]);
+		prev[i] = ctxt.getSubst(vars[i]);
+		if (T.consumable()) {
+		    Sym r = ctxt.newRef(vars[i].pos);
+		    ctxt.setSubst(f.vars[i],r); // so substituted pin-types will mention r
+		    ctxt.setSubst(vars[i],r);
+		    
+		    // pin as appropriate
 
-	FunType f = (FunType)ctxt.getType(c);
-
-	for (int i = 0, iend = vars.length; i < iend; i++) {
-	    Expr T = f.types[i].applySubst(ctxt);
-	    if (T.consumable()) {
-		Sym r = ctxt.newRef(vars[i].pos);
-		ctxt.setSubst(vars[i],r);
-		if (T.construct == PIN)
-		    ctxt.pin(r,((Pin)T).pinned);
+		    if (T.construct == PIN) 
+			ctxt.pin(r,((Pin)T).pinned);
+		}
+	    }
+	    ret = body.simulate(ctxt,pos);
+	    for (int i = 0, iend = vars.length; i < iend; i++) {
+		ctxt.setSubst(f.vars[i],fprev[i]);
+		ctxt.setSubst(vars[i],prev[i]);
 	    }
 	}
-	return body.simulate(ctxt,pos);
+
+	if (ret == null)
+	    return null;
+	
+	if (ret != ctxt.voidref) {
+	    Context.RefStat u = ctxt.refStatus(ret);
+	    if (u.non_ret)
+		simulateError(ctxt,"A match-case is returning a non-returnable reference.\n\n"
+			      +"1. the case: "+c.toString(ctxt)
+			      +"\n\n2. the reference was created at: "+ret.posToString());
+	}
+	return ret;
     }
 }

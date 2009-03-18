@@ -43,11 +43,11 @@ public class Pin extends Expr {
 	return true;
     }
 
-    public boolean nonBindingOccurrence(Context ctxt, Sym s) {
-	if (s.nonBindingOccurrence(ctxt,s))
+    public boolean nonBindingOccurrence_h(Context ctxt, Sym x) {
+	if (s.nonBindingOccurrence(ctxt,x))
 	    return true;
 	for (int i = 0, iend = pinned.length; i < iend; i++) 
-	    if (pinned[i].nonBindingOccurrence(ctxt,s))
+	    if (pinned[i].nonBindingOccurrence(ctxt,x))
 		return true;
 	return false;
    }

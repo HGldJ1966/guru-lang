@@ -58,7 +58,10 @@ public class Parser extends guru.ParserBase {
 	Attribute a = new Attribute();
 	a.s = readIdentifier(true);
 	
-	eat(".","Attribute");
+	ctxt.declareConst(a.s);
+
+	eat("with", "Attribute");
+	a.drop = readPrimitive();
 	
 	return a;
     }
@@ -302,10 +305,7 @@ public class Parser extends guru.ParserBase {
     }
 
     public Expr readTerm() throws IOException {
-	return readTerm(eatKeyword());
-    }
-
-    public Expr readTerm(int construct) throws IOException {
+	int construct = eatKeyword();
 	Expr e = null;
 	Position pos = getPos();
 	switch(construct)
@@ -328,11 +328,34 @@ public class Parser extends guru.ParserBase {
 	    case Expr.MATCH:
 		e = readMatch();
 		break; 
+	    case Expr.DO:
+		e = readDo();
+		break; 
 	    default:
 		handleError("Expected a type.");
             }
 	if (e.pos == null)
 	    e.pos = pos;
+	return e;
+    }
+
+    protected Do readDo() throws IOException {
+	ArrayList a = new ArrayList();
+	Do e = new Do();
+	while(true) {
+	    eat_ws();
+	    if (tryToEat("end"))
+		break;
+	    a.add(readTerm());
+	}
+	
+	int iend = a.size();
+	if (iend < 2)
+	    handleError("A do-term has fewer than two subterms.");
+	Expr[] ts = new Expr[iend];
+	for (int i = 0; i < iend; i++) 
+	    ts[i] = (Expr)a.get(i);
+	e.ts = ts;
 	return e;
     }
 
@@ -373,7 +396,8 @@ public class Parser extends guru.ParserBase {
 	return c;
     }
 
-    protected void readInputs(ArrayList vars, ArrayList types, ArrayList rttypes, ArrayList specs, ArrayList consumes,
+    protected void readInputs(ArrayList vars, ArrayList types, ArrayList rttypes, 
+			      ArrayList non_rets, ArrayList consumes,
 			      String where, boolean ctortype) 
 	throws IOException 
     {
@@ -385,27 +409,23 @@ public class Parser extends guru.ParserBase {
 
 	    eat_ws();
 	    if (ctortype) {
-		// ctors always consume their inputs
-		specs.add(new Boolean(tryToEat("^")));
 		consumes.add(new Boolean(true));
+		non_rets.add(new Boolean(false));
 	    }
 	    else {
-		// this is not a ctor, so it need not consume it input.
-		if (tryToEat("^")) {
-		    specs.add(new Boolean(true));
-		    eat_ws();
-		    consumes.add(new Boolean(!tryToEat("!")));
-		}
-		else if (tryToEat("!")) {
-		    specs.add(new Boolean(tryToEat("^")));
-		    eat_ws();
+		if (tryToEat("!")) {
 		    consumes.add(new Boolean(false));
+		    non_rets.add(new Boolean(true));
+		}
+		else if (tryToEat("^")) {
+		    consumes.add(new Boolean(true));
+		    non_rets.add(new Boolean(true));
 		}
 		else {
-		    specs.add(new Boolean(false));
 		    consumes.add(new Boolean(true));
+		    non_rets.add(new Boolean(false));
 		}
-	    }
+	    }   
 	    
 	    Sym s = readIdentifier(true);
 	    ctxt.pushVar(s);
@@ -434,10 +454,10 @@ public class Parser extends guru.ParserBase {
         FunType e = new FunType();
 	ArrayList vars = new ArrayList();
 	ArrayList types = new ArrayList();
-	ArrayList specs = new ArrayList();
+	ArrayList non_rets = new ArrayList();
 	ArrayList consumes = new ArrayList();
 
-	readInputs(vars,types,null,specs,consumes,"Fun-type",false);
+	readInputs(vars,types,null,non_rets,consumes,"Fun-type",false);
 
         e.rettype = readType();
 
@@ -445,15 +465,15 @@ public class Parser extends guru.ParserBase {
 
 	e.vars = new Sym[iend];
 	e.types = new Expr[iend];
-	e.specs = new boolean[iend];
+	e.non_rets = new boolean[iend];
 	e.consumes = new boolean[iend];
 
 	Sym v;
 	for (int i = 0; i < iend; i++) {
 	    v = e.vars[i] = (Sym)vars.get(i);
 	    e.types[i] = (Expr)types.get(i);
-	    e.specs[i] = ((Boolean)specs.get(i)).booleanValue();
 	    e.consumes[i] = ((Boolean)consumes.get(i)).booleanValue();
+	    e.non_rets[i] = ((Boolean)non_rets.get(i)).booleanValue();
 	    ctxt.popVar(v);
 	}
 
@@ -466,11 +486,11 @@ public class Parser extends guru.ParserBase {
         FunType e2 = new FunType();
 	ArrayList vars = new ArrayList();
 	ArrayList types = new ArrayList();
+	ArrayList non_rets = new ArrayList();
 	ArrayList rttypes = new ArrayList();
-	ArrayList specs = new ArrayList();
 	ArrayList consumes = new ArrayList();
 
-	readInputs(vars,types,rttypes,specs,consumes,"Fun-type",true);
+	readInputs(vars,types,rttypes,non_rets,consumes,"Fun-type",true);
 
         e1.rettype = e2.rettype = readIdentifier(false);
 
@@ -479,7 +499,7 @@ public class Parser extends guru.ParserBase {
 	Sym[] _vars = e1.vars = e2.vars = new Sym[iend];
 	Expr[] _types = e1.types = new Expr[iend];
 	Expr[] _rttypes = e2.types = new Expr[iend];
-	boolean[] _specs = e1.specs = e2.specs = new boolean[iend];
+	boolean[] _non_rets = e1.non_rets = e2.non_rets = new boolean[iend];
 	boolean[] _consumes = e1.consumes = e2.consumes = new boolean[iend];
 
 	Sym v;
@@ -487,8 +507,8 @@ public class Parser extends guru.ParserBase {
 	    v = _vars[i] = (Sym)vars.get(i);
 	    _types[i] = (Expr)types.get(i);
 	    _rttypes[i] = (Sym)rttypes.get(i);
-	    _specs[i] = ((Boolean)specs.get(i)).booleanValue();
 	    _consumes[i] = ((Boolean)consumes.get(i)).booleanValue();
+	    _non_rets[i] = ((Boolean)non_rets.get(i)).booleanValue();
 	    ctxt.popVar(v);
 	}
 
@@ -498,6 +518,7 @@ public class Parser extends guru.ParserBase {
     protected Case readCase() throws IOException
     {
 	Case e = new Case();
+	Position p = getPos();
 	e.c = readIdentifier(false);
 	if (!ctxt.isCtor(e.c))
 	    handleError("The head of a pattern in a match-case is not a constructor.\n\n"
@@ -522,13 +543,16 @@ public class Parser extends guru.ParserBase {
 	    v = e.vars[i] = (Sym)vars.get(i);
 	    ctxt.popVar(v);
 	}
-
+	e.pos = p;
+	e.lastpos = getPos();
         return e;
     }
 
     protected Match readMatch() throws IOException
     {
 	Match e = new Match();
+	eat_ws();
+	e.consume_first = tryToEat("$");
 	e.t = readTerm();
 	eat("with","match-term");
 	ArrayList cases = new ArrayList();
@@ -562,13 +586,14 @@ public class Parser extends guru.ParserBase {
         Function e = new Function();
 	ArrayList vars = new ArrayList();
 	ArrayList types = new ArrayList();
-	ArrayList specs = new ArrayList();
+	ArrayList non_rets = new ArrayList();
 	ArrayList consumes = new ArrayList();
 
 	e.t = new FunTerm();
+	e.t.pos = getPos();
 	e.t.f = readIdentifier(true);
 	ctxt.declareFunction(e.t.f);
-	readInputs(vars,types,null,specs,consumes,"Function",false);
+	readInputs(vars,types,null,non_rets,consumes,"Function",false);
 
         e.t.rettype = readType();
 
@@ -582,15 +607,15 @@ public class Parser extends guru.ParserBase {
 
 	e.t.vars = new Sym[iend];
 	e.t.types = new Expr[iend];
-	e.t.specs = new boolean[iend];
+	e.t.non_rets = new boolean[iend];
 	e.t.consumes = new boolean[iend];
 
 	Sym v;
 	for (int i = 0; i < iend; i++) {
 	    v = e.t.vars[i] = (Sym)vars.get(i);
 	    e.t.types[i] = (Expr)types.get(i);
-	    e.t.specs[i] = ((Boolean)specs.get(i)).booleanValue();
 	    e.t.consumes[i] = ((Boolean)consumes.get(i)).booleanValue();
+	    e.t.non_rets[i] = ((Boolean)non_rets.get(i)).booleanValue();
 	    ctxt.popVar(v);
 	}
 
@@ -620,6 +645,8 @@ public class Parser extends guru.ParserBase {
 	    return Expr.UNTRACKED;
 	if (tryToEat("void"))
 	    return Expr.VOID;
+	if (tryToEat("do"))
+	    return Expr.DO;
 	if (tryToEat("type"))
 	    return Expr.TYPE;
 	if (tryToEat("<"))

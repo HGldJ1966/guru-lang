@@ -18,7 +18,7 @@ public class Abort extends Expr {
 	return true;
     }
 
-    public Sym simulate(Context ctxt) {
+    public Sym simulate_h(Context ctxt, guru.Position p) {
 	return null;
     }
 }
