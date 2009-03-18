@@ -14,6 +14,9 @@ public abstract class Expr {
     public static final int MATCH = 6;
     public static final int CASE = 7; // used in MATCH-terms
     public static final int FUN_TERM = 8; // top-level only
+    public static final int INIT_TERM = 9; // created only internally (not parsed)
+    public static final int DO = 10;
+    public static final int DROP_TERM = 11;
 
     // type constructs
     public static final int PIN = 20;
@@ -80,7 +83,7 @@ public abstract class Expr {
 	return s.toString();
     }
 
-    protected void comment_expr(int i, Context ctxt) {
+    public void comment_expr(int i, Context ctxt) {
 	String stage_num = (new Integer(i)).toString();
 	if (ctxt.getFlag("debug_stage"+stage_num)) {
 	    ctxt.cw.println("/*");
@@ -94,18 +97,10 @@ public abstract class Expr {
 	}
     }
 
-    public void compile(Context ctxt) {
-	comment_expr(0,ctxt);
-
-	simulate(ctxt, pos);
-
-	comment_expr(1,ctxt);
-    }
-
     public boolean consumable() {
-	if (T.construct == UNTRACKED ||
-	    T.construct == TYPE ||
-	    T.construct == FUN_TYPE)
+	if (construct == UNTRACKED ||
+	    construct == TYPE ||
+	    construct == FUN_TYPE)
 	    return false;
 	
 	return true;
@@ -128,7 +123,25 @@ public abstract class Expr {
     }
 
     // must define for types and terms which are not fun-terms, only
-    public boolean nonBindingOccurrence(Context ctxt, Sym s) {
+    public final boolean nonBindingOccurrence(Context ctxt, Sym s) {
+	if (ctxt.getFlag("debug_nonBindingOccurrence")) {
+	    ctxt.w.print("checking for nonBindingOccurrence of "+s.toString(ctxt)
+			 +" in "+toString(ctxt));
+	    ctxt.w.println(" (");
+	    ctxt.w.flush();
+	}   
+	boolean ret = nonBindingOccurrence_h(ctxt,s);
+	if (ctxt.getFlag("debug_nonBindingOccurrence")) {
+	    if (ret)
+		ctxt.w.println(") = true");
+	    else
+		ctxt.w.println(") = true");
+	    ctxt.w.flush();
+	}
+	return ret;
+    }
+
+    public boolean nonBindingOccurrence_h(Context ctxt, Sym s) {
 	classifyError(ctxt,"Internal error: checking for a non-binding variable occurrence is not implemented.\n\n"
 		    +"1. the expression: "+toString(ctxt));
 	return false;
@@ -141,9 +154,29 @@ public abstract class Expr {
     }
 
     // must define for well-typed terms only.  This returns null if an abort is evaluated.
-    public Sym simulate(Context ctxt, Position p) {
+    public Sym simulate_h(Context ctxt, Position p) {
 	simulateError(ctxt,"Internal error: simulation is not implemented.\n\n"
 		    +"1. the expression: "+toString(ctxt));
 	return null;
     }
+
+    final public Sym simulate(Context ctxt, Position p) {
+	if (ctxt.getFlag("debug_simulate")) {
+	    ctxt.w.print("simulating "+toString(ctxt));
+	    ctxt.w.println(" (");
+	    ctxt.w.flush();
+	}
+	Sym ret = simulate_h(ctxt,p);
+	if (ctxt.getFlag("debug_simulate")) {
+	    ctxt.w.println(") simulated "+toString(ctxt));
+	    if (ret == null)
+		ctxt.w.println("  aborting");
+	    else
+		ctxt.w.println("  returning "+ret.toString(ctxt) + " (created at "+ret.posToString()+")");
+	    ctxt.w.flush();
+	}
+	return ret;
+    }
+
+
 }

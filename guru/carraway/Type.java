@@ -10,7 +10,7 @@ public class Type extends Expr {
 	w.print("type");
     }    
 
-    public boolean nonBindingOccurrence(Context ctxt, Sym s) {
+    public boolean nonBindingOccurrence_h(Context ctxt, Sym s) {
 	return false;
     }
 

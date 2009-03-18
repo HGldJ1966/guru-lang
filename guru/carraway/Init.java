@@ -26,17 +26,17 @@ public class Init extends Command {
 	    handleError(ctxt,"The type of the second input in an Init-command is not an attribute.\n\n"
 			+"\n\n1. the type: "+f.types[1].toString(ctxt));
 
-	if (f.specs[1] || f.consumes[1])
-	    handleError(ctxt,"The second input in an Init-command is labeled specificational or consumed.");
+	if (f.consumes[1])
+	    handleError(ctxt,"The second input in an Init-command is marked consumed.");
 	
 	if (f.types[2].construct != Expr.SYM || !ctxt.isAttribute((Sym)f.types[2])) 
 	    handleError(ctxt,"The type of the third input in an Init-command is not an attribute.\n\n"
 			+"\n\n1. the type: "+f.types[2].toString(ctxt));
 
-	if (f.specs[2] || !f.consumes[2])
-	    handleError(ctxt,"The third input in an Init-command is labeled specificational or not consumed.");
+	if (!f.consumes[2])
+	    handleError(ctxt,"The third input in an Init-command is not marked consumed.");
 
-	if (f.rettype.construct == PIN) {
+	if (f.rettype.construct == Expr.PIN) {
 	    Pin p = (Pin)f.rettype;
 
 	    if (p.pinned.length != 1 || p.pinned[0] != f.vars[1]) 

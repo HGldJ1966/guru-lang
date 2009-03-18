@@ -21,16 +21,16 @@ public class Context extends guru.FlagManager {
     protected HashMap rttypes;
     protected HashMap funcs;
     protected HashMap globals;
-    protected HashSet attrs;
-    protected HashMap pinning;
-    protected HashMap pinnedby;
+    protected HashMap attrs;
     protected HashMap primitives;
     protected HashMap inits;
     protected HashMap dels;
+    protected HashSet not_consumed;
 
     protected HashMap refs;
-    protected HashMap checkpoint_refs;
     protected Vector changed_refs;
+    protected Stack refs_stack;
+    protected Stack changed_refs_stack;
     protected int refnum;
 
     protected int varnum;
@@ -38,6 +38,8 @@ public class Context extends guru.FlagManager {
     protected String cur_file;
     public PrintStream cw;
     public String file_suffix;
+
+    Sym voidref;
 
     public Context(String file_suffix) {
 	this.file_suffix = file_suffix;
@@ -50,18 +52,20 @@ public class Context extends guru.FlagManager {
 	funcs = new HashMap(256);
 	types = new HashMap(256);
 	rttypes = new HashMap(256);
-	attrs = new HashSet(256);
+	attrs = new HashMap(256);
 	primitives = new HashMap(256);
-	pinning = new HashMap(256);
-	pinnedby = new HashMap(256);
 	inits = new HashMap(256);
 	dels = new HashMap(256);
+	not_consumed = new HashSet(256);
 
 	refs = new HashMap(256);
-	checkpoint_refs = null;
 	changed_refs = new Vector();
+	refs_stack = new Stack();
+	changed_refs_stack = new Stack();
 	refnum = 0;
 	varnum = 0;
+
+	voidref = new Sym("voidref");
     }
 
     // return an error message if there was a problem opening the compiler output file determined by f.
@@ -103,14 +107,26 @@ public class Context extends guru.FlagManager {
 	consts.put(s.name,s);	
     }
 
-    public void addAttribute(Sym s) {
+    public void addAttribute(Sym s, Sym drop) {
 	declareConst(s);
 	setType(s,new Type());
-	attrs.add(s);
+	attrs.put(s,drop);
+    }
+
+    public boolean isNotConsumed(Sym x) {
+	return not_consumed.contains(x);
+    }
+
+    public void setNotConsumed(Sym x) {
+	not_consumed.add(x);
     }
 
     public boolean isAttribute(Sym s) {
-	return attrs.contains(s);
+	return attrs.containsKey(s);
+    }
+
+    public Sym getDropFunction(Sym s) {
+	return (Sym)attrs.get(s);
     }
 
     public Sym lookup(String name) {
@@ -157,17 +173,22 @@ public class Context extends guru.FlagManager {
     }
 
     public void addPrimitive(Sym s, Expr T, String code) {
+	if (getFlag("debug_primitives")) {
+	    w.println("adding primitive "+s.toString(this));
+	    w.flush();
+	}
+	declareConst(s);
 	types.put(s,T);
 	primitives.put(s,code);
-    }
-
-    public Sym getDeleteFunction(Sym s) {
-	return (Sym)dels.get(s);
     }
 
     public void addDatatype(Sym tp, Sym del) {
 	declareConst(tp);
 	dels.put(tp,del);
+    }
+
+    public Sym getDeleteFunction(Sym s) {
+	return (Sym)dels.get(s);
     }
 
     public void addDatatype(Sym tp, Sym[] cs, Expr[] ctypes, Expr[] rtypes) {
@@ -240,6 +261,10 @@ public class Context extends guru.FlagManager {
     public void setSubst(Sym s1, Sym s2) {
 	if (s1 == s2)
 	    return;
+	if (getFlag("debug_subst")) {
+	    w.println(s1.toString(this) + " |--> " + (s2 == null ? "null" : s2.toString(this)));
+	    w.flush();
+	}
 	subst.put(s1,s2);
     }
 
@@ -302,24 +327,110 @@ public class Context extends guru.FlagManager {
 	return (InitH)m.get(pat_var_tp);
     }
 
+    public Sym newVar(Position p) {
+	String name = "tmp_"+(new Integer(varnum++)).toString();
+	Sym r = new Sym(name);
+	r.pos = p;
+	return r;
+    }
+
     public static class RefStat {
 	public Sym ref;
 	public boolean created; // if false, it means the ref was dropped
 	public Position pos; // if dropped, where
+	public boolean non_ret;
+	public boolean consume;
+	public HashSet pinning;
+	public HashSet pinnedby;
+	public RefStat(RefStat u) {
+	    ref = u.ref;
+	    created = u.created;
+	    pos = u.pos;
+	    non_ret = u.non_ret;
+	    consume = u.consume;
+	    pinning = new HashSet(u.pinning);
+	    pinnedby = new HashSet(u.pinnedby);
+	}
+	public RefStat(Sym ref, boolean created, Position pos, boolean non_ret, boolean consume) {
+	    this.ref = ref;
+	    this.created = created;
+	    this.pos = pos;
+	    this.non_ret = non_ret;
+	    this.consume = consume;
+	    pinning = new HashSet(256);
+	    pinnedby = new HashSet(256);
+	}
 	public RefStat(Sym ref, boolean created, Position pos) {
 	    this.ref = ref;
 	    this.created = created;
 	    this.pos = pos;
+	    this.non_ret = false;
+	    this.consume = true;
+	    pinning = new HashSet(256);
+	    pinnedby = new HashSet(256);
+	}
+	public void print(java.io.PrintStream w, Context ctxt) {
+	    w.println("  -- "+ref.toString(ctxt));
+	    w.println("     created at "+ref.posToString());
+	    if (non_ret)
+		w.println("     not to be returned.");
+	    else
+		w.println("     can be returned.");
+	    w.println("     current status: "+(created ? "created" : "dropped at "+pos.toString()));
+	    Iterator it = pinning.iterator();
+	    w.print("     pinning:");
+	    while(it.hasNext()) {
+		Sym r = (Sym)it.next();
+		w.print(" ");
+		r.print(w,ctxt);
+	    }
+	    w.println("");
+
+	    w.print("     pinned by:");
+	    it = pinnedby.iterator();
+	    while(it.hasNext()) {
+		Sym r = (Sym)it.next();
+		w.print(" ");
+		r.print(w,ctxt);
+	    }
+	    w.println("");
+	    
+	    w.flush();
+	}
+	public String toString(Context ctxt) {
+	    java.io.ByteArrayOutputStream s = new java.io.ByteArrayOutputStream();
+	    java.io.PrintStream w = new java.io.PrintStream(s);
+	    print(w,ctxt);
+	    return s.toString();
 	}
     }
 
+    protected HashMap clone_refs(HashMap c) {
+	HashMap h = new HashMap(256);
+	Iterator it = c.keySet().iterator();
+	while (it.hasNext()) {
+	    Sym r = (Sym)it.next();
+	    h.put(r,new RefStat((RefStat)c.get(r)));
+	}
+	return h;
+    }
+
     public void checkpointRefs() {
-	checkpoint_refs = new HashMap(refs);
+	if (getFlag("debug_refs")) {
+	    w.println("checkpointing references (");
+	    w.flush();
+	}
+	refs_stack.push(clone_refs(refs));
+	changed_refs_stack.push(new Vector(changed_refs));
 	changed_refs = new Vector();
     }
 
-    // return a Collection of RefStats for refs whose status changed since last checkpoint or restore operation.
+    // return a Collection of RefStats for refs whose status changed since last checkpoint operation.
     public Collection restoreRefs() {
+	if (getFlag("debug_refs")) {
+	    w.println(") restoring references.  Changed references are:");
+	    w.flush();
+	}
 	Vector cur_stat = new Vector();
 	HashSet included = new HashSet(256);
 	Iterator it = changed_refs.iterator();
@@ -328,57 +439,73 @@ public class Context extends guru.FlagManager {
 	    if (included.contains(r))
 		continue;
 	    included.add(r);
-	    cur_stat.add(refs.get(r));
+	    RefStat u = (RefStat)refs.get(r);
+	    if (getFlag("debug_refs")) 
+		u.print(w,this);
+	    cur_stat.add(u);
 	}
 
-	changed_refs = new Vector();
-	refs = checkpoint_refs;
+	changed_refs = (Vector)changed_refs_stack.pop();
+	refs = (HashMap)refs_stack.pop();
 
 	return cur_stat;
     }
 
-    /* create a new reference and add it to the refs data structure(s).
-       The position is the one to associate with the new reference. */
-    public Sym newRef(Position p) {
-	String name = "reference-"+(new Integer(refnum++)).toString();
+    protected Sym new_ref(Position p) {
+	String name = "reference_"+(new Integer(refnum++)).toString();
 	Sym r = new Sym(name);
 	r.pos = p;
-	RefStat s = new RefStat(r,true,null);
-	refs.put(r, s);
-	changed_refs.add(r);
 	return r;
     }
 
-    public Sym newVar(Position p) {
-	String name = "tmp-"+(new Integer(varnum++)).toString();
-	Sym r = new Sym(name);
-	r.pos = p;
+    /* create a new reference and add it to the refs data structure(s).
+       The position is the one to associate with the new reference. */
+    public Sym newRef(Position p, boolean non_ret, boolean consume) {
+	Sym r = new_ref(p);
+	RefStat s = new RefStat(r,true,null,non_ret,consume);
+	refs.put(r, s);
+	changed_refs.add(r);
+	if (getFlag("debug_refs")) 
+	    s.print(w,this);
+	return r;
+    }
+
+    public Sym newRef(Position p) {
+	return newRef(p,false,true);
+    }
+
+    public Sym newRef(Position p, RefStat data) {
+	Sym r = new_ref(p);
+	RefStat s = new RefStat(r,true,null,data.non_ret,data.consume);
+	s.pinning = new HashSet(data.pinning);
+	s.pinnedby = new HashSet(data.pinnedby);
+	refs.put(r, s);
+	changed_refs.add(r);
+	if (getFlag("debug_refs")) 
+	    s.print(w,this);
 	return r;
     }
 
     // x is pinning y1 ... yn.  We updated both the pinning and pinnedby data structures.
     public void pin(Sym x, Sym[] y) {
-	HashSet v = (HashSet)pinning.get(x);
-	if (v == null) {
-	    v = new HashSet();
-	    pinning.put(x,v);
-	}
+	RefStat v = (RefStat)refs.get(x);
+	if (v == null) 
+	    x.simulateError(this, "Internal error: trying to pin by a non-existent reference: "+x.refString(this));
 	for (int i = 0, iend = y.length; i < iend; i++) {
-	    v.add(y[i]);
-	    HashSet u = (HashSet)pinnedby.get(y[i]);
-	    if (u == null) {
-		u = new HashSet();
-		pinnedby.put(y[i],u);
-	    }
-	    u.add(x);
+	    v.pinning.add(y[i]);
+	    RefStat u = (RefStat)refs.get(y[i]);
+	    if (u == null) 
+		y[i].simulateError(this, "Internal error: trying to pin a non-existent reference: "+y[i].refString(this)
+				   +"\n\n1. pinning by: "+x.refString(this));
+	    u.pinnedby.add(x);
 	}
     }
 
     public boolean isPinning(Sym r) {
-	HashSet v = (HashSet)pinning.get(x);
+	RefStat v = (RefStat)refs.get(r);
 	if (v == null) 
 	    return false;
-	return (v.size() > 0);
+	return (v.pinning.size() > 0);
     }
 
     public Position wasDropped(Sym r) {
@@ -388,29 +515,47 @@ public class Context extends guru.FlagManager {
 	return s.pos;
     }
 
+    public RefStat refStatus(Sym r) {
+	return (RefStat)refs.get(r);
+    }
+
     /* drop the given reference, returning a Collection of references
-       that r is currently by.  Any references that r is pinning will
-       no longer be pinned by r after this method returns. 
+       that r is currently pinned by.  Any references that r is
+       pinning will no longer be pinned by r after this method
+       returns.
 
        The given position states where in the code r is being dropped.
 
        This function does not check to see if r was already dropped.
     */
     public Collection dropRef(Sym r, Position p) {
-	HashSet v = (HashSet)pinnedby.get(r);
-	HashSet u = (HashSet)pinning.get(r);
-	if (u != null) {
-	    // r was pinning some references, so we should update pinnedby for them.
-	    Iterator it = u.iterator();
-	    while(it.hasNext()) {
-		HashSet q = (HashSet)pinnedby.get((Sym)it.next());
-		q.remove(r);
-	    }
+	if (r == voidref)
+	    return null;
+	if (getFlag("debug_refs")) {
+	    w.println("Dropping "+r.toString(this));
+	    w.println("  1. created at: "+r.posToString());
+	    w.println("  2. dropped at: "+p.toString()+"\n");
+	    w.flush();
 	}
-	RefStat s = new RefStat(r,false,p);
-	refs.put(r,s);
+	RefStat uu = (RefStat)refs.get(r);
+	if (uu == null)
+	    r.simulateError(this,"Internal error: attempting to drop a non-existent reference: "+r.toString(this));
+
+	// r was pinning some references, so we should update pinnedby for them.
+	Iterator it = uu.pinning.iterator();
+	while(it.hasNext()) {
+	    Sym r1 = (Sym)it.next();
+	    RefStat vv = (RefStat)refs.get(r1);
+	    if (vv == null)
+		r1.simulateError(this,"Internal error: attempting to unpin a non-existent reference: "+r1.toString(this));
+	    vv.pinnedby.remove(r);
+	}
+
+	uu.created = false;
+	uu.pos = p;
+
 	changed_refs.add(r);
-	return v;
+	return uu.pinnedby;
     }
     
 }

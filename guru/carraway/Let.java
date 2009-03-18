@@ -18,7 +18,12 @@ public class Let extends Expr {
     }
 
     public Expr simpleType(Context ctxt) {
-	ctxt.setType(x,t1.simpleType(ctxt));
+	Expr T = t1.simpleType(ctxt);
+	if (T.construct == VOID)
+	    classifyError(ctxt,"A let-term is defining a variable of type void.\n\n"
+			  +"1. the variable: "+x.toString(ctxt)
+			  +"\n\n2. the term it is defined to equal: "+t1.toString(ctxt));
+	ctxt.setType(x,T);
 	return t2.simpleType(ctxt);
     }
 
@@ -31,14 +36,15 @@ public class Let extends Expr {
 	t2.print(w,ctxt);
     }    
 
-    public Sym simulate(Context ctxt, Position p) {
+    public Sym simulate_h(Context ctxt, Position p) {
 	Sym r = t1.simulate(ctxt,pos);
 	if (r == null)
 	    // abort occurred in t1
 	    return null;
+	Sym prev = ctxt.getSubst(x);
 	ctxt.setSubst(x,r);
 	r = t2.simulate(ctxt,pos);
-	ctxt.setSubst(x,null);
+	ctxt.setSubst(x,prev);
 	return r;
     }
 }

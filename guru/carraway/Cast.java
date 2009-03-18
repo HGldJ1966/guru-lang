@@ -36,7 +36,7 @@ public class Cast extends Expr {
 	t.print(w,ctxt);
     }    
 
-    public Sym simulate(Context ctxt, Position p) {
+    public Sym simulate_h(Context ctxt, Position p) {
 	return t.simulate(ctxt,pos);
     }
 

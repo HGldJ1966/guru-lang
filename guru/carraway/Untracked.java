@@ -24,7 +24,7 @@ public class Untracked extends Expr {
 	return this;
     }
 
-    public boolean nonBindingOccurrence(Context ctxt, Sym s) {
+    public boolean nonBindingOccurrence_h(Context ctxt, Sym s) {
 	return false;
     }
 }
