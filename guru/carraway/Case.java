@@ -12,14 +12,35 @@ public class Case extends Expr {
 	super(CASE);
     }
 
-    public void print(java.io.PrintStream w, Context ctxt) {
-	c.print(w,ctxt);
-	for(int i = 0, iend = vars.length; i < iend; i++) {
-	    w.print(" ");
-	    vars[i].print(w,ctxt);
+    // used during compilation
+    public Case(Sym c, Expr body, Position p) {
+	super(CASE);
+	this.c = c;
+	this.body = body;
+	this.pos = p;
+    }
+
+    public void do_print(java.io.PrintStream w, Context ctxt) {
+	if (ctxt.stage < 2) {
+	    c.print(w,ctxt);
+	    for(int i = 0, iend = vars.length; i < iend; i++) {
+		w.print(" ");
+		vars[i].print(w,ctxt);
+	    }
+	    w.print(" => ");
+	    body.print(w,ctxt);
 	}
-	w.print(" => ");
-	body.print(w,ctxt);
+	else {
+	    w.print("case ");
+	    c.print(w,ctxt);
+	    w.println(":\n");
+	    body.print(w,ctxt);
+	    w.print("break;");
+	    if (ctxt.stage > 2)
+		w.println("/* case "+c.toString(ctxt)+" */");
+	    else
+		w.println("");
+	}
     }    
 
     public Expr simpleType(Context ctxt) {

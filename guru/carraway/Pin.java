@@ -72,7 +72,7 @@ public class Pin extends Expr {
 	return this;
     }
 
-    public void print(java.io.PrintStream w, Context ctxt) {
+    public void do_print(java.io.PrintStream w, Context ctxt) {
 	w.print("<");
 	s.print(w,ctxt);
 	for (int i = 0, iend = pinned.length; i < iend; i++) {

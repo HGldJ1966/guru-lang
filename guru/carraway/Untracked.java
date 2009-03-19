@@ -6,7 +6,7 @@ public class Untracked extends Expr {
 	super(UNTRACKED);
     }
 
-    public void print(java.io.PrintStream w, Context ctxt) {
+    public void do_print(java.io.PrintStream w, Context ctxt) {
 	w.print("untracked");
     }    
 

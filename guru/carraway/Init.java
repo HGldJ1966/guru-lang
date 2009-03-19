@@ -43,7 +43,9 @@ public class Init extends Command {
 		handleError(ctxt,"The return type in an Init-command is pinning something other than just the second argument.");
 	}
 
-	String n = ctxt.name("init_"+f.types[1].toString(ctxt)+"_"+f.types[2].toString(ctxt));
+	String n = ctxt.name("init_"+((Sym)f.types[1]).name+"_"+((Sym)f.types[2]).name);
+
+	init.s.output_name = init.s.name;
 
 	if (!init.s.name.equals(n))
 	    handleError(ctxt,"An init function's name is different from the required one.\n\n"

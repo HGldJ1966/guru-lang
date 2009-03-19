@@ -212,8 +212,7 @@ public class Parser extends guru.ParserBase {
 	    handleError(pos, "Undeclared symbol \""+name+"\"");
 	}
 
-	v = new Sym(name);
-	v.pos = pos;
+	v = ctxt.newSym(name,pos);
 	return v;
     }
 

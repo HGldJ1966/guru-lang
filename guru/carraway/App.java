@@ -18,14 +18,54 @@ public class App extends Expr {
 	this.args = args;
     }
 
-    public void print(java.io.PrintStream w, Context ctxt) {
-	w.print("(");
-	head.print(w,ctxt);
-	for (int i = 0, iend = args.length; i < iend; i++) {
-	    w.print(" ");
-	    args[i].print(w,ctxt);
+
+    public App(Sym head, Expr[] args,Position p){
+	super(APP);
+	this.head = head;
+	this.args = args;
+	this.pos = p;
+    }
+
+    public App(Sym head, Expr arg, Position p){
+	super(APP);
+	this.head = head;
+	this.args = new Expr[1];
+	this.args[0] = arg;
+	this.pos = p;
+    }
+
+    public App(Sym head, Position p){
+	super(APP);
+	this.head = head;
+	this.args = new Expr[0];
+	this.pos = p;
+    }
+
+    public void do_print(java.io.PrintStream w, Context ctxt) {
+	if (head == ctxt.returnf) {
+	    w.print("return ");
+	    args[0].print(w,ctxt);
+	    w.println(";");
 	}
-	w.print(")");
+	else if (ctxt.stage >= 2) {
+	    head.print(w,ctxt);
+	    w.print("(");
+	    for (int i = 0, iend = args.length; i < iend; i++) {
+		args[i].print(w,ctxt);
+		if (i < iend - 1)
+		    w.print(", ");
+	    }
+	    w.print(")");
+	}
+	else {
+	    w.print("(");
+	    head.print(w,ctxt);
+	    for (int i = 0, iend = args.length; i < iend; i++) {
+		w.print(" ");
+		args[i].print(w,ctxt);
+	    }
+	    w.print(")");
+	}
     }    
 
     public Expr simpleType(Context ctxt) {
@@ -135,4 +175,12 @@ public class App extends Expr {
 	return ret;
     }
 
+    public Expr linearize(Context ctxt, Position p, Sym dest, Collection decls, Collection defs) {
+	int iend = args.length;
+	Expr[] nargs = new Expr[iend];
+	for (int i = 0; i < iend; i++) 
+	    nargs[i] = args[i].linearize(ctxt,p,null,decls,defs);
+	
+	return linearize_return(ctxt, new App(head,nargs,pos), p, dest);
+    }
 }

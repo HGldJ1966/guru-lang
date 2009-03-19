@@ -11,6 +11,17 @@ abstract public class FunBase extends Expr {
 	super(construct);
     }
 
+    // create a base for a "void -> void" function.
+    public FunBase(int construct, guru.Position p){
+	super(construct);
+	vars = new Sym[0];
+	types = new Expr[0];
+	non_rets = new boolean[0];
+	consumes = new boolean[0];
+	rettype = new Void();
+	this.pos = p;
+    }
+
     protected void checkTypes(Context ctxt) {
 	for (int i = 0, iend = types.length; i < iend; i++) {
 	    if (types[i].construct != TYPE) {
@@ -42,20 +53,33 @@ abstract public class FunBase extends Expr {
 	}
     }
 
-    public void print(java.io.PrintStream w, Context ctxt) {
-	for(int i = 0, iend = vars.length; i < iend; i++) {
+    public void do_print(java.io.PrintStream w, Context ctxt) {
+	if (ctxt.stage < 2) {
+	    for(int i = 0, iend = vars.length; i < iend; i++) {
+		w.print("(");
+		if (!consumes[i])
+		    w.print("! ");
+		else if (non_rets[i])
+		    w.print("^ ");
+		vars[i].print(w,ctxt);
+		w.print(" : ");
+		types[i].print(w,ctxt);
+		w.print(")");
+	    }
+	    w.print(" . ");
+	    rettype.print(w,ctxt);
+	}
+	else {
 	    w.print("(");
-	    if (!consumes[i])
-		w.print("! ");
-	    else if (non_rets[i])
-		w.print("^ ");
-	    vars[i].print(w,ctxt);
-	    w.print(" : ");
-	    types[i].print(w,ctxt);
+	    for(int i = 0, iend = vars.length; i < iend; i++) {
+		types[i].print(w,ctxt);
+		w.print(" ");
+		vars[i].print(w,ctxt);
+		if (i < iend - 1)
+		    w.print(", ");
+	    }
 	    w.print(")");
 	}
-	w.print(" . ");
-	rettype.print(w,ctxt);
     }    
 
 }

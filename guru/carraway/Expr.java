@@ -1,5 +1,8 @@
 package guru.carraway;
 import guru.Position;
+import java.util.Collection;
+import java.util.Vector;
+import java.util.ListIterator;
 
 public abstract class Expr {
 
@@ -14,9 +17,7 @@ public abstract class Expr {
     public static final int MATCH = 6;
     public static final int CASE = 7; // used in MATCH-terms
     public static final int FUN_TERM = 8; // top-level only
-    public static final int INIT_TERM = 9; // created only internally (not parsed)
-    public static final int DO = 10;
-    public static final int DROP_TERM = 11;
+    public static final int DO = 9;
 
     // type constructs
     public static final int PIN = 20;
@@ -26,6 +27,10 @@ public abstract class Expr {
 
     // our sole kind construct
     public static final int TYPE = 23;
+
+    // terms created only during compilation
+    public static final int INIT_TERM = 30; 
+    public static final int DROP_TERM = 31;
 
     public static final int LAST = 100;
 
@@ -55,16 +60,43 @@ public abstract class Expr {
 	System.exit(2);
     }
 
-    public void compileError(int i, Context ctxt, String msg) {
+    public void compileError(Context ctxt, String msg) {
 	if (pos != null) {
 	    pos.print(System.out);
 	    System.out.print(": ");
 	}
-	System.out.println("compilation error, stage "+(new Integer(i)).toString()+".\n\n"+msg);
+	System.out.println("compilation error, stage "+(new Integer(ctxt.stage)).toString()+".\n\n"+msg);
 	System.exit(2);
     }
 
-    abstract public void print(java.io.PrintStream w, Context ctxt);
+    final public void Print(java.io.PrintStream w, Context ctxt) {
+	/*	if (pos != null)
+	    ctxt.output_pos = new Position(pos.linenum,pos.column,"output");
+	else
+	ctxt.output_pos = new Position(1,0,"output"); */
+	print(w,ctxt);
+    }
+
+    final protected void print(java.io.PrintStream w, Context ctxt) {
+	/*
+	if (pos != null) {
+	    int lines = pos.linenum - ctxt.output_pos.linenum;
+	    int cols = pos.column - ctxt.output_pos.column;
+	    if (lines > 0) {
+		for (int i = 0; i < lines; i++)
+		    w.println("");
+		ctxt.output_pos.linenum = pos.linenum;
+		if (cols > 0) {
+		    for (int i = 0; i < cols; i++)
+			w.print(" ");
+		    ctxt.output_pos.column = pos.column;
+		}
+	    }
+	    }*/
+	do_print(w,ctxt);
+    }
+
+    abstract protected void do_print(java.io.PrintStream w, Context ctxt);
    
     public String posToString() {
 	java.io.ByteArrayOutputStream s = new java.io.ByteArrayOutputStream();
@@ -79,19 +111,26 @@ public abstract class Expr {
     public String toString(Context ctxt) {
 	java.io.ByteArrayOutputStream s = new java.io.ByteArrayOutputStream();
 	java.io.PrintStream w = new java.io.PrintStream(s);
-	print(w,ctxt);
+	Print(w,ctxt);
 	return s.toString();
     }
 
-    public void comment_expr(int i, Context ctxt) {
-	String stage_num = (new Integer(i)).toString();
-	if (ctxt.getFlag("debug_stage"+stage_num)) {
+    public void comment_expr(Sym s, Context ctxt) {
+	String stage_num = (new Integer(ctxt.stage)).toString();
+	if (ctxt.getFlag("debug_stage"+stage_num) || ctxt.getFlag("debug_stages")) {
 	    ctxt.cw.println("/*");
 	    ctxt.cw.println(" * stage "+stage_num);
 	    ctxt.cw.println(" *");
 	    ctxt.cw.println("\n");
+	    if (s != null)
+		ctxt.cw.print("Global "+s.toString(ctxt)+" := ");
+	    else {
+		if (ctxt.stage < 2)
+		    ctxt.cw.print("Function ");
+	    }
+	    
 	    print(ctxt.cw,ctxt);
-	    ctxt.cw.println("\n*/");
+	    ctxt.cw.println(".\n*/");
 	    ctxt.cw.println("");
 	    ctxt.cw.flush();
 	}
@@ -147,12 +186,6 @@ public abstract class Expr {
 	return false;
     }
 
-    final public Expr stage1(Context ctxt) {
-	compileError(1,ctxt,"Internal error: stage 1 compilation is not implemented.\n\n"
-		     +"1. the expression: "+toString(ctxt));
-	return null;
-    }
-
     // must define for well-typed terms only.  This returns null if an abort is evaluated.
     public Sym simulate_h(Context ctxt, Position p) {
 	simulateError(ctxt,"Internal error: simulation is not implemented.\n\n"
@@ -178,5 +211,40 @@ public abstract class Expr {
 	return ret;
     }
 
+    // only call with a returnable t (anything except an Abort, Let, InitTerm, or Match)
+    static protected Expr linearize_return(Context ctxt, Expr t, Position p, Sym dest) {
+	if (dest == ctxt.returnf)
+	    return new App(ctxt.returnf,t,p);
+	if (dest != null)
+	    return new Let(dest,t,p);
+	return t;
+    }
+
+    // implement for terms only
+    public Expr linearize(Context ctxt, guru.Position p, Sym dest, Collection decls, Collection defs) {
+	compileError(ctxt,"Internal error: linearization is not implemented.\n\n"
+		    +"1. the expression: "+toString(ctxt));
+	return null;
+    }
+
+    public Expr linearize(Context ctxt, guru.Position p, Sym dest) {
+	Vector decls = new Vector();
+	Vector defs = new Vector();
+
+	Expr r = linearize(ctxt,p,dest,decls,defs);
+	
+	ListIterator it = defs.listIterator(defs.size());
+	while(it.hasPrevious()) {
+	    Expr e = (Expr)it.previous();
+	    r = new Do(e,r,pos);
+	}
+
+	it = decls.listIterator(decls.size());
+	while(it.hasPrevious()) {
+	    Sym s = (Sym)it.previous();
+	    r = new Do(new Let(s,pos),r,pos);
+	}
+	return r;
+    }
 
 }

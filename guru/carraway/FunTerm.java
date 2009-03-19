@@ -12,12 +12,29 @@ public class FunTerm extends FunBase {
 	super(FUN_TERM);
     }
 
-    public void print(java.io.PrintStream w, Context ctxt) {
-	f.print(w,ctxt);
-	super.print(w,ctxt);
-	w.println(" :=");
-	w.print("  ");
-	body.print(w,ctxt);
+    public FunTerm(String exact_name, Expr body, Position p){
+	super(FUN_TERM,p);
+	f = new Sym(exact_name, exact_name);
+	this.body = body;
+    }
+
+    public void do_print(java.io.PrintStream w, Context ctxt) {
+	if (ctxt.stage < 2) {
+	    f.print(w,ctxt);
+	    super.do_print(w,ctxt);
+	    w.println(" :=");
+	    w.print("  ");
+	    body.print(w,ctxt);
+	}
+	else {
+	    rettype.print(w,ctxt);
+	    w.print(" ");
+	    f.print(w,ctxt);
+	    super.do_print(w,ctxt);
+	    w.println(" {");
+	    body.print(w,ctxt);
+	    w.println("}\n");
+	}   
     }    
 
     public Expr simpleType(Context ctxt) {
@@ -32,7 +49,7 @@ public class FunTerm extends FunBase {
 
 	for (int i = 0; i < iend; i++) {
 	    F.types[i] = types[i].applySubst(ctxt);
-	    F.vars[i] = new Sym(vars[i].name);
+	    F.vars[i] = ctxt.newSym(vars[i].output_name);
 	    ctxt.setSubst(vars[i],F.vars[i]);
 	}
 
@@ -114,4 +131,8 @@ public class FunTerm extends FunBase {
 	return ctxt.voidref;
     }
 
+    public Expr linearize(Context ctxt, guru.Position p, Sym dest) {
+	body = body.linearize(ctxt,p,ctxt.returnf);
+	return this;
+    }
 }

@@ -1,30 +1,42 @@
 package guru.carraway;
 import guru.Position;
 
+import java.util.HashMap;
+import java.util.Collection;
+
 public class Sym extends Expr {
     public String name;
+    public String output_name;
 
-    public Sym(String name){
+    public Sym(String name, String output_name) {
 	super(SYM);
         this.name = name;
+	this.output_name = output_name;
     }
 
-    public void print(java.io.PrintStream w, Context ctxt) {
+    public void do_print(java.io.PrintStream w, Context ctxt) {
+	if (ctxt.stage >= 2 && ctxt.isAttribute(this)) {
+	    w.print("void *");
+	    return;
+	}
+
+	String n = (ctxt.getFlag("print_input_names") ? name : output_name);
+
 	if (!ctxt.getFlag("print_vars_subst")) {
-	    w.print(name);
+	    w.print(n);
 	    return;
 	}
 	Sym s = ctxt.getSubst(this);
 	if (s != null)
 	    s.print(w,ctxt);
 	else
-	    w.print(name);
+	    w.print(n);
     }    
 
     public String refString(Context ctxt) {
 	return ((ctxt.getFlag("debug_refs") ?
 		toString(ctxt) + ", " : 
-		"the reference was ")
+		"a reference ")
 		+"created at: "+posToString());
     }
 
@@ -80,4 +92,12 @@ public class Sym extends Expr {
 	return (Sym)applySubst(ctxt);
     }
 
+    public Expr linearize(Context ctxt, Position p, Sym dest, Collection decls, Collection defs) {
+	Expr e;
+	if (ctxt.isCtor(this))
+	    e = new App(this,p);
+	else
+	    e = this;
+	return linearize_return(ctxt,e,p,dest);
+    }
 }

@@ -1,7 +1,6 @@
 %Set "print_parsed".
 %Set "debug_primitives".
-Set "debug_stage0".
-Set "debug_stage1".
+Set "debug_stages".
 
 Include "unowned.w".
 Include "owned.w".
@@ -27,6 +26,8 @@ Function pred(! x:owned).<owned x> :=
     Z => (clone_owned x)
   | S x' => x'
   end.
+
+Function foo(! pred2:owned).void := abort.
 
 Function subtract(^ x:owned)(^ y:owned).unowned :=
   match x with

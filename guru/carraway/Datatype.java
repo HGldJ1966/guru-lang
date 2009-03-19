@@ -12,14 +12,14 @@ public class Datatype extends Command {
 	super(DATATYPE);
     }
 
-    public static FunType buildDropType(Expr tp) {
+    public static FunType buildDropType(Context ctxt, Expr tp) {
 	FunType F = new FunType();
 	F.vars = new Sym[2];
 	F.types = new Expr[2];
 	F.consumes = new boolean[2];
 	
-	F.vars[0] = new Sym("A");
-	F.vars[1] = new Sym("r");
+	F.vars[0] = ctxt.newSym("A");
+	F.vars[1] = ctxt.newSym("r");
 	
 	F.types[0] = new Type();
 	F.types[1] = tp;
@@ -33,12 +33,13 @@ public class Datatype extends Command {
     public void process(Context ctxt) {
 	if (del != null) {
 	    String s = ctxt.name("delete_"+tp.name);
+	    del.s.output_name = del.s.name;
 	    if (!del.s.name.equals(s))
 		handleError(ctxt,"The delete function given for a datatype is not named as required."
 			    +"\n\n1. the given name: "+del.s.toString(ctxt)
 			    +"\n\n2. the required name: "+s);
 	    
-	    FunType F = buildDropType(tp);
+	    FunType F = buildDropType(ctxt,tp);
 
 	    if (!del.T.eqType(ctxt,F)) 
 		handleError(ctxt, "The type given for the delete function for a datatype is not of the expected form.\n\n"
