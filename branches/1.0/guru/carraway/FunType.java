@@ -5,7 +5,7 @@ public class FunType extends FunBase {
 	super(FUN_TYPE);
     }
 
-    public void print(java.io.PrintStream w, Context ctxt) {
+    public void do_print(java.io.PrintStream w, Context ctxt) {
 	w.print("Fun");
 	super.print(w,ctxt);
     }    

@@ -7,33 +7,59 @@ import java.util.Iterator;
 public class Match extends Expr {
     public Expr t; // scrutinee
     public Sym x; // var naming the scrutinee
-    public Sym s;
+    public Sym s; // datatype of first pattern
     public Case[] C;
     boolean consume_first; // should we consume the scrut at the start or end of each case
+    Expr rettype; // filled in by simpleType(), used only by linearize()
 
     public Match(){
 	super(MATCH);
     }
 
-    public void print(java.io.PrintStream w, Context ctxt) {
-	w.print("match ");
-	if (consume_first)
-	    w.print("$ ");
-	t.print(w,ctxt);
-	if (x != null) {
-	    w.print(" as ");
-	    x.print(w,ctxt);
+    // use during compilation
+    public Match(Expr t, Sym x, Sym s, Case[] C, Position p){
+	super(MATCH);
+	this.t = t;
+	this.x = x;
+	this.s = s;
+	this.C = C;
+	// consume_first not used any more
+	this.pos = p;
+    }
+
+    public void do_print(java.io.PrintStream w, Context ctxt) {
+	if (ctxt.stage < 2) {
+	    w.print("match ");
+	    if (consume_first)
+		w.print("$ ");
+	    t.print(w,ctxt);
+	    if (x != null) {
+		w.print(" as ");
+		x.print(w,ctxt);
+	    }
+	    w.print(" with ");
+	    boolean first = true;
+	    for(int i = 0, iend = C.length; i < iend; i++) {
+		if (first) 
+		    first = false;
+		else
+		    w.print(" | ");
+		C[i].print(w,ctxt);
+	    }
+	    w.print(" end");
 	}
-	w.print(" with ");
-	boolean first = true;
-	for(int i = 0, iend = C.length; i < iend; i++) {
-	    if (first) 
-		first = false;
-	    else
-		w.print(" | ");
-	    C[i].print(w,ctxt);
+	else {
+	    w.print("switch op(");
+	    t.print(w,ctxt);
+	    w.println(") {\n");
+	    for(int i = 0, iend = C.length; i < iend; i++) {
+		C[i].print(w,ctxt);
+		w.println("");
+	    }
+	    w.println("default:\n");
+	    w.println("fprintf(stderr,\"Match failure at: "+pos.toStringNoQuotes()+"\\n\");\n");
+	    w.println("}");
 	}
-	w.print(" end");
     }    
 
     protected Expr simpleTypeCase(Context ctxt, Case C, Sym scrut_t) {
@@ -82,7 +108,7 @@ public class Match extends Expr {
 				    +"\n\n2. its type: "+vT.toString(ctxt)
 				    +"\n\n3. the scrutinee's type: "+scrut_t.toString(ctxt));
 
-		Expr n = new InitTerm(h,rt,x,C.vars[i]);
+		Expr n = new InitTerm(h,rt,x,s,C.c,f.vars[i],C.vars[i]);
 		n.pos = C.pos;
 		Position p = C.body.pos;
 		C.body = new Let(C.vars[i],n,C.body);
@@ -98,13 +124,13 @@ public class Match extends Expr {
     }
 
     public Expr simpleType(Context ctxt) {
-	Expr expected = null;
-	Expr T = t.simpleType(ctxt);
-
 	if (t.construct == SYM) 
 	    x = (Sym)t;
 	else 
 	    x = ctxt.newVar(pos);
+
+	Expr expected = null;
+	Expr T = t.simpleType(ctxt);
 
 	Sym scrut_t = null;
 	if (T.construct == SYM && ctxt.isAttribute((Sym)T))
@@ -135,7 +161,7 @@ public class Match extends Expr {
 	    // we are consuming x, so include cleanup code at the end of each case.
 	    for (int i = 0, iend = C.length; i < iend; i++) {
 		Sym dropf = ctxt.getDropFunction(scrut_t);
-		Expr drop = new DropTerm(dropf,s,x);
+		Expr drop = new DropTerm(dropf,s,x,consume_first);
 		drop.pos = C[i].lastpos;
 		
 		if (consume_first) {
@@ -174,6 +200,9 @@ public class Match extends Expr {
 		}
 	    }
 	}
+
+	rettype = expected;
+
 	return expected;
     }
 
@@ -347,5 +376,34 @@ public class Match extends Expr {
 	    return ctxt.voidref;
 
 	return ctxt.newRef(pos,ret_data);
+    }
+
+    public Expr linearize(Context ctxt, guru.Position p, Sym dest, Collection decls, Collection defs) {
+	boolean toplevel = (dest != null);
+	if (dest == null && rettype.construct != VOID)
+	    dest = ctxt.newVar(pos);
+	Expr nt = null;
+	if (t != x)
+	    nt = t.linearize(ctxt,pos,x /* var naming scrutinee */,
+			     decls,defs);
+
+	Case[] nC = new Case[C.length];
+	for (int i = 0, iend = C.length; i < iend; i++) {
+
+	    // linearize each body in a new scope (we are calling Expr.linearize())
+
+	    Expr nbody = C[i].body.linearize(ctxt,pos,dest);
+	    nC[i] = new Case(C[i].c,nbody,C[i].pos);
+	}
+	Match m = new Match(x,x,s,nC,pos);
+	if (toplevel)
+	    if (nt != null)
+		return new Do(nt,m,pos);
+	    else
+		return m;
+	if (nt != null)
+	    defs.add(nt);
+	defs.add(m);
+	return dest;
     }
 }

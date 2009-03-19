@@ -33,13 +33,19 @@ public class Context extends guru.FlagManager {
     protected Stack changed_refs_stack;
     protected int refnum;
 
-    protected int varnum;
-
     protected String cur_file;
     public PrintStream cw;
     public String file_suffix;
 
     Sym voidref;
+    Sym returnf;
+    Sym zerof;    
+
+    protected HashMap name_tbl;
+
+    protected Vector global_inits;
+
+    int stage;
 
     public Context(String file_suffix) {
 	this.file_suffix = file_suffix;
@@ -63,9 +69,16 @@ public class Context extends guru.FlagManager {
 	refs_stack = new Stack();
 	changed_refs_stack = new Stack();
 	refnum = 0;
-	varnum = 0;
 
-	voidref = new Sym("voidref");
+	voidref = newInternal("voidref");
+	returnf = newInternal("return");
+	zerof = newInternal("0");
+
+	name_tbl = new HashMap(2048);
+
+	global_inits = new Vector();
+
+	stage = 0;
     }
 
     // return an error message if there was a problem opening the compiler output file determined by f.
@@ -99,12 +112,23 @@ public class Context extends guru.FlagManager {
 	return null;
     }
 
+    public void commentBox(String s) {
+	cw.println("/*********************************************************");
+	cw.println(" * "+s);
+	cw.println(" *********************************************************/");
+    }
+
     public String getCurrentFile() {
 	return cur_file;
     }
 
+    public void addGlobalInit(String init_func_name) {
+	global_inits.add(init_func_name);
+    }
+
     protected void declareConst(Sym s) {
-	consts.put(s.name,s);	
+	String n = s.name;
+	consts.put(n,s);	
     }
 
     public void addAttribute(Sym s, Sym drop) {
@@ -283,6 +307,10 @@ public class Context extends guru.FlagManager {
 	}
     }
 
+    public String name(Sym s) {
+	return name(s.name);
+    }
+
     protected String name(String n) {
 	int iend = n.length() + 1;
 	char[] buf = new char[iend];
@@ -301,6 +329,55 @@ public class Context extends guru.FlagManager {
 	}
 	return new String(buf);
     }
+
+    protected String unique(String name) {
+	//	System.out.print(name+" uniquifies to ");
+	Integer I = (Integer)name_tbl.get(name);
+	if (I == null) {
+	    // haven't added this name before
+	    
+	    name_tbl.put(name,new Integer(1));
+	}
+	else {
+	    String suffix;
+	    int i = I.intValue();
+	    if (i == 0)
+		// this means we already made this unique
+		return name;
+	    do {
+		suffix = "_"+(new Integer(i++)).toString();
+	    }		
+	    while (name_tbl.containsKey(name+suffix));
+
+	    name_tbl.put(name,new Integer(i));
+	    name = name+suffix;
+	    name_tbl.put(name,new Integer(0));
+	}
+	
+	//	System.out.println(name);
+
+	return name;
+    }
+
+    // for symbols from the input.
+    public Sym newSym(String n, Position p) {
+	Sym r = new Sym(n, unique(name(n)));
+	r.pos = p;
+	return r;
+    }	
+
+    public Sym newSym(String n) {
+	return newSym(n,null);
+    }
+
+    public Sym newInternal(String n) {
+	return new Sym(n,n);
+    }
+
+    public Sym newVar(Position p) {
+	return newSym("carraway_tmp",p);
+    }
+
 
     /* return the pos of a previously added FunType iff we already had one
        registered for this pair of scrut_tp, pat_var_tp. */
@@ -325,13 +402,6 @@ public class Context extends guru.FlagManager {
 	if (m == null) 
 	    return null;
 	return (InitH)m.get(pat_var_tp);
-    }
-
-    public Sym newVar(Position p) {
-	String name = "tmp_"+(new Integer(varnum++)).toString();
-	Sym r = new Sym(name);
-	r.pos = p;
-	return r;
     }
 
     public static class RefStat {
@@ -452,8 +522,7 @@ public class Context extends guru.FlagManager {
     }
 
     protected Sym new_ref(Position p) {
-	String name = "reference_"+(new Integer(refnum++)).toString();
-	Sym r = new Sym(name);
+	Sym r = newInternal("reference");
 	r.pos = p;
 	return r;
     }

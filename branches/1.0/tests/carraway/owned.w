@@ -1,7 +1,7 @@
 Include "unowned.w".
 
 Attribute owned with gdrop_owned : Fun(A:type)(x:owned).void <<END
-  void gdrop_owned(A:type)(void *x) {} 
+  #define gdrop_owned(A,x) 
 END
 
 Primitive inspect : Fun(!x:unowned).<owned x> <<END
@@ -31,17 +31,17 @@ Primitive clone_owned : Fun(! y:owned).<owned y> <<END
 END
 
 Primitive consume_owned : Fun(^ y:owned).void <<END
-  void gconsume_owned(void *y) {} 
+  #define gconsume_owned(y)  
 END
 
 Init ginit_unowned_owned : Fun(A:type)(! x:unowned)(y:owned).owned <<END
-  void ginit_unowned_owned(int A)(void *x)(void *y) { }
+  #define ginit_unowned_owned(A,x,y) 
 END
 
 Init ginit_owned_owned : Fun(A:type)(! x:owned)(y:owned).owned <<END
-  void ginit_unowned_owned(int A)(void *x)(void *y) { }
+  #define ginit_unowned_owned(A,x,y) 
 END
 
 Init ginit_owned_unowned : Fun(A:type)(! x:owned)(y:unowned).<owned x> <<END
-  void ginit_owned_unowned(int A)(void *x)(void *y) { }
+  #define ginit_owned_unowned(A,x,y) 
 END

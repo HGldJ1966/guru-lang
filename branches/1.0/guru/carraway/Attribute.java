@@ -11,11 +11,12 @@ public class Attribute extends Command {
 
     public void process(Context ctxt) {
 	String ss = ctxt.name("drop_"+s.name);
+	drop.s.output_name = drop.s.name;
 	if (!drop.s.name.equals(ss))
 	    handleError(ctxt,"The drop function given for an attribute is not named as required."
 			+"\n\n1. the given name: "+drop.s.toString(ctxt)
 			+"\n\n2. the required name: "+ss);
-	FunType F = Datatype.buildDropType(s);
+	FunType F = Datatype.buildDropType(ctxt,s);
 
 	if (!drop.T.eqType(ctxt,F)) 
 	    handleError(ctxt, "The type given for the drop function for an attribute is not of the expected form.\n\n"

@@ -31,4 +31,22 @@ public class Position {
 	return s.toString();
     }
 
+    public void printNoQuotes(java.io.PrintStream w) {
+	w.print(file);
+	if (linenum > 0) {
+		w.print(", line ");
+		w.print(new Integer(linenum));
+		w.print(", column ");
+		w.print(new Integer(column));
+	}
+	else
+		w.print(" ");
+    }
+
+    public String toStringNoQuotes() {
+	java.io.ByteArrayOutputStream s = new java.io.ByteArrayOutputStream();
+	java.io.PrintStream w = new java.io.PrintStream(s);
+	printNoQuotes(w);
+	return s.toString();
+    }
 }

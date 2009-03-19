@@ -6,8 +6,11 @@ public class Type extends Expr {
 	super(TYPE);
     }
 
-    public void print(java.io.PrintStream w, Context ctxt) {
-	w.print("type");
+    public void do_print(java.io.PrintStream w, Context ctxt) {
+	if (ctxt.stage < 2)
+	    w.print("type");
+	else
+	    w.print("int");
     }    
 
     public boolean nonBindingOccurrence_h(Context ctxt, Sym s) {
