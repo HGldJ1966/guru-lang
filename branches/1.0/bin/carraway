@@ -1,0 +1,3 @@
+#!/bin/sh
+
+java -cp ~/guru-lang/ guru.carraway.Main $*
