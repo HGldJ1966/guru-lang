@@ -35,6 +35,8 @@ public class Global extends Command {
 	    handleError(ctxt,"A global definitely aborts.\n\n"
 			+"1. the global: "+c.toString(ctxt));
 
+	Context.RefStat ru = ctxt.refStatus(r);
+
 	Collection cr = ctxt.restoreRefs();
 
 	if (ctxt.getFlag("debug_refs")) {
@@ -60,7 +62,7 @@ public class Global extends Command {
 		    ctxt.dropRef(u.ref, pos);
 	    }
 	}
-	ctxt.setSubst(c,r);
+	ctxt.setSubst(c,ctxt.newRef(pos,ru));
 
 	t.comment_expr(c,ctxt);
 
