@@ -44,8 +44,7 @@ public class FunTerm extends FunBase {
 	int iend = vars.length;
 	F.vars = new Sym[iend];
 	F.types = new Expr[iend];
-	F.non_rets = non_rets;
-	F.consumes = consumes;
+	F.consumps = consumps;
 
 	for (int i = 0; i < iend; i++) {
 	    F.types[i] = types[i].applySubst(ctxt);
@@ -76,7 +75,9 @@ public class FunTerm extends FunBase {
 	for (int i = 0, iend = vars.length; i < iend; i++) {
 	    Expr T = types[i];
 	    if (T.consumable()) {
-		Sym r = ctxt.newRef(vars[i].pos,non_rets[i],consumes[i]);
+		Sym r = ctxt.newRef(vars[i].pos,
+				    (consumps[i] == NOT_CONSUMED || consumps[i] == CONSUMED_NO_RET),
+				    (consumps[i] == CONSUMED_NO_RET || consumps[i] == CONSUMED_RET_OK));
 		prev[i] = ctxt.getSubst(vars[i]);
 		ctxt.setSubst(vars[i],r);
 		if (T.construct == PIN)

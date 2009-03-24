@@ -23,6 +23,13 @@ public class Pin extends Expr {
     }
 
     public boolean eqType(Context ctxt, Expr T) {
+	if (ctxt.getFlag("debug_eqType")) {
+	    ctxt.w.println("Testing pin-type equality: ");
+	    ctxt.w.println("  1. "+toString(ctxt));
+	    ctxt.w.println("  2. "+T.toString(ctxt));
+	    ctxt.w.flush();
+	}
+
 	if (T.construct == ABORT)
 	    return true;
 
@@ -73,13 +80,17 @@ public class Pin extends Expr {
     }
 
     public void do_print(java.io.PrintStream w, Context ctxt) {
-	w.print("<");
-	s.print(w,ctxt);
-	for (int i = 0, iend = pinned.length; i < iend; i++) {
-	    w.print(" ");
-	    pinned[i].print(w,ctxt);
+	if (ctxt.stage < 2) {
+	    w.print("<");
+	    s.print(w,ctxt);
+	    for (int i = 0, iend = pinned.length; i < iend; i++) {
+		w.print(" ");
+		pinned[i].print(w,ctxt);
+	    }
+	    w.print(">");
 	}
-	w.print(">");
+	else 
+	    s.print(w,ctxt);
     }    
 
 }

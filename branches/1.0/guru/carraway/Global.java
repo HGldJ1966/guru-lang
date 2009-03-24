@@ -1,4 +1,6 @@
 package guru.carraway;
+import java.util.Collection;
+import java.util.Iterator;
 
 public class Global extends Command {
     Sym c;
@@ -26,10 +28,38 @@ public class Global extends Command {
 			+"\n\n2. its type: "+T.toString(ctxt));
 	ctxt.addGlobal(c,T,t);
 
+	ctxt.checkpointRefs();
+
 	Sym r = t.simulate(ctxt, pos);
 	if (r == null)
 	    handleError(ctxt,"A global definitely aborts.\n\n"
 			+"1. the global: "+c.toString(ctxt));
+
+	Collection cr = ctxt.restoreRefs();
+
+	if (ctxt.getFlag("debug_refs")) {
+	    ctxt.w.println("Dropping pre-existing references dropped in the definition of a global:");
+	    ctxt.w.flush();
+	}
+	Iterator it = cr.iterator();
+	Context.RefStat u;
+	while(it.hasNext()) {
+	    u = (Context.RefStat)it.next();
+		
+	    if (u.created) {
+		if (u.ref == r) 
+		    continue;
+		c.simulateError(ctxt,"The definition of a global is leaking a reference.\n\n"
+				 +"1. the global: "+c.toString(ctxt)
+				 +("\n\n1. the reference "+(ctxt.getFlag("debug_refs") ? r.toString(ctxt) + ", " : "is ")
+				   +"created at: "+r.posToString()));
+	    }
+	    else {
+		// drop the reference from the context as it will exist after processing this global.
+		if (ctxt.refStatus(u.ref) != null) 
+		    ctxt.dropRef(u.ref, pos);
+	    }
+	}
 	ctxt.setSubst(c,r);
 
 	t.comment_expr(c,ctxt);
@@ -38,6 +68,7 @@ public class Global extends Command {
  
 	ctxt.stage = 2;
 	T.print(ctxt.cw,ctxt);
+	ctxt.cw.print(" ");
 	c.print(ctxt.cw,ctxt);
 	ctxt.cw.println(";\n");
 
@@ -46,7 +77,8 @@ public class Global extends Command {
 	
 	ctxt.addGlobalInit(initn);
 
-	f.comment_expr(null,ctxt);
+	f.print(ctxt.cw,ctxt);
+	ctxt.cw.flush();
     }
 
     public void print(java.io.PrintStream w, 

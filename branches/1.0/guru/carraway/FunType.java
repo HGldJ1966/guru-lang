@@ -7,7 +7,7 @@ public class FunType extends FunBase {
 
     public void do_print(java.io.PrintStream w, Context ctxt) {
 	w.print("Fun");
-	super.print(w,ctxt);
+	super.do_print(w,ctxt);
     }    
 
     public Expr simpleType(Context ctxt) {
@@ -28,6 +28,8 @@ public class FunType extends FunBase {
 	for (int i = 0, iend = vars.length; i < iend; i++) {
 	    if (!f.types[i].eqType(ctxt,types[i]))
 		return false;
+	    if (f.consumps[i] != consumps[i])
+		return false;
 	    ctxt.setSubst(f.vars[i],vars[i]);
 	}
 	return f.rettype.eqType(ctxt,rettype);
@@ -45,14 +47,12 @@ public class FunType extends FunBase {
 	int iend = vars.length;
 	f.vars = new Sym[iend];
 	f.types = new Expr[iend];
-	f.non_rets = new boolean[iend];
-	f.consumes = new boolean[iend];
+	f.consumps = new int[iend];
 
 	for (int i = 0; i < iend; i++) {
 	    f.vars[i] = (Sym)vars[i].applySubst(ctxt);
 	    f.types[i] = types[i].applySubst(ctxt);
-	    f.non_rets[i] = non_rets[i];
-	    f.consumes[i] = consumes[i];
+	    f.consumps[i] = consumps[i];
 	}
 	f.rettype = rettype.applySubst(ctxt);
 

@@ -33,9 +33,9 @@ public class Context extends guru.FlagManager {
     protected Stack changed_refs_stack;
     protected int refnum;
 
-    protected String cur_file;
     public PrintStream cw;
     public String file_suffix;
+    public Stack open_files;
 
     Sym voidref;
     Sym returnf;
@@ -46,6 +46,8 @@ public class Context extends guru.FlagManager {
     protected Vector global_inits;
 
     int stage;
+
+    int type_num;
 
     public Context(String file_suffix) {
 	this.file_suffix = file_suffix;
@@ -70,7 +72,10 @@ public class Context extends guru.FlagManager {
 	changed_refs_stack = new Stack();
 	refnum = 0;
 
-	voidref = newInternal("voidref");
+	voidref = newInternal("done");
+	declareConst(voidref);
+	setType(voidref,new Void());
+
 	returnf = newInternal("return");
 	zerof = newInternal("0");
 
@@ -78,18 +83,15 @@ public class Context extends guru.FlagManager {
 
 	global_inits = new Vector();
 
+	cw = null;
+	open_files = new Stack();
+
 	stage = 0;
+	type_num = 1; // we assume elsewhere that this is 1
     }
 
     // return an error message if there was a problem opening the compiler output file determined by f.
-    public String setCurrentFile(String f) {
-	if (cw != null) {
-	    cw.flush();
-	    cw.close();
-	}
-	cur_file = f;
-	if (f == null)
-	    return null;
+    public String pushFile(String f) {
 	if (f.length() < 3)
 	    return new String("The included file name is too short.");
 	String suf = f.substring(f.length() - 2, f.length());
@@ -100,6 +102,11 @@ public class Context extends guru.FlagManager {
 	
 	String n = f.substring(0, f.length() - 2) + ".c";
 	
+	if (cw != null) {
+	    cw.println("#include \""+n+"\"");
+	    cw.flush();
+	}
+	open_files.push(cw);
 	try {
 	    cw = new PrintStream(new BufferedOutputStream(new FileOutputStream(n)));
 	}
@@ -108,8 +115,15 @@ public class Context extends guru.FlagManager {
 	}
 
 	cw.println("// produced by carraway\n");
+	cw.println("#include <stdio.h>\n");
+	cw.println("#include <stdlib.h>\n");
 
 	return null;
+    }
+
+    public void popFile() {
+	cw.close();
+	cw = (PrintStream)open_files.pop();
     }
 
     public void commentBox(String s) {
@@ -118,12 +132,12 @@ public class Context extends guru.FlagManager {
 	cw.println(" *********************************************************/");
     }
 
-    public String getCurrentFile() {
-	return cur_file;
-    }
-
     public void addGlobalInit(String init_func_name) {
 	global_inits.add(init_func_name);
+    }
+
+    public Collection getGlobalInits() {
+	return global_inits;
     }
 
     protected void declareConst(Sym s) {
@@ -206,9 +220,20 @@ public class Context extends guru.FlagManager {
 	primitives.put(s,code);
     }
 
+    // return opaque datatypes
+    public Collection getDatatypes1() {
+	return dels.keySet();
+    }
+
+    // return datatypes with ctors
+    public Collection getDatatypes2() {
+	return tpctors.keySet();
+    }
+
     public void addDatatype(Sym tp, Sym del) {
 	declareConst(tp);
 	dels.put(tp,del);
+	types.put(tp,new Type());
     }
 
     public Sym getDeleteFunction(Sym s) {
@@ -371,7 +396,8 @@ public class Context extends guru.FlagManager {
     }
 
     public Sym newInternal(String n) {
-	return new Sym(n,n);
+	Sym s = new Sym(n,n);
+	return s;
     }
 
     public Sym newVar(Position p) {
@@ -626,5 +652,5 @@ public class Context extends guru.FlagManager {
 	changed_refs.add(r);
 	return uu.pinnedby;
     }
-    
+ 
 }

@@ -15,12 +15,18 @@ public class Sym extends Expr {
     }
 
     public void do_print(java.io.PrintStream w, Context ctxt) {
-	if (ctxt.stage >= 2 && ctxt.isAttribute(this)) {
-	    w.print("void *");
-	    return;
-	}
+	if (ctxt.stage >= 2) {
+	    if (ctxt.isAttribute(this)) {
+		w.print("void *");
+		return;
+	    }
+	    if (this == ctxt.voidref) {
+		w.println("return;");
+		return;
+	    }
+	}	
 
-	String n = (ctxt.getFlag("print_input_names") ? name : output_name);
+	String n = (ctxt.stage == 0 && !ctxt.getFlag("disambiguate_vars") ? name : output_name);
 
 	if (!ctxt.getFlag("print_vars_subst")) {
 	    w.print(n);
@@ -65,7 +71,16 @@ public class Sym extends Expr {
 	if (s2 != null)
 	    return eq(ctxt,s2);
 
-	return s1 == s2;
+	boolean ret = (this == s);
+	if (ctxt.getFlag("debug_eq_sym")) {
+	    ctxt.w.print("Testing equality of \""+toString(ctxt)+"\" and \""+s.toString(ctxt)+"\" returns ");
+	    if (ret)
+		ctxt.w.println("true.");
+	    else
+		ctxt.w.println("false.");
+	    ctxt.w.flush();
+	}
+	return ret;
     }
 
     public boolean nonBindingOccurrence_h(Context ctxt, Sym s) {

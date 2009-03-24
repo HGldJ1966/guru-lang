@@ -81,7 +81,10 @@ public class App extends Expr {
 			    +"\n3. the number of arguments: "+(new Integer(args.length)).toString());
 	for (int i = 0, iend = args.length; i < iend; i++) {
 	    Expr T = args[i].simpleType(ctxt);
-	    Expr hdT = ((F.non_rets[i] && T.construct == PIN) ? ((Pin)T).s : T);
+	    if ((F.consumps[i] == FunBase.CONSUMED_NO_RET ||
+		 F.consumps[i] == FunBase.NOT_CONSUMED) && T.construct == PIN && F.types[i].construct == SYM)
+		T = ((Pin)T).s;
+	    Expr hdT = T;
 	    if (!F.types[i].eqType(ctxt,hdT))
 		classifyError(ctxt,"The type computed for an argument does not match the expected type.\n\n"
 			    +"1. the argument: "+args[i].toString(ctxt)
@@ -89,8 +92,8 @@ public class App extends Expr {
 			    +"\n2. the expected type: "+F.types[i].toString(ctxt));
 	    if (F.nonBindingOccurrence(ctxt, F.vars[i])) {
 		// dependent type here
-		if (args[i].construct != SYM || !ctxt.isVar((Sym)args[i]))
-		    classifyError(ctxt,"The type for an application will depend on an argument which is not a variable.\n\n"
+		if (args[i].construct != SYM || (!ctxt.isVar((Sym)args[i]) && !ctxt.isGlobal((Sym)args[i])))
+		    classifyError(ctxt,"The type for an application will depend on an argument which is not a variable or global.\n\n"
 				  +"1. the argument (which is argument "+(new Integer(i+1)).toString()+"): "+args[i].toString(ctxt)
 				  +"\n\n2. the type of the head: "+F.applySubst(ctxt).toString(ctxt)
 				  +"\n\n3. the variable with a non-binding occurrence in the type: "+F.vars[i].toString(ctxt));
@@ -105,25 +108,43 @@ public class App extends Expr {
     public Sym simulate_h(Context ctxt, Position p) {
 	FunType f = (FunType) ctxt.getType(head);
 
+	if (ctxt.getFlag("debug_refs")) {
+	    ctxt.w.println("(Simulating an application: "+toString(ctxt));
+	    ctxt.w.flush();
+	}
+
 	Sym[] rs = new Sym[args.length];
 	for (int i = 0, iend = args.length; i < iend; i++) {
 	    rs[i] = args[i].simulate(ctxt,pos);
 
-	    if (rs[i] == null)
+	    if (rs[i] == null) {
 		// an argument aborts
+		if (ctxt.getFlag("debug_refs")) {
+		    ctxt.w.println(") aborting");
+		    ctxt.w.flush();
+		}
+
 		return null;
+	    }
 	}
 
 	Collection[] rs_pinnedby = new Collection[args.length];
 	Sym[] prev = new Sym[args.length];
 	for (int i = 0, iend = args.length; i < iend; i++) {
-	    if (f.consumes[i] && f.types[i].consumable()) {
+	    if ((f.consumps[i] == FunBase.CONSUMED_RET_OK || f.consumps[i] == FunBase.CONSUMED_NO_RET) 
+		&& f.types[i].consumable()) {
 		// this is a reference we are supposed to consume
 		Context.RefStat u = ctxt.refStatus(rs[i]);
 		if (!u.consume)
 		    simulateError(ctxt,"A reference that is marked not to be consumed is being consumed.\n\n"
 				  +"1. the reference was created at: "+rs[i].posToString()
 				  +"\n\n2. the consuming function: "+head.toString(ctxt));
+		if (u.non_ret && f.consumps[i] == FunBase.CONSUMED_RET_OK)
+		    simulateError(ctxt,"A reference that is marked not to be returned is being passed to a function that\n"
+				  +"might return it.\n\n"
+				  +"1. the reference: "+rs[i].refString(ctxt)
+				  +"\n\n2. the consuming function: "+head.toString(ctxt));
+
 		Position pp = ctxt.wasDropped(rs[i]);
 		if (pp != null) 
 		    simulateError(ctxt,"A reference that was already consumed is being consumed again.\n\n"
@@ -172,6 +193,10 @@ public class App extends Expr {
 	    ctxt.pin(ret,pi.pinned);
 	}
 
+	if (ctxt.getFlag("debug_refs")) {
+	    ctxt.w.println(") returning" + ret.refString(ctxt));
+	    ctxt.w.flush();
+	}
 	return ret;
     }
 

@@ -18,6 +18,7 @@ public abstract class Expr {
     public static final int CASE = 7; // used in MATCH-terms
     public static final int FUN_TERM = 8; // top-level only
     public static final int DO = 9;
+    public static final int COMPRESS = 10;
 
     // type constructs
     public static final int PIN = 20;
