@@ -2,18 +2,10 @@
 %Set "debug_primitives".
 Set "debug_stages".
 
-Include "unowned.w".
+Include "nat.w".
 Include "owned.w".
 
-Datatype nat := Z : unowned | S : Fun(x:unowned & nat).unowned.
-
 Global two := let one = (S Z) in (S one).
-
-Function plus(x:unowned)(y:unowned).unowned :=
-  match x with
-    Z => y
-  | S x' => (S (plus x' y))
-  end.
 
 Function plus2(^ x:owned)(^ y:owned).unowned :=
   match x with
@@ -48,9 +40,10 @@ Function subtract2(^ x:owned)(^ y:owned).unowned :=
 Datatype holder := mk_holder : Fun(x:unowned & nat)(y:<owned x> & nat).unowned.
 
 Function pred2(x:unowned).unowned :=
-  match $ (inspect x) with
+  let y = (inspect x) in
+  match $ y with
     Z => (mk_holder x (inspect x))
-  | S x' => (mk_holder x x')
+  | S x' => (mk_holder x (compress_owned2 x y x'))
   end.
 
 %Set "debug_simulate".

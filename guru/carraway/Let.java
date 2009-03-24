@@ -87,12 +87,7 @@ public class Let extends Expr {
     public Expr linearize(Context ctxt, guru.Position p, Sym dest, Collection decls, Collection defs) {
 	decls.add(x);
 	Expr nt1 = t1.linearize(ctxt,pos,x,decls,defs);
-	if (dest == null) {
-	    defs.add(nt1);
-	    return t2.linearize(ctxt,pos,dest,decls,defs);
-	}
-	else
-	    // we are at the top-level
-	    return new Do(nt1, t2.linearize(ctxt,pos,dest,decls,defs), pos);
+	defs.add(nt1);
+	return t2.linearize(ctxt,pos,dest,decls,defs);
     }
 }

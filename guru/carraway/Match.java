@@ -10,6 +10,7 @@ public class Match extends Expr {
     public Sym s; // datatype of first pattern
     public Case[] C;
     boolean consume_first; // should we consume the scrut at the start or end of each case
+    boolean untracked_scrut;
     Expr rettype; // filled in by simpleType(), used only by linearize()
 
     public Match(){
@@ -49,7 +50,10 @@ public class Match extends Expr {
 	    w.print(" end");
 	}
 	else {
-	    w.print("switch op(");
+	    if (untracked_scrut)
+		w.print("switch ((int)");
+	    else
+		w.print("switch ctor(");
 	    t.print(w,ctxt);
 	    w.println(") {\n");
 	    for(int i = 0, iend = C.length; i < iend; i++) {
@@ -57,15 +61,15 @@ public class Match extends Expr {
 		w.println("");
 	    }
 	    w.println("default:\n");
-	    w.println("fprintf(stderr,\"Match failure at: "+pos.toStringNoQuotes()+"\\n\");\n");
+	    w.println("fprintf(stderr,\"Match failure at: "+pos.toStringNoQuotes()+"\\n\"); exit(EXIT_FAILURE);\n");
 	    w.println("}");
 	}
     }    
 
-    protected Expr simpleTypeCase(Context ctxt, Case C, Sym scrut_t) {
+    protected Expr simpleTypeCase(Context ctxt, Case C, Expr scrut_t) {
 	Expr cT = ctxt.getType(C.c);
 	if (C.vars.length == 0) {
-	    if (cT.construct != SYM)
+	    if (cT.construct != SYM && cT.construct != UNTRACKED)
 		classifyError(ctxt,"A constructor given as the pattern of a match-case has a type which is not a datatype.\n\n"
 			      +"1. the constructor: "+C.c.toString(ctxt)
 			      +"\n\n2. its type: "+cT.toString(ctxt));
@@ -85,14 +89,24 @@ public class Match extends Expr {
 			  "The constructor heading the pattern of a match-case is applied to the wrong number of pattern variables.\n\n"
 			  +"1. the constructor: "+C.c.toString(ctxt)
 			  +"\n\n2. its type: "+cT.toString(ctxt));
+
+	/* first map the variables from the ctor's type to the pattern
+	   vars, and set the types of the pattern vars.  This must be
+	   done first in this order, because next we will modify the
+	   body by wrapping it in one let-construct for each pattern
+	   var -- and that has to be done in reverse order. */
+
 	for (int i = 0, iend = C.vars.length; i < iend; i++) {
 	    Expr vT = f.types[i].applySubst(ctxt);
 	    ctxt.setType(C.vars[i], vT);
 	    ctxt.setSubst(f.vars[i],C.vars[i]);
+	}
+
+	for (int i = C.vars.length - 1; i >= 0; i--) {
 	    if (rf.types[i].construct != UNTRACKED) {
 		// we have a runtime type for this var
 
-		Sym rt = (Sym)rf.types[i];
+		Sym rt = (Sym)rf.types[i].applySubst(ctxt);
 		
 		Sym q = null;
 		if (f.types[i].construct == SYM)
@@ -100,15 +114,32 @@ public class Match extends Expr {
 		else
 		    q = ((Pin)f.types[i]).s;
 
-		Context.InitH h = ctxt.getInit(scrut_t,q);
+		if (scrut_t.construct == UNTRACKED) {
+		    Expr vT = ctxt.getType(C.vars[i]);
+		    C.classifyError(ctxt, "A match-term requires initialization from untracked data.\n\n"
+				    +"1. the pattern variable: "+C.vars[i].toString(ctxt)
+				    +"\n\n2. its type: "+vT.toString(ctxt)
+				    +"\n\n3. the scrutinee's type: "+scrut_t.toString(ctxt));
+		}
 
-		if (h == null)
+		Context.InitH h = ctxt.getInit((Sym)scrut_t,q);
+
+		if (h == null) {
+		    Expr vT = ctxt.getType(C.vars[i]);
 		    C.classifyError(ctxt, "An initialization function is missing for a variable in a match-case.\n\n"
 				    +"1. the pattern variable: "+C.vars[i].toString(ctxt)
 				    +"\n\n2. its type: "+vT.toString(ctxt)
 				    +"\n\n3. the scrutinee's type: "+scrut_t.toString(ctxt));
+		}
 
 		Expr n = new InitTerm(h,rt,x,s,C.c,f.vars[i],C.vars[i]);
+		n.pos = C.pos;
+		Position p = C.body.pos;
+		C.body = new Let(C.vars[i],n,C.body);
+		C.body.pos = p;
+	    }
+	    else {
+		Expr n = new InitTerm(null,null,x,s,C.c,f.vars[i],C.vars[i]);
 		n.pos = C.pos;
 		Position p = C.body.pos;
 		C.body = new Let(C.vars[i],n,C.body);
@@ -132,11 +163,15 @@ public class Match extends Expr {
 	Expr expected = null;
 	Expr T = t.simpleType(ctxt);
 
-	Sym scrut_t = null;
+	Expr scrut_t = null;
 	if (T.construct == SYM && ctxt.isAttribute((Sym)T))
 	    scrut_t = (Sym)T;
 	else if (T.construct == PIN)
 	    scrut_t = ((Pin)T).s;
+	else if (T.construct == UNTRACKED) {
+	    untracked_scrut = true;
+	    scrut_t = T;
+	}
 	else
 	    classifyError(ctxt,"The type computed for a scrutinee is not an attribute or pin-type.\n\n"
 			  +"1. the scrutinee: "+t.toString(ctxt)
@@ -156,11 +191,11 @@ public class Match extends Expr {
 				  +"\n\n3. the expected type: "+expected.toString(ctxt));
 	}
 
-	if (!ctxt.isNotConsumed(x)) {
+	if (!ctxt.isNotConsumed(x) && scrut_t.construct != UNTRACKED) {
 
 	    // we are consuming x, so include cleanup code at the end of each case.
 	    for (int i = 0, iend = C.length; i < iend; i++) {
-		Sym dropf = ctxt.getDropFunction(scrut_t);
+		Sym dropf = ctxt.getDropFunction((Sym)scrut_t);
 		Expr drop = new DropTerm(dropf,s,x,consume_first);
 		drop.pos = C[i].lastpos;
 		
@@ -276,10 +311,10 @@ public class Match extends Expr {
 		    if (!ret_data.pinnedby.equals(s1.pinnedby) ||
 			!ret_data.pinning.equals(s1.pinning))
 			simulateError(ctxt,"The reference returned in a match-case has a different pinning/pinnedby profile than "
-				      +"\nan the earlier cases.\n\n"
+				      +"\nthe earlier cases.\n\n"
 				      +"1. the case: "+C[i].c.toString(ctxt)
-				      +"\n\n2. the earlier reference profile:\n"+ret_data.toString(ctxt)
-				      +"\n\n3. the reference profile for this case:\n"+s1.toString(ctxt));
+				      +"\n\n2. its reference profile:\n"+s1.toString(ctxt)
+				      +"\n\n3. the earlier cases' reference profile:\n"+ret_data.toString(ctxt));
 		}
 
 		ctxt.dropRef(rs[i],C[i].lastpos);
@@ -383,9 +418,11 @@ public class Match extends Expr {
 	if (dest == null && rettype.construct != VOID)
 	    dest = ctxt.newVar(pos);
 	Expr nt = null;
-	if (t != x)
+	if (t != x) {
+	    decls.add(x);
 	    nt = t.linearize(ctxt,pos,x /* var naming scrutinee */,
 			     decls,defs);
+	}
 
 	Case[] nC = new Case[C.length];
 	for (int i = 0, iend = C.length; i < iend; i++) {
@@ -396,6 +433,7 @@ public class Match extends Expr {
 	    nC[i] = new Case(C[i].c,nbody,C[i].pos);
 	}
 	Match m = new Match(x,x,s,nC,pos);
+	m.untracked_scrut = untracked_scrut; // needed for stage 2 printing.
 	if (toplevel)
 	    if (nt != null)
 		return new Do(nt,m,pos);

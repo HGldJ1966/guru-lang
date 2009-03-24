@@ -7,7 +7,10 @@ public class Untracked extends Expr {
     }
 
     public void do_print(java.io.PrintStream w, Context ctxt) {
-	w.print("untracked");
+	if (ctxt.stage < 2)
+	    w.print("untracked");
+	else
+	    w.print("int");
     }    
 
     public Expr simpleType(Context ctxt) {

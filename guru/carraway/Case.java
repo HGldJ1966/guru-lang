@@ -31,15 +31,12 @@ public class Case extends Expr {
 	    body.print(w,ctxt);
 	}
 	else {
-	    w.print("case ");
+	    w.print("case op_");
 	    c.print(w,ctxt);
-	    w.println(":\n");
+	    w.println(": {\n");
 	    body.print(w,ctxt);
 	    w.print("break;");
-	    if (ctxt.stage > 2)
-		w.println("/* case "+c.toString(ctxt)+" */");
-	    else
-		w.println("");
+	    w.println("} /* case "+c.toString(ctxt)+" */");
 	}
     }    
 

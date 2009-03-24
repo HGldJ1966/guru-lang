@@ -1,10 +1,13 @@
 package guru.carraway;
 
 abstract public class FunBase extends Expr {
+    public static final int NOT_CONSUMED = 0;
+    public static final int CONSUMED_RET_OK = 1;
+    public static final int CONSUMED_NO_RET = 2;
+
     public Sym[] vars;
     public Expr[] types;
-    public boolean[] non_rets;
-    public boolean[] consumes;
+    public int[] consumps; // values given above
     public Expr rettype;
 
     public FunBase(int construct){
@@ -16,8 +19,7 @@ abstract public class FunBase extends Expr {
 	super(construct);
 	vars = new Sym[0];
 	types = new Expr[0];
-	non_rets = new boolean[0];
-	consumes = new boolean[0];
+	consumps = new int[0];
 	rettype = new Void();
 	this.pos = p;
     }
@@ -28,7 +30,7 @@ abstract public class FunBase extends Expr {
 		if (types[i].construct == VOID)
 		    classifyError(ctxt,"An input variable is declared with type \"void\"..\n\n"
 				  +"1. the input variable: "+vars[i].toString(ctxt));
-		if (non_rets[i] && types[i].construct == PIN)
+		if (consumps[i] == CONSUMED_NO_RET && types[i].construct == PIN)
 		    classifyError(ctxt,"An input variable is marked as not to be returned, but its type is a pin-type.\n\n"
 				  +"1. the input variable: "+vars[i].toString(ctxt)
 				  +"\n\n2. its type: "+types[i].toString(ctxt));
@@ -40,7 +42,7 @@ abstract public class FunBase extends Expr {
 				  +"\n2. its type: "+types[i].toString(ctxt)
 				  +"\n3. the type of that type: "+T.toString(ctxt));
 	    }
-	    if (!consumes[i])
+	    if (consumps[i] == NOT_CONSUMED)
 		ctxt.setNotConsumed(vars[i]);
 	    ctxt.setType(vars[i],types[i]);
 	}
@@ -57,9 +59,9 @@ abstract public class FunBase extends Expr {
 	if (ctxt.stage < 2) {
 	    for(int i = 0, iend = vars.length; i < iend; i++) {
 		w.print("(");
-		if (!consumes[i])
+		if (consumps[i] == NOT_CONSUMED)
 		    w.print("! ");
-		else if (non_rets[i])
+		else if (consumps[i] == CONSUMED_NO_RET)
 		    w.print("^ ");
 		vars[i].print(w,ctxt);
 		w.print(" : ");

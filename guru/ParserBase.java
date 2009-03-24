@@ -104,7 +104,7 @@ public class ParserBase {
             ch=(char) c;
 	    if (c == -1 || Character.isWhitespace(ch) || !LegalIdChar(ch))
             {
-                if(!LegalIdChar(ch))
+                if(c != -1)
                     ungetc(c);
 		break;
             }
@@ -277,7 +277,7 @@ public class ParserBase {
     
    protected boolean LegalIdChar(char ch)
    {
-       if("<>|(){}[]=%:.-\"".indexOf(ch)>=0)
+       if("@$<>|(){}[]=%:.-\"".indexOf(ch)>=0)
             return false;
        else
            return true;             

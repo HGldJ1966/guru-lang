@@ -26,7 +26,8 @@ public class Function extends Command {
 
 	ctxt.stage = 2;
 	FunTerm lin = (FunTerm)t.linearize(ctxt,null,null); // last two vals ignored
-	lin.comment_expr(null,ctxt);
+	lin.print(ctxt.cw,ctxt);
+	ctxt.cw.flush();
     }
 
     public void print(java.io.PrintStream w, Context ctxt) {

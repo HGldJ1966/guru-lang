@@ -438,6 +438,7 @@ public class Parser extends ParserBase {
 	}
 
 	cmd.c = readBindingConst();
+	eat_ws();
 	
 	if (!tryToEat(":="))
 	{
