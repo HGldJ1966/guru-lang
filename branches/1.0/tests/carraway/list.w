@@ -13,6 +13,12 @@ Function append(l1:unowned)(l2:unowned).unowned :=
   | cons A a l1' => (cons A a (append l1' l2))
   end.
 
+Function length(l1:unowned).unowned :=
+  match l1 with
+    nil => Z
+  | cons A a l1' => do (dec A a) (S (length l1')) end
+  end.
+
 %Set "disambiguate_vars".
 %Set "debug_refs".
 %Set "debug_simulate".

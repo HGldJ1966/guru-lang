@@ -31,11 +31,11 @@ public class Datatype extends Command {
     public void process(Context ctxt) {
 	if (del != null) {
 	    String s = ctxt.name("delete_"+tp.name);
-	    del.s.output_name = del.s.name;
-	    if (!del.s.name.equals(s))
+	    if (!del.s.output_name.equals(s))
 		handleError(ctxt,"The delete function given for a datatype is not named as required."
-			    +"\n\n1. the given name: "+del.s.toString(ctxt)
-			    +"\n\n2. the required name: "+s);
+			    +"\n\n1. the given name: "+del.s.name
+			    +"\n\n1. the output version: "+del.s.output_name
+			    +"\n\n2. the output version should be: "+s);
 	    
 	    FunType F = buildDeleteType(ctxt);
 

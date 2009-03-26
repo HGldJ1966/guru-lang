@@ -6141,6 +6141,10 @@ extracted in the clauses of a pattern-match.  This allows different
 resource management policies to initialize extracted subdata in
 different ways.
 
+\textbf{Running \carraway:} The \carraway program is
+\texttt{guru-lang/bin/carraway}, which works very similarly to
+\texttt{guru-lang/bin/guru}.
+
 \section{Reference Counting for Inductive Data}
 
 The simplest resource management policy implemented in \carraway is
@@ -6298,10 +6302,10 @@ Datatype nat := Z : unowned | S : Fun(x:unowned & nat).unowned.
 the constructors.  Since this is returning reference counted data, the
 input and output types are \texttt{unowned} in all cases.  The
 notation ``\texttt{\& nat}'' indicates that the resource type is
-\texttt{unowned} and the runtime type is \texttt{nat}.  All
-constructors must list runtime types for their input arguments, each
+\texttt{unowned} and the datatype is \texttt{nat}.  All
+constructors must list datattypes for their input arguments, each
 of which (as mentioned above) is considered consumed and possibly
-returned by the constructor.  The runtime types are used when we
+returned by the constructor.  The datatypes are used when we
 recycle a cell.
 
 Now, let us finally see some examples of programming with
@@ -6422,6 +6426,7 @@ A reference that was already consumed is being consumed again.
 }
 
 \section{Pinning References and \texttt{owned}}
+\label{ch9:pin}
 
 In order to avoid incrementing and decrementing reference counts,
 \texttt{owned.w} in \texttt{guru-lang/tests/carraway} defines a
@@ -6536,6 +6541,279 @@ we returned \texttt{x} or \texttt{y}, it would not be safe to drop
 their pins of those other references: \texttt{x} (say) would still
 exist in the system, and could still be used to access the pinned
 reference.  So it must remain pinned.
+
+Finally, in \texttt{owned.w} there are several \texttt{Init}-commands
+for initializing subdata at the start of match cases:
+
+{\footnotesize
+\begin{verbatim}
+Init ginit_unowned_owned : Fun(A:type)(! x:unowned)(y:owned).owned <<END
+  #define ginit_unowned_owned(A,x,y) y
+END
+
+Init ginit_owned_owned : Fun(A:type)(! x:owned)(y:owned).owned <<END
+  #define ginit_unowned_owned(A,x,y) y
+END
+
+Init ginit_owned_unowned : Fun(A:type)(! x:owned)(y:unowned).<owned x> <<END
+  #define ginit_owned_unowned(A,x,y) y
+END
+\end{verbatim}
+}
+
+\noindent The argument \texttt{x} is always the scrutinee, and the
+argument \texttt{y} the subdatum.  The first \texttt{Init} says that
+if the scrutinee is \texttt{unowned} and the subdatum is
+\texttt{owned}, then the subdatum is still \texttt{owned} following
+initialization.  Similarly if the scrutinee is \texttt{owned} instead
+of \texttt{unowned} (the second \texttt{Init}).  But if the scrutinee
+is \texttt{owned} and the subdatum is \texttt{unowned}, then we
+initialize the subdatum to an \texttt{unowned} piece of data which
+pins the scrutinee.  So in this case, we propagate the property of
+being \texttt{owned} from scrutinee to subdata.
+
+\section{Standard Input}
+
+The file \texttt{stdin.w} in \texttt{guru-lang/tests/carraway/} gives
+a simple interface to a textual standard input channel based on the
+our resource management ideas.  The file begins by declaring two
+opaque datatypes, \texttt{stdin\_t} and \texttt{char}.  These are
+opaque in the sense that they are not inductively defined.  We do not
+have constructors for them.  The \carraway code is:
+
+\begin{verbatim}
+Datatype stdin_t with gdelete_stdin_t : Fun(^x:stdin_t).void <<END
+  #define gdelete_stdin_t(x) fclose(x)
+END
+
+Datatype char with gdelete_char : Fun(^c:char).void <<END
+  #define gdelete_char(c) 
+END
+\end{verbatim}
+
+\noindent When an opaque datatype is defined, a primitive function to
+recycle the memory for elements of that datatype must also be defined.
+The datatype \texttt{stdin\_t} is the type for the standard input
+channel.  We recycle an element of this type by calling the C library
+function ``\texttt{fclose}'' to close the channel.  C programs usually
+do not close standard input when they are done with it, but this
+example shows how we can use the delete function to return a resource
+to the runtime system.  Deleting a character does nothing, since
+characters do not occupy heap-allocated memory.
+
+Next in \texttt{stdin.w}, we have a primitive declaration for
+\texttt{stdin} itself.  We declare this to be \texttt{unique}, which
+is a resource type with no primitives (except to consume the
+resource).  This resource type is defined in \texttt{unique.w}, and
+can be used for resources where we really require strict unique usage,
+without any additional management features like increment and
+decrementing refcounts.
+
+\begin{verbatim}
+Primitive stdin : unique <<END
+  #include <stdio.h>
+
+  #define gstdin stdin
+END
+\end{verbatim}
+
+\noindent Next, we have primitives to get the current character from
+\texttt{stdin}, and to advance to the next character.  Characters,
+which have \emph{datatype} \texttt{char}, have resource type
+\texttt{untracked}, because they do not require heap-allocated memory.
+Hence, they are not really a resource, and we do not need to track
+them.  We could, of course, if we needed to do so, but in this case,
+it is more convenient not to track them.  To get the current
+character, we use \texttt{curc}, which does not consume the
+\texttt{stdin} resource.  The C code for \texttt{curc} uses a global
+variable called \texttt{curc} to keep track if we have a current
+character from \texttt{stdin}, or else need to call the C library
+function \texttt{fgetc} to get the next character.  To advance to the
+next character, the primitive \texttt{nextc} just clears this global
+variable, signaling that the \texttt{curc} primitive should indeed
+call \texttt{fgetc}.
+
+\begin{verbatim}
+Primitive curc : Fun(!x:unique).untracked <<END
+
+  void *curc = 0;
+
+  int gcurc(void *s) {
+     if (curc == 0) {
+	int tmp = fgetc((FILE *)s);
+	curc = (tmp == -1 ? 0 : tmp);
+     }
+     return curc;
+  }
+END
+
+Primitive nextc : Fun(^x:unique).unique <<END
+  void *gnextc(void *x) {
+    curc = 0;
+    return x;
+  }
+END
+\end{verbatim}
+
+\noindent Finally, additional primitives are included to check if a
+character marks the end of the file (\texttt{eof}), print a character
+(\texttt{printc}) and close standard input (\texttt{close}).  The file
+\texttt{stdin.w} then defines functions \texttt{read\_all} to read all
+the characters possible from \texttt{stdin} and return them in a
+\texttt{ulist} (discussed in a moment), and \texttt{print\_list} to print
+all the characters in such a list using \texttt{printc}.
+
+\begin{verbatim}
+Primitive eof : Fun(c:untracked).untracked <<END
+  int geof(int x) {
+    return x == 0;
+  }
+END
+
+Primitive printc : Fun(c:untracked).void <<END
+  void gprintc(int c) {
+    putchar(c);
+    fflush(stdout);
+  }
+END
+
+Primitive close : Fun(^x:unique).void <<END
+  void gclose(void *s) {
+    fclose(s);
+  }
+END
+\end{verbatim}
+
+\section{Lists and Polymorphism}
+
+The file \texttt{list.w} in \texttt{guru-lang/tests/carraway/} defines
+two inductive datatypes for lists.  One if for lists of
+\texttt{unowned} elements, and the other is for lists of
+\texttt{untracked} elements.  While these types are polymorphic in the
+\emph{datatype} of the data stored in the list, they are monomorphic
+in the resource type of that data.  \carraway does not support
+resource type polymorphism at the moment.  Such polymorphism appears
+challenging to support, since functions may need to take different
+actions depending on the resource types of data, and it is not clear
+how to write such functions in a uniform way.  The datatype
+definitions for \texttt{list} (\texttt{unowned} elements) and
+\texttt{ulist} (\texttt{untracked} elements) are:
+
+\begin{verbatim}
+Datatype list := nil : unowned 
+               | cons : Fun(A:type)(x:unowned & A)(l:unowned & list).unowned.
+
+Datatype ulist := unil : unowned
+                | ucons : Fun(x:untracked)(l:unowned & ulist).unowned.
+\end{verbatim}
+
+\noindent These are similar to the datatype definition of \texttt{nat}
+(Section~\ref{ch9:prog}), except that the datatype listed for
+\texttt{x} in the \texttt{cons} constructor for \texttt{list} is
+\texttt{A}, which is the first argument of \texttt{cons}.  When
+\texttt{cons} is applied, we must supply an inductive datatype for the
+first argument.  That argument will not be thrown away during
+compilation, but really used at runtime, so that where we need to
+recycle the memory of a \texttt{cons}-cell, we know which function
+should be used to consume the resource \texttt{x} (which might require
+its memory to get recycled, at which point the datatype it belongs to
+must be known).  The \texttt{list.w} file defines \texttt{append} and
+\texttt{length} functions for \texttt{list}s.
+
+\section{Exercises}
+
+Note that the \carraway program is \texttt{guru-lang/bin/carraway},
+which runs similarly to \texttt{guru-lang/bin/guru}.  If you put your code in \texttt{hw4.w}, you
+can process the file with \carraway by running:
+
+\begin{verbatim}
+guru-lang/bin/carraway hw4.w
+\end{verbatim}
+
+\noindent 
+This will create a file call \texttt{hw4.c}.  You can compile that
+file using \texttt{gcc} (the Gnu C Compiler) like this:
+
+\begin{verbatim}
+gcc -o hw4 -O4 hw4.c
+\end{verbatim}
+
+\noindent The ``\texttt{-o hw4}'' part instructs \texttt{gcc} to name
+the binary executable it is producing ``\texttt{hw4}''.  The
+``\texttt{-O4}'' option tells it to use optimization level 4.
+
+\begin{enumerate}
+\item Define a function \texttt{length} computes the length of a \texttt{ulist} (not a \texttt{list}).
+Critically, your function definition should begin this way (indicating the input and output resource types):
+
+\begin{verbatim}
+Function length(l1:unowned).unowned :=
+\end{verbatim}
+
+\item Define an \texttt{append} function on \texttt{ulist}s (again, not \texttt{list}s), beginning like this:
+
+\begin{verbatim}
+Function append(l1:unowned)(l2:unowned).unowned :=
+\end{verbatim}
+
+\item To test your functions, use a \texttt{Global}-command to write a
+piece of code which calls \texttt{read\_all} (from \texttt{list.w}) to
+read all the characters from \texttt{stdin} into a \texttt{ulist},
+then append that \texttt{ulist} to itself, and finally compute its
+length.  A good starting point for this can be found in
+\texttt{guru-lang/tests/carraway/test3.w}.
+
+\ 
+
+A few more steps will result in an interesting test.  First, type
+\texttt{limit stacksize unlimited} into your shell (if you are using
+the default shell, which is \texttt{tcsh}; if you are using
+\texttt{bash}, type \texttt{ulimit -s unlimited}).  This raises the
+amount of stack memory your program is allowed to consume, which is
+necessary in this case.  Run your compiled \texttt{hw4} executable like
+this: \texttt{time ./hw4 < shared196/labs/wrnpc11.txt}.  This will cause the
+contents of the file \texttt{shared196/labs/wrnpc11.txt} to be sent to
+\texttt{stdin} of your \texttt{hw4} program.  Placing \texttt{time} at
+the beginning will just cause the running time used to be printed when
+the program terminates.
+
+\item Define a \texttt{length} function which instead begins like this:
+
+\begin{verbatim}
+Function length(^l1:owned).unowned :=
+\end{verbatim}
+
+\item Define an \texttt{append} function which instead begins like this:
+
+\begin{verbatim}
+Function append(^l1:owned)(^l2:owned).unowned :=
+\end{verbatim}
+
+\item Use a \texttt{Global}-command to write a similar test as the one
+of problem (3) for these new functions.  You may wish to put the new
+functions and the new test in a separate file.  Test the resulting
+executable as for problem (3).  Compare the running time of this
+executable with the version from problem (3).
+
+\item Write a function \texttt{sublist}, which takes a \texttt{nat}
+\texttt{n} and a \texttt{list} \texttt{l}, and returns the sublist of
+\texttt{l} which starts \texttt{n} levels deep in \texttt{l}.  So
+\texttt{(sublist (S Z) (cons nat Z (cons nat (S (S Z)) nil)))} should
+return \texttt{(cons nat (S (S Z)) nil)}.  Your function should start
+this way:
+
+\begin{verbatim}
+Function sublist(^n:owned)(!l:owned).<owned l> :=
+\end{verbatim}
+
+\noindent Recall that matching on a resource which is marked not to be
+consumed will not consume it.  So matching on \texttt{l} will not
+consume \texttt{l}.  But the subdata of \texttt{l} will be initialized
+according to the initialization rules for \texttt{owned} scrutinees
+(see Section~\ref{ch9:pin}).
+
+
+\end{enumerate}
 
 \bibliographystyle{plain} \bibliography{the-bib}
 
