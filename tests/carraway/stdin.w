@@ -1,11 +1,13 @@
 Include "unique.w".
+Include "bool.w".
+Include "list.w".
 
-Datatype stdin_t with gdelete_stdin_t : Fun(^x:stdin_t).void <<END
-  void gdelete_stdin_t(void *x) {}
+Datatype stdin_t with delete_stdin_t : Fun(^x:stdin_t).void <<END
+  #define gdelete_stdin_t(x) fclose(x)
 END
 
-Datatype char with gdelete_char : Fun(^c:char).void <<END
-  void gdelete_char(void *c) {}
+Datatype char with delete_char : Fun(^c:char).void <<END
+  #define gdelete_char(c) 
 END
 
 Primitive stdin : unique <<END
@@ -52,4 +54,17 @@ Primitive close : Fun(^x:unique).void <<END
     fclose(s);
   }
 END
+
+Function read_all(^x:unique).unowned :=
+  let c = (curc x) in
+  match (eof c) with
+    ff => (ucons c (read_all (nextc x)))
+  | tt => do (close x) nil end
+  end.
+
+Function print_list(^x:owned).void :=
+  match x with
+    unil => done
+  | ucons a x' => do (printc a) (print_list x') end
+  end.
 
