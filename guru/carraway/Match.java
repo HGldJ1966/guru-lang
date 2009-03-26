@@ -29,7 +29,7 @@ public class Match extends Expr {
     }
 
     public void do_print(java.io.PrintStream w, Context ctxt) {
-	if (ctxt.stage < 2) {
+	if (ctxt.stage <= 2) {
 	    w.print("match ");
 	    if (consume_first)
 		w.print("$ ");
@@ -362,7 +362,7 @@ public class Match extends Expr {
 	for (int i = 0, iend = C.length; i < iend; i++) {
 	    if (S2[i] == null)
 		continue;
-	    if (ctxt.getFlag("debug_refs")) {
+	    if (ctxt.getFlag("debug_simulate")) {
 		ctxt.w.println("Dropped pre-existing references for match-case "+C[i].c.toString(ctxt)+":");
 		printRefs(ctxt.w, ctxt, S2[i]);
 	    }
@@ -433,7 +433,7 @@ public class Match extends Expr {
 	    nC[i] = new Case(C[i].c,nbody,C[i].pos);
 	}
 	Match m = new Match(x,x,s,nC,pos);
-	m.untracked_scrut = untracked_scrut; // needed for stage 2 printing.
+	m.untracked_scrut = untracked_scrut; // needed for stage 3 printing.
 	if (toplevel)
 	    if (nt != null)
 		return new Do(nt,m,pos);

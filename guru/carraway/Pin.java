@@ -80,7 +80,7 @@ public class Pin extends Expr {
     }
 
     public void do_print(java.io.PrintStream w, Context ctxt) {
-	if (ctxt.stage < 2) {
+	if (ctxt.stage <= 2) {
 	    w.print("<");
 	    s.print(w,ctxt);
 	    for (int i = 0, iend = pinned.length; i < iend; i++) {

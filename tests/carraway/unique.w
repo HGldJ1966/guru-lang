@@ -1,7 +1,7 @@
 Include "owned.w".
 
-Attribute unique with gdrop_unique : Fun(A:type)(^x:unique).void <<END
-  void gdrop_unique(int A, void *x) {
+ResourceType unique with consume_unique : Fun(A:type)(^x:unique).void <<END
+  void gconsume_unique(int A, void *x) {
     release(A,x);
   }
 END

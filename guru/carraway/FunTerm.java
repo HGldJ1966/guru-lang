@@ -19,7 +19,7 @@ public class FunTerm extends FunBase {
     }
 
     public void do_print(java.io.PrintStream w, Context ctxt) {
-	if (ctxt.stage < 2) {
+	if (ctxt.stage <= 2) {
 	    f.print(w,ctxt);
 	    super.do_print(w,ctxt);
 	    w.println(" :=");
@@ -33,6 +33,8 @@ public class FunTerm extends FunBase {
 	    super.do_print(w,ctxt);
 	    w.println(" {");
 	    body.print(w,ctxt);
+	    if (body.construct != DO && body.construct != MATCH)
+		w.println(";");
 	    w.println("}\n");
 	}   
     }    
@@ -104,7 +106,7 @@ public class FunTerm extends FunBase {
 	    simulateError(ctxt,"An input designated as not to be returned is being returned.\n\n"
 			  +"1. the corresponding reference was created at: "+r.posToString());
 	
-	if (ctxt.getFlag("debug_refs")) {
+	if (ctxt.getFlag("debug_simulate")) {
 	    ctxt.w.println("Dropping pre-existing references dropped in the body of a function:");
 	    ctxt.w.flush();
 	}

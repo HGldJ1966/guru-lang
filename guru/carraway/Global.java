@@ -30,12 +30,16 @@ public class Global extends Command {
 
 	ctxt.checkpointRefs();
 
+	// stage 2
+
+	ctxt.stage = 2;
 	Sym r = t.simulate(ctxt, pos);
 	if (r == null)
 	    handleError(ctxt,"A global definitely aborts.\n\n"
 			+"1. the global: "+c.toString(ctxt));
 
-	Context.RefStat ru = ctxt.refStatus(r);
+	// could be null if r untracked
+	Context.RefStat ru = ctxt.refStatus(r); 
 
 	Collection cr = ctxt.restoreRefs();
 
@@ -52,9 +56,8 @@ public class Global extends Command {
 		if (u.ref == r) 
 		    continue;
 		c.simulateError(ctxt,"The definition of a global is leaking a reference.\n\n"
-				 +"1. the global: "+c.toString(ctxt)
-				 +("\n\n1. the reference "+(ctxt.getFlag("debug_refs") ? r.toString(ctxt) + ", " : "is ")
-				   +"created at: "+r.posToString()));
+				+"1. the global: "+c.toString(ctxt)
+				+"\n\n2. the reference "+r.refString(ctxt));
 	    }
 	    else {
 		// drop the reference from the context as it will exist after processing this global.
@@ -62,13 +65,15 @@ public class Global extends Command {
 		    ctxt.dropRef(u.ref, pos);
 	    }
 	}
-	ctxt.setSubst(c,ctxt.newRef(pos,ru));
+
+	if (ru != null)
+	    ctxt.setSubst(c,ctxt.newRef(pos,ru));
 
 	t.comment_expr(c,ctxt);
 
-	// stage 2
+	// stage 3
  
-	ctxt.stage = 2;
+	ctxt.stage = 3;
 	T.print(ctxt.cw,ctxt);
 	ctxt.cw.print(" ");
 	c.print(ctxt.cw,ctxt);

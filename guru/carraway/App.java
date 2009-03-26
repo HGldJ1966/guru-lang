@@ -87,9 +87,10 @@ public class App extends Expr {
 	    Expr hdT = T;
 	    if (!F.types[i].eqType(ctxt,hdT))
 		classifyError(ctxt,"The type computed for an argument does not match the expected type.\n\n"
-			    +"1. the argument: "+args[i].toString(ctxt)
-			    +"\n2. its type: "+T.toString(ctxt)
-			    +"\n2. the expected type: "+F.types[i].toString(ctxt));
+			      +"1. the argument: "+args[i].toString(ctxt)
+			      +"\n\n2. its type: "+T.toString(ctxt)
+			      +"\n\n3. the expected type: "+F.types[i].toString(ctxt)
+			      +"\n\n4. the application: "+toString(ctxt));
 	    if (F.nonBindingOccurrence(ctxt, F.vars[i])) {
 		// dependent type here
 		if (args[i].construct != SYM || (!ctxt.isVar((Sym)args[i]) && !ctxt.isGlobal((Sym)args[i])))
@@ -108,7 +109,7 @@ public class App extends Expr {
     public Sym simulate_h(Context ctxt, Position p) {
 	FunType f = (FunType) ctxt.getType(head);
 
-	if (ctxt.getFlag("debug_refs")) {
+	if (ctxt.getFlag("debug_simulate")) {
 	    ctxt.w.println("(Simulating an application: "+toString(ctxt));
 	    ctxt.w.flush();
 	}
@@ -119,7 +120,7 @@ public class App extends Expr {
 
 	    if (rs[i] == null) {
 		// an argument aborts
-		if (ctxt.getFlag("debug_refs")) {
+		if (ctxt.getFlag("debug_simulate")) {
 		    ctxt.w.println(") aborting");
 		    ctxt.w.flush();
 		}
@@ -193,7 +194,7 @@ public class App extends Expr {
 	    ctxt.pin(ret,pi.pinned);
 	}
 
-	if (ctxt.getFlag("debug_refs")) {
+	if (ctxt.getFlag("debug_simulate")) {
 	    ctxt.w.println(") returning" + ret.refString(ctxt));
 	    ctxt.w.flush();
 	}

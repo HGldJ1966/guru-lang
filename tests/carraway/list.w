@@ -7,13 +7,15 @@ Datatype list := nil : unowned | cons : Fun(A:type)(x:unowned & A)(l:unowned & l
 
 Datatype ulist := unil : unowned | ucons : Fun(x:untracked)(l:unowned & ulist).unowned.
 
-Set "disambiguate_vars".
-
 Function append(l1:unowned)(l2:unowned).unowned :=
   match l1 with
     nil => l2
   | cons A a l1' => (cons A a (append l1' l2))
   end.
+
+%Set "disambiguate_vars".
+%Set "debug_refs".
+%Set "debug_simulate".
 
 Function get(^n:owned)(!l:owned).<owned l> :=
  match l with
@@ -22,10 +24,10 @@ Function get(^n:owned)(!l:owned).<owned l> :=
    let ret = 
      match n with
        Z => a
-     | S n' => do (consume_owned a) @ (get n' l') end
+     | S n' => do (consume_owned A a) @ (get n' l') end
      end
    in
-     do (consume_owned l')
+     do (consume_owned list l')
         ret
      end
  end.

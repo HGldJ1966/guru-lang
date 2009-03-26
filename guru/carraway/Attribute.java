@@ -31,12 +31,12 @@ public class Attribute extends Command {
     }
 
     public void process(Context ctxt) {
-	String ss = ctxt.name("drop_"+s.name);
-	drop.s.output_name = drop.s.name;
-	if (!drop.s.name.equals(ss))
+	String ss = ctxt.name("consume_"+s.name);
+	if (!drop.s.output_name.equals(ss))
 	    handleError(ctxt,"The drop function given for an attribute is not named as required."
-			+"\n\n1. the given name: "+drop.s.toString(ctxt)
-			+"\n\n2. the required name: "+ss);
+			+"\n\n1. the given name: "+drop.s.name
+			+"\n\n2. the output version: "+drop.s.output_name
+			+"\n\n3. the output version should be: "+ss);
 	FunType F = buildDropType(ctxt);
 
 	if (!drop.T.eqType(ctxt,F)) 
@@ -67,7 +67,7 @@ public class Attribute extends Command {
 
     public void print(java.io.PrintStream w, 
 		      Context ctxt) {
-	w.println("Attribute "+s.toString(ctxt)+" with ");
+	w.println("ResourceType "+s.toString(ctxt)+" with ");
 	drop.print(w,ctxt);
     }
 

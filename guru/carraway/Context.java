@@ -27,6 +27,7 @@ public class Context extends guru.FlagManager {
     protected HashMap dels;
     protected HashSet not_consumed;
 
+
     protected HashMap refs;
     protected Vector changed_refs;
     protected Stack refs_stack;
@@ -44,10 +45,9 @@ public class Context extends guru.FlagManager {
     protected HashMap name_tbl;
 
     protected Vector global_inits;
-
     int stage;
-
     int type_num;
+    public HashSet free_lists_emitted;
 
     public Context(String file_suffix) {
 	this.file_suffix = file_suffix;
@@ -88,6 +88,8 @@ public class Context extends guru.FlagManager {
 
 	stage = 0;
 	type_num = 1; // we assume elsewhere that this is 1
+
+	free_lists_emitted = new HashSet(256);
     }
 
     // return an error message if there was a problem opening the compiler output file determined by f.
@@ -548,9 +550,7 @@ public class Context extends guru.FlagManager {
     }
 
     protected Sym new_ref(Position p) {
-	Sym r = newInternal("reference");
-	r.pos = p;
-	return r;
+	return newSym("reference",p);
     }
 
     /* create a new reference and add it to the refs data structure(s).

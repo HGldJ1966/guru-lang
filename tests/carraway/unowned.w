@@ -1,5 +1,5 @@
-Attribute unowned with gdrop_unowned : Fun(A:type)(^ r:unowned).void <<END
-  void gdrop_unowned(int A, void *r) {
+ResourceType unowned with consume_unowned : Fun(A:type)(^ r:unowned).void <<END
+  void gconsume_unowned(int A, void *r) {
     dec(r);
     if (op(r) < 256)
       release(A,r);
@@ -13,10 +13,8 @@ Primitive inc : Fun(!y:unowned).unowned <<END
   }
 END
 
-Primitive dec : Fun(A:type)(y:unowned).void <<END
-  void gdec(int A, void *y) {
-    gdrop_unowned(A,y);
-  }
+Primitive dec : Fun(A:type)(^y:unowned).void <<END
+  #define gdec(A,y) gconsume_unowned(A,y)
 END
 
 Init ginit_unowned_unowned : Fun(A:type)(! x:unowned)(y:unowned).unowned <<END
