@@ -6507,7 +6507,7 @@ ownership: an unowned \texttt{x} may be pinned by an \texttt{owned}
 \texttt{y}, which in turn (thanks to \texttt{clone\_owned}) may be
 pinned by an \texttt{owned} \texttt{z}.  \carraway provides the \@
 construct to collapse two links in such a chain into one.  In the
-situation just described, ``\@ \texttt{z}'' will cause \texttt{z} to
+situation just described, ``@ \texttt{z}'' will cause \texttt{z} to
 pin \texttt{x} directly, and no longer pin \texttt{y}.
 
 The files \texttt{test.w} and \texttt{test2.w} in
