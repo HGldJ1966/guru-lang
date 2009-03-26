@@ -41,7 +41,7 @@ public class Cast extends Expr {
     }
 
     public void do_print(java.io.PrintStream w, Context ctxt) {
-	if (ctxt.stage < 2) {
+	if (ctxt.stage <= 2) {
 	    w.print("cast ");
 	    T.print(w,ctxt);
 	    w.print(" ");

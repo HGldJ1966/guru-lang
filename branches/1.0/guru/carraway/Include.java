@@ -51,9 +51,24 @@ public class Include extends Command {
 
 	Command c = null;
 
-	// we need to write predeclare the release function.
-	if (the_cmd_line_file) 
+	// initial declarations go in the top-level output file
+
+	if (the_cmd_line_file) {
 	    ctxt.cw.println("void release(int tp, void *x);\n");
+	    ctxt.cw.println("void clear(void *x);\n");
+
+	    if (!ctxt.getFlag("use_malloc")) 
+		ctxt.cw.println("char *carraway_mem_start = 0;\n"+
+				"char *carraway_mem_end = 0;\n"+
+				"inline char *carraway_alloc(int numchars) {\n"+
+				"  char *ret;\n"+
+				"  if (carraway_mem_end - carraway_mem_start < numchars)  \n"+
+				"    brk((carraway_mem_end = carraway_mem_end + 16384)); \n"+
+				"  ret = carraway_mem_start; \n"+
+				"  carraway_mem_start += numchars; \n"+
+				"  return ret; \n"+
+				"}");
+	}
 	
 	while(true) {
 	    try {
@@ -75,16 +90,46 @@ public class Include extends Command {
 	}
 	if (the_cmd_line_file) {
 
+	    ctxt.stage = 3;
+
+	    Collection dtps1 = ctxt.getDatatypes1();
+	    Collection dtps2 = ctxt.getDatatypes2();
+
 	    // define release()
 
 	    ctxt.cw.println("void release(int tp, void *x) {");
 	    ctxt.cw.println("switch (tp) {");
-	    
-	    Collection dtps1 = ctxt.getDatatypes1();
 	    Iterator it = dtps1.iterator();
 	    while (it.hasNext()) {
 		Sym tp = (Sym)it.next();
 		ctxt.cw.println("  case "+tp.toString(ctxt)+": "+ctxt.getDeleteFunction(tp).toString(ctxt)+"(x); break;");
+	    }
+	    it = dtps2.iterator();
+	    while (it.hasNext()) {
+		Sym tp = (Sym)it.next();
+		String tpstr = tp.toString(ctxt);
+		ctxt.cw.println("  case "+tpstr+": delete_"+tpstr+"(x); break;");
+	    }
+	    ctxt.cw.println("}");
+	    ctxt.cw.println("}\n");
+
+	    // define clear()
+
+	    ctxt.cw.println("void clear(void *x) {");
+	    ctxt.cw.println("switch (op(x) >> 8) { // our delete functions store the type here temporarily");
+	    it = dtps2.iterator();
+	    while (it.hasNext()) {
+		Sym tp = (Sym)it.next();
+		String tpstr = tp.toString(ctxt);
+		ctxt.cw.println("  case "+tpstr+": ");
+		ctxt.cw.println("  switch ctor(x) { ");
+		Sym []ctors = ctxt.getCtors(tp);
+		for (int j = 0, jend = ctors.length; j < jend; j++) {
+		    String ctr = ctors[j].toString(ctxt);
+		    ctxt.cw.println("    case op_"+ctr+": clear_"+tpstr+"_"+ctr+"(x); break;");
+		}
+		ctxt.cw.println("  }");
+		ctxt.cw.println("  break; // case "+tpstr);
 	    }
 	    ctxt.cw.println("}");
 	    ctxt.cw.println("}\n");
@@ -94,12 +139,14 @@ public class Include extends Command {
 	    Collection inits = ctxt.getGlobalInits();
 	    it = inits.iterator();
 	    ctxt.cw.println("int main(int argc, char **argv) {");
-	    ctxt.cw.println("carraway_mem_start = carraway_mem_end = (char *)sbrk(0);");
+	    if (!ctxt.getFlag("use_malloc"))
+		ctxt.cw.println("carraway_mem_start = carraway_mem_end = (char *)sbrk(0);");
 
 	    while(it.hasNext()) {
 		String init_func = (String)it.next();
 		ctxt.cw.println("  "+init_func+"();");
 	    }
+	    ctxt.cw.println("return 0;");
 	    ctxt.cw.println("}\n");
 	}
 

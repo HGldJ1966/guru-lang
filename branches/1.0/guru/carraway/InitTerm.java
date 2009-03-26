@@ -28,11 +28,13 @@ public class InitTerm extends Expr {
 
     public Expr simpleType(Context ctxt) {
 	if (h != null) {
-	    FunType f = (FunType)h.F;
-	    ctxt.setSubst(f.vars[1], scrut);
+	    Sym prev = ctxt.getSubst(h.F.vars[1]);
+	    ctxt.setSubst(h.F.vars[1], scrut);
 	
 	    // init terms are constructed internally by Match, so they do not need to be type checked.
-	    return f.rettype.applySubst(ctxt);
+	    Expr ret = h.F.rettype.applySubst(ctxt);
+	    ctxt.setSubst(h.F.vars[1], prev);;
+	    return ret;
 	}
 	
 	return ctxt.getType(var);
@@ -40,7 +42,7 @@ public class InitTerm extends Expr {
 
     public void do_print(java.io.PrintStream w, Context ctxt) {
 	if (h == null) {
-	    if (ctxt.stage < 2) 
+	    if (ctxt.stage <= 2) 
 		var.print(w,ctxt);
 	    else {
 		var.print(w,ctxt);
@@ -57,7 +59,7 @@ public class InitTerm extends Expr {
 	}
 	else {
 	    // actually calling the init function
-	    if (ctxt.stage < 2) {
+	    if (ctxt.stage <= 2) {
 		w.print("(");
 		h.init.print(w,ctxt);
 		w.print(" ");
@@ -96,14 +98,13 @@ public class InitTerm extends Expr {
 
 	Sym r = var.simulate(ctxt,pos);
 	
-	if (!ctxt.isPinning(r)) {
-	    /* if r is already pinning another variable, then
-	       we do not consider it to be pinning the scrutinee */
-	    Sym r2 = scrut.simulate(ctxt,pos);
-	    Sym[] x = new Sym[1];
-	    x[0] = r2;
-	    ctxt.pin(r,x);
-	}
+	Sym v = h.F.vars[1];
+	Sym prev = ctxt.getSubst(v);
+	ctxt.setSubst(v, scrut);
+	Expr rettype = h.F.rettype.applySubst(ctxt);
+	ctxt.setSubst(v,prev);
+	if (rettype.construct == PIN) 
+	    ctxt.pin(r,((Pin)rettype).pinned);
 
 	return r;
     }

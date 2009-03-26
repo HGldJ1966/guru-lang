@@ -8,7 +8,10 @@ public class Abort extends Expr {
     }
 
     public void do_print(java.io.PrintStream w, Context ctxt) {
-	w.print("abort");
+	if (ctxt.stage > 2)
+	    w.println("exit(EXIT_FAILURE)");
+	else
+	    w.print("abort");
     }    
 
     public Expr simpleType(Context ctxt) {

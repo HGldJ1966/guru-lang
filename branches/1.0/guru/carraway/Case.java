@@ -21,7 +21,7 @@ public class Case extends Expr {
     }
 
     public void do_print(java.io.PrintStream w, Context ctxt) {
-	if (ctxt.stage < 2) {
+	if (ctxt.stage <= 2) {
 	    c.print(w,ctxt);
 	    for(int i = 0, iend = vars.length; i < iend; i++) {
 		w.print(" ");

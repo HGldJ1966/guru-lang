@@ -39,16 +39,16 @@ public class Do extends Expr {
     }
 
     public void do_print(java.io.PrintStream w, Context ctxt) {
-	if (ctxt.stage < 2)
+	if (ctxt.stage <= 2)
 	    w.print("do");
 	for (int i = 0, iend = ts.length; i < iend; i++) {
-	    if (ctxt.stage < 2)
+	    if (ctxt.stage <= 2)
 		w.print(" ");
 	    ts[i].print(w,ctxt);
-	    if (ctxt.stage >= 2 && ts[i].construct != DO)
+	    if (ctxt.stage > 2 && ts[i].construct != DO)
 		w.println(";");
 	}
-	if (ctxt.stage < 2)
+	if (ctxt.stage <= 2)
 	    w.print(" end");
     }    
 

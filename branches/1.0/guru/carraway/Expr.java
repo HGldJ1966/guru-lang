@@ -126,7 +126,7 @@ public abstract class Expr {
 	    if (s != null)
 		ctxt.cw.print("Global "+s.toString(ctxt)+" := ");
 	    else {
-		if (ctxt.stage < 2)
+		if (ctxt.stage <= 2)
 		    ctxt.cw.print("Function ");
 	    }
 	    

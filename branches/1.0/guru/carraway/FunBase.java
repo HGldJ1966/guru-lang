@@ -56,7 +56,7 @@ abstract public class FunBase extends Expr {
     }
 
     public void do_print(java.io.PrintStream w, Context ctxt) {
-	if (ctxt.stage < 2) {
+	if (ctxt.stage <= 2) {
 	    for(int i = 0, iend = vars.length; i < iend; i++) {
 		w.print("(");
 		if (consumps[i] == NOT_CONSUMED)

@@ -1,7 +1,7 @@
 Include "unowned.w".
 
-Attribute owned with gdrop_owned : Fun(A:type)(^x:owned).void <<END
-  #define gdrop_owned(A,x) 
+ResourceType owned with consume_owned : Fun(A:type)(^x:owned).void <<END
+  #define gconsume_owned(A,x) 
 END
 
 Primitive inspect : Fun(!x:unowned).<owned x> <<END
@@ -28,10 +28,6 @@ Primitive clone_owned : Fun(! y:owned).<owned y> <<END
   void *gclone_owned(void *y) {
     return y;
   }
-END
-
-Primitive consume_owned : Fun(^ y:owned).void <<END
-  #define gconsume_owned(y)  
 END
 
 Primitive compress_owned : Fun(! x: owned)(!y:<owned x>)(z:<owned y>).<owned x> <<END

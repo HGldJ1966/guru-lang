@@ -26,7 +26,7 @@ public class Sym extends Expr {
 	    }
 	}	
 
-	String n = (ctxt.stage == 0 && !ctxt.getFlag("disambiguate_vars") ? name : output_name);
+	String n = (ctxt.stage <= 2 && !ctxt.getFlag("disambiguate_vars") ? name : output_name);
 
 	if (!ctxt.getFlag("print_vars_subst")) {
 	    w.print(n);
@@ -41,7 +41,7 @@ public class Sym extends Expr {
 
     public String refString(Context ctxt) {
 	return ((ctxt.getFlag("debug_refs") ?
-		toString(ctxt) + ", " : 
+		output_name + ", " : 
 		"a reference ")
 		+"created at: "+posToString());
     }
@@ -101,9 +101,12 @@ public class Sym extends Expr {
     }
 
     public Sym simulate_h(Context ctxt, Position p) {
-	if (ctxt.isCtor(this)) 
-	    // 0-ary constructors create new references
+	if (ctxt.isCtor(this)) {
+	    // 0-ary constructors create new references, unless they are untracked
+	    if (ctxt.getType(this).construct == UNTRACKED)
+		return this;
 	    return ctxt.newRef(p);
+	}
 	return (Sym)applySubst(ctxt);
     }
 

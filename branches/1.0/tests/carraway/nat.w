@@ -7,3 +7,10 @@ Function plus(x:unowned)(y:unowned).unowned :=
     Z => y
   | S x' => (S (plus x' y))
   end.
+
+Function mult(x:unowned)(y:unowned).unowned :=
+  match x with
+    Z => do (dec nat y) Z end
+  | S x' => (plus (inc y) (mult x' y))
+  end.
+

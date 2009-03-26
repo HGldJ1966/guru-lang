@@ -53,7 +53,7 @@ public class Compress extends Expr {
     }
 
     public void do_print(java.io.PrintStream w, Context ctxt) {
-	if (ctxt.stage < 2) {
+	if (ctxt.stage <= 2) {
 	    w.print("@ ");
 	    if (p2 != null) {
 		p2.print(w,ctxt);

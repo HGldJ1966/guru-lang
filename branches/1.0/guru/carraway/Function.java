@@ -20,11 +20,15 @@ public class Function extends Command {
 	ctxt.stage = 1;
 	ctxt.defineFunction(t.f,t.simpleType(ctxt),t);
 	t.comment_expr(null,ctxt);
-	t.simulate(ctxt, pos);
 
 	// stage 2
 
 	ctxt.stage = 2;
+	t.simulate(ctxt, pos);
+
+	// stage 3
+
+	ctxt.stage = 3;
 	FunTerm lin = (FunTerm)t.linearize(ctxt,null,null); // last two vals ignored
 	lin.print(ctxt.cw,ctxt);
 	ctxt.cw.flush();

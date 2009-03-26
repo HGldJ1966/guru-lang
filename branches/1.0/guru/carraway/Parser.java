@@ -30,7 +30,7 @@ public class Parser extends guru.ParserBase {
 	    return null;
 	Position pos = getPos();
 	Command c = null;
-	if (tryToEat("Attribute")) 
+	if (tryToEat("ResourceType")) 
 	    c = readAttribute();
 	else if (tryToEat("Primitive")) 
 	    c = readPrimitive();
@@ -60,7 +60,7 @@ public class Parser extends guru.ParserBase {
 	
 	ctxt.declareConst(a.s);
 
-	eat("with", "Attribute");
+	eat("with", "ResourceType");
 	a.drop = readPrimitive();
 	
 	return a;

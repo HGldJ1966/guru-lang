@@ -17,6 +17,7 @@
 \setlength{\pdfpagewidth}{\paperwidth}
 
 \newcommand{\guru}[0]{\textsc{Guru}\xspace}
+\newcommand{\carraway}[0]{\textsc{Carraway}\xspace}
 
 \newtheorem{hint}{Theorem Proving Hint}
 
@@ -5964,6 +5965,577 @@ data is in a \texttt{bst}.  During the course of our proof, we saw the
 \texttt{hypjoin} proof construct, which extends the reach of partial
 evaluation as provided by \texttt{join}, to make use of equational
 hypotheses proven by a set of proofs given to \texttt{hypjoin}.
+
+\chapter{Resource Management with \carraway}
+
+In the previous chapters, we have seen how to write pure functional
+programs and prove properties about them.  Starting with this chapter,
+we will consider how to write more realistic programs in \guru than
+just pure functional ones.  We will see how to do basic input/output,
+and how to implement mutable data structures including arrays.  The
+single core issue that it turns out we must address to do this while
+retaining the ability to prove properties about \guru code is the
+issue of resource management.  Input/output channels, mutable data
+structure, and other computational resources can be accomodated in our
+functional setting by viewing them as resources to be managed.  In
+this chapter, we study resource management in \guru.  Recently, I have
+factored out the resource management subsystem of \guru into a
+stand-alone tool called \carraway.  \carraway has its own input
+language, which is like a simplified version of \guru's, without
+proofs, indexed types, and nested functions.  In addition, \carraway
+has features which make it possible to describe, as part of the input
+to \carraway, a variety of resource management policies.  \guru
+programs will be compiled to \carraway programs, which can then be
+compiled to C code by the \carraway compiler.
+
+\section{What is a Resource?}
+
+Let us see why the idea of a resource is crucial to implementing
+features like mutable state in \guru.  Certain resource management
+policies enable us to take a pure functional view of operations on
+resources.  The operations as we desire to implement them are not
+functional, because they destructively modify the program's state in
+some way (as when we update the value in an array) or do not depend
+functionally on that state as we normally think of it (as when we get
+the time of day, for example).  But if we manage them carefully, their
+behavior will be indistinguishable from a different set of operations
+which are purely functional.  For efficient execution -- for example,
+when we compile code -- we will use the non-functional implementation.
+For formal reasoning, however, we can use the functional model.
+
+A simple example, which we will consider in more detail in a later
+chapter, is that of mutable arrays.  Suppose there is at most one
+reference to a given array at a given point during execution.  In our
+functional model, updating a value in the array is done by creating a
+new array that is just like the old one, except where it holds the new
+value.  In our non-functional implementation, we destructively modify
+the array.  If there were a second reference to the array, the value
+of that reference would have to change when the array is updated via
+the first reference.  Such a change would be a non-local effect:
+variable \texttt{x} magically takes on a different value based on
+something we have done via variable \texttt{y}.  But if there is only
+one reference to the array, our functional and non-functional models
+are operationally indistinguishable, since then there is no need for
+non-local communication of the fact that the array has changed.
+
+In this array example, it is crucial to ensure that there is at most
+one reference to the array.  This property turns out to be crucial to
+management of other resources, too.  We will consider a resource to be
+something that only one entity can make use of at a time.  This is
+true of real-world resources.  For example, consider a bicycle.  We
+can view it as a resource, if we consider that only one person can
+ride it at a time.  But, you might ask, what if someone sits on the
+seat and someone else on the handlebars?  Or what if it is a tandem
+bicycle, with two seats?  In that case the bicycle is not a monolithic
+resource, but rather consists of several resources: the handlebars and
+the seat would each be a resource, and similarly for each of the two
+seats of the tandem.  
+
+By viewing a resource as something that only one entity can use at a
+time, we get a simple fundamental idea that can form the basis for
+managing program resources.  We need one more idea, however, as shown
+perhaps a bit more naturally via another example.  Consider a box set
+of the Harry Potter books.  We could view each book as a resource, if
+we consider that only one person can read it at a time.  (In this case
+that is clearly a bit crude, since two people could certainly read
+through it together simultaneously, but never mind.)  If you want to
+read ``The Sorcerer's Stone'' and I want to read ``The Goblet of
+Fire'', there is no problem, since each is a separate resource.  But
+what if our friend wants to borrow the whole box set?  That is fine,
+as long as all the books are free at the moment.  So in a sense, the
+box set is a single resource, consisting of the individual books as
+resources.  To use the box set, no one can be using any of the
+individual books.  In the general situation, we have one main resource
+which consists of several subsidiary ones.  To use the main resource,
+none of the subsidiary ones can be in use.  If someone is using one of
+the subsidiary resources, we will say the subsidiary resource is
+\emph{pinning} the main resource, and that the main resource is
+\emph{pinned} by that subsidiary one.  A pinned resource cannot be
+used until all the resources pinning it have been returned.
+
+This serves as our basic foundation for resource management in the
+\carraway language: resources which can only be used by one entity at
+a time, and which can be pinned by other resources.
+
+\section{\carraway Overview}
+\label{ch9:overview}
+
+This section gives an overview of the basic concepts in \carraway.
+Subsequent sections will go through the syntax and semantics in
+detail, via examples.  \carraway input files consist of commands,
+similarly to \guru input files.  \carraway commands support three main
+activities:
+
+\begin{itemize}
+\item Declaring resource types and primitive operations for
+manipulating resources of those types (commands \texttt{ResourceType},
+\texttt{Primitive}, \texttt{Init}).
+\item Declaring datatypes, which may be either inductive datatypes,
+for which pattern-matching and the creation of values using the type's
+term constructors is allowed; or else unspecified datatypes, which can
+then only be created by primitives (command \texttt{Datatype}).
+\item Defining functions and global variables (commands \texttt{Function} and \texttt{Global}).
+\end{itemize}
+
+\noindent \carraway reads input files ending in ``.w'' and translates
+them to C files with the same name except ending instead in ``.c''.
+\carraway checks that resources are used properly by functions and
+globals, according to the declared resource-managing primitives.  It
+emits code to allocate memory cells appropriately when term
+constructors are applied.  Cells store a numeric tag identifying which
+constructor of the datatype they belong to.  Pattern-matching terms
+are translated to C \texttt{switch} statements that switch on that
+tag.  Primitives are basic resource-manipulating operations.  A
+primitive is specified by giving a \carraway type that shows how it
+affects the resources it is given as arguments, along with a piece of
+C code that actually implements the primitive.
+
+\carraway's algorithm for checking that resources are used properly is
+based on tracking resources to check that there is at most one
+reference to a resource at any given time, and that pinned resources
+are not used until the resources pinning them have been returned.  To
+return a resource, we just \emph{consume} it, which we can think of as
+returning it to the underlying runtime system.  To consume a resource,
+we either:
+
+\begin{itemize}
+\item pattern-match on it (if it is an element of an inductive
+datatype), 
+\item pass it as an argument to a function whose type declares that it
+consumes the resource, or else
+\item return it from the function
+\end{itemize}
+
+\noindent User-defined functions and primitives have some flexibility
+to declare that they do or do not consume certain arguments.
+Constructors do not, however: they are considered to consume all their
+arguments.  Arguments to functions and primitives may be designated as
+treating the resource in one of the following three ways.
+
+\begin{itemize}
+\item consuming the resource, including possibly returning it directly
+or inside a data structure built with term constructors.  This is the
+default.
+\item consuming the resource, but not returning it, neither directly
+nor inside a data structure.  The annotation for this is a caret (\^{}).
+\item not consuming the resource.  The annotation for this is an exclamation
+point (!).
+\end{itemize}
+
+There is a built-in resource type called \texttt{untracked} for things
+that are not resources, and do not need to be tracked.  Additionally,
+types are runtime data in \carraway, and values whose classifier is
+\texttt{type} are also considered untracked data, not resources.
+Functions are not considered resources, and are not tracked if they
+are passed to constructors or other functions.
+
+Pattern-matching terms, whose syntax is similar to
+\texttt{match}-terms in \guru, consume the scrutinee, unless it has
+type \texttt{untracked} or else comes from an input that was marked as
+not consumed.  Except in those cases, the pattern-match consumes the
+scrutinee either at the end of each case, which is the default; or
+else at the start of each case, for which a \$ annotation is used
+(between the \texttt{match} keyword and the scrutinee).  \carraway
+uses user-specified initialization functions to initialize subdata
+extracted in the clauses of a pattern-match.  This allows different
+resource management policies to initialize extracted subdata in
+different ways.
+
+\section{Reference Counting for Inductive Data}
+
+The simplest resource management policy implemented in \carraway is
+one for managing the memory allocated for elements of inductive types.
+Unlike in other functional programming languages, \guru (also
+\carraway) does not rely on garbage collection to manage memory
+safely.  The reason for avoiding garbage collection is that it can
+severely impact performance in memory-pressured situations
+(see~\cite{xian08,hertz+05}).  In \guru, all our data are inductive
+data.  Since bigger data are built from strictly smaller data, there
+can be no cycles in our data.  Define the reference graph of the
+program at a particular point in execution as follows.  We will
+allocate a cell (piece of memory) for each application of a
+constructor.  The set of cells which are reachable from a program
+variable is the set of nodes of the reference graph.  There is an edge
+from one cell to another if the piece of data corresponding to the
+first cell has the piece of data corresponding to the second as one of
+its subdata.  So immediately after executing $(S\ Z)$, our reference
+graph will have two cells: one for the application of $S$, and the
+other for the use of $Z$ (which we should think of here as a
+degenerate application of $Z$ to $0$ arguments).  There is a single
+edge in the graph, pointing from the cell for the application of $S$
+to the cell for the (degenerate) application of $Z$.  With this
+definition of reference graph, all executions of all programs have
+acyclic reference graphs at all points in time.
+
+Whenever one is guaranteed to have only acyclic reference graphs,
+reference counting can be used to manage memory.  In each cell we keep
+an integer value, called the \emph{refcount}, which tells how many
+references there are to this cell from other cells or from program
+variables.  Whenever a new reference is added, we increment the
+refcount.  When a reference is dropped -- for example, when the scope
+of a local variable referring to the cell ends -- then the refcount is
+decremented.  If the refcount falls to $0$, that means the cell is
+garbage, since no one is referring to it.  The cell can be recycled in
+that case, either by returning it to the runtime system (e.g., by
+calling \texttt{free()}), or used for another constructor application.
+If the refcount overflows, indicating more than the maximum number of
+references we can store with the bits set aside in the cell for that
+purpose, then we will treat the cell as \emph{immortal}, and never
+recycle it.  This may leak memory, since all those references may
+eventually be dropped and we will still not be able to recycle the
+cell.  But it will not corrupt memory by recycling a cell that is
+really still in use.
+
+A compiler can easily insert code to increment and decrement reference
+counts for us.  But executing these increments and decrements at
+runtime adds overhead to the execution, which can be avoided in many
+cases, as we will discuss.  So \guru and \carraway provide
+\texttt{inc} and \texttt{dec} functions, which we programmers use
+explicitly to indicate when the reference count should change.  To
+make sure that we perform \texttt{inc} and \texttt{dec} operations
+correctly, we treat reference counted data as a resource, and track it
+with \carraway's reference tracking system, as described next.
+
+\section{Reference Counting in \carraway}
+
+In this section, we will see how to describe reference counted data as
+a \carraway resource type, and \texttt{inc} and \texttt{dec} as
+primitives operating on that type.  The code to do this may currently
+be found in \texttt{guru-lang/tests/carraway/unowned.w}.  This file
+begins with a declaration of the \texttt{unowned} resource type, for
+reference counted data:
+
+\begin{verbatim}
+ResourceType unowned with consume_unowned : Fun(A:type)(^ r:unowned).void <<END
+  void gconsume_unowned(int A, void *r) {
+    dec(r);
+    if (op(r) < 256)
+      release(A,r);
+  }
+END
+\end{verbatim}
+
+\noindent Here we see an example of the \texttt{ResourceType} command.
+We have the name of the resource type, which is \texttt{unowned} in
+this case.  Then the \texttt{with} keyword, and then the declaration
+of a primitive function for consuming resources of this resource type.
+That function must be named ``\texttt{gconsume\_T}'', where \texttt{T}
+is the name of the resource type.  The type of that function comes
+next, which must be exactly the one given here.  That type says that
+\texttt{gconsume\_unowned} is a function that takes in a type as its
+first argument, and then an \texttt{unowned} \texttt{r} as its second.
+The caret annotation means that \texttt{r} will not be returned by
+this function.  The function returns \texttt{void}, which means that
+it does not return a value at all.  Finally, there is the punctuation
+``\texttt{<<}'' followed immediately by a word (here ``\texttt{END}'')
+which will mark the end of the raw C code portion which follows.  This
+C code defines how the \texttt{unowned} resource is consumed.  In our
+case, we use functions specially provided by \carraway to decrement
+\texttt{r}'s refcount.  The refcount is stored in the high 24 bits of
+the first word (given by \texttt{op(r)}) of \texttt{r}'s memory cell.
+So to check if the refcount falls to $0$, we check whether that first
+word falls below 256.  If so, we call another function provided by
+\carraway, to return the memory associated with this cell to the
+runtime system.  The raw C code, here and for all primitives, is
+expected to have the same name as the \carraway one, except with a
+``g'' prefixing it.
+
+Next, in \texttt{unowned.w}, we have declarations of primitive
+functions for incrementing and decrementing reference counts.  From a
+resource tracking perspective, incrementing a reference count creates
+a new resource, without consuming the original one; and decrementing
+consumes a resource.  This is indicated by the types of the primitives.
+The \texttt{inc} function states, using the ! annotation, that it does
+not consume its input, but it does produce a new output.  The \texttt{dec}
+function states, via the caret annotation (\^{}), that it consumes and
+does not return its input.
+
+\begin{verbatim}
+Primitive inc : Fun(!y:unowned).unowned <<END
+  void *ginc(void *y) {
+    inc(y);
+    return y;
+  }
+END
+
+Primitive dec : Fun(A:type)(^y:unowned).void <<END
+  #define gdec(A,y) gconsume_unowned(A,y)
+END
+\end{verbatim}
+
+\noindent Finally, in \texttt{unowned.w}, there is an \texttt{Init}-command
+to declare an initialization function for \texttt{unowned} resources.  
+
+\begin{verbatim}
+Init ginit_unowned_unowned : Fun(A:type)(! x:unowned)(y:unowned).unowned <<END
+  void *ginit_unowned_unowned(int A,void *x,void *y) {
+    ginc(y);
+    return y;
+  }
+END
+\end{verbatim}
+
+\noindent This function will be automatically used by \carraway to
+initialize \texttt{unowned} subdata \texttt{y} when pattern matching
+on an \texttt{unowned} scrutinee \texttt{x}.  Since the scrutinee will
+be consumed in that case, initialization needs to increment the
+subdatum's refcount, since otherwise consumption of the scrutinee
+could cause the subdatum also to be consumed.
+
+\section{Programming with Reference-Counted Data}
+\label{ch9:prog}
+
+The file \texttt{nat.w} in \texttt{guru-lang/tests/carraway/} gives an
+example of a datatype declaration and \carraway programs for
+reference-counted unary natural numbers.  The datatype declaration
+is somewhat similar to what we have in \guru:
+
+\begin{verbatim}
+Datatype nat := Z : unowned | S : Fun(x:unowned & nat).unowned.
+\end{verbatim}
+
+\noindent The difference is in the input and output types we give for
+the constructors.  Since this is returning reference counted data, the
+input and output types are \texttt{unowned} in all cases.  The
+notation ``\texttt{\& nat}'' indicates that the resource type is
+\texttt{unowned} and the runtime type is \texttt{nat}.  All
+constructors must list runtime types for their input arguments, each
+of which (as mentioned above) is considered consumed and possibly
+returned by the constructor.  The runtime types are used when we
+recycle a cell.
+
+Now, let us finally see some examples of programming with
+reference-counted data.  The definitions of \texttt{plus} and
+\texttt{mult} are typical.  The code for \texttt{plus} requires
+no uses of \texttt{inc} and \texttt{dec} at all:
+
+\begin{verbatim}
+Function plus(x:unowned)(y:unowned).unowned :=
+  match x with
+    Z => y
+  | S x' => (S (plus x' y))
+  end.
+\end{verbatim}
+
+\noindent Let us think about why this code uses resources correctly,
+even though it contains no \texttt{inc}s or \texttt{dec}s.  The inputs
+\texttt{x} and \texttt{y} are marked as ones that are consumed by
+\texttt{plus}, and possibly returned (either directly or in a data
+structure).  The pattern match on \texttt{x} consumes it at the end of
+each case (as mentioned in Section~\ref{ch9:overview}).  So we are
+sure that \texttt{x} is going to be consumed by the time the function
+returns.  In the \texttt{Z}-clause, we return \texttt{y}, which as
+mentioned in Section~\ref{ch9:overview} is considered a way of
+consuming it.  So \texttt{x} and \texttt{y} are consumed in that case.
+In the \texttt{S}-clause, we produce a new reference \texttt{x'}.
+This is initialized by incrementing its reference count, since this is
+what the code given in the \texttt{Init}-command from
+\texttt{unowned.w} does (see the previous section).  This reference,
+and \texttt{y}, are consumed by the recursive call to \texttt{plus}.
+That call produces a new reference, which is consumed by the call to
+\texttt{S}, which in turn produces a new reference, which is consumed
+by returning it from the function.
+
+Now let us look at the code for \texttt{mult}, where we do need
+to use \texttt{inc} and \texttt{dec}:
+
+\begin{verbatim}
+Function mult(x:unowned)(y:unowned).unowned :=
+  match x with
+    Z => do (dec nat y) Z end
+  | S x' => (plus (inc y) (mult x' y))
+  end.
+\end{verbatim}
+
+\noindent In the \texttt{Z}-clause, we need to consume \texttt{y},
+because unlike in the \texttt{Z}-clause for \texttt{plus}, we here
+return just \texttt{Z}, and drop \texttt{y}.  We use our \texttt{dec}
+function from above, in a \texttt{do}-term.  The syntax for those is
+just $\texttt{do}\ t_1\ \cdots\ t_n\ \texttt{end}$ (where $n$ is at
+least $2$).  This just executes $t_1$ through $t_n$ in order,
+returning the value returned by $t_n$.  In the \texttt{S}-clause,
+we must call \texttt{inc} on \texttt{y}, since it is used twice.
+
+Let us see what kind of error messages we would get from \carraway if
+we left off either of these.  First, suppose we leave off the
+\texttt{dec} of \texttt{y} in the \texttt{Z}-clause:
+
+\begin{verbatim}
+Function mult(x:unowned)(y:unowned).unowned :=
+  match x with
+    Z => Z
+  | S x' => (plus (inc y) (mult x' y))
+  end.
+\end{verbatim}
+
+\noindent The error message from \carraway is:
+
+{\footnotesize
+\begin{verbatim}
+"/home/stump/guru-lang/tests/carraway/nat.w", line 20, column 3: simulation error.
+
+Two match-cases consume different sets of earlier references.
+
+1. the first case: gZ
+
+2. the second case: gS
+
+3. a reference created at: "/home/stump/guru-lang/tests/carraway/nat.w", line 17, column 25
+
+4. the first case does not consume it.
+
+5. the second case consumes it at: "/home/stump/guru-lang/tests/carraway/nat.w", line 20, column 27
+\end{verbatim}
+}
+
+\noindent This message is telling us that the two clauses of the match
+have different behavior with regard to references that exist before
+the match begins.  \carraway requires that behavior to be the same in
+all clauses.  The line and column number mentioned in (3) is (in my
+modified \texttt{nat.w} containing this code) is for input variable
+\texttt{y}.  The first case does not consume \texttt{y}, as (4)
+states; and the second does, as (5) states.  Suppose instead we leave
+off the \texttt{inc} of \texttt{y} in the \texttt{S}-clause:
+
+\begin{verbatim}
+Function mult(x:unowned)(y:unowned).unowned :=
+  match x with
+    Z => do (dec nat y) Z end
+  | S x' => (plus y (mult x' y))
+  end.
+\end{verbatim}
+
+\noindent Then the error message from \carraway is the following, which just notes that
+we are consuming a resource twice:
+
+{\footnotesize
+\begin{verbatim}
+
+"/home/stump/guru-lang/tests/carraway/nat.w", line 20, column 13: simulation error.
+
+A reference that was already consumed is being consumed again.
+
+1. the reference created at: "/home/stump/guru-lang/tests/carraway/nat.w", line 17, column 25
+
+2. first consumed at: "/home/stump/guru-lang/tests/carraway/nat.w", line 20, column 21
+\end{verbatim}
+}
+
+\section{Pinning References and \texttt{owned}}
+
+In order to avoid incrementing and decrementing reference counts,
+\texttt{owned.w} in \texttt{guru-lang/tests/carraway} defines a
+resource type \texttt{owned}, for references which are owned by
+another entity, which is thus pinned.  Since they are owned by another
+entity, we do not need to decrement their reference counts: the owning
+entity cannot be consumed until the owned one is, since the owned one
+pins the owning one.  Thus, we cannot get into the situation where the
+reference count of the owning entity falls to zero while we are using
+the owned entity.  That situation, of course, would jeopardize memory
+safety, since recycling the owning cell might cause the owned cell to
+be reclaimed as well, while we still have a reference to it.  By
+insisting that the owned cell is consumed before the owning cell is,
+we ensure this cannot happen.
+
+Here are the \carraway commands defining the \texttt{owned} resource
+type and giving the central primitive, \texttt{inspect}, which
+operates on \texttt{owned} data:
+
+\begin{verbatim}
+ResourceType owned with consume_owned : Fun(A:type)(^x:owned).void <<END
+  #define gconsume_owned(A,x) 
+END
+
+Primitive inspect : Fun(!x:unowned).<owned x> <<END
+  void *ginspect(void *x) {
+    return x;
+  }
+END
+\end{verbatim}
+
+\noindent Consuming an owned resource does nothing, as the C code
+given for \texttt{consume\_owned} shows (that code is a C macro
+definition, defining ``\texttt{gconsume\_owned(A,x)}'' to be nothing,
+so such expressions just disappear).  Inspecting an \texttt{unowned}
+resource does not consume it: the ! annotation given with the input
+\texttt{x} in the \texttt{Fun}-type for \texttt{inspect} shows that.
+But the result of \texttt{inspect} is a pinning \texttt{owned}
+reference, as indicated by the return type \texttt{<owned x>}.  The
+notation for a pinning type is \texttt{<T x1 ... xn>}, where
+\texttt{T} is a resource type and \texttt{x1} through \texttt{xn} are
+symbols for pinned entities.  Additional primitives for \texttt{owned}
+data allow us to pass back to an \texttt{unowned} reference by
+incrementing the refcount of the \texttt{owned} data.  This is done
+consuming the owned reference with the primitive
+\texttt{owned\_to\_unowned}, and not consuming the owned reference
+with the primitive \texttt{inc\_owned}.  
+
+
+\begin{verbatim}
+Primitive inc_owned : Fun(!y:owned).unowned <<END
+  void *ginc_owned(void *y) {
+    inc(y);
+    return y;
+  }
+END
+
+Primitive owned_to_unowned : Fun(^y:owned).unowned <<END
+  void *gowned_to_unowned(void *y) {
+    inc(y);
+    return y;
+  }
+END
+
+Primitive clone_owned : Fun(! y:owned).<owned y> <<END
+  void *gclone_owned(void *y) {
+    return y;
+  }
+END
+\end{verbatim}
+
+\noindent 
+We can additionally clone an owned reference with
+\texttt{clone\_owned}.  Notice that the result of this primitive is a
+new \texttt{owned} reference which pins the \texttt{owned} reference
+\texttt{y} given to the primitive.  Thus, we can build up chains of
+ownership: an unowned \texttt{x} may be pinned by an \texttt{owned}
+\texttt{y}, which in turn (thanks to \texttt{clone\_owned}) may be
+pinned by an \texttt{owned} \texttt{z}.  \carraway provides the \@
+construct to collapse two links in such a chain into one.  In the
+situation just described, ``\@ \texttt{z}'' will cause \texttt{z} to
+pin \texttt{x} directly, and no longer pin \texttt{y}.
+
+The files \texttt{test.w} and \texttt{test2.w} in
+\texttt{guru-lang/tests/carraway} give several examples of programming
+with \texttt{owned} data.  For example, here is an alternative
+definition of \texttt{plus} on unary natural numbers, which manages to
+do no decrementing of refcounts at all (in contrast, the code for
+\texttt{plus} given in Section~\ref{ch9:prog} will decrement one
+refcount for each \texttt{S}-cell of the first argument):
+
+\begin{verbatim}
+Function plus2(^ x:owned)(^ y:owned).unowned :=
+  match x with
+    Z => (owned_to_unowned y)
+  | S x' => (S (plus2 x' y))
+  end.
+\end{verbatim}
+
+\noindent The \texttt{owned} reference \texttt{x} is still consumed by
+the \texttt{match}, but consuming an \texttt{owned} reference does not
+cause the refcount to be decremented.  When we return \texttt{y} in
+the \texttt{Z}-clause, we have to increment \texttt{y}'s refcount,
+since it is being consumed, and we have marked \texttt{x} and
+\texttt{y} as consumed but not returned (with the caret annotation).
+The advantage of marking these as not returned is that when
+\texttt{plus2} is called, \carraway's resource tracking algorithm
+knows that since these references are definitely gone by the time this
+function exits, at that point they will no longer pin any references
+they were pinning at the start of the function call.  Notice that if
+we returned \texttt{x} or \texttt{y}, it would not be safe to drop
+their pins of those other references: \texttt{x} (say) would still
+exist in the system, and could still be used to access the pinned
+reference.  So it must remain pinned.
 
 \bibliographystyle{plain} \bibliography{the-bib}
 
