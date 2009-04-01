@@ -119,8 +119,11 @@ public abstract class Expr {
     public void comment_expr(Sym s, Context ctxt) {
 	String stage_num = (new Integer(ctxt.stage)).toString();
 	if (ctxt.getFlag("debug_stage"+stage_num) || ctxt.getFlag("debug_stages")) {
-	    ctxt.cw.println("/*");
-	    ctxt.cw.println(" * stage "+stage_num);
+	    if (ctxt.getFlag("output_ocaml"))
+		ctxt.cw.print("(");
+	    else
+		ctxt.cw.print("/");
+	    ctxt.cw.println("*\n * stage "+stage_num);
 	    ctxt.cw.println(" *");
 	    ctxt.cw.println("\n");
 	    if (s != null)
@@ -131,7 +134,11 @@ public abstract class Expr {
 	    }
 	    
 	    print(ctxt.cw,ctxt);
-	    ctxt.cw.println(".\n*/");
+	    ctxt.cw.print(".\n*");
+	    if (ctxt.getFlag("output_ocaml"))
+		ctxt.cw.print(")");
+	    else
+		ctxt.cw.print("/");
 	    ctxt.cw.println("");
 	    ctxt.cw.flush();
 	}

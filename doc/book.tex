@@ -4,6 +4,7 @@
 \usepackage{comment}
 \usepackage{url}
 \usepackage{fullpage}
+\usepackage{proof}
 \usepackage{xspace}
 \usepackage[pdftex,
 	pdfauthor={Aaron Stump},
@@ -6201,6 +6202,7 @@ correctly, we treat reference counted data as a resource, and track it
 with \carraway's reference tracking system, as described next.
 
 \section{Reference Counting in \carraway}
+\label{ch9:rc}
 
 In this section, we will see how to describe reference counted data as
 a \carraway resource type, and \texttt{inc} and \texttt{dec} as
@@ -6301,9 +6303,9 @@ Datatype nat := Z : unowned | S : Fun(x:unowned & nat).unowned.
 \noindent The difference is in the input and output types we give for
 the constructors.  Since this is returning reference counted data, the
 input and output types are \texttt{unowned} in all cases.  The
-notation ``\texttt{\& nat}'' indicates that the resource type is
+notation ``\texttt{unowned\ \& nat}'' indicates that the resource type is
 \texttt{unowned} and the datatype is \texttt{nat}.  All
-constructors must list datattypes for their input arguments, each
+constructors must list datatypes for their input arguments, each
 of which (as mentioned above) is considered consumed and possibly
 returned by the constructor.  The datatypes are used when we
 recycle a cell.
@@ -6374,7 +6376,7 @@ Function mult(x:unowned)(y:unowned).unowned :=
 
 \noindent The error message from \carraway is:
 
-{\footnotesize
+{\small
 \begin{verbatim}
 "/home/stump/guru-lang/tests/carraway/nat.w", line 20, column 3: simulation error.
 
@@ -6412,7 +6414,7 @@ Function mult(x:unowned)(y:unowned).unowned :=
 \noindent Then the error message from \carraway is the following, which just notes that
 we are consuming a resource twice:
 
-{\footnotesize
+{\small
 \begin{verbatim}
 
 "/home/stump/guru-lang/tests/carraway/nat.w", line 20, column 13: simulation error.
@@ -6545,7 +6547,7 @@ reference.  So it must remain pinned.
 Finally, in \texttt{owned.w} there are several \texttt{Init}-commands
 for initializing subdata at the start of match cases:
 
-{\footnotesize
+{\small
 \begin{verbatim}
 Init ginit_unowned_owned : Fun(A:type)(! x:unowned)(y:owned).owned <<END
   #define ginit_unowned_owned(A,x,y) y
@@ -6814,6 +6816,792 @@ according to the initialization rules for \texttt{owned} scrutinees
 
 
 \end{enumerate}
+
+\chapter{Compiling \carraway}
+
+We continue to explore practical programming in \guru by looking at
+how to compile the \carraway language, which we are using as an
+intermediate language for compilation from \guru to C.  Compilation of
+\carraway demonstrates a number of basic ideas in compilation of
+functional programming languages, as well as some optimizations
+appropriate to our reference-counting approach to memory management
+for inductive data.  In the sections below, we describe the
+compilation process in \carraway, as it occurs after \carraway's type
+checking and resource tracking algorithms have run.  Type checking
+inserts calls to the initialization functions for pattern variables in
+\texttt{match}-clauses (see Section~\ref{ch9:rc}), and also calls to
+\texttt{consume} functions for the scrutinees of \texttt{match}-terms,
+as appropriate.  We will not present the type checking and resource
+tracking algorithms formally, but assume they have completed
+successfully in the subsequent compilation steps.
+
+\section{A Restriction on Functions}
+
+Before we begin describing the compilation process from \carraway to
+C, we note one restriction on the use of functions in \carraway.  We
+have already mentioned that \carraway disallows the definition of
+functions inside other code.  This will have to be enforced by
+compilations steps from \guru to \carraway.  But \carraway's type
+checker also requires that in every application $(f\ a_1\ \cdots
+a_n)$, $f$ is a (declared or defined) constant or variable whose type
+explicitly lists that it takes $n$ arguments as inputs.  We will call
+this the \emph{argument requirement} on applications.  This simple
+property can fail for applications in \guru.  For example, suppose we
+are using the type \texttt{<list Fun(x:nat).nat>} of lists of unary
+operations on \texttt{nat}s.  That is, the elements of the list are
+all functions.  Now if \texttt{l} is such a list, and \texttt{head}
+gets the first element if there is one, we can easily write an
+application like \texttt{(head Fun(x:nat).nat l one)}, which violates
+the restriction just mentioned.  For the type of \texttt{head} states
+that it takes two arguments: the type of the list's elements, and the
+list.  But here we have applied it to three.
+
+The simple solution to this problem available in \carraway is based on
+introducing new names, using \texttt{let}, for terms like
+\texttt{(head Fun(x:nat).nat l)} that \carraway's type system cannot
+tell are functional.  So we would first transform the offending
+application into
+
+\begin{verbatim}
+let f = (head Fun(x:nat).nat l) in
+  (f one)
+\end{verbatim}
+
+\noindent This is not yet enough, since if we proceed with
+compilation, \texttt{f} still will not have functional type in
+\carraway.  \carraway provides explicit unsafe casts to coerce
+\texttt{f} to functional type.  Passing from \guru to \carraway,
+we will get:
+
+\begin{verbatim}
+let f = cast Fun(x:unowned).unowned
+          (head l) in
+  (f one)
+\end{verbatim}
+
+\noindent We have dropped the type argument to \texttt{head}, since a
+list of functions is treated, from the perspective of resource
+management, as a list of \texttt{untracked} data.  So the type of
+\texttt{(head l)} is just \texttt{untracked}.  We then use a
+\texttt{cast} to change the type of \texttt{(head l)} to the
+appropriate functional type.  The syntax of \texttt{cast} in \carraway
+is \texttt{cast T t}, where \texttt{T} is a type and \texttt{t} is a
+term.  Now \texttt{f} does have the proper functional type to be
+applied to \texttt{one}.
+
+We will assume below that all applications in our \carraway input
+already satisfy the argument requirement, which will thus have to be
+imposed during initial compilation steps from \guru to \carraway.
+
+\section{Linearization}
+
+The first step of compilation in \carraway after the type checking and
+resource tracking steps is linearization.  This process takes nested
+\texttt{let}- and \texttt{match}-terms, which cannot be represented
+directly in C code, and flattens them out so that they can be.  For
+example, in \carraway (or other functional programming languages), the
+following term is syntactically perfectly legal:
+
+\begin{verbatim}
+let x = let y = Z in (plus y y) in
+  (plus x x)
+\end{verbatim}
+
+\noindent But in C code, it is not, if we are translating
+\texttt{let}-terms to assignments.  That is, suppose we wish to turn
+\texttt{let x = t in t'} into (where we use the C type ``\texttt{void
+*}'' as a catchall type for any reference-counted data):
+
+\begin{verbatim}
+void *x = t;
+t';
+\end{verbatim}
+
+\noindent Then we cannot handle nested \texttt{let}-terms directly,
+since we cannot generally nest assignments in C in the way that would
+be required.  So before generating C code, we must first perform a
+transformation that flattens out nested \texttt{let}-terms.  This
+transformation should turn a term like the one above containing
+\texttt{plus} into something like:
+
+\begin{verbatim}
+let y = Z in in
+let x = (plus y y) in
+  (plus x x)
+\end{verbatim}
+
+\noindent We have pulled out the \texttt{let}-term defining \texttt{y}
+from the definition of \texttt{x}.  Of course, it needs to come before
+the new definition of \texttt{x}, since that definition references
+\texttt{y} in \texttt{(plus y y)}.  
+
+A similar problem arises for \texttt{match}-terms.  We would like to
+translate these to \texttt{switch}-statements in C, where we switch on
+the integer tag (mentioned in Section~\ref{ch9:overview}) stored in
+the cell for a piece of inductive data.  That tag tells which
+constructor of a given type the cell was built for.  In \guru and
+\carraway, it is syntactically legal for one \texttt{match}-term to
+appear as the scrutinee of another, as in this example:
+
+\begin{verbatim}
+match match w with Z => ff | S x' => tt with
+  ff => tt
+| tt => ff
+end
+\end{verbatim}
+
+\noindent But in C, we cannot \texttt{switch} on another
+\texttt{switch}-statement.  So we must pull out \texttt{match}-terms
+from the scrutinee positions of other \texttt{match}-terms.  We do
+this by creating a new C variable to hold the result of the nested
+\texttt{match}-term, and then \texttt{match}ing on that new variable
+
+In general, certain constructs cannot appear nested in C, where a
+nested position includes the right hand side of an assignment, the
+scrutinee of a \texttt{switch} statement, and argument positions of an
+application.  Here, the non-nestable constructs we are considering are
+just assignments (to which we translate \texttt{let}-terms) and
+\texttt{switch}-statements (to which we translate
+\texttt{match}-terms).  Wherever these occur in a nested position in a
+\carraway term, they must be pulled out to the top-level for
+translation to C.
+
+Finally, as mentioned at the very start of the chapter, \carraway's
+type checking process inserts calls to the user-specified
+initialization functions (Section~\ref{ch9:rc}) for pattern variables
+$x$.  Those calls are inserted in the following form, where
+\texttt{arg-type} is the run-time type of the argument,
+\texttt{scrutinee} holds the value of the scrutinee, and
+\texttt{arg-name} is a name used to refer to the argument position
+corresponding to the pattern variable $x$, for the given constructor:
+
+\begin{verbatim}
+let x = (init_func arg-type scrutinee arg-name) in
+\end{verbatim}
+
+\noindent We will assume this insertion has already been done.  This
+initialization will subsequently be compiled to access the field
+corresponding to \texttt{arg-name} for the memory cell pointed to by
+\texttt{scrutinee}.
+
+\subsection{The linearization algorithm}
+
+This section presents \carraway's linearization algorithm \texttt{lin}
+as a set of rules.  The rules introduce terms using several
+\textbf{intermediate term constructs.} To represent assignments to
+variables, we introduce a new term form \texttt{x := t}, where
+\texttt{x} is a variable and \texttt{t} is a term.  When executed,
+this will store the value computed for \texttt{t} into variable
+\texttt{x}.  We temporarily treat \texttt{return} as a function symbol
+in linearized output, so that we can write $(\texttt{return}\ x)$ for
+the command to return the value of \texttt{x} from a function call.
+Also, variable declarations will be represented using a new term form
+$\texttt{declare} x$.  
+
+The linearization rules define \texttt{lin} by constraining the form
+of calls to \texttt{lin}.  A starting call to \texttt{lin}, with its
+result, has this general form:
+
+
+\[ \texttt{lin}(t,\theta) = t' \]
+
+\noindent The meaning of such a call is that we are linearizing the
+\carraway term $t$, and producing the resulting flattened term $t'$.
+The argument $\theta$ is used to specify an action to be performed
+with the value computed by the term $t$, when it is actually executed
+(after compilation).  The options for this action are:
+
+\begin{itemize}
+\item Leave the result of computation available for use in a
+surrounding C code expression.  For this, we use $\cdot$ as the value
+for $\theta$.  We will use this action for $t$ occurring in a nested
+position.
+
+\item Store the result of computation in a specified variable, for
+which we write $x$ (or $y$) for $\theta$.  We will not use this action
+unless the caller of \texttt{lin} will use $t'$ at the top-level (not
+in a nested position).
+
+\item Return the value from the function in which $t$ occurs.  For this
+we write \texttt{return} for $\theta$.  As for the previous action, we
+will ensure that the caller of \texttt{lin} will use $t'$ only at the
+top-level, and not in a nested position.
+
+\end{itemize}
+
+\noindent In one situation, where a \texttt{match}-term has type
+\texttt{void}, we allow returning $\cdot$ for $t'$, when we know that
+will be discarded.
+
+The definition of \texttt{lin} relies on a different, intermediate
+form of call to \texttt{lin}:
+
+\[ \texttt{lin}(t,\theta,C,D) = (t',C',D') \]
+
+\noindent
+Here, we use $C$ as a list of variable declarations that need to
+appear in code before $t'$, and $D$ as a list of extra top-level
+commands that need to be executed before $t'$.  When pulling a
+\texttt{match}-term out of a nested positions, for example, we need to
+introduce a new variable for the result of the \texttt{match}; a
+declaration of this variable would be added to the end of $C$.  Also,
+we may need to add the \texttt{match}-term itself (modified to write
+its value to that new variable) to $D$, since it must be computed
+before the value it stores in the new variable is used (by accessing
+that variable).  The versions $C$ and $D$ in the call are for those
+lists as they exist before the call, and the versions $C'$ and $D'$
+are those that have been updated by linearization of $t$.  Adding a
+term $t$ to the end of $C$ will be denoted $C,t$, and the empty list
+will be denoted $\cdot$.  
+
+The crucial properties of an intermediate call to \texttt{lin} are the
+following.  First, executing the concatenation of the declarations in
+$C$, then the extra top-level commands in $D$, and then $t$ will have
+the same effect as executing the concatenation of the declarations in
+$C'$, then the commands in $D'$, and then $t'$.  Furthermore, the
+latter concatenation is a linear expression: no nested position
+contains a construct which C disallows fromoccurring in such a
+positions.  Finally, the value computed by $t$ will be handled by $t'$
+as specified by the action $\theta$.
+
+The rules for the algorithm may seem a bit daunting at first.  They
+are given in Figure~\ref{fig:lin} for the central \carraway constructs
+(a few omitted ones are handled similarly).  We will see examples in
+the next section which should help understand how they work.  If calls
+to \texttt{lin} above the line (the \emph{premises} of the rule)
+return as stated, then the call to \texttt{lin} given below the line
+(the \emph{conclusion} of the rule) should also return as stated.  The
+rules determine an algorithm by matching the conclusions of the rules
+with a given call to \texttt{lin} which is to be executed, and then
+executing the calls to \texttt{lin} in the premises of the matching
+rule as recursive calls.  At most one rule applies (by matching its
+conclusion) to any call to \texttt{lin}, so the algorithm is
+deterministic.  In Figure~\ref{fig:lin}, we write $x$ for the base
+case of a variable and also a term constructor taking no arguments.
+Note that in translating a \texttt{match}-clause (in the second to
+last rule of the figure), we do not add declarations for the pattern
+variables, since they are \texttt{let}-declared to equal the results
+of initialization calls, as explained just before the start of this
+section.  Linearizing the \texttt{let}-term will ensure the pattern
+variables are indeed declared with \texttt{declare}.
+
+\begin{figure}
+\begin{tabular}{l}
+\framebox{Rules for the intermediate form of calls:}
+\\ \\
+
+\infer{\texttt{lin}(x,\cdot,C,D) = (x,C,D)}{\ }
+
+\\ \\
+
+\infer{\texttt{lin}(x,y,C,D) = (y := x,C,D)}{\ }
+
+\\ \\
+
+\infer{\texttt{lin}(x,\texttt{return},C,D) = ((\texttt{return}\ x),C,D)}{\ }
+
+\\ \\
+
+\infer{\texttt{lin}((f\ a_1\ \cdots\ a_n),\cdot,C_1,D_1) = ((f\ a'_1\ \cdots\ a'_n),C_{n+1},D_{n+1})}
+      {\forall i\in\{1,\ldots,n\}, \texttt{lin}(a_i,\cdot,C_i,D_i) = (a'_i,C_{i+1},D_{i+1}) }
+\\ \\
+\infer{\texttt{lin}((f\ a_1\ \cdots\ a_n),y,C_1,D_1) = (y := (f\ a'_1\ \cdots\ a'_n),C_{n+1},D_{n+1})}
+      {\forall i\in\{1,\ldots,n\}, \texttt{lin}(a_i,\cdot,C_i,D_i) = (a'_i,C_{i+1},D_{i+1}) }
+\\ \\
+\infer{\texttt{lin}((f\ a_1\ \cdots\ a_n),\texttt{return},C_1,D_1) = ((\texttt{return}\ (f\ a'_1\ \cdots\ a'_n)),C_{n+1},D_{n+1})}
+      {\forall i\in\{1,\ldots,n\}, \texttt{lin}(a_i,\cdot,C_i,D_i) = (a'_i,C_{i+1},D_{i+1}) }
+\\ \\
+\infer{\texttt{lin}(\texttt{do}\ t_1\ \cdots\ t_n\ \texttt{end},\theta,C_1,D_1) = (t'_n,C_{n+1},D_{n+1})}
+      {\begin{array}{l}
+       \forall i\in\{1,\ldots,n-1\},\ \  \texttt{lin}(t_i,\cdot,C_i,D_i) = (t'_i,C_{i+1},D'_i), \ \ \  \ \ D_{i+1} = (D'_i, t'_i) \\
+       \texttt{lin}(t_n,\theta,C_n,D_n) = (t'_n,C_{n+1},D_{n+1})
+       \end{array}}
+\\ \\
+\infer{\texttt{lin}(\texttt{let}\ x = t_1\ \texttt{in}\ t_2,\theta,C_1,D_1) = (t'_2,C_3,D_3)}
+      {\texttt{lin}(t_1,x,(C_1,\texttt{declare}\ x),D_1) = (t'_1,C_2,D_2) & \texttt{lin}(t_2,\theta,C_2,(D_2,t'_1)) = (t'_2,C_3,D_3)}
+
+\\ \\
+\infer{\texttt{lin}(\texttt{match}\ t\ \texttt{with}\ G_1\ |\ \cdots\ |\ G_n\ \texttt{end},\cdot,C_1,D_1) = (y,C_2,(D_2,t'_1,\texttt{match}\ x\ \texttt{with}\ G'_1\ |\ \cdots\ |\ G'_n\ \texttt{end}))}
+      {\begin{array}{l}
+       \texttt{x}\textnormal{ is a new variable} \\
+       \texttt{y}\textnormal{ is a new variable, if the type of the \texttt{match} is not \texttt{void};} \\
+       \textnormal{\ \ \ \ and }\cdot\textnormal{ otherwise.} \\
+       \texttt{lin}(t,x,(C_1,\texttt{declare}\ x),D_1) = (t'_1,C_2,D_2) \\
+       \forall i \in \{1,\ldots,n\}, \ \ \texttt{lin}(G_i,y) = G'_i
+       \end{array}}
+\\ \\
+\infer{\texttt{lin}(\texttt{match}\ t\ \texttt{with}\ G_1\ |\ \cdots\ |\ G_n\ \texttt{end},\theta,C_1,D_1) = (\texttt{match}\ x\ \texttt{with}\ G'_1\ |\ \cdots\ |\ G'_n\ \texttt{end},C_2,(D_2,t'_1))}
+      {\begin{array}{l}
+       \texttt{x}\textnormal{ is a new variable} \\
+       \theta\textnormal{ is not }\cdot \\
+       \texttt{lin}(t,x,(C_1,\texttt{declare}\ x),D_1) = (t'_1,C_2,D_2) \\
+       \forall i \in \{1,\ldots,n\}, \ \ \texttt{lin}(G_i,\theta) = G'_i
+       \end{array}}
+\\ \\ \\ \\
+\framebox{Rules for the starting form of calls:}
+\\ \\
+\infer{\texttt{lin}(c\ x_1\ \cdots\ x_n\ \texttt{=>}\ t,\theta) = c\ x_1\ \cdots\ x_n\ \texttt{=>}\ t'}
+      {\texttt{lin}(t,\theta) = t'}
+\\ \\
+\infer{\texttt{lin}(t,\theta) = \texttt{do}\ C\ D\ t'\ \texttt{end}}
+      {\texttt{lin}(t,\theta,\cdot,\cdot) = (t',C,D)}
+\end{tabular}
+\caption{\label{fig:lin}Rules for Linearizing \carraway Terms}
+\end{figure}
+
+\section{An example execution of the linearization algorithm}
+
+Let us see how the linearization algorithm works on an artificial but
+representatively tricky example.  The code we wish to linearize is the
+following, where for simplicity, I have elided the initialization
+terms and the consume terms automatically added to the
+\texttt{match}-clauses during type checking:
+
+\begin{verbatim}
+Global G = let x = match (plus Z Z) with 
+                     Z => Z
+                   | S x' => x'
+                   end in
+             (S x).
+\end{verbatim}
+
+\noindent As we discussed above, the \texttt{match}-term nested in the
+\texttt{let}-term will not translate directly to legal C code, so we
+will rely on linearization to pull it out of this nested position.
+
+We can display a run of the linearization algorithm with a nested
+itemized list of calls to \texttt{lin}, where recursive calls (coming
+from the premises of rules) issued to compute another call are listed
+in the sublist beneath that call.  We will build up such a list
+gradually, so we can explain how the rules are applied one at a time.
+To begin with, we have our outermost call to linearize the
+\texttt{let}-term.  The action we want to use is \texttt{G}: that is, we want
+our linearized version of the \texttt{let}-term to write the value of
+that term into \texttt{G}.
+
+{\small
+\begin{enumerate}
+\item \texttt{lin(let x = match (plus Z Z) with Z => Z | S x' => x' end in (S x), G)}
+\end{enumerate}
+}
+
+\noindent The only rule that can be applied -- i.e., whose conclusion
+could match this expression -- is the last rule.  So we get:
+
+{\small
+\begin{enumerate}
+\item \texttt{lin(let x = match (plus Z Z) with Z => Z | S x' => x' end in (S x), G)}
+\begin{enumerate}
+\item \texttt{lin(let x = match (plus Z Z) with Z => Z | S x' => x' end in (S x), G,}$\cdot$\texttt{, }$\cdot$\texttt{)}
+\end{enumerate}
+\end{enumerate}
+}
+
+\noindent Now the only rule that could apply is the \texttt{let}-rule.
+The first premise of that rule is shown next.  To write the second
+premise, we need information computed from the evaluation of the
+first, so we defer writing the second premise for a moment:
+
+{\small
+\begin{enumerate}
+\item \texttt{lin(let x = match (plus Z Z) with Z => Z | S x' => x' end in (S x), G)}
+\begin{enumerate}
+\item \texttt{lin(let x = match (plus Z Z) with Z => Z | S x' => x' end in (S x), G,}$\cdot$\texttt{, }$\cdot$\texttt{)}
+\begin{enumerate}
+\item \texttt{lin(match (plus Z Z) with Z => Z | S x' => x' end, x, (}$\cdot$\texttt{,declare x), }$\cdot$\texttt{)}
+\end{enumerate}
+\end{enumerate}
+\end{enumerate}
+}
+
+\noindent Now let us separately compute the result for this most
+recently introduced call to \texttt{lin}, on the \texttt{match}-term.  Naturally, the only rule
+which could apply is the one for \texttt{match}:
+
+{\small
+\begin{enumerate}
+\item \texttt{lin(match (plus Z Z) with Z => Z | S x' => x' end, x, (}$\cdot$\texttt{,declare x), }$\cdot$\texttt{)}
+\begin{enumerate}
+\item \texttt{lin((plus Z Z), y, (}$\cdot$\texttt{,declare x,declare y), }$\cdot$\texttt{)}
+\end{enumerate}
+\end{enumerate}
+}
+
+\noindent We will not work through the premises for the rule for applications, but just show the result:
+
+{\small
+\begin{enumerate}
+\item \texttt{lin(match (plus Z Z) with Z => Z | S x' => x' end, x, (}$\cdot$\texttt{,declare x), }$\cdot$\texttt{)}
+\begin{enumerate}
+\item \texttt{lin((plus Z Z), y, (}$\cdot$\texttt{,declare x,declare y), }$\cdot$\texttt{)}
+
+\texttt{ = (y := (plus Z Z), }$\cdot$\texttt{,declare x,declare y), }$\cdot$\texttt{)} 
+\end{enumerate}
+\end{enumerate}
+}
+
+\noindent Then here are the other premises for the
+\texttt{match}-term, corresponding to the \texttt{match}-clauses.
+Notice here how the destination variable \texttt{x} is propagated to
+the calls for those clauses, and also how we do not pass the lists of
+declarations and extra top-level terms in to those calls:
+
+{\small
+\begin{enumerate}
+\item \texttt{lin(match (plus Z Z) with Z => Z | S x' => x' end, x, (}$\cdot$\texttt{,declare x), }$\cdot$\texttt{)}
+\begin{enumerate}
+\item \texttt{lin((plus Z Z), y, (}$\cdot$\texttt{,declare x,declare y), }$\cdot$\texttt{)}
+
+\texttt{ = (y := (plus Z Z), }$\cdot$\texttt{,declare x,declare y), }$\cdot$\texttt{)} 
+\item \texttt{lin(Z => Z, x)}
+\item \texttt{lin(S x' => x', x)}
+\end{enumerate}
+\end{enumerate}
+}
+
+\noindent We will continue to elide the calls to initialization
+functions and consume functions, and just show the results for the
+\texttt{match}-clauses:
+
+{\small
+\begin{enumerate}
+\item \texttt{lin(match (plus Z Z) with Z => Z | S x' => x' end, x, (}$\cdot$\texttt{,declare x), }$\cdot$\texttt{)}
+\begin{enumerate}
+\item \texttt{lin((plus Z Z), y, (}$\cdot$\texttt{,declare x,declare y), }$\cdot$\texttt{)}
+
+\texttt{ = (y := (plus Z Z), }$\cdot$\texttt{,declare x,declare y), }$\cdot$\texttt{)} 
+\item \texttt{lin(Z => Z, x) = \ \   Z => x := Z}
+\item \texttt{lin(S x' => x', x) = \ \  S x' => x := x'}
+\end{enumerate}
+\end{enumerate}
+}
+
+\noindent Finally we can finish computing the result for linearization of the entire \texttt{match}-term:
+
+
+{\small
+\begin{enumerate}
+\item \texttt{lin(match (plus Z Z) with Z => Z | S x' => x' end, x, (}$\cdot$\texttt{,declare x), }$\cdot$\texttt{)}
+
+\texttt{ = (match y with Z => x := Z | S x' => x := x' end, (}$\cdot$\texttt{,declare x,declare y), (}$\cdot$\texttt{y := (plus Z Z)))}
+\end{enumerate}
+}
+
+\noindent Note that this result conforms to the properties we
+expressed above for intermediate calls to \texttt{lin}, in the sense
+that if we do our declarations (of \texttt{x} and \texttt{y}) and then
+our extra top-level commands (\texttt{y := (plus Z Z)}), and then the
+\texttt{match}-term we have produced; then this will have the same
+effect as the original \texttt{match}-term (preceded by its
+declarations and extra commands), and also store the result produced
+by the \texttt{match}-term in the variable \texttt{x}.
+
+We can now return to finish off the linearization of the
+\texttt{let}-term.  We show next the second premise to the
+\texttt{let}-rule:
+
+{\small
+\begin{enumerate}
+\item \texttt{lin(let x = match (plus Z Z) with Z => Z | S x' => x' end in (S x), G)}
+\begin{enumerate}
+\item \texttt{lin(let x = match (plus Z Z) with Z => Z | S x' => x' end in (S x), G,}$\cdot$\texttt{, }$\cdot$\texttt{)}
+\begin{enumerate}
+\item \texttt{lin(match (plus Z Z) with Z => Z | S x' => x' end, x, (}$\cdot$\texttt{,declare x,declare y), }$\cdot$\texttt{)}
+
+\texttt{ = (match y with Z => x := Z | S x' => x := x' end, (}$\cdot$\texttt{,declare x,declare y), (}$\cdot$\texttt{y := (plus Z Z)))}
+\item \texttt{lin((S x), G, (}$\cdot$\texttt{,declare x,declare y), (}$\cdot$\texttt{y := (plus Z Z),match y with Z => x := Z | S x' => x := x' end))}
+\end{enumerate}
+\end{enumerate}
+\end{enumerate}
+}
+
+\noindent The result for this call (to linearize \texttt{(S x)}) is
+then \texttt{G := (S x)}, with the same list of declarations, and the
+same list of extra commands.  This is returned for item (a).  Finally,
+for item (1), we get this final result, which combines the
+declarations, extra commands, and the linearized term \texttt{G := (S
+x)}:
+
+\begin{verbatim}
+do 
+  declare x
+  declare y
+  y := (plus Z Z)
+  match y with Z => x := Z | S x' => x := x'
+  G := (S x)
+end
+\end{verbatim}
+
+\section{Compiling Inductive Datatypes}
+
+Following linearization, \carraway must also flatten nested function
+types, by introducing new type definitions.  We will not discuss this
+transformation, but turn to the final major step of compilation, which
+is the emission of C code for basic operations on inductive data.
+The basic operations are:
+
+\begin{itemize}
+\item the allocation of a new cell when a term constructor is applied to its arguments.
+\item the reclaiming of the memory for that cell when the cell is no
+longer referenced.  We call this operation \emph{deleting}.
+\item pattern matching on cells.
+\end{itemize}
+
+\noindent All cells that are created during execution of the C code
+emitted for a \carraway program will occupy a contiguous chunk of
+memory.  The first word of each cell has a special format.  The first
+byte (the low 8 bits) holds an integer tag telling which constructor
+built the cell.  This tag only needs to differentiate among
+constructors for the same datatype, so the restriction to 256
+constructors is only a restriction on the number of constructors for
+any given datatype.  The total allowed number of constructors for all
+datatypes is much larger than this.  The remaining bytes of the first
+word of the cell are reserved for resource management.  We will use
+them to hold the reference count of the cell.
+
+After this first word of the cell, there is an additional word for
+each argument that the constructor takes.  For arguments which are
+other reference-tracked data, for example, we will store pointers to
+their cells in these fields.  For untracked data such as types or
+functions, we will store their values.  In the case of a function,
+this is the address of the function, and in the case of a type this is
+a distinct integer associated with the type.
+
+For the datatype of unary natural numbers, \carraway will generate
+the following C code based on these ideas.  That is, if we run it on
+the file \texttt{nat.w} in \texttt{tests/carraway/}, it will produce
+a C file called \texttt{nat.c} containing this code:
+
+\begin{verbatim}
+#define gnat 2
+
+#define op_gZ 0
+
+#define op_gS 1
+
+typedef struct {
+  int opval;
+} gnat_gZ;
+
+typedef struct {
+  int opval;
+  void *gx_12;
+} gnat_gS;
+\end{verbatim}
+
+\noindent This associates the integer $2$ with the type \texttt{nat},
+and then integers $0$ and $1$ with the constructors \texttt{Z} and
+\texttt{S}, respectively.  The code then defines C types
+\texttt{gnat\_gZ} and \texttt{gnat\_gS}.  These are the types for
+cells for uses of \texttt{Z} and applications of \texttt{S},
+respectively.  The first word of each cell type is called
+\texttt{opval}.  This is the word which holds the constructor tag and
+the reference count for the cell.  The field \texttt{gx\_12} in
+\texttt{gnat\_gS} corresponds to the single input expected by
+\texttt{S}.  The name ``\texttt{gx\_12}'' is derived from the name
+\texttt{x} given for that input in the type given for \texttt{S}.
+
+Pattern matching is easily compiled making use of a macro
+\texttt{ctor} to extract the low 8 bits of the first word of each
+cell, and then \texttt{switch}ing on that value.
+
+\subsection{Allocating, clearing, and deleting with \texttt{malloc}}
+
+The emitted code to allocate a cell for a use of \texttt{Z} and an
+application of \texttt{S} respectively, using the C standard library
+function \texttt{malloc}, is the following:
+
+\begin{verbatim}
+void *gZ() {
+  gnat_gZ *x;
+  x = (gnat_gZ *)malloc(sizeof(void *)*1);
+  x->opval = 256 + op_gZ;
+  return x;
+}
+
+void *gS(void *gx_12) {
+  gnat_gS *x;
+  x = (gnat_gS *)malloc(sizeof(void *)*2);
+  x->opval = 256 + op_gS;
+  x->gx_12 = gx_12;
+  return x;
+}
+\end{verbatim}
+
+\noindent These functions call \texttt{malloc} to request (exactly)
+enough memory to hold the cell, and then cast that memory to the
+appropriate type (this type cast is done where it says, for example,
+\texttt{x = (gnat\_gZ *)...}'').  Finally, the fields of the cell are
+filled in.  We add $256$ to the constructor tag, because $256$ puts a
+$1$ in the bit $9$ of the first word of the cell.  The refcount starts
+(low bits) at bit $9$, so this represents initializing with a refcount
+of $1$.
+
+When it is time to reclaim (\emph{delete}) the memory associated with
+the cell, the code emitted by \carraway will call a function
+\texttt{delete\_gnat}.  This function \emph{clears} the fields of the
+cell by consuming their resources as appropriate.  Then it returns the
+memory to the operating system (in principle) by calling the C
+standard library function \texttt{free}.  Clearing is broken out
+separately, because when we manage memory with free lists instead of
+\texttt{malloc}/\texttt{free}, we still need to clear cells.  Note
+that since there are no fields of a \texttt{Z} cell, clearing such a
+cell does nothing, and hence can be macro-defined away.  
+
+\begin{verbatim}
+#define clear_gnat_gZ(x) 
+
+void clear_gnat_gS(void *_x) {
+  gnat_gS *x = (gnat_gS *)_x;
+  gconsume_unowned(gnat, x->gx_12);
+}
+
+void delete_gnat(void *x) {
+  switch ctor(x) {
+  case op_gZ: 
+    clear_gnat_gZ(x);
+    free(x);
+    break;
+
+  case op_gS: 
+    clear_gnat_gS(x);
+    free(x);
+    break;
+
+}
+}
+\end{verbatim}
+
+\subsection{Allocating, clearing, and deleting with free lists}
+
+One can often obtain significant performance improvements in low-level
+code by managing memory directly, without using \texttt{malloc} and
+\texttt{free}.  In this section, we describe one example of this
+technique, for managing memory for inductive data using our own free
+lists.  The idea is that for each size of cell, we will keep a list of
+cells that have been previously freed, and which have that size.  Such
+a list is called a \emph{free list}.  When it is time to allocate a
+new cell for a use of a constructor, we will check the free list
+associated with the size of that constructor's cells.  If there is a
+cell available on the free list, we will remove that cell from the
+free list, and use it, instead of allocating new memory.  
+
+There are several subtleties to the implementation of this basic idea
+in \carraway.  First, we have the question of how to implement the
+free list of cells.  We do not need to waste memory on a list data
+structure to hold cells.  We can instead just set pointers from one
+cell on the free list to the next, by abusing fields of the cells.
+For cells consisting of just 1 word, like cells for \texttt{Z}, we are
+forced to use this one word to point to the next cell in the free
+list.  For cells consisting of more than one word, we can instead
+abuse the second word.  This will allow us to avoid overwriting the
+constructor tag in the first word.  
+
+The second subtlety is that we may wish to defer clearing the contents
+of the freed cell until it is removed from the free list in response
+to an allocation request (let us call this ``reallocation'').  The
+reason for wishing to clear cells only when they are reallocated is
+for real-time performance.  If we clear cells immediately when they
+are deleted, we may cause a large cascade of work, since clearing the
+contents of a cell may cause the data pointed to by that cell also to
+be deleted.  For example, if those data are reference counted data and
+consuming them causes their reference counts to fall to $0$, then they
+will be deleted.  So we will not have any upper bound on the amount of
+time that a delete operation will take, if we clear cell contents eagerly,
+right when the cell is deleted.
+
+In contrast, if we clear cell contents lazily, when the cell is
+reallocated from the free list, then we will get an upper bound on the
+amount of work needed for all our memory allocation operations.
+Deletion is constant time, since we must just place the newly deleted
+cell on the appropriate free list.  Allocation is now bounded by the
+amount of time needed to clear a single cell, which will in general be
+$O(k)$, where $k$ is the number of words in the cell.  A final twist
+with clearing cells lazily is that we need to know exactly which clear
+function to call, at the point when we reallocate a cell.  At that
+point, we know only the size of the cell, and its constructor tag
+(guaranteed not to be overwritten by a free list pointer, if the cell
+contains at least one word besides its first one -- and this is the
+only situation in which we must call clear).  But we need also to know
+its runtime datatype, to call the proper clear function.  The solution
+to this problem is to store the integer corresponding to that datatype
+in the refcount part of the first word of the cell, at the moment when
+the cell is freed.
+
+The emitted C code for managing free lists holding cells with one additional
+word after the first one is:
+
+\begin{verbatim}
+void *free_1 = (void *)0;
+
+void delete_1(void *_x) {
+  void **x = (void **)_x;
+  x[1] = free_1;
+  free_1 = x;
+}
+
+#define delete_gnat_gS delete_1
+\end{verbatim}
+
+\noindent The first line declares the free list \texttt{free\_1} for
+cells with one additional word, and initializes this to $0$, which in
+C is often used to represent the empty list.  Then the \texttt{delete}
+function uses the statement \texttt{x[1] = free\_1} to abuse word 1 of
+the cell \texttt{x} to point to the current start of the free list.
+The free list pointer is then modified to point to \texttt{x}, making
+\texttt{x} the new head of the list.  Finally, we define the delete
+function for \texttt{S} cells just to be this delete function.
+
+The delete function for the \texttt{gnat} type is similar to the one
+shown before, except now, as mentioned, we must store the integer tag
+for the type, in the refcount area of the first word of the cell.
+This is for the benefit of the global clear function (which takes in
+only a single pointer to a cell of otherwise unknown type).  That
+function will use the type tag and the constructor tag to dispatch the
+cell to the proper clear function for that specific type of cell:
+
+\begin{verbatim}
+void delete_gnat(void *x) {
+  *(int *)x = (gnat << 8) | ctor(x); // store the type here for benefit of clear()
+  switch ctor(x) {
+  case op_gZ: 
+    delete_gnat_gZ(x);
+    break;
+
+  case op_gS: 
+    delete_gnat_gS(x);
+    break;
+
+}
+}
+\end{verbatim}
+
+Finally, we have allocation, which is a little more complex, because
+we have to see if our free list has a cell we can reallocate (we
+consider here just the code for \texttt{S}, since the code for
+\texttt{Z} is similar).  If our free list is indeed non-empty, then we
+pull a cell off, and call the global \texttt{clear} function.  Then we
+can initialize the cell as before.  If the free list is empty, we must
+request memory, ultimately from the operating system, for the new
+cell.  This is done using \texttt{carraway\_alloc}, which is a small
+and simple wrapper around the standard C function \texttt{brk} for
+requesting memory from the operating system.
+
+\begin{verbatim}
+void *gS(void *gx_12) {
+  gnat_gS *x;
+  if (free_1) {
+    x = (gnat_gS *)free_1;
+    free_1 = ((void **)x)[1];
+    clear(x);
+  }
+  else
+    x = (gnat_gS *)carraway_alloc(sizeof(void *)*2);
+  x->opval = 256 + op_gS;
+  x->gx_12 = gx_12;
+  return x;
+}
+\end{verbatim}
 
 \bibliographystyle{plain} \bibliography{the-bib}
 

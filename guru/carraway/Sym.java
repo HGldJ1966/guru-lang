@@ -15,28 +15,32 @@ public class Sym extends Expr {
     }
 
     public void do_print(java.io.PrintStream w, Context ctxt) {
-	if (ctxt.stage >= 2) {
-	    if (ctxt.isAttribute(this)) {
-		w.print("void *");
+	if (ctxt.getFlag("output_ocaml") && ctxt.isCtor(this))
+	    w.print(output_name.toUpperCase());
+	else {
+	    if (ctxt.stage >= 2) {
+		if (ctxt.isAttribute(this)) {
+		    w.print("void *");
+		    return;
+		}
+		if (this == ctxt.voidref) {
+		    w.println("return;");
+		    return;
+		}
+	    }	
+
+	    String n = (ctxt.stage <= 2 && !ctxt.getFlag("disambiguate_vars") ? name : output_name);
+
+	    if (!ctxt.getFlag("print_vars_subst")) {
+		w.print(n);
 		return;
 	    }
-	    if (this == ctxt.voidref) {
-		w.println("return;");
-		return;
-	    }
-	}	
-
-	String n = (ctxt.stage <= 2 && !ctxt.getFlag("disambiguate_vars") ? name : output_name);
-
-	if (!ctxt.getFlag("print_vars_subst")) {
-	    w.print(n);
-	    return;
+	    Sym s = ctxt.getSubst(this);
+	    if (s != null)
+		s.print(w,ctxt);
+	    else
+		w.print(n);
 	}
-	Sym s = ctxt.getSubst(this);
-	if (s != null)
-	    s.print(w,ctxt);
-	else
-	    w.print(n);
     }    
 
     public String refString(Context ctxt) {

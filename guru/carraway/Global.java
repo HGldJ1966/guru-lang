@@ -74,17 +74,25 @@ public class Global extends Command {
 	// stage 3
  
 	ctxt.stage = 3;
-	T.print(ctxt.cw,ctxt);
-	ctxt.cw.print(" ");
-	c.print(ctxt.cw,ctxt);
-	ctxt.cw.println(";\n");
 
-	String initn = "init_"+c.toString(ctxt);
-	FunTerm f = new FunTerm(initn, t.linearize(ctxt, pos, c), pos);
+	if (ctxt.getFlag("output_ocaml")) {
+	    ctxt.cw.println("let "+c.toString(ctxt)+" = ");
+	    t.print(ctxt.cw,ctxt);
+	    ctxt.cw.println(";;");
+	}
+	else {
+	    T.print(ctxt.cw,ctxt);
+	    ctxt.cw.print(" ");
+	    c.print(ctxt.cw,ctxt);
+	    ctxt.cw.println(";\n");
+
+	    String initn = "init_"+c.toString(ctxt);
+	    FunTerm f = new FunTerm(initn, t.linearize(ctxt, pos, c), pos);
 	
-	ctxt.addGlobalInit(initn);
+	    ctxt.addGlobalInit(initn);
 
-	f.print(ctxt.cw,ctxt);
+	    f.print(ctxt.cw,ctxt);
+	}
 	ctxt.cw.flush();
     }
 

@@ -53,21 +53,9 @@ public class Include extends Command {
 
 	// initial declarations go in the top-level output file
 
-	if (the_cmd_line_file) {
+	if (the_cmd_line_file && !ctxt.getFlag("output_ocaml")) {
 	    ctxt.cw.println("void release(int tp, void *x);\n");
 	    ctxt.cw.println("void clear(void *x);\n");
-
-	    if (!ctxt.getFlag("use_malloc")) 
-		ctxt.cw.println("char *carraway_mem_start = 0;\n"+
-				"char *carraway_mem_end = 0;\n"+
-				"inline char *carraway_alloc(int numchars) {\n"+
-				"  char *ret;\n"+
-				"  if (carraway_mem_end - carraway_mem_start < numchars)  \n"+
-				"    brk((carraway_mem_end = carraway_mem_end + 16384)); \n"+
-				"  ret = carraway_mem_start; \n"+
-				"  carraway_mem_start += numchars; \n"+
-				"  return ret; \n"+
-				"}");
 	}
 	
 	while(true) {
