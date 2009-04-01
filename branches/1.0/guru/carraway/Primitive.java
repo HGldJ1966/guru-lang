@@ -27,10 +27,11 @@ public class Primitive extends Command {
 	    // we need to add a reference here for simulation purposes.
 	    ctxt.setSubst(s, ctxt.newRef(pos));
 
-	ctxt.cw.println(code);
-	ctxt.cw.println("");
-	ctxt.cw.flush();
-
+	if (!ctxt.getFlag("output_ocaml")) {
+	    ctxt.cw.println(code);
+	    ctxt.cw.println("");
+	    ctxt.cw.flush();
+	}
     }
 
     public void print(java.io.PrintStream w, 

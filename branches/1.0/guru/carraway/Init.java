@@ -61,8 +61,10 @@ public class Init extends Command {
 
 	ctxt.stage = 2;
 
-	ctxt.cw.println(init.code);
-	ctxt.cw.flush();
+	if (!ctxt.getFlag("output_ocaml")) {
+	    ctxt.cw.println(init.code);
+	    ctxt.cw.flush();
+	}
     }
 
     public void print(java.io.PrintStream w, 

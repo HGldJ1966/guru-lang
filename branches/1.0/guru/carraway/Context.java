@@ -48,6 +48,7 @@ public class Context extends guru.FlagManager {
     int stage;
     int type_num;
     public HashSet free_lists_emitted;
+    public boolean alloc_committed;
 
     public Context(String file_suffix) {
 	this.file_suffix = file_suffix;
@@ -90,6 +91,7 @@ public class Context extends guru.FlagManager {
 	type_num = 1; // we assume elsewhere that this is 1
 
 	free_lists_emitted = new HashSet(256);
+	alloc_committed = false;
     }
 
     // return an error message if there was a problem opening the compiler output file determined by f.
@@ -102,36 +104,56 @@ public class Context extends guru.FlagManager {
 			      +"\n\n1. the expected suffix: "+file_suffix
 			      +"\n\n2. the file name: "+f);
 	
-	String n = f.substring(0, f.length() - 2) + ".c";
+	String new_suf = (getFlag("output_ocaml") ? ".ml" : ".c");
+	String n = f.substring(0, f.length() - 2) + new_suf;
 	
 	if (cw != null) {
-	    cw.println("#include \""+n+"\"");
+	    if (getFlag("output_ocaml"))
+		cw.println("(* Including "+n+" *)");
+	    else
+		cw.println("#include \""+n+"\"");
 	    cw.flush();
 	}
-	open_files.push(cw);
-	try {
-	    cw = new PrintStream(new BufferedOutputStream(new FileOutputStream(n)));
+	if (!getFlag("output_ocaml") || cw == null) {
+	    open_files.push(cw);
+	    try {
+		cw = new PrintStream(new BufferedOutputStream(new FileOutputStream(n)));
+	    }
+	    catch(FileNotFoundException e) {
+		return new String("Could not open the included file.");
+	    }
+	    if (getFlag("output_ocaml"))
+		cw.println("(* produced by carraway *)\n");
+	    else {
+		cw.println("// produced by carraway\n");
+		cw.println("#include <stdio.h>\n");
+		cw.println("#include <stdlib.h>\n");
+	    }
 	}
-	catch(FileNotFoundException e) {
-	    return new String("Could not open the included file.");
-	}
-
-	cw.println("// produced by carraway\n");
-	cw.println("#include <stdio.h>\n");
-	cw.println("#include <stdlib.h>\n");
 
 	return null;
     }
 
     public void popFile() {
-	cw.close();
-	cw = (PrintStream)open_files.pop();
+	if (!getFlag("output_ocaml")) {
+	    cw.close();
+	    cw = (PrintStream)open_files.pop();
+	}
     }
 
     public void commentBox(String s) {
-	cw.println("/*********************************************************");
+	if (getFlag("output_ocaml"))
+	    cw.print("(");
+	else
+	    cw.print("/");
+	cw.println("*********************************************************");
 	cw.println(" * "+s);
-	cw.println(" *********************************************************/");
+	cw.print(" *********************************************************");
+	if (getFlag("output_ocaml"))
+	    cw.print(")");
+	else
+	    cw.print("/");	
+	cw.println("");
     }
 
     public void addGlobalInit(String init_func_name) {

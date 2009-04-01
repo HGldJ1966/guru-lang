@@ -47,18 +47,20 @@ public class Attribute extends Command {
 	// need to add the attribute first, since it is mentioned in the type of the drop function.
 	ctxt.addAttribute(s,drop.s);
 	if (first_attribute) {
-	    ctxt.cw.println("#include <values.h>\n\n"
-			    +"#define ctor(x) (*((int *)x) & 255)\n"
-			    +"#define op(x) (*((int *)x))\n\n"
-			    +"void inc(void *x) {\n"
-			    +"  unsigned tmp = *((int *)x) | 255;\n"
-			    +"  if (tmp != UINT_MAX) *((int *)x) = *((int *)x) + 256;\n"
-			    +"}\n\n"
-			    +"void dec(void *x) {\n"
-			    +"  unsigned tmp = *((int *)x) | 255;\n"
-			    +"  if (tmp != UINT_MAX) *((int *)x) = *((int *)x) - 256;\n"
-			    +"}\n");
-	    ctxt.cw.flush();
+	    if (!ctxt.getFlag("output_ocaml")) {
+		ctxt.cw.println("#include <values.h>\n\n"
+				+"#define ctor(x) (*((int *)x) & 255)\n"
+				+"#define op(x) (*((int *)x))\n\n"
+				+"void inc(void *x) {\n"
+				+"  unsigned tmp = *((int *)x) | 255;\n"
+				+"  if (tmp != UINT_MAX) *((int *)x) = *((int *)x) + 256;\n"
+				+"}\n\n"
+				+"void dec(void *x) {\n"
+				+"  unsigned tmp = *((int *)x) | 255;\n"
+				+"  if (tmp != UINT_MAX) *((int *)x) = *((int *)x) - 256;\n"
+				+"}\n");
+		ctxt.cw.flush();
+	    }
 	    first_attribute = false;
 	}
 
