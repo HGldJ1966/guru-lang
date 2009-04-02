@@ -6814,6 +6814,22 @@ consume \texttt{l}.  But the subdata of \texttt{l} will be initialized
 according to the initialization rules for \texttt{owned} scrutinees
 (see Section~\ref{ch9:pin}).
 
+\item Extra Credit: include the command \texttt{Set "use\_malloc"} at
+the top of your test files for problems (3) and (6).  This instructs
+\carraway to use the standard C library functions \texttt{malloc} and
+\texttt{free} to allocate and deallocate memory (more about this in
+Section~\ref{ch10:ind} below).  Again compare the running times of your
+programs.  I found that something strange happened for the program for
+part (3) when I did this, which I was able to understand by running:
+
+\begin{verbatim}
+valgrind hw4 < shared196/labs/wrnpc11.txt
+\end{verbatim}
+
+\noindent This command uses the \texttt{valgrind} tool to watch for
+memory errors while running the program \texttt{hw4}.  Assuming
+you observe the same strange behavior: what is going on?  Is it
+a bug in \carraway?
 
 \end{enumerate}
 
@@ -7149,7 +7165,8 @@ variables are indeed declared with \texttt{declare}.
 \caption{\label{fig:lin}Rules for Linearizing \carraway Terms}
 \end{figure}
 
-\section{An example execution of the linearization algorithm}
+\subsection{An example execution of the linearization algorithm}
+\label{ch10:ex}
 
 Let us see how the linearization algorithm works on an artificial but
 representatively tricky example.  The code we wish to linearize is the
@@ -7333,6 +7350,7 @@ end
 \end{verbatim}
 
 \section{Compiling Inductive Datatypes}
+\label{ch10:ind}
 
 Following linearization, \carraway must also flatten nested function
 types, by introducing new type definitions.  We will not discuss this
@@ -7602,6 +7620,180 @@ void *gS(void *gx_12) {
   return x;
 }
 \end{verbatim}
+
+\section{Watching C Code Execute with \texttt{gdb}}
+
+To watch our compiled programs execute, (on linux) we can use the Gnu
+debugger \texttt{gdb}.  To use the debugger effectively, we need to
+compile the emitted C source file (for example, \texttt{test3.c}
+produced by \carraway from the file
+\texttt{guru-lang/tests/carraway/test3.w}) like this:
+
+\begin{verbatim}
+% gcc -o test3 -O0 -ggdb test3.c
+\end{verbatim}
+
+\noindent I recommend running all these commands with the shell's
+current directory set (by \texttt{cd}) to the
+\texttt{guru-lang/tests/carraway} directory. To start \texttt{gdb} to
+debug the \texttt{test3} executable (for example), run the following
+from the shell:
+
+\begin{verbatim}
+% gdb test3
+\end{verbatim}
+
+\noindent This will put you into shell-like interaction with
+\texttt{gdb}.  Here is a quick summary of the \texttt{gdb} commands I
+think you will need (for example, for the homework):
+
+\begin{itemize}
+\item \texttt{run} (this can be abbreviated \texttt{r}): start the program running.
+The program will execute as normal, unless you have set a breakpoint, as explained
+next.
+
+\item \texttt{break main} (can be abbreviated \texttt{b main}): set a
+breakpoint at the start of the \texttt{main} function, which will put
+you right at the beginning of execution of the program.  You can use a
+similar command with another function besides \texttt{main}
+(e.g. \texttt{break ginc}).
+
+\item \texttt{where}: print the file name and line number where the
+current point of execution is (assuming the program is running and has
+stopped at a breakpoint).
+
+\item \texttt{list} (can be abbreviated \texttt{l}): show a few lines
+of source code around the current point of execution.
+
+\item \texttt{next} (can be abbreviated \texttt{n}): take a single step
+forward of execution, but do not enter function calls if the current point
+of execution is at the start of one.
+
+\item \texttt{step} (can be abbreviated \texttt{s}): like
+\texttt{next}, except we will enter a function call if the current
+point of execution is at the start of one.
+
+\item \texttt{print x} (can be abbreviated \texttt{p x}): print the current
+value of C code expression \texttt{x}.  
+
+\item \texttt{continue} (can be abbreviated \texttt{c}): resume execution.
+
+\end{itemize}
+
+\noindent The keystroke sequence ``Control-p'' will, just as in the
+shell, print the previous command from the list of previous
+\texttt{gdb} commands (and if entered again, print previous commands
+before that one); and ``Control-n'' will print a subsequent command
+from the current point in the list of previous \texttt{gdb} commands.
+
+\section{Exercises}
+
+Most of the exercises below are designed to get you familiar with the
+\carraway compilation by having you explore the C code emitted for
+compilation of \texttt{guru-lang/tests/carraway/test3.w}.  You are
+free to use any means necessary to answer the following questions,
+including modifying the generated C code by hand, or running
+\texttt{gdb}.  Another useful tool, at least when the emitted code is
+using \texttt{malloc}/\texttt{free} instead of free lists, is
+\texttt{valgrind}, which runs a program and monitors its memory usage.
+You can run \texttt{valgrind} on \texttt{test3}, for example, like
+this:
+
+\begin{verbatim}
+% echo "hi" | valgrind ./test3
+\end{verbatim}
+
+\noindent As a final note, if you give the \texttt{gcc} compiler the
+``\texttt{-w}'' command-line option, it will not print any warning
+messages.
+
+\begin{enumerate}
+
+\item At the top of \texttt{test3.w} is a \texttt{Set}-command, to set
+the compiler flag \texttt{use\_malloc}.  First, make sure this command is
+uncommented (so it will actually be executed).  Then compile \texttt{test3.w},
+and run it like this:
+
+\begin{verbatim}
+% echo "hi" | ./test3
+\end{verbatim}
+
+\begin{enumerate}
+
+\item Using \texttt{gdb}, print the contents of the cell corresponding
+to \texttt{s} from the definition of \texttt{main} in
+\texttt{test3.w}, right after the call to \texttt{read\_all}.  To do this,
+you can use the command:
+
+\begin{verbatim}
+(gdb) p *(the_type *)gs
+\end{verbatim}
+
+\noindent where you must fill in \texttt{the\_type} with the
+appropriate C type describing the cell.  The notation
+``\texttt{(the\_type *)gs}'' is C notation for type-casting
+\texttt{gs} to have the type ``\texttt{the\_type *}''.  The star in
+front of that (just after the ``\texttt{p}'') then shows the contents
+of the cell.  Explain why the values you see for the fields of this
+cell make sense, given the explanation of Section~\ref{ch10:ind}
+above.
+
+\item How many times is a reference count incremented by this run?
+How many times is a reference count decremented?  Explain why it makes
+sense that you see those numbers.
+
+\item How many bytes of memory are allocated per character in the input string?  Justify
+your answer experimentally, and explain why it makes sense.
+
+\end{enumerate}
+
+\item This problem concerns a file \texttt{test3a.w}, which is very
+similar to \texttt{test3.w}, except that it has commented out the
+\texttt{Set}-command at the top, so that the compiler flag
+\texttt{use\_malloc} will not be exectued.  Also, it has an extra
+allocation it does in \texttt{main}.  Compile \texttt{test3a.w}, and
+run it as before, by \texttt{echo}ing into it the input string "hi".
+Note that using \texttt{echo} will ensure that there is no newline
+character included in the input; including such would change the
+answers to the questions below.  An alternative would be to put "hi"
+into a test file \texttt{data}, and then run
+
+\begin{verbatim}
+% cat data | ./test3a
+\end{verbatim}
+
+\noindent An advantage of that approach is that within \texttt{gdb}, you
+can run the program being debugged on the \texttt{data} input file with
+this command:
+
+\begin{verbatim}
+(gdb) r < data
+\end{verbatim}
+
+\begin{enumerate}
+
+\item Draw a boxes-and-pointers diagram of the free lists as they
+exist immediately after the call to \texttt{(dec ulist s)} in
+\texttt{test3a.w}.  A box is drawn for a cell, and a pointer is drawn
+between cells if the first cell references the second.  Show any cells
+reachable from other pointers (besides the free list pointers) from
+the cells in the free lists.  Associate a unique number with your
+boxes (e.g., their address in memory), that you can refer to in the
+next part.
+
+\item Show the state of memory, including free lists and the list
+produced by the call to \texttt{(ucons tt unil)}, right after that
+call to \texttt{ucons} (and before the next call to \texttt{dec}).
+
+\end{enumerate}
+
+\item Show, in step by step fashion as in Section~\ref{ch10:ex}, how this call to \texttt{lin} is
+computed, including (of course) the final linearized term it produces:
+\[
+\texttt{lin(let x = let y = Z in (S y) in (S x), }\cdot\texttt{)}
+\]
+
+\end{enumerate}
 
 \bibliographystyle{plain} \bibliography{the-bib}
 
