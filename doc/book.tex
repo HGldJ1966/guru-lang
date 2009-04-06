@@ -7496,24 +7496,21 @@ One can often obtain significant performance improvements in low-level
 code by managing memory directly, without using \texttt{malloc} and
 \texttt{free}.  In this section, we describe one example of this
 technique, for managing memory for inductive data using our own free
-lists.  The idea is that for each size of cell, we will keep a list of
-cells that have been previously freed, and which have that size.  Such
-a list is called a \emph{free list}.  When it is time to allocate a
-new cell for a use of a constructor, we will check the free list
-associated with the size of that constructor's cells.  If there is a
-cell available on the free list, we will remove that cell from the
-free list, and use it, instead of allocating new memory.  
+lists.  The idea is that for each constructor, we will keep a list of
+cells for that constructor which have been previously freed.  Such a
+list is called a \emph{free list}.  When it is time to allocate a new
+cell for a use of a constructor, we will first check the constructor's
+free list.  If there is a cell available on the free list, we will
+remove that cell from the free list, and use it instead of allocating
+more memory for the new cell.
 
 There are several subtleties to the implementation of this basic idea
 in \carraway.  First, we have the question of how to implement the
 free list of cells.  We do not need to waste memory on a list data
 structure to hold cells.  We can instead just set pointers from one
 cell on the free list to the next, by abusing fields of the cells.
-For cells consisting of just 1 word, like cells for \texttt{Z}, we are
-forced to use this one word to point to the next cell in the free
-list.  For cells consisting of more than one word, we can instead
-abuse the second word.  This will allow us to avoid overwriting the
-constructor tag in the first word.  
+All cells have at least one word, so we will just use word 0 of each
+cell as this free list pointer. 
 
 The second subtlety is that we may wish to defer clearing the contents
 of the freed cell until it is removed from the free list in response
@@ -7525,8 +7522,8 @@ contents of a cell may cause the data pointed to by that cell also to
 be deleted.  For example, if those data are reference counted data and
 consuming them causes their reference counts to fall to $0$, then they
 will be deleted.  So we will not have any upper bound on the amount of
-time that a delete operation will take, if we clear cell contents eagerly,
-right when the cell is deleted.
+time that a delete operation will take, if we clear cell contents
+eagerly, right when the cell is deleted.
 
 In contrast, if we clear cell contents lazily, when the cell is
 reallocated from the free list, then we will get an upper bound on the
@@ -7534,53 +7531,36 @@ amount of work needed for all our memory allocation operations.
 Deletion is constant time, since we must just place the newly deleted
 cell on the appropriate free list.  Allocation is now bounded by the
 amount of time needed to clear a single cell, which will in general be
-$O(k)$, where $k$ is the number of words in the cell.  A final twist
-with clearing cells lazily is that we need to know exactly which clear
-function to call, at the point when we reallocate a cell.  At that
-point, we know only the size of the cell, and its constructor tag
-(guaranteed not to be overwritten by a free list pointer, if the cell
-contains at least one word besides its first one -- and this is the
-only situation in which we must call clear).  But we need also to know
-its runtime datatype, to call the proper clear function.  The solution
-to this problem is to store the integer corresponding to that datatype
-in the refcount part of the first word of the cell, at the moment when
-the cell is freed.
+$O(k)$, where $k$ is the number of words in the cell.  
 
-The emitted C code for managing free lists holding cells with one additional
-word after the first one is:
+The emitted C code for managing free lists of cells for the \texttt{S}
+constructor of the \texttt{nat} datatype is:
 
 \begin{verbatim}
-void *free_1 = (void *)0;
+void *free_gnat_gS = (void *)0;
 
-void delete_1(void *_x) {
+void delete_gnat_gS(void *_x) {
   void **x = (void **)_x;
-  x[1] = free_1;
-  free_1 = x;
+  x[0] = free_gnat_gS;
+  free_gnat_gS = x;
 }
-
-#define delete_gnat_gS delete_1
 \end{verbatim}
 
-\noindent The first line declares the free list \texttt{free\_1} for
-cells with one additional word, and initializes this to $0$, which in
-C is often used to represent the empty list.  Then the \texttt{delete}
-function uses the statement \texttt{x[1] = free\_1} to abuse word 1 of
-the cell \texttt{x} to point to the current start of the free list.
-The free list pointer is then modified to point to \texttt{x}, making
-\texttt{x} the new head of the list.  Finally, we define the delete
-function for \texttt{S} cells just to be this delete function.
+\noindent The first line declares the free list
+\texttt{free\_gnat\_gS} for cells associated with the constructor
+\texttt{S}, and initializes this to $0$, which in C is often used to
+represent the empty list.  Then the \texttt{delete} function uses the
+statement \texttt{x[0] = free\_gnat\_gS} to abuse word 0 of the cell
+\texttt{x} to point to the current start of the free list.  The free
+list pointer is then modified to point to \texttt{x}, making
+\texttt{x} the new head of the list.  
 
 The delete function for the \texttt{gnat} type is similar to the one
-shown before, except now, as mentioned, we must store the integer tag
-for the type, in the refcount area of the first word of the cell.
-This is for the benefit of the global clear function (which takes in
-only a single pointer to a cell of otherwise unknown type).  That
-function will use the type tag and the constructor tag to dispatch the
-cell to the proper clear function for that specific type of cell:
+shown before, except now we dispatch to the proper \texttt{delete}
+function for the cell's constructor:
 
 \begin{verbatim}
 void delete_gnat(void *x) {
-  *(int *)x = (gnat << 8) | ctor(x); // store the type here for benefit of clear()
   switch ctor(x) {
   case op_gZ: 
     delete_gnat_gZ(x);
@@ -7608,10 +7588,10 @@ requesting memory from the operating system.
 \begin{verbatim}
 void *gS(void *gx_12) {
   gnat_gS *x;
-  if (free_1) {
-    x = (gnat_gS *)free_1;
-    free_1 = ((void **)x)[1];
-    clear(x);
+  if (free_gnat_gS) {
+    x = (gnat_gS *)free_gnat_gS;
+    free_gnat_gS = ((void **)x)[0];
+    clear_gnat_gS(x);
   }
   else
     x = (gnat_gS *)carraway_alloc(sizeof(void *)*2);
@@ -7685,6 +7665,10 @@ shell, print the previous command from the list of previous
 \texttt{gdb} commands (and if entered again, print previous commands
 before that one); and ``Control-n'' will print a subsequent command
 from the current point in the list of previous \texttt{gdb} commands.
+
+You can also use a graphical debugger like \texttt{kdbg}, which is
+just a wrapper around \texttt{gdb}.  One note about \texttt{kdbg}: the
+window labeled ``program output'' also accepts program input.
 
 \section{Exercises}
 
@@ -7772,14 +7756,14 @@ this command:
 
 \begin{enumerate}
 
-\item Draw a boxes-and-pointers diagram of the free lists as they
-exist immediately after the call to \texttt{(dec ulist s)} in
-\texttt{test3a.w}.  A box is drawn for a cell, and a pointer is drawn
-between cells if the first cell references the second.  Show any cells
-reachable from other pointers (besides the free list pointers) from
-the cells in the free lists.  Associate a unique number with your
-boxes (e.g., their address in memory), that you can refer to in the
-next part.
+\item Draw a boxes-and-pointers diagram of the free list
+\texttt{free\_gulist\_gucons} as it exist immediately after the call to
+\texttt{(dec ulist s)} in \texttt{test3a.w}.  A box is drawn for a
+cell, and a pointer is drawn between cells if the first cell
+references the second.  Show any cells reachable from other pointers
+(besides the free list pointers) from the cells in the free lists.
+Associate a unique number with your boxes (e.g., their address in
+memory), that you can refer to in the next part.
 
 \item Show the state of memory, including free lists and the list
 produced by the call to \texttt{(ucons tt unil)}, right after that

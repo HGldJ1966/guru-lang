@@ -135,12 +135,7 @@ public class Datatype extends Command {
 		    String ctor_tp = tpstr+"_"+ctors[i].toString(ctxt);
 		    ctxt.cw.println("} "+ctor_tp+";\n");
 
-		    // sz, fl, and flptr are used if we emit code using free lists
-		    String sz = new Integer(jend).toString();
-		    String fl = "free_"+sz;
-		    /* for size 0 ctors (with no subdata) we abuse the opval field for the
-		       next pointer of the free list.  Otherwise, we use the first subdatum pointer. */ 
-		    String flind = (jend == 0 ? "0" : "1");
+		    String fl = "free_"+ctor_tp;
 		
 		    if (!ctxt.alloc_committed) {
 			ctxt.alloc_committed = true;
@@ -160,18 +155,13 @@ public class Datatype extends Command {
 		    if (!ctxt.getFlag("use_malloc")) {
 			
 			// emit the free list and delete function
-			
-			if (!ctxt.free_lists_emitted.contains(sz)) {
-			    // we need to emit the free list and delete function.
-			    ctxt.free_lists_emitted.add(sz);
-			    ctxt.cw.println("void *"+fl+" = (void *)0;\n");
-			    ctxt.cw.println("void delete_"+sz+"(void *_x) {");
-			    ctxt.cw.println("  void **x = (void **)_x;");
-			    ctxt.cw.println("  x["+flind+"] = "+fl+";");
-			    ctxt.cw.println("  "+fl+" = x;");
-			    ctxt.cw.println("}\n");
-			}
-			ctxt.cw.println("#define delete_"+ctor_tp+" delete_"+sz+"\n");
+
+			ctxt.cw.println("void *"+fl+" = (void *)0;\n");
+			ctxt.cw.println("void delete_"+ctor_tp+"(void *_x) {");
+			ctxt.cw.println("  void **x = (void **)_x;");
+			ctxt.cw.println("  x[0] = "+fl+";");
+			ctxt.cw.println("  "+fl+" = x;");
+			ctxt.cw.println("}\n");
 		    }
 
 		    // emit the clear() function
@@ -219,8 +209,8 @@ public class Datatype extends Command {
 		    else {
 			ctxt.cw.println("  if ("+fl+") {");
 			ctxt.cw.println("    x = ("+ctor_tp+" *)"+fl+";");
-			ctxt.cw.println("    "+fl+" = ((void **)x)["+flind+"];");
-			ctxt.cw.println("    clear(x);");
+			ctxt.cw.println("    "+fl+" = ((void **)x)[0];");
+			ctxt.cw.println("    clear_"+ctor_tp+"(x);");
 			ctxt.cw.println("  }");
 			ctxt.cw.println("  else");
 			ctxt.cw.println("    x = ("+ctor_tp+" *)carraway_alloc("+bstr+");");
@@ -240,8 +230,6 @@ public class Datatype extends Command {
 		// now emit the delete function for the datatype
 
 		ctxt.cw.println("void delete_"+tpstr+"(void *x) {");
-		if (!ctxt.getFlag("use_malloc"))
-		    ctxt.cw.println("  *(int *)x = ("+tpstr+" << 8) | ctor(x); // store the type here for benefit of clear()");
 		ctxt.cw.println("  switch ctor(x) {");
 		for (int i = 0; i < num_ctors; i++) {
 		    String ctr = ctors[i].toString(ctxt);
