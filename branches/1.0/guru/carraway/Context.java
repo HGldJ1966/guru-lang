@@ -47,7 +47,6 @@ public class Context extends guru.FlagManager {
     protected Vector global_inits;
     int stage;
     int type_num;
-    public HashSet free_lists_emitted;
     public boolean alloc_committed;
 
     public Context(String file_suffix) {
@@ -90,7 +89,6 @@ public class Context extends guru.FlagManager {
 	stage = 0;
 	type_num = 1; // we assume elsewhere that this is 1
 
-	free_lists_emitted = new HashSet(256);
 	alloc_committed = false;
     }
 
