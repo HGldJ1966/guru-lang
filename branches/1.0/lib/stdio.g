@@ -5,15 +5,18 @@ Include "string.g".
 
 Define spec stdin_t := string.
 
-Inductive getc_t : Fun(A:type).type :=
-  getc_none : Fun(A:type)(unique l:A).<getc_t A>
-| getc_char : Fun(A:type)(a:char)(unique l:A).<getc_t A>.
+Define spec cur_char := 
+  fun(unique_owned x:stdin_t): char.
+    match x by u v with
+      nil A => Cc0
+    | cons A a l => a
+    end.
 
 Define spec next_char := 
-  fun(unique x:stdin_t): unique <getc_t stdin_t>.
+  fun(unique x:stdin_t): unique stdin_t.
     match x by u v with
-      nil A => (getc_none stdin_t stringn)
-    | cons A a l => (getc_char stdin_t a l)
+      nil A => x
+    | cons A a l => l
     end.
 
 Define print_nat :=

@@ -244,7 +244,10 @@ public class ParserBase {
 		if ((char)j == '-') 
 		    // yes, this is a new nested comment
 		    comment_level++;
-		else 
+		else if ((char)j == '\n')
+		    // we start and immediately end a single line comment
+		    continue;
+		else
 		    // this % is starting a single line comment
 		    if (comment_level == 0 && !in_single_line_comment) {
 			in_single_line_comment = true;
