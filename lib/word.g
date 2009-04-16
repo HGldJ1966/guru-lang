@@ -25,6 +25,16 @@ Define spec word_inc :=
            carry)
       end.
 
+Define word_inc2 :=
+  fun(b:word).
+    match (word_inc b) with
+      mk_word_inc_t b' carry => 
+        match carry with
+          ff => b'
+        | tt => abort word
+        end
+    end.
+
 Define word_inc_tot :=
   foralli(b:word).
     abbrev r = terminates (bv_inc spec wordlen b) by bv_inc_tot in
@@ -75,3 +85,9 @@ Define word_to_nat_inc2
      trans [word_to_nat_inc w w2 ff u]
            [condplusff terminates (pow2 wordlen) by pow_total
               terminates (word_to_nat w2) by word_to_nat_tot].
+
+Define spec char_to_word : Fun(c:char).word :=
+  fun(c:char).
+  cast
+   (bv_append charlen (minus wordlen charlen) c (mkvec bool ff (minus wordlen charlen)))
+  by cong <vec bool *> [plus_minus charlen wordlen join (lt charlen wordlen) tt]. 

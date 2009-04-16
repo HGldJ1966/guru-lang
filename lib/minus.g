@@ -252,6 +252,8 @@ Define minus_plus2 : Forall(a b:nat).{ (minus (plus a b) b) = a } :=
       end
   end.
 
+Define trusted plus_minus : Forall(x y:nat)(u:{ (lt x y) = tt}). { (plus x (minus y x)) = y } := truei.
+
 Define minus_le : Forall(x y z:nat)(u:{ (minus x y) = z }).{ (le z x) = tt } :=
   induction(x:nat) by xp xt IHx return Forall(y z:nat)(u:{ (minus x y) = z }).{ (le z x) = tt } with
     Z =>
