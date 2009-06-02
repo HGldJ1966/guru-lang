@@ -31,7 +31,8 @@ public class Context extends FlagManager {
     protected HashMap specData;
     protected HashMap resource_types;
     protected Vector resource_types_vec;
-    protected HashMap drop_funcs;
+    protected HashMap resource_type_to_drop_func;
+    protected HashMap drop_func_defs;
 
     public Vector initCmds;
     public guru.carraway.Context carraway_ctxt;
@@ -70,7 +71,8 @@ public class Context extends FlagManager {
 	trustedDefs = new HashSet();
 	resource_types = new HashMap(256);
 	resource_types_vec = new Vector();
-	drop_funcs = new HashMap(256);
+	resource_type_to_drop_func = new HashMap(256);
+	drop_func_defs = new HashMap(256);
 
 	star = new Star();
 	starstar = new StarStar();
@@ -127,16 +129,23 @@ public class Context extends FlagManager {
     }
 
     // for c a resource type
-    public void setDrop(Const c, Define drop) {
-	drop_funcs.put(c,drop);
+    public void setDropFunc(Const c, Define drop) {
+	resource_type_to_drop_func.put(c,drop.c);
+	drop_func_defs.put(drop.c,drop);
     }
 
-    public Define getDrop(Const c) {
-	return (Define)drop_funcs.get(c);
+    // c a resource type
+    public Const getDropFunc(Const c) {
+	return (Const)resource_type_to_drop_func.get(c);
     }
 
-    public boolean isDrop(Const c) {
-	return drop_funcs.containsKey(c);
+    // c a drop func
+    public Define getDropFuncDef(Const c) {
+	return (Define)drop_func_defs.get(c);
+    }
+
+    public boolean isDropFunc(Const c) {
+	return drop_func_defs.containsKey(c);
     }
 
     public void addResourceType(Const c) {

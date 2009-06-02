@@ -52,7 +52,7 @@ public class Compile extends Command {
 	    R.s = cctxt.newSym(c.name,c.pos);
 	    cctxt.declareConst(R.s);
 	
-	    Define drop = ctxt.getDrop(c);
+	    Define drop = ctxt.getDropFuncDef(ctxt.getDropFunc(c));
 	    R.drop = drop.toCarraway(ctxt);
 
 	    cmds.add(R);
@@ -87,6 +87,11 @@ public class Compile extends Command {
 	    if (ctxt.isTypeCtor(d)) {
 		Collection ctors = ctxt.getTermCtors(d);
 		
+		if (ctxt.getFlag("debug_to_carraway")) {
+		    ctxt.w.println("\nTranslating type constructor \""+d.toString(ctxt)+"\".");
+		    ctxt.w.flush();
+		}
+
 		guru.carraway.Datatype dc = new guru.carraway.Datatype();
 		dc.pos = d.pos;
 		dc.tp = cctxt.newSym(d.name, d.pos);
@@ -117,11 +122,22 @@ public class Compile extends Command {
 	    else if (ctxt.isDefined(d)) {
 		Const c = d;
 
-		if (ctxt.isDrop(c))
-		    // we print drop functions separately
+		if (ctxt.getFlag("debug_to_carraway")) {
+		    ctxt.w.println("\nTranslating defined constant \""+c.toString(ctxt)+"\".");
+		    ctxt.w.flush();
+		}
+
+		if (ctxt.isDropFunc(c))
+		    // we include drop functions when we process resource types
 		    continue;
 		else if (ctxt.getDefCode(c) != null) {
 		    // this is a primitive
+
+		    if (ctxt.getFlag("debug_to_carraway")) {
+			ctxt.w.println("Defined constant \""+c.toString(ctxt)+"\" is a primitive.");
+			ctxt.w.flush();
+		    }
+
 		    guru.carraway.Primitive p = new guru.carraway.Primitive();
 		    p.pos = c.pos;
 		    p.s = cctxt.newSym(c.name,c.pos);
@@ -148,6 +164,11 @@ public class Compile extends Command {
 			    ctxt.w.flush();
 			}
 			continue;
+		    }
+
+		    if (ctxt.getFlag("debug_to_carraway")) {
+			ctxt.w.println("Defined constant \""+c.toString(ctxt)+"\" is not a primitive.");
+			ctxt.w.flush();
 		    }
 
 		    Expr body = ctxt.getDefBody(c);
@@ -227,6 +248,8 @@ public class Compile extends Command {
 				  c, T, body, body.dropAnnos(ctxt),
 				  ctxt.getDefDelim(c), ctxt.getDefCode(c));
 	    
+	    if (ctxt.isDropFunc(c)) 
+		ctxt.w.println("% "+c.toString(ctxt)+" is a drop function:");
 	    D.print(ctxt.w, ctxt);
 	}
 	ctxt.w.print("% end of ");
@@ -317,7 +340,7 @@ public class Compile extends Command {
 	if (!trans_ctxt.isResourceType(unowned)) {
 	    // we might have pulled this in already via ee.expand(cmain).
 	    trans_ctxt.addResourceType(unowned);
-	    trans_ctxt.setDrop(unowned,ctxt.getDrop(unowned));
+	    trans_ctxt.setDropFunc(unowned,ctxt.getDropFuncDef(ctxt.getDropFunc(unowned)));
 	}
     }
 
@@ -372,17 +395,17 @@ public class Compile extends Command {
 	guru.compiler.EtaExpand ee = new guru.compiler.EtaExpand(ctxt,trans_ctxt);
 	ee.expand(cmain);
 
-	pull_in_unowned_if(ctxt,trans_ctxt);
-
-	copy_needed_init_cmds(ctxt,trans_ctxt);
-
-	if (ctxt.getFlag("debug_eta_expand") || ctxt.getFlag("debug_to_carraway")) 
+	if (ctxt.getFlag("debug_eta_expand")) 
 	    printContext("After eta expansion", trans_ctxt);
 
 	if (ctxt.getFlag("debug_to_carraway")) {
 	    ctxt.w.println("Translation to Carraway begins.");
 	    ctxt.w.flush();
 	}
+
+	pull_in_unowned_if(ctxt,trans_ctxt);
+
+	copy_needed_init_cmds(ctxt,trans_ctxt);
 
 	guru.carraway.Context cctxt = new guru.carraway.Context(".g");
 	trans_ctxt.carraway_ctxt = cctxt;
@@ -401,6 +424,9 @@ public class Compile extends Command {
 	Collection resource_decls = cmds_for_resource_types(trans_ctxt, cctxt);
 	Collection init_cmds = init_cmds(trans_ctxt.initCmds,trans_ctxt,cctxt);
 	Collection defs = cmds_for_other_consts(ee.all_consts,trans_ctxt, cctxt);
+
+	if (ctxt.getFlag("debug_to_carraway")) 
+	    printContext("After preparing the lists of Carraway commands to process.", trans_ctxt);
 
 	cctxt.setFile(ifile);
 

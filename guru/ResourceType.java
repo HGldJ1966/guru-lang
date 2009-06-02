@@ -12,7 +12,7 @@ public class ResourceType extends Command {
     public void process(Context ctxt) {
 	drop.process(ctxt);
 	ctxt.addResourceType(s);
-	ctxt.setDrop(s,drop);
+	ctxt.setDropFunc(s,drop);
     }
 
     public void print(java.io.PrintStream w, 
