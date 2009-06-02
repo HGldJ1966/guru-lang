@@ -161,6 +161,8 @@ Define Cnl : char := C10.
 
 Define spec eqchar : Fun(c1 c2:char).bool := (eqbv charlen).
 
+Define eqchar_refl := [eqbv_refl charlen].
+
 Define is_whitespace :=
  fun(a:char).
    (or (eqchar a Cnl)
