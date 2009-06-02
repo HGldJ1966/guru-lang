@@ -3,24 +3,24 @@ Include "pair.g".
 Include "unit.g".
 Include trusted "string.g".
 
-Define spec stdin_t := <pair string string>.
+Define spec stdio_t := <pair string string>.
 
 Define spec cur_char := 
-  fun(unique_owned x:stdin_t): char.
+  fun(unique_owned x:stdio_t): char.
     match (fst string string x) with
       nil A => Cc0
     | cons A a l => a
     end.
 
 Define spec next_char := 
-  fun(unique x:stdin_t): unique stdin_t.
+  fun(unique x:stdio_t): unique stdio_t.
     match (fst string string x) with
       nil A => x
     | cons A a l => (mkpair string string l (snd string string x))
     end.
 
 Define spec print_char := 
-  fun(unique x:stdin_t)(c:char): unique stdin_t.
+  fun(unique x:stdio_t)(c:char): unique stdio_t.
     (mkpair string string (fst string string x) (stringc c (snd string string x))).
 
 %-
