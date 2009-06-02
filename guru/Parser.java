@@ -360,14 +360,16 @@ public class Parser extends ParserBase {
 	a.s = readBindingConst();
 
 	eat("(","Init");
-	a.T1 = readAnno();
+	eat("#","Init");
+	a.T1 = new Ownership(Ownership.RESOURCE, readConst());
 	eat_ws();
 	a.v1 = (Var)readIdentifier(true);
 	eat(")","Init");
 	ctxt.pushVar(a.v1);
 
 	eat("(","Init");
-	a.T2 = readAnno();
+	eat("#","Init");
+	a.T2 = new Ownership(Ownership.RESOURCE, readConst());
 	eat_ws();
 	a.v2 = (Var)readIdentifier(true);
 	eat(")","Init");

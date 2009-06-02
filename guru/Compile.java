@@ -33,12 +33,17 @@ public class Compile extends Command {
 	ArrayList cmds = new ArrayList();
 
 	Iterator it = ctxt.getResourceTypes().iterator(); 
+	
+	if (ctxt.getFlag("debug_to_carraway")) {
+	    ctxt.w.println("\nTranslating resource types (");
+	    ctxt.w.flush();
+	}
 
 	while(it.hasNext()) {
 	    Const c = (Const)it.next();
 
 	    if (ctxt.getFlag("debug_to_carraway")) {
-		ctxt.w.println("Translating resource type \""+c.toString(ctxt)+"\".");
+		ctxt.w.println("Translating resource type \""+c.toString(ctxt)+"\" (");
 		ctxt.w.flush();
 	    }
 
@@ -51,7 +56,19 @@ public class Compile extends Command {
 	    R.drop = drop.toCarraway(ctxt);
 
 	    cmds.add(R);
+
+	    if (ctxt.getFlag("debug_to_carraway")) {
+		ctxt.w.println(") done translating resource type \""+c.toString(ctxt)+"\".");
+		ctxt.w.flush();
+	    }
+
 	}
+
+	if (ctxt.getFlag("debug_to_carraway")) {
+	    ctxt.w.println(") done translating resource types.");
+	    ctxt.w.flush();
+	}
+
 	return cmds;
     }
 
@@ -59,7 +76,7 @@ public class Compile extends Command {
 	ArrayList cmds = new ArrayList();
 
 	if (ctxt.getFlag("debug_to_carraway")) {
-	    ctxt.w.println("Translating defined and declared constants.");
+	    ctxt.w.println("\nTranslating defined and declared constants (");
 	    ctxt.w.flush();
 	}
 
@@ -171,7 +188,7 @@ public class Compile extends Command {
 	}
 
 	if (ctxt.getFlag("debug_to_carraway")) {
-	    ctxt.w.println("Done translating defined constants.");
+	    ctxt.w.println(") done translating declared and defined constants.");
 	    ctxt.w.flush();
 	}
 
@@ -223,9 +240,21 @@ public class Compile extends Command {
     protected Collection init_cmds(Collection c, Context ctxt, guru.carraway.Context cctxt) {
 	ArrayList cmds = new ArrayList();
 	Iterator it = c.iterator();
+
+	if (ctxt.getFlag("debug_to_carraway")) {
+	    ctxt.w.println("\nTranslating Init commands (");
+	    ctxt.w.flush();
+	}
+
 	while (it.hasNext()) {
 	    Init I = (Init)it.next();
 	    guru.carraway.Init C = new guru.carraway.Init();
+	    
+	    if (ctxt.getFlag("debug_to_carraway")) {
+		ctxt.w.println("Translating Init command \""+I.s.toString(ctxt)+"\" (");
+		ctxt.w.flush();
+	    }
+
 	    C.pos = I.pos;
 	    C.init = new guru.carraway.Primitive();
 	    C.init.pos = I.pos;
@@ -262,8 +291,19 @@ public class Compile extends Command {
 	    C.init.delim = I.delim;
 	    C.init.code = I.code;
 
+	    if (ctxt.getFlag("debug_to_carraway")) {
+		ctxt.w.println(") done translating Init command \""+I.s.toString(ctxt)+"\".");
+		ctxt.w.flush();
+	    }
+
 	    cmds.add(C);
 	}
+
+	if (ctxt.getFlag("debug_to_carraway")) {
+	    ctxt.w.println(") done translating Init commands.");
+	    ctxt.w.flush();
+	}
+
 	return cmds;
     }
 
@@ -278,6 +318,26 @@ public class Compile extends Command {
 	    // we might have pulled this in already via ee.expand(cmain).
 	    trans_ctxt.addResourceType(unowned);
 	    trans_ctxt.setDrop(unowned,ctxt.getDrop(unowned));
+	}
+    }
+
+    protected void copy_needed_init_cmds(Context src, Context tgt) {
+	Iterator it = src.initCmds.iterator();
+	
+	while (it.hasNext()) {
+	    Init I = (Init)it.next();
+	    if (tgt.isResourceType(I.T1.e1) && tgt.isResourceType(I.T2.e1)) {
+		if (src.getFlag("debug_to_carraway")) {
+		    src.w.println("Adding Init command \""+I.s.toString(src)+"\" to list to translate.");
+		    src.w.flush();
+		}
+		tgt.initCmds.add(I);
+	    }
+	    else 
+		if (src.getFlag("debug_to_carraway")) {
+		    src.w.println("Not adding Init command \""+I.s.toString(src)+"\" to list to translate.");
+		    src.w.flush();
+		}
 	}
     }
 
@@ -314,6 +374,8 @@ public class Compile extends Command {
 
 	pull_in_unowned_if(ctxt,trans_ctxt);
 
+	copy_needed_init_cmds(ctxt,trans_ctxt);
+
 	if (ctxt.getFlag("debug_eta_expand") || ctxt.getFlag("debug_to_carraway")) 
 	    printContext("After eta expansion", trans_ctxt);
 
@@ -326,7 +388,7 @@ public class Compile extends Command {
 	trans_ctxt.carraway_ctxt = cctxt;
 	cctxt.copyFlags(trans_ctxt);
 
-	if (trans_ctxt.getFlag("debug_to_carraway")) {
+	if (false && trans_ctxt.getFlag("debug_to_carraway")) {
 	    ctxt.w.println("Copied flags (on):");
 	    Iterator it2 = cctxt.getFlags().iterator();
 	    while (it2.hasNext()) {
@@ -337,7 +399,7 @@ public class Compile extends Command {
 	}
 
 	Collection resource_decls = cmds_for_resource_types(trans_ctxt, cctxt);
-	Collection init_cmds = init_cmds(ctxt.initCmds,trans_ctxt,cctxt);
+	Collection init_cmds = init_cmds(trans_ctxt.initCmds,trans_ctxt,cctxt);
 	Collection defs = cmds_for_other_consts(ee.all_consts,trans_ctxt, cctxt);
 
 	cctxt.setFile(ifile);
