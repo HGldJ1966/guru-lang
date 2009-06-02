@@ -168,8 +168,6 @@ Define is_whitespace :=
    (or (eqchar a Cc9)
        (eqchar a C13)))).
 
-Define spec print_char := fun(c:char).unit.
-
 Inductive char_inc_t : type :=
   mk_char_inc_t : Fun(c:char)(carry:bool).char_inc_t.
 

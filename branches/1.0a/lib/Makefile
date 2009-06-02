@@ -1,3 +1,6 @@
+stdio:
+	time java -cp .. guru.Main stdio.g
+
 bst-spec:
 	time ../bin/guru bst-spec.g
 
