@@ -6,10 +6,11 @@ import java.util.Iterator;
 
 public class Match extends Expr {
     public Expr t; // scrutinee
-    public Sym x; // var naming the scrutinee
-    public Sym s; // datatype of first pattern
+    public boolean consume_first; // should we consume the scrut at the start or end of each case
     public Case[] C;
-    boolean consume_first; // should we consume the scrut at the start or end of each case
+
+    Sym x; // var naming the scrutinee
+    Sym s; // datatype of first pattern
     boolean untracked_scrut;
     Expr rettype; // filled in by simpleType(), used only by linearize()
 
@@ -132,14 +133,14 @@ public class Match extends Expr {
 				    +"\n\n3. the scrutinee's type: "+scrut_t.toString(ctxt));
 		}
 
-		Expr n = new InitTerm(h,rt,x,s,C.c,f.vars[i],C.vars[i]);
+		Expr n = new InitTerm(h,rt,x,s,C.c,rf.vars[i],C.vars[i]);
 		n.pos = C.pos;
 		Position p = C.body.pos;
 		C.body = new Let(C.vars[i],n,C.body);
 		C.body.pos = p;
 	    }
 	    else {
-		Expr n = new InitTerm(null,null,x,s,C.c,f.vars[i],C.vars[i]);
+		Expr n = new InitTerm(null,null,x,s,C.c,rf.vars[i],C.vars[i]);
 		n.pos = C.pos;
 		Position p = C.body.pos;
 		C.body = new Let(C.vars[i],n,C.body);
@@ -164,7 +165,7 @@ public class Match extends Expr {
 	Expr T = t.simpleType(ctxt);
 
 	Expr scrut_t = null;
-	if (T.construct == SYM && ctxt.isAttribute((Sym)T))
+	if (T.construct == SYM && ctxt.isResourceType((Sym)T))
 	    scrut_t = (Sym)T;
 	else if (T.construct == PIN)
 	    scrut_t = ((Pin)T).s;

@@ -73,6 +73,11 @@ public class App extends Expr {
 	if (hT == null)
 	    classifyError(ctxt,"The head of an application is missing a type.\n\n"
 			+"1. the head: "+head.toString(ctxt));
+	if (hT.construct != FUN_TYPE)
+	    classifyError(ctxt,"The head of an application does not have functional type.\n\n"
+			  +"1. the head: "+head.toString(ctxt)
+			  +"\n2. its type: "+ctxt.getType(head).toString(ctxt));
+
 	FunType F = (FunType)hT;
 	if (F.vars.length != args.length)
 	    classifyError(ctxt,"The head of an application does not accept as many arguments as given.\n\n"

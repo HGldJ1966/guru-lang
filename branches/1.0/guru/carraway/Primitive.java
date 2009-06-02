@@ -3,15 +3,15 @@ package guru.carraway;
 public class Primitive extends Command {
     public Sym s;
     public Expr T;
-    String delim, code;
-
+    public String delim, code;
+    
     public Primitive() {
 	super(PRIMITIVE);
     }
 
     public void process(Context ctxt) {
 	Expr cT = T.simpleType(ctxt);
-	if (T.construct == Expr.SYM && !ctxt.isAttribute((Sym)T))
+	if (T.construct == Expr.SYM && !ctxt.isResourceType((Sym)T))
 	    handleError(ctxt,"The expression given for a primitive is a symbol but not an attribute.\n\n"
 			+"1. the primitive: "+s.toString(ctxt)
 			+"\n\n2. the expression: "+T.toString(ctxt)

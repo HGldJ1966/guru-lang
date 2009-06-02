@@ -5,35 +5,25 @@ import java.io.*;
 
 public class Match extends CasesExpr{
     public Expr T;
+    public boolean consume_first;
     
-    // set in the compiler during refcount checking
-    public Ownership scrut_stat;
-
     public Match() {
 	super(MATCH);
-	scrut_stat = new Ownership(Ownership.UNOWNED);
     }
 
-    public Match(CasesExpr a, Expr T, Ownership scrut_stat) {
+    public Match(CasesExpr a, Expr T, boolean consume_first) {
 	super(MATCH, a);
 	this.T = T;
-	this.scrut_stat = scrut_stat;
     }
 
-    public Match(Expr t, Var x1, Var x2, Expr T, Case[] C, 
-		 Ownership scrut_stat) {
+    public Match(Expr t, Var x1, Var x2, Expr T, Case[] C, boolean consume_first) {
 	super(MATCH, t, x1, x2, C);
 	this.T = T;
-	this.scrut_stat = scrut_stat;
     }
 
     public void do_print(java.io.PrintStream w, 
 			 Context ctxt) {
 	w.print("match ");
-
-	if (scrut_stat.status != Ownership.UNOWNED
-	    && ctxt.getFlag("print_ownership_annos")) 
-	    w.print("%- "+scrut_stat.toString(ctxt)+" -% ");
 
 	do_print1(w,ctxt);
 	if (T != null) {
@@ -58,7 +48,7 @@ public class Match extends CasesExpr{
 	Expr nT = (T == null ? null : T.subst(e,x));
 	CasesExpr nC = (CasesExpr)super.subst(e,x);
 	if (nT != T || nC != this)
-	    return new Match(nC, nT, scrut_stat);
+	    return new Match(nC, nT, consume_first);
 	return this;
     }
     
@@ -66,7 +56,7 @@ public class Match extends CasesExpr{
 	Expr nT = T;
 	CasesExpr nC = (CasesExpr)super.do_rewrite(ctxt,e,x,boundVars);
 	if (nT != T || nC != this)
-	    return new Match(nC, nT, scrut_stat);
+	    return new Match(nC, nT, consume_first);
 	return this;
     }
 
@@ -100,7 +90,7 @@ public class Match extends CasesExpr{
     public Expr dropAnnos(Context ctxt) {
 	Expr r = super.dropAnnos(ctxt);
 	if (r != this)
-	    return new Match((CasesExpr)r,T,scrut_stat);
+	    return new Match((CasesExpr)r,T,consume_first);
 	return this;
     }
 
@@ -108,7 +98,7 @@ public class Match extends CasesExpr{
     public Expr evalStep(Context ctxt) {
 	Expr e = t.evalStep(ctxt);
 	if (e != t)
-	    return new Match(e,x1,x2,T,C,scrut_stat);
+	    return new Match(e,x1,x2,T,C,consume_first);
 	if (t.construct == ABORT)
 	    return ctxt.abort;
 	
@@ -156,5 +146,18 @@ public class Match extends CasesExpr{
 	for (int i = 0; i < C.length; i++){
 	    C[i].checkSpec(ctxt, in_type);
 	}
+    }
+
+    public guru.carraway.Expr toCarraway(Context ctxt) {
+	guru.carraway.Match m = new guru.carraway.Match();
+	m.pos = pos;
+	m.t = t.toCarraway(ctxt);
+	int iend = C.length;
+	guru.carraway.Case[] nC = new guru.carraway.Case[iend];
+	for (int i = 0; i < iend; i++)
+	    nC[i] = (guru.carraway.Case)C[i].toCarraway(ctxt);
+	m.C = nC;
+	m.consume_first = consume_first;
+	return m;
     }
 }

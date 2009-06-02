@@ -33,7 +33,7 @@ public class Cast extends Expr {
 	    classifyError(ctxt, "A cast is being used to cast to an expression which is not a type.\n\n"
 			  +"1. the expression: "+T.toString(ctxt)
 			  +"\n2. its type: "+k.toString(ctxt));
-	if (T.construct != SYM || !ctxt.isAttribute((Sym)T))
+	if (T.construct != SYM || !ctxt.isResourceType((Sym)T))
 	    classifyError(ctxt, "A cast is being used to cast to an attribute.\n\n"
 			  +"1. the attribute: "+T.toString(ctxt));
 

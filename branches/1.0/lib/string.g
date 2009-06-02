@@ -5,7 +5,7 @@ Define string := <list char>.
 Define stringn := (nil char).
 Define stringc := (cons char).
 Define string_app := fun(s1 s2:string).
-                      let ret = (append char s1 s2) in dec s1 ret.
+                      let ret = (append char s1 s2) in do (dec string s1) ret end.
 Define string_appnl := fun(s1:string)(s2:string).
                          (string_app (stringc Cnl s1) s2).
 Define stringeq := (eqlist char eqchar).

@@ -18,6 +18,7 @@ public class Context extends guru.FlagManager {
     protected HashMap tpctors;
     protected HashMap ctors;
     protected HashMap types;
+    protected HashMap typeDefs;
     protected HashMap rttypes;
     protected HashMap funcs;
     protected HashMap globals;
@@ -45,9 +46,11 @@ public class Context extends guru.FlagManager {
     protected HashMap name_tbl;
 
     protected Vector global_inits;
-    int stage;
-    int type_num;
+    public int stage;
+    public int type_num;
     public boolean alloc_committed;
+
+    protected Vector new_typedefs;
 
     public Context(String file_suffix) {
 	this.file_suffix = file_suffix;
@@ -60,6 +63,7 @@ public class Context extends guru.FlagManager {
 	funcs = new HashMap(256);
 	types = new HashMap(256);
 	rttypes = new HashMap(256);
+	typeDefs = new HashMap(256);
 	attrs = new HashMap(256);
 	primitives = new HashMap(256);
 	inits = new HashMap(256);
@@ -90,7 +94,28 @@ public class Context extends guru.FlagManager {
 	type_num = 1; // we assume elsewhere that this is 1
 
 	alloc_committed = false;
+
+	new_typedefs = new Vector();
     }
+
+    // set the file for emitted code.  Do not mix with pushFile().
+    public String setFile(java.io.File f) {
+	try {
+	    cw = new PrintStream(new BufferedOutputStream(new FileOutputStream(f)));
+	}
+	catch(FileNotFoundException e) {
+	    return new String("Could not open the included file.");
+	}
+	if (getFlag("output_ocaml"))
+	    cw.println("(* produced by carraway *)\n");
+	else {
+	    cw.println("// produced by carraway\n");
+	    cw.println("#include <stdio.h>\n");
+	    cw.println("#include <stdlib.h>\n");
+	}
+	return null;
+    }
+
 
     // return an error message if there was a problem opening the compiler output file determined by f.
     public String pushFile(String f) {
@@ -162,12 +187,12 @@ public class Context extends guru.FlagManager {
 	return global_inits;
     }
 
-    protected void declareConst(Sym s) {
+    public void declareConst(Sym s) {
 	String n = s.name;
 	consts.put(n,s);	
     }
 
-    public void addAttribute(Sym s, Sym drop) {
+    public void addResourceType(Sym s, Sym drop) {
 	declareConst(s);
 	setType(s,new Type());
 	attrs.put(s,drop);
@@ -181,7 +206,7 @@ public class Context extends guru.FlagManager {
 	not_consumed.add(x);
     }
 
-    public boolean isAttribute(Sym s) {
+    public boolean isResourceType(Sym s) {
 	return attrs.containsKey(s);
     }
 
@@ -221,7 +246,7 @@ public class Context extends guru.FlagManager {
 
     public boolean isVar(Sym s) {
 	return (!isPrimitive(s) && !isDatatype(s) &&
-		!isGlobal(s) && !isAttribute(s) && !isFunction(s));
+		!isGlobal(s) && !isResourceType(s) && !isFunction(s));
     }
 
     public boolean isPrimitive(Sym s) {
@@ -294,6 +319,19 @@ public class Context extends guru.FlagManager {
 
     public Sym[] getCtors(Sym tp) {
 	return (Sym[])tpctors.get(tp);
+    }
+
+    public void addTypeDef(Sym s, Expr T) {
+	declareConst(s);
+	typeDefs.put(s,T);
+    }
+
+    public boolean isTypeDef(Sym s) {
+	return typeDefs.containsKey(s);
+    }
+
+    public Expr getTypeDefBody(Sym s) {
+	return (Expr)typeDefs.get(s);
     }
 
     public void addGlobal(Sym s, Expr T, Expr t) {
@@ -408,7 +446,14 @@ public class Context extends guru.FlagManager {
 
     // for symbols from the input.
     public Sym newSym(String n, Position p) {
-	Sym r = new Sym(n, unique(name(n)));
+	String un = unique(name(n));
+
+	if (getFlag("debug_symbols")) {
+	    w.println("Carraway context: adding symbol \""+n+"\", with output name \""+un+"\".");
+	    w.flush();
+	}
+
+	Sym r = new Sym(n, un);
 	r.pos = p;
 	return r;
     }	

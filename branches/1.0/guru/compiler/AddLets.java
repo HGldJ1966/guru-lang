@@ -104,9 +104,7 @@ public class AddLets {
 	while(it.hasNext()) {
 	    Def D = (Def)it.next();
 
-	    t = new Let(D.x1, 
-			new Ownership(Ownership.UNOWNED) /* the default */,
-			D.t1, null, t);
+	    t = new Let(D.x1, new Ownership(Ownership.DEFAULT), D.t1, null, t);
 	}
 	return t;
     }

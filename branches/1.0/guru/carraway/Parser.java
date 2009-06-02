@@ -31,7 +31,7 @@ public class Parser extends guru.ParserBase {
 	Position pos = getPos();
 	Command c = null;
 	if (tryToEat("ResourceType")) 
-	    c = readAttribute();
+	    c = readResourceType();
 	else if (tryToEat("Primitive")) 
 	    c = readPrimitive();
 	else if (tryToEat("Datatype"))
@@ -54,8 +54,8 @@ public class Parser extends guru.ParserBase {
 	return c;
     }
 
-    protected Attribute readAttribute() throws IOException {
-	Attribute a = new Attribute();
+    protected ResourceType readResourceType() throws IOException {
+	ResourceType a = new ResourceType();
 	a.s = readIdentifier(true);
 	
 	ctxt.declareConst(a.s);

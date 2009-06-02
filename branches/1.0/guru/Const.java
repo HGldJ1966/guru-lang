@@ -107,4 +107,29 @@ public class Const extends Expr implements Comparable {
     public void checkSpec(Context ctxt, boolean in_type){
     }
 
+    public guru.carraway.Expr toCarrawayType(Context ctxt, boolean rttype) {
+	if (rttype) {
+	    guru.carraway.Sym s = ctxt.carraway_ctxt.lookup(name);
+	    if (s == null)
+		handleError(ctxt, "Internal error: Carraway declaration missing for \""+toString(ctxt)+"\".");
+	    return s;
+	}
+	// we are getting the resource type here
+
+	if (isTrackedType(ctxt)) {
+	    guru.carraway.Sym s = ctxt.carraway_ctxt.lookup("unowned");
+	    if (s == null)
+		handleError(ctxt, "Internal error: Carraway declaration missing for \"unowned\".\n\n");
+	    return s;
+	}
+	else 
+	    return new guru.carraway.Untracked();
+    }
+
+    public guru.carraway.Expr toCarraway(Context ctxt) {
+	guru.carraway.Sym s = ctxt.carraway_ctxt.lookup(name);
+	if (s == null)
+	    handleError(ctxt, "Internal error: Carraway declaration missing for \""+toString(ctxt)+"\".");
+	return s;
+    }
 }

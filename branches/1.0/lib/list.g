@@ -9,19 +9,19 @@ Inductive list : Fun(A:type).type :=
   nil : Fun(A:type).<list A>
 | cons : Fun(A:type)(a:A)(l:<list A>). <list A>.
 
-Define isnil := fun(A:type)(owned l:<list A>). 
+Define isnil := fun(A:type)(^#owned l:<list A>). 
                   match l with nil A' => tt | cons A' a' l' => ff end.
 
-Define foldr : Fun(A B C: type)(owned cookie:C)
-                  (fcn: Fun(owned cookie:C)(owned x:A)(y:B).B)
-                  (b:B)(owned l : <list A>).B :=
-  fun foldr(A B C: type)(owned cookie:C)
-           (fcn: Fun(owned cookie:C)(owned x:A)(y:B).B)
-           (b:B)(owned l : <list A>):B.
+Define foldr : Fun(A B C: type)(^#owned cookie:C)
+                  (fcn: Fun(^#owned cookie:C)(^#owned x:A)(y:B).B)
+                  (b:B)(^#owned l : <list A>).B :=
+  fun foldr(A B C: type)(^#owned cookie:C)
+           (fcn: Fun(^#owned cookie:C)(^#owned x:A)(y:B).B)
+           (b:B)(^#owned l : <list A>):B.
     match l with
-      nil A' => b
+      nil A' => do (consume_owned C cookie) b end
    | cons A' a' l' => (fcn cookie a' 
-                         (foldr A B C cookie fcn b l'))
+                         (foldr A B C (clone_owned C cookie) fcn b l'))
    end. 
 
 Define foldrTot : Forall(A B C : type)
@@ -51,11 +51,11 @@ Define foldrTot : Forall(A B C : type)
 
 Inductive map_i : Fun(A B:type).type :=
   mk_map_i : Fun(A B C:type)
-                (fcn:Fun(owned cookie:C)(owned a:A).B)
+                (fcn:Fun(^#owned cookie:C)(^#owned a:A).B)
                 (cookie:C).<map_i A B>.
 
 Define map_h :=
-  fun(spec A B:type)(owned Fcookie:<map_i A B>)(owned a:A)(l': <list B>).
+  fun(spec A B:type)(^#owned Fcookie:<map_i A B>)(^#owned a:A)(l': <list B>).
     match Fcookie with
       mk_map_i A' B' C fcn cookie =>
         abbrev PA = inj <map_i * **> Fcookie_Eq in
@@ -65,16 +65,19 @@ Define map_h :=
           by PlistB'
     end.
 
-Define map : Fun(A B C: type)(owned cookie:C)
-                (fcn: Fun(owned cookie:C)(owned a:A).B)
-                (owned l : <list A>).<list B> :=
-  fun(A B C: type)(owned cookie:C)
-     (fcn: Fun(owned cookie:C)(owned a:A).B)
-     (owned l : <list A>): <list B>.
-    let Fcookie = (mk_map_i A B C fcn inc cookie) in
+Define map : Fun(A B C: type)(^#owned cookie:C)
+                (fcn: Fun(^#owned cookie:C)(^#owned a:A).B)
+                (^#owned l : <list A>).<list B> :=
+  fun(A B C: type)(^#owned cookie:C)
+     (fcn: Fun(^#owned cookie:C)(^#owned a:A).B)
+     (^#owned l : <list A>): <list B>.
+    let Fcookie = (mk_map_i A B C fcn (inc C cookie)) in
     let ret = 
      (foldr A <list B> <map_i A B> Fcookie (map_h A B) (nil B) l) 
-    in dec Fcookie ret.
+    in 
+   do (dec <map_i A B> Fcookie)
+      ret
+   end.
 
 Define map_total : Forall(A B C: type)(cookie:C)
                          (fcn: Fun(cookie:C)(a:A).B)
@@ -103,21 +106,24 @@ Inductive append_i : Fun(A:type).type :=
   mk_append_i : Fun(A:type).<append_i A>.
 
 Define append_h := 
-  fun(spec A:type)(owned cookie:<append_i A>)(owned x:A)(l:<list A>).
+  fun(spec A:type)(^#owned cookie:<append_i A>)(^#owned x:A)(l:<list A>).
     match cookie with
       mk_append_i A' => 
        abbrev P = inj <append_i *> cookie_Eq in
-         cast (cons A' inc cast x by P cast l by cong <list *> P) 
-         by cong <list *> symm P
+       cast
+         (cons A' (inc_owned A' x) l)
+       by cong <list *> symm P
     end.
 
-Define append : Fun(A : type)(owned l1:<list A>)(l2: <list A>).<list A> :=
-  fun(A : type)(owned l1:<list A>)(l2: <list A>) : <list A>.
+Define append : Fun(A : type)(^#owned l1:<list A>)(l2: <list A>).<list A> :=
+  fun(A : type)(^#owned l1:<list A>)(l2: <list A>) : <list A>.
   let cookie = (mk_append_i A) in
   let ret = 
-      (foldr A <list A> <append_i A> cookie (append_h A)
+      (foldr A <list A> <append_i A> (inspect <append_i A> cookie) (append_h A)
         l2 l1) in
-    dec cookie ret.
+    do (dec <append_i A> cookie)
+       ret
+    end.
 
 Define appendTot : Forall(A : type)(l1 l2: <list A>).Exists(l : <list A>).
                       { (append A l1 l2) = l } :=
@@ -225,24 +231,29 @@ Define append_nil : Forall(A:type)(l:<list A>).{ (append l nil) = l } :=
               symm lp
     end.
 
-Define length : Fun(A: type)(owned l : <list A>).nat :=
-	fun length (A: type)(owned l : <list A>) : nat.
-	(foldr A nat Unit unit fun(cookie:Unit)(owned a:A)(b:nat).(S b) Z l). 
+Define length : Fun(A: type)(^#owned l : <list A>).nat :=
+	fun length (A: type)(^#owned l : <list A>) : nat.
+	let c = Z in
+	let ret =	
+	    (foldr A nat nat c fun(^#owned cookie:nat)(^#owned a:A)(b:nat).(S b) Z l) in
+	    do (dec nat c)
+               ret
+            end. 
 
 Define length_tot 
   : Forall(A: type)(l : <list A>).Exists(n:nat). {(length A l) = n} :=
   foralli(A: type)(l : <list A>).
     existse 
-      [foldrTot A nat Unit unit fun(cookie:Unit)(a:A)(b:nat).(S b) 
+      [foldrTot A nat nat Z fun(cookie:nat)(a:A)(b:nat).(S b) 
        foralli(a:A)(b:nat).
          existsi (S b) 
-           { (fun(cookie:Unit)(owned a:A)(b:nat).(S b) unit a b) = *}
-           join (fun(cookie:Unit)(owned a:A)(b:nat).(S b) unit a b) (S b)
+           { (fun(cookie)(a)(b).(S b) Z a b) = *}
+           join (fun(cookie)(a)(b).(S b) Z a b) (S b)
        Z l]
-    foralli(n:nat)(u:{(foldr unit fun(cookie:Unit)(a:A)(b:nat).(S b) Z l) = n}).
+    foralli(n:nat)(u:{(foldr Z fun(cookie)(a)(b).(S b) Z l) = n}).
     existsi n {(length A l) = *}
       trans join (length l)
-                 (foldr unit fun(cookie:Unit)(owned a:A)(b:nat).(S b) Z l)
+                 (foldr Z fun(cookie)(a)(b).(S b) Z l)
             u.
 
 Total length length_tot.
@@ -445,10 +456,10 @@ Define eq_length_append
           u4
   end.
 
-Define eqlist : Fun(A:type)(eqA:Fun(owned x1 x2:A).bool)
-                   (owned l1 l2:<list A>)
+Define eqlist : Fun(A:type)(eqA:Fun(^#owned x1 x2:A).bool)
+                   (^#owned l1 l2:<list A>)
                    .bool :=
-  fun eqlist(A:type)(eqA:Fun(owned x1 x2:A).bool)(owned l1 l2:<list A>):bool.
+  fun eqlist(A:type)(eqA:Fun(^#owned x1 x2:A).bool)(^#owned l1 l2:<list A>):bool.
   match l1 by l1p l1t with
     nil A1 =>
       match l2 by l2p l2t with
@@ -618,13 +629,13 @@ Define eqlistEq : Forall(A:type)
     end.
 
 Define member : Fun(A:type)
-                   (owned x:A)
-                   (owned l:<list A>)
-                   (eqA:Fun(owned x1 x2:A).bool).bool :=
+                   (^#owned x:A)
+                   (^#owned l:<list A>)
+                   (eqA:Fun(^#owned x1 x2:A).bool).bool :=
   fun member(A:type)
-            (owned x:A)
-            (owned l:<list A>)
-            (eqA:Fun(owned x1 x2:A).bool):bool.
+            (^#owned x:A)
+            (^#owned l:<list A>)
+            (eqA:Fun(^#owned x1 x2:A).bool):bool.
   match l with
     nil A' => ff
   | cons A' h t => (or (eqA x h) (member A x t eqA))
@@ -671,16 +682,16 @@ Define member_total : Forall(A:type)
 
 Total member member_total.
 
-Define all : Fun(A C:type)(owned c:C)
-                (f:Fun(owned c:C)(owned a:A).bool)(owned l:<list A>).bool :=
-  fun(A C:type)(owned c:C)(f:Fun(owned c:C)(owned a:A).bool).
-    (foldr A bool C c fun(owned c:C)(owned a:A)(b:bool).(and (f c a) b) tt).
+Define all : Fun(A C:type)(^#owned c:C)
+                (f:Fun(^#owned c:C)(^#owned a:A).bool)(^#owned l:<list A>).bool :=
+  fun(A C:type)(^#owned c:C)(f:Fun(^#owned c:C)(^#owned a:A).bool).
+    (foldr A bool C c fun(^#owned c:C)(^#owned a:A)(b:bool).(and (f c a) b) tt).
 
-Define fill : Fun(A:type)(owned a:A)(owned n:nat).<list A> :=
-  fun fill(A:type)(owned a:A)(owned n:nat):<list A>.
+Define fill : Fun(A:type)(^#owned a:A)(^#owned n:nat).<list A> :=
+  fun fill(A:type)(^#owned a:A)(^#owned n:nat):<list A>.
     match n with
       Z => (nil A)
-    | S n' => (cons A inc a (fill A a n'))
+    | S n' => (cons A (inc A a) (fill A a n'))
     end.
 
 

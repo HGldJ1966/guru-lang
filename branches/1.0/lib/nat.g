@@ -2,6 +2,7 @@
 %Set "print_ref_annos".
 
 Include "bool.g".
+Include "owned.g".
 
 Inductive nat : type :=
   Z : nat
@@ -12,14 +13,14 @@ Define zero := Z.
 Define isZ := fun(x:nat). match x with Z => tt | S x' => ff end.
 
 Define one : nat := (S Z).
-Define two : nat := (S inc one).
-Define three := (S inc two).
-Define four := (S inc three).
-Define five := (S inc four).
-Define six := (S inc five).
-Define seven := (S inc six).
-Define eight := (S inc seven).
-Define nine := (S inc eight).
+Define two : nat := (S (inc nat one)).
+Define three := (S (inc nat two)).
+Define four := (S (inc nat three)).
+Define five := (S (inc nat four)).
+Define six := (S (inc nat five)).
+Define seven := (S (inc nat six)).
+Define eight := (S (inc nat seven)).
+Define nine := (S (inc nat eight)).
 
 Define S_exists : Forall (n:nat).Exists(m:nat).{ (S n) = m} :=
 	induction(n:nat) by x1 x2 IH return Exists(m:nat).{ (S n) = m} with
@@ -41,8 +42,8 @@ Define S_not_zero : Forall (n:nat).{(S n) != Z} :=
 		clash (S m) Z
 	end.
 
-Define eqnat :=
-  fun eqnat(owned n m:nat):bool.
+Define eqnat : Fun(^ #owned n m:nat).bool :=
+  fun eqnat(^ #owned n m:nat):bool.
     match n with
       Z => match m with
              Z => tt
@@ -232,8 +233,8 @@ Define Sneq_neq : Forall(a b:nat)(u:{ (S a) != (S b) }).{ a != b } :=
               { a != b }
       end terminates (eqnat a b) by eqnatTot join (eqnat a b) (eqnat a b) ].
 
-Define lt : Fun(owned a b:nat).bool :=
-	fun lt(owned a b:nat) : bool.
+Define lt : Fun(^ #owned a b:nat).bool :=
+	fun lt(^ #owned a b:nat) : bool.
 		match a with
 		Z => match b with
 			Z => ff

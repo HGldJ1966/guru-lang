@@ -19,7 +19,7 @@ public class Sym extends Expr {
 	    w.print(output_name.toUpperCase());
 	else {
 	    if (ctxt.stage >= 2) {
-		if (ctxt.isAttribute(this)) {
+		if (ctxt.isResourceType(this)) {
 		    w.print("void *");
 		    return;
 		}
@@ -51,6 +51,8 @@ public class Sym extends Expr {
     }
 
     public Expr simpleType(Context ctxt) {
+	if (ctxt.isTypeDef(this))
+	    return ctxt.getTypeDefBody(this).simpleType(ctxt);
 	Expr T = ctxt.getType(this);
 	if (T == null)
 	    classifyError(ctxt,"Missing type for a symbol.\n\n"
@@ -61,8 +63,12 @@ public class Sym extends Expr {
     public boolean eqType(Context ctxt, Expr T) {
 	if (T.construct == ABORT)
 	    return true;
+	if (ctxt.isTypeDef(this))
+	    return ctxt.getTypeDefBody(this).eqType(ctxt,T);
 	if (T.construct != SYM)
 	    return false;
+	if (ctxt.isTypeDef((Sym)T))
+	    return eqType(ctxt,ctxt.getTypeDefBody((Sym)T));
 	return eq(ctxt,(Sym)T);
     }
 

@@ -133,6 +133,9 @@ public class Parser extends ParserBase {
 	    case Expr.FUN_TERM:
 		e = readFunTerm();
 		break;
+	    case Expr.DO:
+		e = readDo();
+		break;
 	    case Expr.CAST:
 		e = readCast();
 		break;
@@ -157,12 +160,6 @@ public class Parser extends ParserBase {
 		break;
 	    case Expr.FUN_TYPE:
 		e = readFunType();
-		break;
-	    case Expr.INC:
-		e = readInc();
-		break;
-	    case Expr.DEC:
-		e = readDec();
 		break;
 	    case Expr.TYPE:
 		e = ctxt.type;
@@ -254,14 +251,17 @@ public class Parser extends ParserBase {
 	    case Expr.ATOM:
 		e = readAtom();
 		break;
-	    case Expr.METAVAR:
-		e = readMetaVar();
-		break;
 	    case Expr.TRUE:
 	    	e = readTrue();
 		break;
 	    case Expr.FALSE:
 	    	e = readFalse();
+		break;
+	    case Expr.VOID:
+	    	e = new Void();
+		break;
+	    case Expr.VOIDI:
+	    	e = new Voidi();
 		break;
 	    case Expr.TRUEI:
 	    	e = readTruei();
@@ -326,11 +326,65 @@ public class Parser extends ParserBase {
             c = readTotal();
         else if (tryToEat("Echo"))
             c = readEcho();
+	else if (tryToEat("ResourceType")) 
+	    c = readResourceType();
+	else if (tryToEat("Init"))
+	    c = readInit();
 	else
 	    handleError("Unexpected start of a command.");
 	c.pos = pos;
 	return c;
     }
+
+    protected ResourceType readResourceType() throws IOException {
+	ResourceType a = new ResourceType();
+	if (!eat_ws())
+	    handleError("Unexpected end of input reading a ResourceType-command.");
+
+	a.s = readBindingConst();
+	
+	ctxt.addResourceType(a.s);
+	
+	eat("with", "ResourceType");
+	if (!eat_ws())
+	    handleError("Unexpected end of input reading a ResourceType-command.");
+	eat("Define", "ResourceType");
+	a.drop = readDefine();
+	return a;
+    }
+
+    protected Init readInit() throws IOException {
+	Init a = new Init();
+	if (!eat_ws())
+	    handleError("Unexpected end of input reading an Init-command.");
+	a.s = readBindingConst();
+
+	eat("(","Init");
+	a.T1 = readAnno();
+	eat_ws();
+	a.v1 = (Var)readIdentifier(true);
+	eat(")","Init");
+	ctxt.pushVar(a.v1);
+
+	eat("(","Init");
+	a.T2 = readAnno();
+	eat_ws();
+	a.v2 = (Var)readIdentifier(true);
+	eat(")","Init");
+	eat(".","Init");
+	ctxt.pushVar(a.v2);
+
+	a.T3 = readAnno();
+	ctxt.popVar(a.v1);
+	ctxt.popVar(a.v2);
+
+	eat("<<","Init");
+	a.delim = readID();
+	a.code = read_until_newline_delim(a.delim);
+	eat(".","Init");
+	return a;
+    }
+
 
     protected Set readSet() throws IOException
     {
@@ -405,6 +459,7 @@ public class Parser extends ParserBase {
 	    handleError("Unexpected end of input parsing a Define.");
 
 	cmd.spec = false;
+	cmd.primitive = false;
 	cmd.trusted = trusted;
 	cmd.type_family_abbrev = false;
 	cmd.predicate = false;
@@ -415,6 +470,10 @@ public class Parser extends ParserBase {
 	    
 	    if (tryToEat("spec")) {
 		cmd.spec = true;
+		spec = true;
+	    }
+	    else if (tryToEat("primitive")) {
+		cmd.primitive = true;
 		spec = true;
 	    }
 	    else if (tryToEat("trusted"))
@@ -457,6 +516,12 @@ public class Parser extends ParserBase {
 			+"abbreviation and a predicate.");
 
 	cmd.G = readAny();
+
+	if (cmd.primitive) {
+	    eat("<<","Primitive");
+	    cmd.delim = readID();
+	    cmd.code = read_until_newline_delim(cmd.delim);
+	}
 
 	allow_type_fam_abbrev = false;
 	allow_predicate = false;
@@ -643,7 +708,7 @@ public class Parser extends ParserBase {
     {
 	Expr ee = readType();
 	
-	Expr ret = null;
+	Expr ran = null;
 	if (ee.construct == Expr.FUN_TYPE) {
 	    FunType e = (FunType)ee;
 
@@ -652,11 +717,6 @@ public class Parser extends ParserBase {
 		if (!isAminus(T))
 		    handleError("Expected an A- expression in the type of a "
 				+"term constructor");
-		if (e.owned[i].status == Ownership.OWNEDBY)
-		    handleError("A term constructor is being declared with"
-				+" a type\nusing an \"owned\" annotation.\n"
-				+"1. the type: "+e.toString(ctxt));
-
 		if (T.isdtype(ctxt,true))
 		    continue;
 
@@ -666,11 +726,14 @@ public class Parser extends ParserBase {
 				+" disallowed way:"
 				+"\n1. the type: "+T.toString(ctxt));
 	    }
-	    ret = e.body;
+	    if (e.ret_stat.status != Ownership.DEFAULT)
+		handleError("The return type for a term constructor has a resource type specification."
+			    +"\n\n1. the term constructor's type: "+ee.toString(ctxt));
+	    ran = e.body;
 	}
 	else
-	    ret = ee;
-	if (!isdtypeRestricted(ret,d))
+	    ran = ee;
+	if (!isdtypeRestricted(ran,d))
 	    handleError("The return type of a term constructor is not a \""+
 			d.name+"\"-type.");
         return ee;
@@ -962,11 +1025,14 @@ public class Parser extends ParserBase {
 	readVarListExpr(e, false);
 	int iend = e.vars.length;
 	e.owned = new Ownership[e.vars.length];
-	for (int i = 0; i < iend; i++)
-	    e.owned[i] = new Ownership(Ownership.NOT_TRACKED);
+	e.consumps = new int[e.vars.length];
+	for (int i = 0; i < iend; i++) {
+	    e.owned[i] = new Ownership(Ownership.DEFAULT);
+	    e.consumps[i] = FunAbstraction.NOT_CONSUMED;
+	}
         eat(".", "kind");
         e.body = readKind();
-	e.ret_stat = new Ownership(Ownership.NOT_TRACKED);
+	e.ret_stat = new Ownership(Ownership.DEFAULT);
 	popVars(e);
 
 	for (int i = 0; i < iend; i++)
@@ -1212,6 +1278,9 @@ public class Parser extends ParserBase {
     protected Match readMatch() throws IOException
     {
         Match e = new Match();
+
+	eat_ws();
+	e.consume_first = tryToEat("$");
 
         e.t = readTerm();
         
@@ -1527,8 +1596,7 @@ public class Parser extends ParserBase {
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing a let term.");
 
-	e.x1_stat = readAnno(false /* we do not allow owned here, for
-				      soundness */);
+	e.x1_stat = readAnno();
 
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing a let term.");
@@ -1569,7 +1637,7 @@ public class Parser extends ParserBase {
         return e;
     }
 
-    protected Abbrev readAbbrev (boolean eabbrev) throws IOException
+    protected Abbrev readAbbrev(boolean eabbrev) throws IOException
     {
 	Var x;
 	Expr U, G;
@@ -1600,7 +1668,7 @@ public class Parser extends ParserBase {
 	return ret;
     }
     
-    protected Const readBindingConst () throws IOException
+    protected Const readBindingConst() throws IOException
     {
 	Var v = (Var)readIdentifier(true);
 	if (ctxt.lookup(v.name) != null) 
@@ -1612,21 +1680,20 @@ public class Parser extends ParserBase {
 	return c;
     }
 
-    protected Const readConst () throws IOException
+    protected Const readConst() throws IOException
     {
-	return (Const)readIdentifier(false);
+	Expr e = readIdentifier(false);
+	if (e.construct != Expr.CONST)
+	    handleError("Expected a constant, but found: \""+e.toString(ctxt)+"\".");
+	return (Const)e;
     }
 
-    /** this is expecting it can definitely read a metavar at this 
-	point.  Otherwise, it will throw a class cast exception. */
-    protected MetaVar readMetaVar () throws IOException
-    {
-	return (MetaVar)readIdentifier(false);
-    }
-    
     protected Var readVar () throws IOException
     {
-	return (Var)readIdentifier(false);
+	Expr e = readIdentifier(false);
+	if (e.construct != Expr.VAR)
+	    handleError("Expected a variable, but found: \""+e.toString(ctxt)+"\".");
+	return (Var)e;
     }
 
     protected Var readBindingVar () throws IOException
@@ -1634,17 +1701,17 @@ public class Parser extends ParserBase {
 	return (Var)readIdentifier(true);
     }
 
-    /** reads an identifier.  */
-    protected Expr readIdentifier (boolean binding_occurrence) 
+    protected Expr readIdentifier(boolean binding_occurrence) 
 	throws IOException
     {
         Position pos = getPos();
         String theVarName = readID();
 
-	if (theVarName.charAt(0) == '_' && using_metavars) 
-	    return new MetaVar(theVarName);
-
 	Expr e = ctxt.lookup(theVarName);	
+	/*
+	ctxt.w.println("theVarName = "+theVarName+", binding_occurrence = "+(new Boolean(binding_occurrence)).toString());
+	ctxt.w.flush();
+	*/
 	if (!binding_occurrence) {
 	    if (e != null)
 		return e;
@@ -1656,29 +1723,32 @@ public class Parser extends ParserBase {
 	return v;
     }
      
+    protected Ownership readAnno() throws IOException {
+	if (tryToEat("#<")) {
+	    Const c = readConst();
+	    if (!eat_ws())
+		handleError("Unexpected end of input reading a resource tracking annotation.");
+	    Var v = readVar();
+	    Ownership o = new Ownership(Ownership.PINNED,c,v);
+	    eat(">", "resource type");
+	    return o;
+	}
+	if (tryToEat("spec"))
+	    return new Ownership(Ownership.SPEC);
+	if (tryToEat("untracked"))
+	    return new Ownership(Ownership.UNTRACKED);
+	if (tryToEat("#",true))
+	    return new Ownership(Ownership.RESOURCE, readConst());
+	return new Ownership(Ownership.DEFAULT);
+    }
+
     protected class VarList {
 	public Ownership anno;
+	public int consump;
 	public Var[] vars;
 	public Expr type;
     }
 
-    protected Ownership readAnno(boolean allow_owned) throws IOException {
-	if (allow_owned && tryToEat("owned"))
-	    return new Ownership(Ownership.OWNEDBY);
-	if (tryToEat("owned_by"))
-	    return new Ownership(Ownership.OWNEDBY,readVar());
-	if (allow_owned && tryToEat("unique_owned"))
-	    return new Ownership(Ownership.UNIQUE_OWNEDBY);
-	if (tryToEat("unique_owned_by"))
-	    return new Ownership(Ownership.UNIQUE_OWNEDBY,readVar());
-	if (tryToEat("unique"))
-	    return new Ownership(Ownership.UNIQUE);
-	if (tryToEat("new"))
-	    return new Ownership(Ownership.NEW);
-	if (tryToEat("spec"))
-	    return new Ownership(Ownership.SPEC);
-	return new Ownership(Ownership.UNOWNED);
-    }
 
     // if allow_annos is true, we allow certain types of annotations
     // to qualify the vars.
@@ -1691,9 +1761,16 @@ public class Parser extends ParserBase {
             
 	if (!eat_ws())
 	    handleError("Unexpected end of input reading a variable list.");
-	Ownership anno = new Ownership(Ownership.UNOWNED);
+	Ownership anno = new Ownership(Ownership.DEFAULT);
+	int consump = FunAbstraction.CONSUMED_RET_OK;
 	if (allow_annos) {
-	    anno = readAnno(true /* allow_owned */);
+	    if (tryToEat("!"))
+		consump = FunAbstraction.NOT_CONSUMED;
+	    else if (tryToEat("^"))
+		consump = FunAbstraction.CONSUMED_NO_RET;
+	    if (!eat_ws())
+		handleError("Unexpected end of input reading a variable list.");
+	    anno = readAnno();
 	    if (!eat_ws())
 		handleError("Unexpected end of input reading a variable"
 			    +" list.");
@@ -1701,7 +1778,13 @@ public class Parser extends ParserBase {
 		
         do
         {        
-            varList.add(readBindingVar());
+	    Var v = readBindingVar();
+	    if (ctxt.isResourceType(v.name))
+		handleError("A variable is shadowing a resource type.  Perhaps you are missing the leading \"#\"?"
+			    +"\n\n1. the variable: "+v.toString(ctxt)
+			    +"\n\n2. should maybe be: #"+v.toString(ctxt));
+		
+            varList.add(v);
 
             if (!eat_ws())
 		handleError("Unexpected end of input reading a variable"
@@ -1730,6 +1813,7 @@ public class Parser extends ParserBase {
         vl.vars = toVarArray(varList);
 	vl.type = type;
 	vl.anno = anno;
+	vl.consump = consump;
 	
 	for (int i = 0, iend = vl.vars.length; i < iend; i++)
 	    ctxt.pushVar(vl.vars[i]);
@@ -1747,6 +1831,7 @@ public class Parser extends ParserBase {
         ArrayList varList = new ArrayList();
         ArrayList uList = new ArrayList();
         ArrayList annoList = new ArrayList();
+        ArrayList consumpList = new ArrayList();
 
         int c;
         char ch;
@@ -1761,13 +1846,14 @@ public class Parser extends ParserBase {
         {
 	    ungetc(c);
             VarList vl = readVarList(allow_annos);
-            for(int i=0; i<vl.vars.length;i++)
+            for(int i=0; i<vl.vars.length;i++) {
                 varList.add(vl.vars[i]);
-            for(int i=0; i<vl.vars.length;i++)
                 uList.add(vl.type);
-	    if (allow_annos)
-		for(int i=0; i<vl.vars.length;i++)
+		if (allow_annos) {
+		    consumpList.add(new Integer(vl.consump));
 		    annoList.add(vl.anno);
+		}
+	    }
         
 	    if (!eat_ws())
 		handleError("Unexpected end of input parsing a variable"
@@ -1783,6 +1869,7 @@ public class Parser extends ParserBase {
 	if (allow_annos) {
 	    FunAbstraction a = (FunAbstraction)e;
 	    a.owned = toOwnershipArray(annoList);
+	    a.consumps = toIntArray(consumpList);
 	}
     }
 
@@ -1815,11 +1902,11 @@ public class Parser extends ParserBase {
 	    // need to read the return type of the recursive function
 	    if (!eat_ws())
 		handleError("Unexpected end of input parsing a fun term.");
-	    e.ret_stat = readAnno(false /* allow_owned */);
+	    e.ret_stat = readAnno();
 	    e.T = readType();
 	}
 	else {
-	    e.ret_stat = new Ownership(Ownership.UNOWNED);
+	    e.ret_stat = new Ownership(Ownership.DEFAULT);
 	    e.T = null;
 	}
 
@@ -1845,7 +1932,7 @@ public class Parser extends ParserBase {
 	eat(".", "Fun type");
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing a Fun-type.");
-	e.ret_stat = readAnno(false /* allow_owned */);
+	e.ret_stat = readAnno();
         e.body = readType();
                 
 	popVars(e);
@@ -1999,6 +2086,30 @@ public class Parser extends ParserBase {
 	}
 
         e.P = toExprArray(proofs);
+
+        return e;
+    }
+    
+    protected Do readDo() throws IOException
+    {              
+    	Do e = new Do();
+        
+        ArrayList terms = new ArrayList();
+
+	while (!tryToEat("end")) {
+	    terms.add(readAny());
+	    
+	    if (!eat_ws())
+		handleError("Unexpected end of input parsing a show proof.");
+	}
+
+	int sz = terms.size();
+	if (sz <= 1)
+	    handleError("A do-term is used with fewer than 2 subterms.");
+
+	e.t = (Expr)terms.get(sz-1);
+	terms.remove(sz-1);
+        e.ts = toExprArray(terms);
 
         return e;
     }
@@ -2314,29 +2425,6 @@ public class Parser extends ParserBase {
         return e;
     }
     
-    protected Inc readInc() throws IOException
-    {
-        Inc e = new Inc();
-        
-        e.t = readTerm();
-        
-        return e;
-    }
-    
-    protected Dec readDec() throws IOException
-    {
-        Dec e = new Dec();
-        
-        e.I = readI();
-
-	if (!eat_ws())
-	    handleError("Unexpected end of input parsing a dec-term.");
-
-        e.t = readTerm();
-        
-        return e;
-    }
-
     protected int eatKeyword() throws IOException
     {
         if (!eat_ws())
@@ -2346,6 +2434,8 @@ public class Parser extends ParserBase {
 	    return Expr.STARSTAR;
 	if (tryToEat("*"))
 	    return Expr.STAR;
+	if (tryToEat("do"))
+	    return Expr.DO;
 	if (tryToEat("fun"))
 	    return Expr.FUN_TERM;
 	if (tryToEat("cast"))
@@ -2372,10 +2462,6 @@ public class Parser extends ParserBase {
 	    return Expr.TYPE_APP;
 	if (tryToEat("@<"))
 	    return Expr.PRED_APP;
-	if (tryToEat("dec"))
-	    return Expr.DEC;
-	if (tryToEat("inc"))
-	    return Expr.INC;
 	if (tryToEat("foralli"))
 	    return Expr.FORALLI;
 	if (tryToEat("["))
@@ -2400,6 +2486,10 @@ public class Parser extends ParserBase {
 	    return Expr.TRUE;
 	if (tryToEat("False"))
 	    return Expr.FALSE;
+	if (tryToEat("voidi"))
+	    return Expr.VOIDI;
+	if (tryToEat("void"))
+	    return Expr.VOID;
 	if (tryToEat("join"))
 	    return Expr.JOIN;
 	if (tryToEat("evalto"))

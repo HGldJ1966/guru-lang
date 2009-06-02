@@ -135,6 +135,9 @@ public class FunTerm extends FunBase {
     }
 
     public Expr linearize(Context ctxt, guru.Position p, Sym dest) {
+	for (int i = 0, iend = types.length; i < iend; i++)
+	    types[i] = types[i].flattenType(ctxt);
+	rettype = rettype.flattenType(ctxt);
 	body = body.linearize(ctxt,p,ctxt.returnf);
 	return this;
     }

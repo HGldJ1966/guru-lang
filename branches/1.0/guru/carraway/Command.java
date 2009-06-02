@@ -14,6 +14,7 @@ public class Command {
     public static final int UNSET = 7;
     public static final int INCLUDE = 8;
     public static final int INIT = 9;
+    public static final int TYPEDEF = 10;
 
     protected int which;
     public Position pos;

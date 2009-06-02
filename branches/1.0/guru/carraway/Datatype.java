@@ -1,10 +1,10 @@
 package guru.carraway;
 
 public class Datatype extends Command {
-    Sym tp;
-    Sym[] ctors;
-    Expr[] types;
-    Expr[] rttypes;
+    public Sym tp;
+    public Sym[] ctors;
+    public Expr[] types;
+    public Expr[] rttypes;
 
     public Primitive del;
 
@@ -130,7 +130,7 @@ public class Datatype extends Command {
 		    }
 		    if (R != null) 
 			for (int j = 0; j < jend; j++) 
-			    ctxt.cw.println("  void *"+F.vars[j].toString(ctxt)+";");
+			    ctxt.cw.println("  void *"+R.vars[j].toString(ctxt)+";");
 
 		    String ctor_tp = tpstr+"_"+ctors[i].toString(ctxt);
 		    ctxt.cw.println("} "+ctor_tp+";\n");
@@ -173,7 +173,7 @@ public class Datatype extends Command {
 			ctxt.cw.println("void clear_"+ctor_tp+"(void *_x) {");
 			ctxt.cw.println("  "+ctor_tp+" *x = ("+ctor_tp+" *)_x;");
 			for (int j = 0; j < jend; j++) {
-			    String v = F.vars[j].toString(ctxt);
+			    String v = R.vars[j].toString(ctxt);
 			    Expr Tj = F.types[j];
 			    if (Tj.consumable()) {
 				Sym Tjh = (Tj.construct == Expr.PIN ? ((Pin)Tj).s : (Sym)Tj);
@@ -198,7 +198,7 @@ public class Datatype extends Command {
 				first = false;
 			    else
 				ctxt.cw.print(", ");
-			    ctxt.cw.print("void *"+F.vars[j].toString(ctxt));
+			    ctxt.cw.print("void *"+R.vars[j].toString(ctxt));
 			}
 		    }
 		    ctxt.cw.println(") {");
@@ -219,7 +219,7 @@ public class Datatype extends Command {
 		    ctxt.cw.println("  x->opval = 256 + op_"+ctors[i].toString(ctxt)+";");
 		    if (R != null) 
 			for (int j = 0; j < jend; j++) {
-			    String v = F.vars[j].toString(ctxt);
+			    String v = R.vars[j].toString(ctxt);
 			    ctxt.cw.println("  x->"+v+" = "+v+";");
 			}
 		    ctxt.cw.println("  return x;");
@@ -269,6 +269,7 @@ public class Datatype extends Command {
 		    w.print(" | ");
 		ctors[i].print(w,ctxt);
 		w.print(" : ");
+		w.flush();
 		types[i].print(w,ctxt);
 		if (rttypes[i] != null) {
 		    w.print(" & ");

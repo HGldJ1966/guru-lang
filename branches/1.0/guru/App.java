@@ -89,9 +89,13 @@ public class App extends Expr{
     protected Expr apply_classifier(int expected_construct, int approx,
 				    boolean spec,
 				    Context ctxt, Expr cl, int arg) {
-	if (arg == X.length)
+	if (arg == X.length) {
 	    // we have consumed all the arguments in this App
+	    //System.out.println("Done instantiating: "+cl.toString(ctxt));
+	    //System.out.flush();
+
 	    return cl;
+	}
 
 	cl = cl.defExpandTop(ctxt, false, spec);
 	Expr err_tgt = ((X[arg].construct == VAR || X[arg].construct == CONST)
@@ -144,6 +148,8 @@ public class App extends Expr{
 		     +"3. expected classifier: "+e.types[0].toString(ctxt));
 	}
 	Expr Xarg = X[arg];
+	//System.out.println("Instantiating: "+e.toString(ctxt));
+	//System.out.flush();
 	Expr next = e.instantiate(Xarg);
 	arg++;
 	return apply_classifier(expected_construct, approx, spec,

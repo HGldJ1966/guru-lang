@@ -170,15 +170,27 @@ public class ParserBase {
 	}
     }
 
-    protected boolean tryToEat(String kw) 
-	throws IOException 
+    protected boolean tryToEat(String kw) throws IOException 
     {
 	return tryToEat(kw.toCharArray());
     }
 
-    protected boolean tryToEat(char[] kw) 
-	throws IOException 
+    // see below for ok_if_id.
+    protected boolean tryToEat(String kw, boolean ok_if_id) throws IOException 
     {
+	return tryToEat(kw.toCharArray(),ok_if_id);
+    }
+
+    protected boolean tryToEat(char[] kw) throws IOException {
+	return tryToEat(kw,false);
+    }
+    
+    /* try to eat the string kw.  When ok_if_id is true, we will not
+       consider the next character after kw in the input string;
+       otherwise, we will make sure that it is not a legal character
+       for an identifier, thus ruling out eating prefixes of
+       identifiers. */
+    protected boolean tryToEat(char[] kw, boolean ok_if_id) throws IOException {
 	int c;
 	int cur = 0;
 	
@@ -197,6 +209,7 @@ public class ParserBase {
 			ungetc(kw[j]);
 			
 		//System.out.println("tryToEat returning false (1).");
+		//System.out.flush();
 
 		return false;
 	    }
@@ -205,7 +218,7 @@ public class ParserBase {
 	int j = kw.length - 1;
 	ungetc(c);
 	if (Character.isLetterOrDigit(kw[j]))
-	    if (c != -1 && !Character.isWhitespace((char)c) && LegalIdChar((char)c)) {
+	    if (c != -1 && !ok_if_id && !Character.isWhitespace((char)c) && LegalIdChar((char)c)) {
 		// a keyword ending in a letter or number is being
 		// followed by a character allowed for variables, thus
 		// yielding an identifier, not a keyword.
@@ -215,7 +228,8 @@ public class ParserBase {
 		return false;
 	    }
 
-	//	System.out.println("ate "+java.util.Arrays.toString(kw));
+	/* System.out.println("ate "+java.util.Arrays.toString(kw));
+	  System.out.flush();*/
 	return true;
     }
 
@@ -280,7 +294,7 @@ public class ParserBase {
     
    protected boolean LegalIdChar(char ch)
    {
-       if("@$<>|(){}[]=%:.-\"".indexOf(ch)>=0)
+       if("@$<>|(){}[]=%:.-\"#".indexOf(ch)>=0)
             return false;
        else
            return true;             

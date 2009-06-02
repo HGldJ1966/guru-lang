@@ -1,13 +1,13 @@
 package guru.carraway;
 
-public class Attribute extends Command {
+public class ResourceType extends Command {
     public Sym s;
 
     public Primitive drop;
 
     protected static boolean first_attribute = true;
 
-    public Attribute() {
+    public ResourceType() {
 	super(ATTRIBUTE);
     }
 
@@ -31,6 +31,7 @@ public class Attribute extends Command {
     }
 
     public void process(Context ctxt) {
+	ctxt.stage = 0;
 	String ss = ctxt.name("consume_"+s.name);
 	if (!drop.s.output_name.equals(ss))
 	    handleError(ctxt,"The drop function given for an attribute is not named as required."
@@ -45,7 +46,7 @@ public class Attribute extends Command {
 			+"\n\n2. the expected form: "+F.toString(ctxt));
 
 	// need to add the attribute first, since it is mentioned in the type of the drop function.
-	ctxt.addAttribute(s,drop.s);
+	ctxt.addResourceType(s,drop.s);
 	if (first_attribute) {
 	    if (!ctxt.getFlag("output_ocaml")) {
 		ctxt.cw.println("#include <values.h>\n\n"

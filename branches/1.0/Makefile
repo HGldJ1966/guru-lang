@@ -12,7 +12,7 @@
 #top:	all
 
 go:
-	javac -source 1.4 -g guru/*.java guru/compiler/*java
+	javac -source 1.4 -g guru/*.java guru/carraway/*java guru/compiler/EtaExpand.java
 
 carraway:
 	javac -source 1.4 -g guru/*.java guru/carraway/*java
