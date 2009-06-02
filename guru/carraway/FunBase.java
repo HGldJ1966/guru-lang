@@ -65,6 +65,7 @@ abstract public class FunBase extends Expr {
 		    w.print("^ ");
 		vars[i].print(w,ctxt);
 		w.print(" : ");
+		w.flush();
 		types[i].print(w,ctxt);
 		w.print(")");
 	    }

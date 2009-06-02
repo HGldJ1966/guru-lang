@@ -13,21 +13,21 @@ public class FunTerm extends FunAbstraction {
     }
     
     public FunTerm(Var r, Expr T, FunAbstraction a) {
-	super(FUN_TERM, a.owned, a.ret_stat, a);
+	super(FUN_TERM, a.owned, a.consumps, a.ret_stat, a);
 	this.r = r;
 	this.T = T;
     }
 
     public FunTerm(Var r, Expr T, Var x, Expr type, 
-		   Ownership owned, Ownership ret_stat, Expr body) {
-	super(FUN_TERM, x, type, owned, ret_stat, body);
+		   Ownership owned, int consump, Ownership ret_stat, Expr body) {
+	super(FUN_TERM, x, type, owned, consump, ret_stat, body);
 	this.r = r;
 	this.T = T;
     }
 
     public FunTerm(Var r, Expr T, Var[] vars, Expr[] types, Ownership owned[],
-		   Ownership ret_stat, Expr body) {
-	super(FUN_TERM, vars, types, owned, ret_stat, body);
+		   int consumps[], Ownership ret_stat, Expr body) {
+	super(FUN_TERM, vars, types, owned, consumps, ret_stat, body);
 	this.r = r;
 	this.T = T;
     }
@@ -64,10 +64,9 @@ public class FunTerm extends FunAbstraction {
 	print_varlist(w, ctxt);
 	if (T != null) {
 	    w.print(" : ");
-	    if (ret_stat.shouldPrint(ctxt)) {
+	    if (ret_stat.status != Ownership.DEFAULT)
 		w.print(ret_stat.toString(ctxt));
-		w.print(" ");
-	    }
+	    w.print(" ");
 	    T.print(w,ctxt);
 	}
 	w.print(". ");
@@ -117,7 +116,9 @@ public class FunTerm extends FunAbstraction {
 	Expr ret = super.dropNoncompInputs(ctxt);
 	if (ret == this || (ret.construct != ABSTRACTION))
 	    return ret;
-	return new FunTerm(r,T,(FunAbstraction)ret);
+	ret = new FunTerm(r,T,(FunAbstraction)ret);
+	ret.pos = pos;
+	return ret;
     }
 
     protected Expr dropAnnosInternal(Context ctxt, boolean type_fam_abbrev) {
@@ -131,10 +132,12 @@ public class FunTerm extends FunAbstraction {
 	Expr[] ntypes;
 	Var[] nvars;
 	Ownership[] nowned;
+	int[] nconsumps;
 	if (type_fam_abbrev) {
 	    ntypes = f.types;
 	    nvars = f.vars;
 	    nowned = owned;
+	    nconsumps = consumps;
 	}
 	else {
 
@@ -142,6 +145,7 @@ public class FunTerm extends FunAbstraction {
 	    Expr[] types2 = new Expr[iend];
 	    Var[] vars2 = new Var[iend];
 	    Ownership[] owned2 = new Ownership[iend];
+	    int consumps2[] = new int[iend];
 	    
 	    for (int i = 0; i < iend; i++) {
 		if (f.vars[i].isTypeOrKind(ctxt) || f.vars[i].isProof(ctxt)
@@ -154,6 +158,7 @@ public class FunTerm extends FunAbstraction {
 		    types2[cnt] = new Bang();
 		    vars2[cnt] = f.vars[i];
 		    owned2[cnt] = owned[i];
+		    consumps2[cnt] = consumps[i];
 		    cnt++;
 		}
 	    }
@@ -162,17 +167,19 @@ public class FunTerm extends FunAbstraction {
 	    ntypes = new Expr[cnt];
 	    nvars = new Var[cnt];
 	    nowned = new Ownership[cnt];
+	    nconsumps = new int[cnt];
 	    
 	    System.arraycopy(types2,0,ntypes,0,cnt);
 	    System.arraycopy(vars2,0,nvars,0,cnt);
 	    System.arraycopy(owned2,0,nowned,0, cnt);
+	    System.arraycopy(consumps2,0,nconsumps,0, cnt);
 	    
 	    if (cnt == 0)
 		return f.body;
 	}
 	
 	if (f != this || changed || (T != null && T.construct != Expr.BANG))
-	    return new FunTerm(r, new Bang(), nvars, ntypes, nowned, 
+	    return new FunTerm(r, new Bang(), nvars, ntypes, nowned, nconsumps,
 			       ret_stat, f.body);
 	
 	return this;
@@ -192,10 +199,13 @@ public class FunTerm extends FunAbstraction {
     public void setClassifiers(Context ctxt) {
 	super.setClassifiers(ctxt);
 	if (r != null) {
-	    Expr T1 = new FunType(vars, types, owned, ret_stat, T);
+	    Expr T1 = new FunType(vars, types, owned, consumps, ret_stat, T);
+	    if (!T.isTrackedType(ctxt) && ret_stat.mustTrack())
+		handleError(ctxt,"The return type for a recursive function is labeled for tracking,\n"
+			    +"but its type is one we do not track.\n\n"
+			    +"1. the return type: "+T.toString(ctxt)
+			    +"\n\n2. its ownership status: "+ret_stat.toString(ctxt));
 	    ctxt.setClassifier(r, T1);
-	    if (!T.isTrackedType(ctxt))
-		ret_stat = new Ownership(Ownership.NOT_TRACKED);
 	}
     }
 
@@ -207,7 +217,7 @@ public class FunTerm extends FunAbstraction {
 			    +"1. the recursive function: "+r.toString(ctxt));
      
 
-	    Expr T1 = new FunType(vars, types, owned, ret_stat, T);
+	    Expr T1 = new FunType(vars, types, owned, consumps, ret_stat, T);
 	    T1.classify(ctxt, approx, spec); /* needed to set up spec 
 						annotations in term apps
 						in T1 */
@@ -228,22 +238,19 @@ public class FunTerm extends FunAbstraction {
 			+T.toString(ctxt)+"\n"
 			+"2. The type of the body: "+bT.toString(ctxt));
 
-	if (!T.isTrackedType(ctxt)) { // cf. FunAbstraction.checkClassifiers
-	    if (ret_stat.status != Ownership.NOT_TRACKED
-		&& ret_stat.status != Ownership.UNOWNED)
-		handleError(ctxt, 
-			    "The declared type for a fun-term is "
-			    +"not a tracked type,\nbut the fun-term is marking"
-			    +" it as having some ownership\nstatus other than "
-			    +"the default.\n"
-			    +"1. the return type: "
-			    +T.toString(ctxt)+"\n"
-			    +"2. its ownership status: "
-			    +ret_stat.toString(ctxt));
-	    ret_stat = new Ownership(Ownership.NOT_TRACKED);
+	if (!T.isTrackedType(ctxt) && ret_stat.mustTrack()) {// cf. FunAbstraction.checkClassifiers
+	    handleError(ctxt, 
+			"The declared type for a fun-term is "
+			+"not a tracked type,\nbut the fun-term is marking"
+			+" it as having some ownership\nstatus other than "
+			+"the default.\n"
+			+"1. the return type: "
+			+T.toString(ctxt)+"\n"
+			+"2. its ownership status: "
+			+ret_stat.toString(ctxt));
 	}
 
-	return new FunType(vars, types, owned, ret_stat, T);
+	return new FunType(vars, types, owned, consumps, ret_stat, T);
     }
 
     public void getFreeVarsComputational(Context ctxt, java.util.Collection v){
@@ -281,6 +288,44 @@ public class FunTerm extends FunAbstraction {
 	}
 	
 	body.checkSpec(ctxt, in_type);
+    }
+
+    // we assume r is non-null (Compile sets it if it is null).
+    public guru.carraway.Expr toCarraway(Context ctxt) {
+	guru.carraway.FunTerm F = new guru.carraway.FunTerm();
+	F.pos = pos;
+
+	guru.carraway.Context cctxt = ctxt.carraway_ctxt;
+	F.f = cctxt.newSym(r.name,r.pos);
+	cctxt.declareFunction(F.f);
+
+	int iend = vars.length;
+	guru.carraway.Sym[] nvars = new guru.carraway.Sym[iend];
+	guru.carraway.Expr[] ntypes = new guru.carraway.Expr[iend];
+	int[] nconsumps = new int[iend];
+	for (int i = 0; i < iend; i++) {
+	    ntypes[i] = ((types[i].construct == TYPE || types[i].construct == FUN_TYPE)
+			 ? types[i].toCarrawayType(ctxt,false)
+			 : owned[i].toCarrawayType(ctxt,vars[i].pos));
+	    nvars[i] = cctxt.newSym(vars[i].name,vars[i].pos);
+	    cctxt.pushVar(nvars[i]);
+	    nconsumps[i] = consumps[i];
+	}
+	    
+	if (T == null) 
+	    handleError(ctxt,"We are trying to compile a fun-term whose return type has not been computed.\n"
+			+"Probably this is a trusted definition: try compiling with it not trusted, or \n"
+			+"explicitly add the return type.");
+	F.rettype = ret_stat.toCarrawayType(ctxt,T.pos);
+	F.consumps = nconsumps;
+	F.types = ntypes;
+	F.vars = nvars;
+	F.body = body.toCarraway(ctxt);
+
+	for (int i = 0; i < iend; i++) 
+	    cctxt.popVar(nvars[i]);
+
+	return F;
     }
 
 }

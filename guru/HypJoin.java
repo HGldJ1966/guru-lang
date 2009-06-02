@@ -503,7 +503,7 @@ public class HypJoin extends Expr{
 						   false);   		
     			}
     		}
-    		returnValue = new Match(subExprs[0], matche.x1, matche.x2, matche.T, newCases, matche.scrut_stat);
+    		returnValue = new Match(subExprs[0], matche.x1, matche.x2, matche.T, newCases, false);
     	}
     	else if(e.construct == FUN_TERM)
     	{
@@ -513,7 +513,8 @@ public class HypJoin extends Expr{
     		{
     			newBody = subExprs[0];
     		}
-    		returnValue = new FunTerm(fune.r, fune.T, fune.vars, fune.types, fune.owned, fune.ret_stat, newBody);
+    		returnValue = new FunTerm(fune.r, fune.T, fune.vars, fune.types, fune.owned, fune.consumps,
+					  fune.ret_stat, newBody);
     	}
     	else if(e.construct == CONST)
     	{

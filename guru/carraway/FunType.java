@@ -6,7 +6,8 @@ public class FunType extends FunBase {
     }
 
     public void do_print(java.io.PrintStream w, Context ctxt) {
-	w.print("Fun");
+	if (ctxt.stage <= 2)
+	    w.print("Fun");
 	super.do_print(w,ctxt);
     }    
 
@@ -58,4 +59,35 @@ public class FunType extends FunBase {
 
 	return f;
     }
+
+    public Expr flattenType(Context ctxt) {
+	Sym n = ctxt.newSym("funtp",pos);
+	ctxt.declareConst(n);
+
+	// build flattened FunType F
+
+	FunType F = new FunType();
+	F.pos = pos;
+	int iend = vars.length;
+	F.vars = new Sym[iend];
+	F.types = new Expr[iend];
+	F.consumps = new int[iend];
+	for (int i = 0; i < iend; i++) {
+	    F.vars[i] = vars[i];
+	    F.types[i] = types[i].flattenType(ctxt);
+	    F.consumps[i] = consumps[i];
+	}
+	F.rettype = rettype.flattenType(ctxt);
+
+	// add new TypeDef command (we'll process it later, in Function)
+
+	TypeDef C = new TypeDef();
+	C.pos = pos;
+	C.c = n;
+	C.T = F;
+	ctxt.new_typedefs.add(C);
+
+	return n;
+    }
+
 }

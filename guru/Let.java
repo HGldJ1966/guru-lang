@@ -28,7 +28,7 @@ public class Let extends Expr{
     public void do_print(java.io.PrintStream w, Context ctxt) 
     {
 	w.print("let ");
-	if (x1_stat.shouldPrint(ctxt)) {
+	if (x1_stat.status != Ownership.DEFAULT) {
 	    w.print(x1_stat.toString(ctxt));
 	    w.print(" ");
 	}
@@ -160,4 +160,17 @@ public class Let extends Expr{
 	t1.checkSpec(ctxt, in_type);
 	t2.checkSpec(ctxt, in_type);
     }
+
+    public guru.carraway.Expr toCarraway(Context ctxt) {
+	guru.carraway.Let l = new guru.carraway.Let();
+	l.pos = pos;
+	guru.carraway.Context cctxt = ctxt.carraway_ctxt;
+	l.x = cctxt.newSym(x1.name,x1.pos);
+	l.t1 = t1.toCarraway(ctxt);
+	cctxt.pushVar(l.x);
+	l.t2 = t2.toCarraway(ctxt);
+	cctxt.popVar(l.x);
+	return l;
+    }
+	
 }

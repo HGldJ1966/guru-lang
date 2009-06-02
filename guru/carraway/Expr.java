@@ -48,7 +48,7 @@ public abstract class Expr {
 	    pos.print(System.out);
 	    System.out.print(": ");
 	}
-	System.out.println("classification error.\n\n"+msg);
+	System.out.println("Carraway classification error.\n\n"+msg);
 	System.exit(2);
     }
 
@@ -57,7 +57,7 @@ public abstract class Expr {
 	    pos.print(System.out);
 	    System.out.print(": ");
 	}
-	System.out.println("simulation error.\n\n"+msg);
+	System.out.println("Carraway simulation error.\n\n"+msg);
 	System.exit(2);
     }
 
@@ -66,7 +66,7 @@ public abstract class Expr {
 	    pos.print(System.out);
 	    System.out.print(": ");
 	}
-	System.out.println("compilation error, stage "+(new Integer(ctxt.stage)).toString()+".\n\n"+msg);
+	System.out.println("Carraway compilation error, stage "+(new Integer(ctxt.stage)).toString()+".\n\n"+msg);
 	System.exit(2);
     }
 
@@ -255,4 +255,10 @@ public abstract class Expr {
 	return r;
     }
 
+    // return a flattened form of this Expr, assumed to be a type.
+    // this may queue up new Typedefs in ctxt.new_typedefs.
+    public Expr flattenType(Context ctxt) {
+	return this;
+    }
+    
 }

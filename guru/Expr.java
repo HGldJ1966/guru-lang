@@ -17,8 +17,8 @@ public abstract class Expr {
     public static final int BANG = 7;
     
     // terms
-    public static final int INC = 9;
-    public static final int DEC = 10;
+    //    public static final int INC = 9;
+    //    public static final int DEC = 10;
 
     public static final int FUN_TERM = 11;
 
@@ -90,6 +90,10 @@ public abstract class Expr {
 
     public static final int PRED_APP = 80; //formula
     public static final int FALSE = 81; // formula
+
+    public static final int VOID = 82; // type
+    public static final int VOIDI = 83; // term
+    public static final int DO = 84; // term
 
     public static final int LAST = 200;
 
@@ -333,6 +337,16 @@ public abstract class Expr {
 	return this;
     }
 
+    public static void handleError(Position p, String msg) {
+	if (p != null) {
+	    p.print(System.out);
+	    System.out.print(": ");
+	}
+	System.out.println("");
+	System.out.println(msg);
+	System.exit(2);
+    }
+
     public void handleError(Context ctxt, String msg) {
 	if (pos != null) {
 	    pos.print(System.out);
@@ -467,8 +481,8 @@ public abstract class Expr {
 	switch(construct) {
 	case VAR:
 	case CONST:
-	case INC:
-	case DEC:
+	case VOIDI:
+	case DO:
 	case FUN_TERM:
 	case CAST:
 	case TERMINATES:
@@ -493,6 +507,7 @@ public abstract class Expr {
 	switch(construct) {
 	case VAR:
 	case CONST:
+	case VOID:
 	case BANG:
 	case ABBREV:
 	case EABBREV:
@@ -690,5 +705,18 @@ public abstract class Expr {
 
     public java.util.Set getDependences() {
         return new TreeSet();
+    }
+
+
+    public guru.carraway.Expr toCarrawayType(Context ctxt, boolean rttype) {
+	handleError(ctxt, "Internal error: toCarraway() or toCarrawayType() is "
+		    + "unimplemented for construct "
+		    + (new Integer(construct)));
+	return null;
+    }
+
+    // by default, we assume this is a type
+    public guru.carraway.Expr toCarraway(Context ctxt) {
+	return toCarrawayType(ctxt, true);
     }
 }

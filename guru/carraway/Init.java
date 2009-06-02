@@ -2,13 +2,15 @@ package guru.carraway;
 import guru.Position;
 
 public class Init extends Command {
-    Primitive init; // we don't actually use the process() method for this.
+    public Primitive init; // we don't actually use the process() method for this.
 
     public Init() {
 	super(INIT);
     }
 
     public void process(Context ctxt) {
+	ctxt.stage = 0;
+
 	if (init.T.construct != Expr.FUN_TYPE)
 	    handleError(ctxt,"The expression given for the type in an Init-command is not a Fun-type.\n\n"
 			+"1. the expression: "+init.T.toString(ctxt));
@@ -22,14 +24,14 @@ public class Init extends Command {
 	    handleError(ctxt,"The type of the first input in an Init-command is not \"type\".\n\n"
 			+"1. the type: "+f.types[0].toString(ctxt));
 	
-	if (f.types[1].construct != Expr.SYM || !ctxt.isAttribute((Sym)f.types[1])) 
+	if (f.types[1].construct != Expr.SYM || !ctxt.isResourceType((Sym)f.types[1])) 
 	    handleError(ctxt,"The type of the second input in an Init-command is not an attribute.\n\n"
 			+"1. the type: "+f.types[1].toString(ctxt));
 
 	if (f.consumps[1] != FunBase.NOT_CONSUMED)
 	    handleError(ctxt,"The second input in an Init-command is marked consumed.");
 	
-	if (f.types[2].construct != Expr.SYM || !ctxt.isAttribute((Sym)f.types[2])) 
+	if (f.types[2].construct != Expr.SYM || !ctxt.isResourceType((Sym)f.types[2])) 
 	    handleError(ctxt,"The type of the third input in an Init-command is not an attribute.\n\n"
 			+"1. the type: "+f.types[2].toString(ctxt));
 

@@ -9,8 +9,15 @@ public class Pin extends Expr {
 	super(PIN);
     }
 
+    public Pin(Sym s1, Sym s2){
+	super(PIN);
+	s = s1;
+	pinned = new Sym[1];
+	pinned[0] = s2;
+    }
+
     public Expr simpleType(Context ctxt) {
-	if (!ctxt.isAttribute(s))
+	if (!ctxt.isResourceType(s))
 	    classifyError(ctxt,"A pin expression begins with a symbol which is not an attribute.\n\n"
 			+"1. The symbol: "+s.toString(ctxt));
 	for (int i = 0, iend = pinned.length; i < iend; i++) {

@@ -146,4 +146,11 @@ public class Var extends Expr{
                         + "1. the variable: " + toString(ctxt));
 	}
     }
+
+    public guru.carraway.Expr toCarrawayType(Context ctxt, boolean rttype) {
+	guru.carraway.Sym s = ctxt.carraway_ctxt.lookup(name);
+	if (s == null)
+	    handleError(ctxt, "Internal error: Carraway declaration missing for \""+toString(ctxt)+"\".");
+	return s;
+    }	
 }

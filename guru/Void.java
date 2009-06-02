@@ -1,11 +1,11 @@
 package guru;
 
-public class Type extends Expr{
-    public Type() { 
-	super(TYPE);
+public class Void extends Expr{
+    public Void() { 
+	super(VOID);
     }
     public void do_print(java.io.PrintStream w, Context ctxt) {
-	w.print("type");
+	w.print("void");
     }
 
     public Expr dropAnnos(Context ctxt) {
@@ -20,13 +20,11 @@ public class Type extends Expr{
     }
     
     public Expr classify(Context ctxt, int approx, boolean spec) {
-	return ctxt.tkind;
+	return ctxt.type;
     }
 
-
-
     public boolean defEqNoAnno(Context ctxt, Expr e, boolean spec) {
-	return (e.defExpandTop(ctxt).construct == TYPE);
+	return (e.defExpandTop(ctxt).construct == VOID);
     }
 
     protected boolean defEqNoAnnoApprox(Context ctxt, Expr e, boolean spec) {
@@ -39,9 +37,6 @@ public class Type extends Expr{
     public void checkSpec(Context ctxt, boolean in_type) { }
 
     public guru.carraway.Expr toCarrawayType(Context ctxt, boolean rttype) {
-	if (rttype)
-	    return new guru.carraway.Untracked();
-	else
-	    return new guru.carraway.Type();
+	return new guru.carraway.Void();
     }
 }

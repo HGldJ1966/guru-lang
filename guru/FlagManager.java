@@ -32,4 +32,18 @@ public class FlagManager {
 	    return false;
 	return b.booleanValue();
     }
+
+    public java.util.Collection getFlags() {
+	return flags.keySet();
+    }
+
+    public void copyFlags(FlagManager fm) {
+	java.util.Iterator it = fm.getFlags().iterator();
+	while(it.hasNext()) {
+	    String flag = (String)it.next();
+	    if (fm.getFlag(flag)) 
+		setFlag(flag);
+	}
+    }
+
 }

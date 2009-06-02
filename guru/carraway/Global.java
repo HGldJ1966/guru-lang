@@ -3,8 +3,8 @@ import java.util.Collection;
 import java.util.Iterator;
 
 public class Global extends Command {
-    Sym c;
-    Expr t;
+    public Sym c;
+    public Expr t;
 
     public Global() {
 	super(GLOBAL);
@@ -22,10 +22,7 @@ public class Global extends Command {
 
 	ctxt.stage = 1;
 	Expr T = t.simpleType(ctxt);
-	if (T.construct == Expr.VOID) 
-	    handleError(ctxt,"The type of a global is void.\n\n"
-			+"1. the global: "+c.toString(ctxt)
-			+"\n\n2. its type: "+T.toString(ctxt));
+	boolean void_type = (T.construct == Expr.VOID); 
 	ctxt.addGlobal(c,T,t);
 
 	ctxt.checkpointRefs();
@@ -81,13 +78,15 @@ public class Global extends Command {
 	    ctxt.cw.println(";;");
 	}
 	else {
-	    T.print(ctxt.cw,ctxt);
-	    ctxt.cw.print(" ");
-	    c.print(ctxt.cw,ctxt);
-	    ctxt.cw.println(";\n");
+	    if (!void_type) {
+		T.print(ctxt.cw,ctxt);
+		ctxt.cw.print(" ");
+		c.print(ctxt.cw,ctxt);
+		ctxt.cw.println(";\n");
+	    }
 
 	    String initn = "init_"+c.toString(ctxt);
-	    FunTerm f = new FunTerm(initn, t.linearize(ctxt, pos, c), pos);
+	    FunTerm f = new FunTerm(initn, t.linearize(ctxt, pos, (void_type ? ctxt.returnf : c)), pos);
 	
 	    ctxt.addGlobalInit(initn);
 
@@ -100,7 +99,7 @@ public class Global extends Command {
 		      Context ctxt) {
 	w.print("Global ");
 	c.print(w,ctxt);
-	w.print(" = ");
+	w.print(" := ");
 	t.print(w,ctxt);
 	w.println(".");
     }

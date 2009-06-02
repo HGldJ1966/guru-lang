@@ -306,6 +306,13 @@ public class Case extends Expr{
 	body.checkSpec(ctxt, in_type);
     }
 
+    public void clearDefs(Context ctxt) {
+	for (int j = 0, jend = x.length; j < jend; j++) {
+	    if (ctxt.isMacroDefined(x[j]))
+		ctxt.macroDefine(x[j],null);
+	}
+    }
+
     // return true iff we could refine the pattern's type with the scrutinee's.
     public boolean refine(Context ctxt, Expr scruttp,
 			  int approx, boolean spec) {
@@ -443,6 +450,21 @@ public class Case extends Expr{
 	}	
     }
 
-
+    public guru.carraway.Expr toCarraway(Context ctxt) {
+	guru.carraway.Case C = new guru.carraway.Case();
+	C.pos = pos;
+	C.c = (guru.carraway.Sym)c.toCarraway(ctxt);
+	int iend = x.length;
+	guru.carraway.Sym[] nvars = new guru.carraway.Sym[iend];
+	for (int i = 0; i < iend; i++) {
+	    nvars[i] = ctxt.carraway_ctxt.newSym(x[i].name,x[i].pos);
+	    ctxt.carraway_ctxt.pushVar(nvars[i]);
+	}
+	C.vars = nvars;
+	C.body = body.toCarraway(ctxt);
+	for (int i = 0; i < iend; i++) 
+	    ctxt.carraway_ctxt.popVar(nvars[i]);
+	return C;
+    }
 
 }

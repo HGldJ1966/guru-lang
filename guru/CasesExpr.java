@@ -187,8 +187,10 @@ public class CasesExpr extends Expr {
 		ctxt.setClassifier(x2, assump2);
 	    }
 
-	    if (!C[i].refine(ctxt, clt1, approx, spec)) 
+	    if (!C[i].refine(ctxt, clt1, approx, spec)) {
+		C[i].clearDefs(ctxt);
 		continue;
+	    }
 
 	    Expr tp = C[i].body.classify(ctxt,approx,spec);
 
@@ -215,6 +217,8 @@ public class CasesExpr extends Expr {
 			    +"\n"
 			    +"2. computed: "+tp.toString(ctxt)+"\n"
 			    +"3. expected: "+retT.toString(ctxt));
+
+	    C[i].clearDefs(ctxt);
 	}
 		
 	if (retT == null) {

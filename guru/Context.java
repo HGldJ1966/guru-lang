@@ -22,13 +22,21 @@ public class Context extends FlagManager {
     protected HashMap defsBody;
     protected HashMap defsBodyNoAnnos;
     protected HashMap defsClassifier;
+    protected HashMap defsDelim;
+    protected HashMap defsCode;
     protected Vector defsVec;
     protected HashMap localVars;
     protected HashMap localVarsClassifier;
     protected HashSet trustedDefs;
     protected HashMap specData;
+    protected HashMap resource_types;
+    protected Vector resource_types_vec;
+    protected HashMap drop_funcs;
 
-    public Expr star, starstar, type, tkind, fkind, formula, abort;
+    public Vector initCmds;
+    public guru.carraway.Context carraway_ctxt;
+
+    public Expr star, starstar, type, tkind, fkind, formula, abort, voidt;
     public Var tmpvar;
 
     public boolean eval;
@@ -53,12 +61,17 @@ public class Context extends FlagManager {
 	defsBody = new HashMap(2048);
 	defsBodyNoAnnos = new HashMap(2048);
 	defsClassifier = new HashMap(2048);
+	defsDelim = new HashMap(2048);
+	defsCode = new HashMap(2048);
 	defsVec = new Vector();
 	localVars = new HashMap(2048);
 	localVarsClassifier = new HashMap(2048);
 	specData = new HashMap(256);
 	trustedDefs = new HashSet();
-	
+	resource_types = new HashMap(256);
+	resource_types_vec = new Vector();
+	drop_funcs = new HashMap(256);
+
 	star = new Star();
 	starstar = new StarStar();
 	type = new Type();
@@ -67,68 +80,12 @@ public class Context extends FlagManager {
 	formula = new Formula();
 	abort = new Abort(new Bang());
 	tmpvar = new Var("tmp");
+	voidt = new Void();
 	
 	eval = true;
-    }
 
-    // create a copy of the given context
-    public Context(Context prev) {
-	typeCtors = prev.typeCtors;
-	typeCtorsKind = prev.typeCtorsKind;
-	typeCtorsTermCtors = prev.typeCtorsTermCtors;
-	typeFamAbbrev = prev.typeFamAbbrev;
-	preds = prev.preds;
-	opaque = prev.opaque;
-	untracked = prev.untracked;
-	typeCtorsVec = prev.typeCtorsVec;
-	termCtors = prev.termCtors;
-	termCtorsType = new HashMap(prev.termCtorsType);
-	termCtorsWhich = prev.termCtorsWhich;
-	termCtorsTypeCtor = prev.termCtorsTypeCtor;
-	totalityThms = prev.totalityThms;
-	star = prev.star;
-	starstar = prev.starstar;
-	type = prev.type;
-	tkind = prev.tkind;
-	fkind = prev.fkind;
-	formula = prev.formula;
-	tmpvar = prev.tmpvar;
-	defs = new HashMap(prev.defs);
-	defsBody = new HashMap(prev.defsBody);
-	defsBodyNoAnnos = new HashMap(prev.defsBodyNoAnnos);
-	defsClassifier = new HashMap(prev.defsClassifier);
-	defsVec = new Vector(prev.defsVec);
-	localVars = prev.localVars;
-	specData = prev.specData;
-	localVarsClassifier = new HashMap(prev.localVarsClassifier);
-	eval = prev.eval;
-	trustedDefs = prev.trustedDefs;
-    }
-
-    // clear global and local definitions
-    public void clearDefs() {
-	defs = new HashMap(2048);
-	defsBody = new HashMap(2048);
-	defsBodyNoAnnos = new HashMap(2048);
-	defsClassifier = new HashMap(2048);
-	defsVec = new Vector();
-	specData = new HashMap(256);
-	typeFamAbbrev = new HashSet(256);
-	preds = new HashSet(256);
-	/*localVars = new HashMap(2048);
-	  localVarsClassifier = new HashMap(2048);*/
-	trustedDefs = new HashSet();
-    }
-
-    public void clearCtors() {
-	typeCtors = new HashMap(256);
-	typeCtorsKind = new HashMap(256);
-	typeCtorsTermCtors = new HashMap(256);
-	typeCtorsVec = new Vector();
-	termCtors = new HashMap(1024);
-	termCtorsType = new HashMap(1024);
-	termCtorsWhich = new HashMap(1024);
-	termCtorsTypeCtor = new HashMap(1024);
+	initCmds = new Vector();
+	carraway_ctxt = null;
     }
 
     public void notDefEq(Expr noteq1, Expr noteq2) {
@@ -167,6 +124,36 @@ public class Context extends FlagManager {
 
     public boolean isPredicate(Const c) {
 	return preds.contains(c);
+    }
+
+    // for c a resource type
+    public void setDrop(Const c, Define drop) {
+	drop_funcs.put(c,drop);
+    }
+
+    public Define getDrop(Const c) {
+	return (Define)drop_funcs.get(c);
+    }
+
+    public boolean isDrop(Const c) {
+	return drop_funcs.containsKey(c);
+    }
+
+    public void addResourceType(Const c) {
+	resource_types.put(c.name, c);
+	resource_types_vec.add(c);
+    }
+
+    public boolean isResourceType(Const c) {
+	return resource_types.containsKey(c.name);
+    }
+
+    public boolean isResourceType(String name) {
+	return resource_types.containsKey(name);
+    }
+
+    public Collection getResourceTypes() {
+	return resource_types_vec;
     }
 
     public void addTypeCtor(Const c, Expr kind) {
@@ -279,23 +266,29 @@ public class Context extends FlagManager {
     // like define(Const,...), except that we create a new Const with a 
     // name like basename but not shared by any other Const.  We return
     // the new Const.
-    public Const define(String basename,
-			Expr classifier, Expr body, Expr bodyNoAnnos) {
+    public Const define(String basename, 
+			Expr classifier, Expr body, Expr bodyNoAnnos,
+			String delim, String code) {
 	String name = basename;
 	int tick = 2;
 	
 	while (defs.containsKey(name))
 	    name = basename+(new Integer(tick++)).toString();
 	Const c = new Const(name);
-	define(c, classifier, body, bodyNoAnnos);
+	define(c, classifier, body, bodyNoAnnos, delim, code);
 	return c;
     }
 
-    public void define(Const c, Expr classifier, Expr body, Expr bodyNoAnnos) {
+    // delim and code are null unless this is a primitive definition.
+    public void define(Const c, 
+		       Expr classifier, Expr body, Expr bodyNoAnnos,
+		       String delim, String code) {
 	defs.put(c.name, c);
 	defsBody.put(c, body);
 	defsBodyNoAnnos.put(c, bodyNoAnnos);
 	defsClassifier.put(c, classifier);
+	defsDelim.put(c,delim);
+	defsCode.put(c,code);
 	defsVec.add(c);
     }
 
@@ -309,6 +302,14 @@ public class Context extends FlagManager {
     
     public Expr getDefBodyNoAnnos(Const c) {
 	return (Expr)defsBodyNoAnnos.get(c);
+    }
+
+    public String getDefDelim(Const c) {
+	return (String)defsDelim.get(c);
+    }
+
+    public String getDefCode(Const c) {
+	return (String)defsCode.get(c);
     }
 
     public Expr getDefBody(Var v) {
@@ -449,6 +450,10 @@ public class Context extends FlagManager {
 	    return d;
 
 	d = (Const)termCtors.get(name);
+	if (d != null)
+	    return d;
+
+	d = (Const)resource_types.get(name);
 	if (d != null)
 	    return d;
 

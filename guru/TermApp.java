@@ -195,6 +195,10 @@ public class TermApp extends App{
 	}
 	Expr cl = head.classify(ctxt,approx,spec).defExpandTop(ctxt,false,
 							       spec);
+	if (ctxt.getFlag("debug_classify_term_apps")) {
+	    ctxt.w.println("Head is "+head.toString(ctxt)+", with classifier "+cl.toString(ctxt));
+	    ctxt.w.flush();
+	}
 	Expr ret = apply_classifier(FUN_TYPE, approx, spec, ctxt, cl, 0);
 	FunType ch = (FunType)((FunType)cl).coalesce(ctxt,spec);
 	boolean check_spec_terminates = ctxt.getFlag("check_spec_terminates");
@@ -331,6 +335,7 @@ public class TermApp extends App{
 	    ctxt.w.flush();
 	}
 
+	ret.pos = pos;
 	return ret;
     }
 
@@ -445,4 +450,28 @@ public class TermApp extends App{
 		X[i].getFreeVarsComputational(ctxt,vars);
     }
 
+    public guru.carraway.Expr toCarraway(Context ctxt) {
+	if (head.construct == MATCH)
+	    handleError(ctxt, "Compilation of match-terms used as functions is currently not supported.");
+	if (head.construct != CONST && head.construct != VAR) {
+	    Expr tmp = spineForm(ctxt,false,false,false);
+	    if (tmp != this)
+		tmp.toCarraway(ctxt);
+	    handleError(ctxt,"Internal error: cannot translate application:\n\n"
+			+tmp.toString(ctxt));
+	}
+
+	guru.carraway.App a = new guru.carraway.App();
+	a.pos = pos;
+
+	a.head = (guru.carraway.Sym)head.toCarraway(ctxt);
+	int iend = X.length;
+	guru.carraway.Expr[] args = new guru.carraway.Expr[iend];
+	for (int i = 0; i < iend; i++) 
+	    args[i] = X[i].toCarraway(ctxt);
+	
+	a.args = args;
+
+	return a;
+    }
 }

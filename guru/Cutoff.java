@@ -59,11 +59,12 @@ public class Cutoff extends Expr
 	    case_vars = new Var[1];
 	    case_vars[0] = nat_minus_one_name;
 	    cases[1] = new Case((Const)ctxt.lookup("S"), case_vars, temp_t, false);
-	    Match match_t = new Match(nat_name, new Var("CutoffNatX1"), new Var("CutoffNatX2"), old_fun_type, cases, new Ownership(Ownership.OWNEDBY));
+	    Match match_t = new Match(nat_name, new Var("CutoffNatX1"), new Var("CutoffNatX2"), old_fun_type, cases, false);
 	    
 	    Var [] new_fun_vars = new Var[ft.vars.length + 1];
 	    Expr [] new_fun_types = new Expr[ft.types.length + 1];
 	    Ownership[] new_owned = new Ownership[ft.types.length+1];
+	    int[] new_consumps = new int[ft.types.length+1];
 	    new_fun_vars[0] = nat_name;
 	    for (int i = 0; i < ft.vars.length; i++)
 		new_fun_vars[i+1] = ft.vars[i];
@@ -72,12 +73,19 @@ public class Cutoff extends Expr
 	    for (int i = 0; i < ft.types.length; i++)
 		new_fun_types[i+1] = ft.types[i];
 	    
-	    new_owned[0] = new Ownership(Ownership.OWNEDBY);
+	    // ownership annotations should not matter here
+
+	    new_owned[0] = new Ownership(Ownership.DEFAULT);
 	    for (int i = 0; i < ft.types.length; i++)
 		new_owned[i+1] = ft.owned[i];
 	    
-	    nat_t_T = new FunType(new_fun_vars, new_fun_types, new_owned, ft.ret_stat, ft.T);
-	    nat_t = new FunTerm(new_fun_name, old_fun_type, new_fun_vars, new_fun_types, new_owned, ft.ret_stat, match_t);
+	    new_consumps[0] = FunAbstraction.CONSUMED_RET_OK; 
+	    for (int i = 0; i < ft.types.length; i++)
+		new_consumps[i+1] = ft.consumps[i];
+	    
+	    nat_t_T = new FunType(new_fun_vars, new_fun_types, new_owned, new_consumps, ft.ret_stat, ft.T);
+	    nat_t = new FunTerm(new_fun_name, old_fun_type, new_fun_vars, new_fun_types, new_owned, new_consumps,
+				ft.ret_stat, match_t);
 	}
 	//((FunTerm)nat_t).do_print(System.out, ctxt); System.out.println();
 	return nat_t;

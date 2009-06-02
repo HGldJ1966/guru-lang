@@ -28,6 +28,10 @@ public class Command {
 
     public static final int ECHO = 19;
 
+    // for carraway layer
+    public static final int RESOURCE_TYPE = 20;
+    public static final int INIT = 21;
+
     protected int which;
     public Position pos;
 
