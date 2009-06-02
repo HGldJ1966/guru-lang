@@ -13,6 +13,7 @@ public class EtaExpand {
     protected Position last_pos;
 
     public Vector all_consts;
+    public HashSet in_all_consts;
 
     public void handleError(Position pos, String msg) {
 	if (pos != null) {
@@ -29,6 +30,18 @@ public class EtaExpand {
 	last_pos = null;
 	expanding_c = null;
 	all_consts = new Vector();
+	in_all_consts = new HashSet();
+    }
+
+    protected void all_consts_add(Const c) {
+	if (!in_all_consts.contains(c)) {
+	    if (src.getFlag("debug_eta_expand")) {
+		src.w.println("Adding constant "+c.toString(src));
+		src.w.flush();
+	    }
+	    all_consts.add(c);
+	    in_all_consts.add(c);
+	}
     }
 
     /* orig is the original term (from src).  _T is the type to use,
@@ -64,7 +77,7 @@ public class EtaExpand {
 		src.w.println("");
 		src.w.flush();
 	    }
-	    all_consts.add(c);
+	    all_consts_add(c);
 	    dst.define(c, T, e, e2, src.getDefDelim(c), src.getDefCode(c));
 	    return c;
 	}
@@ -86,7 +99,7 @@ public class EtaExpand {
 	    basename = "anon";
 	
 	Const c2 = dst.define(basename, T, e, e2, src.getDefDelim(c), src.getDefCode(c));
-	all_consts.add(c2);
+	all_consts_add(c2);
 
 	if (dst.getFlag("debug_eta_expand")) {
 	    src.w.print("Defining "+c2.name+" : ");
@@ -168,11 +181,11 @@ public class EtaExpand {
 		   the type and related term ctors to dst. */
 
 		if (src.isResourceType(c)) {
-		    Define drop = src.getDrop(c);
+		    Define drop = src.getDropFuncDef(src.getDropFunc(c));
 		    dst.addResourceType(c);
-		    dst.setDrop(c,drop);
-		    all_consts.add(c);
-		    all_consts.add(drop.c);
+		    dst.setDropFunc(c,drop);
+		    all_consts_add(c);
+		    all_consts_add(drop.c);
 		    return c;
 		}
 
@@ -194,7 +207,7 @@ public class EtaExpand {
 		}
 
 		dst.addTypeCtor(d,dT);
-		all_consts.add(d);
+		all_consts_add(d);
 
 		// 2. now add the term ctors to dst
 		it = src.getTermCtors(d).iterator();
@@ -202,7 +215,7 @@ public class EtaExpand {
 		while(it.hasNext()) {
 		    Const c1 = (Const)it.next();
 		    dst.addTermCtor(c1,d,(Expr)it2.next());
-		    all_consts.add(c1);
+		    all_consts_add(c1);
 		}
 
 		return c;
@@ -224,7 +237,7 @@ public class EtaExpand {
 		    /* so that we recognize later that c is a type 
 		       or kind (by looking at its definition) */
 		    t = expand(t.defExpandTop(src),false,c);
-		all_consts.add(c);
+		all_consts_add(c);
 		dst.define(c, cT, t, src.getDefBodyNoAnnos(c), src.getDefDelim(c), src.getDefCode(c));
 		dst.makeOpaque(c);
 		return c;
