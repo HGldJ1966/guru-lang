@@ -1,26 +1,20 @@
 package guru;
 
 public class Interpret extends Command {
-    public Const c;
-    public Expr e;
+    public Expr t;
     public Interpret() {
 	super(INTERPRET);
     }
 
     public void process(Context ctxt) {
-	
-	Expr e1 = c.dropAnnos(ctxt).eval(ctxt);
-	/*
-	Expr e2 = null;
-	while (e1 != e2){
-		e2 = e1;
-		e1 = e1.eval(ctxt);
-	}*/
-	e = e1;
+	t.classify(ctxt,Expr.NO_APPROX,true);
+	Expr e = t.eval(ctxt);
+	e.print(ctxt.w,ctxt);
+	ctxt.w.println("");
+	ctxt.w.flush();
     }
 
     public void print(java.io.PrintStream w, 
 		      Context ctxt) {
-	e.do_print(w,ctxt);
     }
 }

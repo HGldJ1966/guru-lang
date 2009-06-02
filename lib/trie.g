@@ -896,6 +896,20 @@ Define trusted trie_insert_new :
         (u : { (trie_interp t') = (append l1 (cons (mkpair s a) l2)) }).
        { (trie_interp t) = (append l1 l2) } := truei.
 
+Define trie_insert_overwrite :
+  Forall(A:type)(t t':<trie A>)(s:string)(a a':A)
+        (u1:{ (trie_lookup t s) = (something a') })
+        (u2:{ (trie_insert s a t) = t'})
+        (l1 l2:<list <pair string A>>)
+        (u : { (trie_interp t') = (append l1 (cons (mkpair s a) l2)) }).
+       { (trie_interp t) = (append l1 (cons (mkpair s a') l2)) } := 
+ foralli(A:type)(t t':<trie A>)(s:string)(a a':A)
+        (u1:{ (trie_lookup t s) = (something a') })
+        (u2:{ (trie_insert s a t) = t'})
+        (l1 l2:<list <pair string A>>)
+        (u : { (trie_interp t') = (append l1 (cons (mkpair s a) l2)) }).
+  [trie_insert_lookup_interp A t t t' s a a' u1 refl (trie_interp t) u2 l1 l2 u].
+
 Define trusted trie_remove_interp :
   Forall(A:type)(t t':<trie A>)(s:string)(a:A)
         (u:{ (trie_remove s t) = t'})

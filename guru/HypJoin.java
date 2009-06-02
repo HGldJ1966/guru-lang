@@ -9,6 +9,9 @@ public class HypJoin extends Expr{
     public Expr [] Ps;
     public boolean mark = false;
     
+    private Expr stuck;
+    private Expr[] stucks;
+
     private class UnorderableException extends Exception {}
     private class OrderingRestartRequiredException extends Exception {}
     private class InconsistentException extends Exception
@@ -50,7 +53,7 @@ public class HypJoin extends Expr{
     		}
     	}
     	
-    	private Hashtable<MapEntry, Boolean> map = new Hashtable<MapEntry, Boolean>();
+    	private Hashtable map = new Hashtable();
     	
     	// the following variables are used to measure the performance of the map
     	int hits = 0;
@@ -60,7 +63,7 @@ public class HypJoin extends Expr{
     	{
     		int result = UNKNOWN;
     		MapEntry entry = new MapEntry(e1, e2, ctxt);
-    		Boolean greater = map.get(entry);
+    		Boolean greater = (Boolean)map.get(entry);
     		if(greater != null)
     		{
     			++hits;
@@ -90,7 +93,7 @@ public class HypJoin extends Expr{
     private class VarOrder
     {
     	
-    	private class ConstraintTable extends Hashtable<Var, Vector<Var> >{}
+    	private class ConstraintTable extends Hashtable{}
     	
     	private ConstraintTable requiredConstraints = new ConstraintTable();
     	private ConstraintTable arbitraryConstraints = new ConstraintTable();
@@ -125,11 +128,11 @@ public class HypJoin extends Expr{
     	private boolean checkVarGreaterThanRequired(Var v1, Var v2)
     	{
     		// v1 >* v2 iff exists v3 such that v1 > v3 v3 >* v2
-    		Vector<Var> constraints = getRequiredConstraintEntriesStartingWith(v1);
-    		Iterator<Var> constraintIter = constraints.iterator();
+    		Vector constraints = getRequiredConstraintEntriesStartingWith(v1);
+    		Iterator constraintIter = constraints.iterator();
     		while(constraintIter.hasNext())
     		{
-    			Var curEntry = constraintIter.next();
+		    Var curEntry = (Var)constraintIter.next();
     			if(curEntry == v2)
     			{
     				return true;
@@ -139,7 +142,7 @@ public class HypJoin extends Expr{
     		constraintIter = constraints.iterator();
     		while(constraintIter.hasNext())
     		{
-    			Var curEntry = constraintIter.next();
+		    Var curEntry = (Var)constraintIter.next();
     			if(checkVarGreaterThanRequired(curEntry, v2))
     			{
     				return true;
@@ -150,23 +153,23 @@ public class HypJoin extends Expr{
     		
     	}
     	
-    	private Vector<Var> getRequiredConstraintEntriesStartingWith(Var v)
+    	private Vector getRequiredConstraintEntriesStartingWith(Var v)
     	{
-    		Vector<Var> result = requiredConstraints.get(v);
+	    Vector result = (Vector)requiredConstraints.get(v);
     		if(result == null)
     		{
-    			result = new Vector<Var>();
+    			result = new Vector();
     			requiredConstraints.put(v, result);
     		}
     		return result;
     	}
     	
-    	private Vector<Var> getArbitraryConstraintEntriesStartingWith(Var v)
+    	private Vector getArbitraryConstraintEntriesStartingWith(Var v)
     	{
-    		Vector<Var> result = arbitraryConstraints.get(v);
+	    Vector result = (Vector)arbitraryConstraints.get(v);
     		if(result == null)
     		{
-    			result = new Vector<Var>();
+    			result = new Vector();
     			arbitraryConstraints.put(v, result);
     		}
     		return result;
@@ -175,13 +178,13 @@ public class HypJoin extends Expr{
     	private boolean checkVarGreaterThan(Var v1, Var v2)
     	{
     		// v1 >* v2 iff exists v3 such that v1 > v3 v3 >* v2
-    		Vector<Var> requiredConstraints = getRequiredConstraintEntriesStartingWith(v1);
-    		Vector<Var> arbitraryConstraints = getArbitraryConstraintEntriesStartingWith(v1);
+    		Vector requiredConstraints = getRequiredConstraintEntriesStartingWith(v1);
+    		Vector arbitraryConstraints = getArbitraryConstraintEntriesStartingWith(v1);
     		
-    		Iterator<Var> constraintIter = requiredConstraints.iterator();
+    		Iterator constraintIter = requiredConstraints.iterator();
     		while(constraintIter.hasNext())
     		{
-    			Var curEntry = constraintIter.next();
+		    Var curEntry = (Var)constraintIter.next();
     			if(curEntry == v2)
     			{
     				return true;
@@ -190,7 +193,7 @@ public class HypJoin extends Expr{
     		constraintIter = arbitraryConstraints.iterator();
     		while(constraintIter.hasNext())
     		{
-    			Var curEntry = constraintIter.next();
+    			Var curEntry = (Var)constraintIter.next();
     			if(curEntry == v2)
     			{
     				return true;
@@ -200,7 +203,7 @@ public class HypJoin extends Expr{
     		constraintIter = requiredConstraints.iterator();
     		while(constraintIter.hasNext())
     		{
-    			Var curEntry = constraintIter.next();
+    			Var curEntry = (Var)constraintIter.next();
     			if(checkVarGreaterThan(curEntry, v2))
     			{
     				return true;
@@ -210,7 +213,7 @@ public class HypJoin extends Expr{
     		constraintIter = arbitraryConstraints.iterator();
     		while(constraintIter.hasNext())
     		{
-    			Var curEntry = constraintIter.next();
+    			Var curEntry = (Var)constraintIter.next();
     			if(checkVarGreaterThan(curEntry, v2))
     			{
     				return true;
@@ -229,10 +232,10 @@ public class HypJoin extends Expr{
     			throw new RuntimeException("Attempt to add " + v1.name + ">" + v2.name + " to var order");
     		}
     		
-    		Vector<Var> constraintList = arbitraryConstraints.get(v1);
+    		Vector constraintList = (Vector)arbitraryConstraints.get(v1);
     		if(constraintList == null)
     		{
-    			constraintList = new Vector<Var>();
+    			constraintList = new Vector();
     			arbitraryConstraints.put(v1, constraintList);
     		}
     		constraintList.add(v2);
@@ -260,10 +263,10 @@ public class HypJoin extends Expr{
     			returnValue = CONSTRAINT_ADD_RESULT_RESTART_REQUIRED;
     		}
     		
-    		Vector<Var> constraintList = requiredConstraints.get(v1);
+    		Vector constraintList = (Vector)requiredConstraints.get(v1);
     		if(constraintList == null)
     		{
-    			constraintList = new Vector<Var>();
+    			constraintList = new Vector();
     			requiredConstraints.put(v1, constraintList);
     		}
     		constraintList.add(v2);
@@ -271,13 +274,13 @@ public class HypJoin extends Expr{
     		return returnValue;
     	}
     	
-    	public int addRequiredConstraints(Var v1, Collection<Var> v2s)
+    	public int addRequiredConstraints(Var v1, Collection v2s)
     	{
     		int returnValue = CONSTRAINT_ADD_RESULT_SUCCESS;
-    		Iterator<Var> varIter = v2s.iterator();
+    		Iterator varIter = v2s.iterator();
     		while(varIter.hasNext())
     		{
-    			Var curVar = varIter.next();
+		    Var curVar = (Var)varIter.next();
     			int curReturn = addRequiredConstraint(v1, curVar);
     			if(curReturn != CONSTRAINT_ADD_RESULT_SUCCESS)
     			{
@@ -571,6 +574,14 @@ public class HypJoin extends Expr{
     	int subtermCount = getEvaluationSubtermsCount(ctxt, theExpr);
     	Expr[] subtermsArr = new Expr[subtermCount];
     	
+	if (ctxt.getFlag("debug_hypjoin_normalize")) {
+	    ctxt.w.println("(Hyjpoin.normalizeWithCompleteRules");
+	    ctxt.w.print("theExpr = ");
+	    theExpr.print(ctxt.w,ctxt);
+	    ctxt.w.println("");
+	    ctxt.w.flush();
+	}
+
     	for(int i = 0; i < subtermCount; ++i)
     	{
     		Expr curSubterm = getSubterm(ctxt, theExpr, i);
@@ -590,17 +601,47 @@ public class HypJoin extends Expr{
     		normSubtermsExpr = buildExpr(ctxt, theExpr, subtermsArr);
     	}
     	
+	if (ctxt.getFlag("debug_hypjoin_normalize")) {
+	    ctxt.w.print("normSubtermsExpr = ");
+	    normSubtermsExpr.print(ctxt.w,ctxt);
+	    ctxt.w.println("");
+	    ctxt.w.flush();
+	}
+
+
     	Expr rewrittenExpr = orderedRewrite(ctxt, normSubtermsExpr, completeAtoms, boundVars);
     	Expr evaldExpr = boundVarPreservingEval(ctxt, rewrittenExpr, boundVars);
 
+	Expr ret = normSubtermsExpr;
+
     	if(!evaldExpr.defEq(ctxt, normSubtermsExpr))
     	{
-    		return normalizeWithCompleteRules(ctxt, evaldExpr, completeAtoms, boundVars);
+	    ret = normalizeWithCompleteRules(ctxt, evaldExpr, completeAtoms, boundVars);
+
     	}
-    	else
-    	{
-    		return normSubtermsExpr;
-    	}
+
+	if (stuck == null) {
+	    if (ret.construct == Expr.MATCH)
+		if (normSubtermsExpr.construct != Expr.MATCH)
+		    stuck = normSubtermsExpr;
+		else if (theExpr.construct != Expr.MATCH)
+		    stuck = theExpr;
+	    if (stuck != null && ctxt.getFlag("debug_hypjoin_normalize")) {
+		ctxt.w.print("stuck = ");
+		stuck.print(ctxt.w,ctxt);
+		ctxt.w.println("");
+		ctxt.w.flush();
+	    }
+	}
+
+	if (ctxt.getFlag("debug_hypjoin_normalize")) {
+	    ctxt.w.print("ret = ");
+	    ret.print(ctxt.w,ctxt);
+	    ctxt.w.println(")");
+	    ctxt.w.flush();
+	}
+
+	return ret;
     }
     
     private int getLPO_ConstructValue(Context ctxt, Expr e)
@@ -1061,14 +1102,14 @@ public class HypJoin extends Expr{
     	if(theP.Y1.construct == VAR && theP.Y2.construct == TERM_APP &&
     			((TermApp)theP.Y2).head.construct == CONST)
     	{
-    		Vector<Var> y2Vars = new Vector<Var>();
+    		Vector y2Vars = new Vector();
     		theP.Y2.getFreeVarsComputational(ctxt, y2Vars);
     		theVarOrder.addRequiredConstraints((Var)theP.Y1, y2Vars);
     	}
     	else if(theP.Y2.construct == VAR && theP.Y1.construct == TERM_APP &&
     			((TermApp)theP.Y1).head.construct == CONST)
     	{
-    		Vector<Var> y1Vars = new Vector<Var>();
+    		Vector y1Vars = new Vector();
     		theP.Y1.getFreeVarsComputational(ctxt, y1Vars);
     		theVarOrder.addRequiredConstraints((Var)theP.Y2, y1Vars);
     	}
@@ -1214,6 +1255,7 @@ public class HypJoin extends Expr{
     {
 
     	Expr[] result = new Expr[theExprs.length];
+	stucks = new Expr[theExprs.length];
     	
     	Stack emptyBoundVars = new Stack();
     	VarOrder theVarOrder = new VarOrder();
@@ -1233,7 +1275,10 @@ public class HypJoin extends Expr{
 		    		Expr curExpr = theExprs[exprIndex];
 		    		curExpr = curExpr.dropAnnos(ctxt);
 		    		curExpr = removeAbbrev(ctxt, curExpr);
+				stuck = null;
 		    		result[exprIndex] = normalizeWithCompleteRules(ctxt, curExpr, completePs, emptyBoundVars);
+				stucks[exprIndex] = stuck;
+				
 		    	}
 		    	
 		    	return result;
@@ -1378,10 +1423,14 @@ public class HypJoin extends Expr{
     {
     	if(mark)
     	{
-    		@SuppressWarnings("unused")
+	    //@SuppressWarnings("unused")
 			int i = 0;
     	}
     	
+	if (ctxt.getFlag("trust_hypjoins")) {
+	    return new Atom(true, t1, t2);
+	}
+
 		Atom[] proofAtoms = getAtomArray(ctxt, Ps);
 		normalize(ctxt, proofAtoms);
 
@@ -1398,10 +1447,15 @@ public class HypJoin extends Expr{
         
         handleError(ctxt,
       		    "Evaluation cannot join two terms" 
-      		    +" in a hypjoin proof.\n"
-      		    +"1. Normal form of first term: "+normExprs[0].toString(ctxt)+"\n"
-      		    +"2. Normal form of second term: "+normExprs[1].toString(ctxt)+"\n"
-      		    +"3. Normal form of equations:\n" + getArrString(ctxt, proofAtoms));
+      		    +" in a hypjoin proof.\n\n"
+      		    +(stucks[0] == null ? 
+		      "1. Normal form of the first term: "+normExprs[0].toString(ctxt) :
+		      "1. While evaluating the first term, the following term gets stuck: "+stucks[0].toString(ctxt))
+      		    +(stucks[1] == null ? 
+		      "\n\n2. Normal form of the second term: "+normExprs[1].toString(ctxt) :
+		      "\n\n2. While evaluating the second term, the following term gets stuck: "+stucks[1].toString(ctxt)+"\n"));
+
+	    //	    +"\n3. Normal form of equations:\n" + getArrString(ctxt, proofAtoms));
    
     
       	return null;

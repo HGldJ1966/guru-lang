@@ -1,4 +1,14 @@
-go:	wordhist
+go:	test_cell
+
+test_cell: test_cell.g
+	../bin/guru cell.g test_cell.g
+
+T:	
+	gcc -O0 -ggdb -c test_cell.c
+	gcc -O0 -ggdb -o test_cell test_cell.o
+
+vec_test:
+	java -cp .. guru.Main vec_test.g
 
 strange_vec:	
 	java -cp .. guru.Main strange_vec.g

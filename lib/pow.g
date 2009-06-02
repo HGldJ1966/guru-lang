@@ -36,6 +36,8 @@ Define pow_total : Forall(b e : nat).Exists(z:nat).{(pow b e) = z} :=
 		u'
 	end.
 
+Total pow pow_total.
+
 
 Define pow_not_zero : Forall(b e : nat)(u:{ b != Z }).{(pow b e) != Z} :=
 	foralli(b:nat).induction(e:nat) by x1 x2 IH return Forall(u:{ b != Z }).{(pow b e) != Z} with
@@ -103,10 +105,7 @@ Define mod2 :=
   fun mod2(n:nat):bool. 
     match n with
       Z => ff
-    | S n' => match n' with 
-                Z => tt
-              | S n'' => (mod2 n'')
-              end
+    | S n' => (not (mod2 n'))
     end.
 
 Define mod2_total_h : Forall(x y:nat)(u:{(le y x) = tt}). 
@@ -143,17 +142,31 @@ Define mod2_total_h : Forall(x y:nat)(u:{(le y x) = tt}).
                              trans cong (le (S (S y'')) *) ux 
                                    [S_le_S (S y'') x1 ]]]
             foralli(r1:bool)(ur1:{ (mod2 y'') = r1}).
-            existsi r1 { (mod2 y) = * }
+            existsi (not (not r1)) { (mod2 y) = * }
               trans cong (mod2 *) uy
               trans cong (mod2 (S *)) trans uy' ux''
-              trans join (mod2 (S (S y''))) (mod2 y'')
-                    ur1
-          end y' join y' y']
+              trans join (mod2 (S (S y''))) (not (not (mod2 y'')))
+                    cong (not (not *)) ur1
+          end y' refl y']
        end
    end.
 
 Define mod2_total : Forall(x:nat). Exists(r:bool). {(mod2 x) = r} :=
   foralli(x:nat).[mod2_total_h x x [x_le_x x]].
+
+Total mod2 mod2_total.
+
+Define mod2_SS : Forall(n:nat). { (mod2 (S (S n))) = (mod2 n) } :=
+  foralli(n:nat). 
+  case n with
+    Z => trans cong (mod2 (S (S *))) n_eq
+         trans join (mod2 (S (S Z))) (mod2 Z)
+               symm cong (mod2 *) n_eq
+  | S n' => trans cong (mod2 (S (S *))) n_eq
+            trans join (mod2 (S (S (S n')))) (not (not (mod2 (S n'))))
+            trans [not_not (mod2 (S n'))]
+                  symm cong (mod2 *) n_eq
+  end.
 
 Define div2 :=
   fun div2(x:nat):nat.
@@ -353,6 +366,8 @@ Define condS_tot :=
               hypjoin (condS b n) (S n) by ub end
   end.
 
+Total condS condS_tot.
+
 Define condS_Z1 : Forall(b:bool)(n:nat)(u:{(condS b n) = Z}).{b = ff} :=
   induction(b:bool) by ub ign ign 
   return Forall(n:nat)(u:{(condS b n) = Z}).{b = ff} with
@@ -459,7 +474,8 @@ Define mod2_mult2 : Forall(b:bool)(n:nat). { (mod2 (condS b (mult2 n))) = b} :=
                          hypjoin (condS b (S (S q))) (S (S (condS b q)))
                          by trans ub ub' end
                  end b join b b]
-        trans join (mod2 (S (S (condS b q)))) (mod2 (condS b q))
+        trans join (mod2 (S (S (condS b q)))) (not (not (mod2 (condS b q))))
+        trans [not_not (mod2 (condS b q))]
               [IH n' b]
     end n b].
   

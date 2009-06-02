@@ -1,11 +1,32 @@
+bst-spec:
+	time ../bin/guru bst-spec.g
+
+bst:
+	time ../bin/guru bst.g
+
+minmax:
+	../bin/guru minmax.g
+
+minmax-le:
+	../bin/guru minmax-le.g
+
 trie:
-	java -cp .. guru.Main trie.g
+	time java -cp .. guru.Main trie.g
+
+plus:
+	time java -cp .. guru.Main plus.g
 
 word:
 	java -cp .. guru.Main word.g
 
 vec:
 	java -cp .. guru.Main vec.g
+
+bv:
+	time java -cp .. guru.Main bv.g
+
+list2:
+	time java -cp .. guru.Main list2.g
 
 msort:
 	java -cp .. guru.Main msort.g

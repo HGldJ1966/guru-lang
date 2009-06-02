@@ -4,15 +4,9 @@ import java.util.*;
 
 /** The main method is readCommand().  You need to open a file and
     set a Context before reading commands. */
-public class Parser {
+public class Parser extends ParserBase {
     
     Context ctxt;
-    PushbackReader pr;
-    int linenum;
-    int column;
-    int prev_column;
-    String file;
-    File root;
     boolean trusted;
 
     protected final static int STRING = 1;
@@ -22,9 +16,7 @@ public class Parser {
     protected static final boolean using_metavars = false;
 
     public Parser(boolean trusted) {
-	linenum = 1;
-	column = 1;
-	prev_column = 0;
+	super();
 	ctxt = null;
 	allow_stars = false;
 	allow_type_fam_abbrev = false;
@@ -32,38 +24,11 @@ public class Parser {
     }
     
     public void Reset() {
-	linenum = 1;
-	column = 1;
-	prev_column = 0;
+	super.Reset();
 	allow_stars = false;
 	ctxt = null;
 	allow_type_fam_abbrev = false;
     }	
-
-    protected int getc() throws IOException {
-	int c = pr.read();
-	if ((char)c == '\n') {
-	    prev_column = column;
-	    linenum++;
-	    column=0;
-	}
-	else
-	    column++;
-	return c;
-    }
-
-    protected void ungetc(int c) throws IOException {
-	if (c == -1)
-	    // it seems pushing back -1 causes problems
-	    return;
-	if ((char)c == '\n') {
-	    column=prev_column;
-	    linenum--;
-	}
-	else
-	    column--;
-  	pr.unread(c);
-    }
 
     protected boolean isTerm(int construct) {
 	switch(construct) {
@@ -138,39 +103,13 @@ public class Parser {
 		isFormula(construct));
     }
 
-    public void openFile(String fn)
-	throws IOException
-    {
-	FileReader fr = new FileReader(fn);
-	BufferedReader br = new BufferedReader(fr);
-	pr = new PushbackReader(br, 20);
-	file = fn;
-	root = new File(file).getCanonicalFile().getParentFile();
-    }
-
     public void setContext(Context ctxt)
     {
        this.ctxt = ctxt;
     }
 
-    protected void handleError(String msg)
-    {
-	handleError(new Position(linenum, column, file), msg);
-    }
-
-    protected void handleError(Position pos, String msg)
-    {
-	pos.print(System.out);
-        System.out.println(": parse error.\n"+msg);
-        System.exit(1);
-    }
-
     public Expr readAny() throws IOException {
 	return readAny(eatKeyword());
-    }
-
-    protected Position getPos() {
-	return new Position(linenum,column,file);
     }
 
     // call with value from eatKeyword() 
@@ -359,7 +298,7 @@ public class Parser {
 	allow_stars = false;
 	if (!eat_ws())
 	    return null;
-	Position pos = new Position(linenum, column, file);
+	Position pos = getPos(); 
 	Command c = null;
 	if (tryToEat("Define")) 
 	    c = readDefine();
@@ -377,12 +316,16 @@ public class Parser {
 	    c = readCompile();
 	else if (tryToEat("Interpret")) 
 	    c = readInterpret();
+	else if (tryToEat("Classify")) 
+	    c = readClassifyCmd();
 	else if (tryToEat("Untracked")) 
 	    c = readUntracked();
         else if (tryToEat("DumpDependence"))
             c = readDumpDependence();
         else if (tryToEat("Total"))
             c = readTotal();
+        else if (tryToEat("Echo"))
+            c = readEcho();
 	else
 	    handleError("Unexpected start of a command.");
 	c.pos = pos;
@@ -465,6 +408,7 @@ public class Parser {
 	cmd.trusted = trusted;
 	cmd.type_family_abbrev = false;
 	cmd.predicate = false;
+	cmd.abbrev = false;
 
 	// read the various flags that can be given to Define.
 	while (true) {
@@ -483,6 +427,9 @@ public class Parser {
 		cmd.predicate = true;
 		allow_predicate = true;
 	    }
+	    else if (tryToEat("abbrev")) {
+		cmd.abbrev = true;
+	    }
 	    else
 		break; // out of while loop
 	    
@@ -491,6 +438,7 @@ public class Parser {
 	}
 
 	cmd.c = readBindingConst();
+	eat_ws();
 	
 	if (!tryToEat(":="))
 	{
@@ -525,10 +473,21 @@ public class Parser {
     	Interpret cmd = new Interpret();
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing an Interpret.");
-	cmd.c = readConst();
+	cmd.t = readTerm();
 	eat(".", "Interpret");
     	return cmd;
     }
+
+    protected ClassifyCmd readClassifyCmd() throws IOException
+    {
+    	ClassifyCmd cmd = new ClassifyCmd();
+	if (!eat_ws())
+	    handleError("Unexpected end of input parsing an Interpret.");
+	cmd.G = readAny();
+	eat(".", "Type");
+    	return cmd;
+    }
+
     protected Untracked readUntracked() throws IOException
     {
     	Untracked cmd = new Untracked();
@@ -610,18 +569,27 @@ public class Parser {
  
     protected Include readInclude() throws IOException
     {
-	Include cmd = new Include();
-	cmd.trusted = trusted;
+	boolean t = trusted;
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing a Include.");
 	if (tryToEat("trusted")) {
-	    cmd.trusted = true;
+	    t = true;
 	    if (!eat_ws())
 		handleError("Unexpected end of input parsing a Include.");
 	}
-	cmd.f = new File(readString());
-	cmd.root = root;
+	Include cmd = new Include(new File(readString()), root);
+	cmd.trusted = t;
 	eat(".", "Include");
+	return cmd;
+    }
+
+    protected Echo readEcho() throws IOException
+    {
+	Echo cmd = new Echo();
+	if (!eat_ws())
+	    handleError("Unexpected end of input parsing a Include.");
+	cmd.s = readString();
+	eat(".", "Echo");
 	return cmd;
     }
     
@@ -1041,22 +1009,6 @@ public class Parser {
 	return v;
     }
 
-    static public int[] toIntArray(ArrayList a) {
-	int iend = a.size();
-	int[] v = new int[iend];
-	for (int i = 0; i < iend; i++)
-	    v[i] = ((Integer)a.get(i)).intValue();
-	return v;
-    }
-
-    static public boolean[] toBooleanArray(ArrayList a) {
-	int iend = a.size();
-	boolean[] v = new boolean[iend];
-	for (int i = 0; i < iend; i++)
-	    v[i] = ((Boolean)a.get(i)).booleanValue();
-	return v;
-    }
-
     static public Ownership[] toOwnershipArray(ArrayList a) {
 	int iend = a.size();
 	Ownership[] v = new Ownership[iend];
@@ -1068,9 +1020,9 @@ public class Parser {
     protected Case readCase(boolean in_match) throws IOException
     {
         Case e = new Case();
-	e.pos = new Position(linenum, column, file);
+	e.pos = getPos();
         
-	String errm = ("Pattern in match does not begin with a"
+	String errm = ("Pattern in case does not begin with a"
 		       +" known constant.");
 	try {
 	    e.c = readConst();
@@ -1302,14 +1254,14 @@ public class Parser {
 	    if (!eat_ws())
 		handleError("Unexpected end of input parsing a match term.");
 	    
-	    Position p = new Position(linenum, column, file);
+	    Position p = getPos();
 	    e.x1 = readBindingVar();
 	    e.x1.pos = p;
 	    
 	    if (!eat_ws())
 		handleError("Unexpected end of input parsing a match term.");
 	    
-	    p = new Position(linenum, column, file);
+	    p = getPos();
 	    e.x2 = readBindingVar();
 	    e.x1.pos = p;
 
@@ -1323,7 +1275,7 @@ public class Parser {
 		     : ((Const)e.t).name);
 		e.x1 = new Var(n+"_eq");
 		e.x2 = new Var(n+"_Eq");
-		Position p = new Position(linenum, column, file);
+		Position p = getPos();
 		e.x1.pos = p;
 		e.x2.pos = p;
 	    }
@@ -1599,7 +1551,7 @@ public class Parser {
         }
 	else {
 	    e.x2 = new Var(e.x1.name+"_eq");
-	    e.x2.pos = new Position(linenum, column, file);
+	    e.x2.pos = getPos();
 	}
 
 	ctxt.pushVar(e.x2);
@@ -1621,7 +1573,7 @@ public class Parser {
     {
 	Var x;
 	Expr U, G;
-        Position pos = new Position(linenum, column, file);
+        Position pos = getPos();
 
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing a abbrev term.");
@@ -1682,36 +1634,11 @@ public class Parser {
 	return (Var)readIdentifier(true);
     }
 
-    protected String readID ()
-        throws IOException
-    {
-        int c;
-        char ch;
-        StringBuffer theID = new StringBuffer();
-
-        do{
-            c=getc();
-            ch=(char) c;
-	    if (c == -1 || Character.isWhitespace(ch) || !LegalVarChar(ch))
-            {
-                if(!LegalVarChar(ch))
-                    ungetc(c);
-		break;
-            }
-            theID.append(ch);
-        } while(true);
-
-	if (theID.length() == 0)
-	    handleError("Expected an identifier.");
-
-        return theID.toString();
-    }
-
     /** reads an identifier.  */
     protected Expr readIdentifier (boolean binding_occurrence) 
 	throws IOException
     {
-        Position pos = new Position(linenum, column, file);
+        Position pos = getPos();
         String theVarName = readID();
 
 	if (theVarName.charAt(0) == '_' && using_metavars) 
@@ -1729,26 +1656,6 @@ public class Parser {
 	return v;
     }
      
-    protected String readString() throws IOException
-    {
-        int c;
-        String s="";
-	c=getc();
-
-	if ((char)c != '"')
-	    handleError("Expecting a double quotation mark (\") to start a"
-			+" string.");
-        do{
-	    c=getc();
-	    if (c == -1 || (char)c == '"') {
-		break; 
-            }
-            s+=(char)c;
-        } while(true);
-        
-	return s;
-    }
-    
     protected class VarList {
 	public Ownership anno;
 	public Var[] vars;
@@ -1904,10 +1811,7 @@ public class Parser {
 
 	readVarListExpr(e, true);
 
-	if (e.r != null || tryToEat(":")) {
-	    if (e.r != null)
-		eat(":", "fun term");
-     
+	if (tryToEat(":")) {
 	    // need to read the return type of the recursive function
 	    if (!eat_ws())
 		handleError("Unexpected end of input parsing a fun term.");
@@ -2433,52 +2337,6 @@ public class Parser {
         return e;
     }
 
-    protected void eat(String kw, String parsing_what) throws IOException {
-	if (!eat_ws())
-	    handleError("Unexpected end of input parsing "+parsing_what);
-	if (!tryToEat(kw))
-	    handleError("Expected \""+kw+"\" parsing "+parsing_what);
-    }
-
-    protected boolean tryToEat(String kw) 
-	throws IOException 
-    {
-	return tryToEat(kw.toCharArray());
-    }
-
-    protected boolean tryToEat(char[] kw) 
-	throws IOException 
-    {
-	int c;
-	int cur = 0;
-	
-	c = getc();
-	while (c != -1 && cur < kw.length) {
-	    char b = kw[cur++];
-	    if ((char)c != b) {
-		ungetc(c);
-		for (int j = cur-2; j >= 0; j--)
-			ungetc(kw[j]);
-			
-		
-		return false;
-	    }
-	    c = getc();
-	}
-	int j = kw.length - 1;
-	ungetc(c);
-	if (Character.isLetterOrDigit(kw[j]))
-	    if (!Character.isWhitespace((char)c) && LegalVarChar((char)c)) {
-		// a keyword ending in a letter or number is being
-		// followed by a character allowed for variables, thus
-		// yielding an identifier, not a keyword.
-		for ( ; j>=0; j--)
-		    ungetc(kw[j]);
-		return false;
-	    }
-	return true;
-    }
-
     protected int eatKeyword() throws IOException
     {
         if (!eat_ws())
@@ -2604,80 +2462,5 @@ public class Parser {
         return Expr.VAR;
     }
 
-    protected char [] addStrMatch(char [] strMatch, char [] ch, int lastChar)
-    {
-        int i=0;
-        while(i<strMatch.length)
-        {            
-            ch[lastChar+i] = strMatch[i];
-            i++;
-        }
-        
-        return ch;
-    }    
-    
-    // return false if we encounter end of file, true otherwise
-    protected boolean eat_ws() throws java.io.IOException {
-	int i;
-	int comment_level = 0; // how far are we nested in comments
-	boolean in_single_line_comment = false;
-
-	while ((i = getc()) != -1) {
-	    char c = (char)i;
-	    if (Character.isWhitespace(c)) {
-		if (c == '\n') {
-		    if (in_single_line_comment) {
-			comment_level--;
-			in_single_line_comment = false;
-		    }
-		}
-		continue; // with while loop
-	    }
-	    else if (c == '%') {
-		// check if this starting a new nested comment
-		int j = getc();
-		if (j == -1)
-		    return false;
-		if ((char)j == '-') 
-		    // yes, this is a new nested comment
-		    comment_level++;
-		else 
-		    // this % is starting a single line comment
-		    if (comment_level == 0 && !in_single_line_comment) {
-			in_single_line_comment = true;
-			comment_level++;
-		    }
-	    }
-	    else if (c == '-') {
-		// we are expecting this will end a nested comment
-		int j = getc();
-		if ((char)j == '%') {
-		    if (comment_level == 0)
-			handleError("A comment is being closed with \"-%\" "
-				    +"where\nthe parser does not find a"
-				    +" matching \"%-\"\n"
-				    +"to start the comment.");
-		    comment_level--;
-		}
-	    }
-	    else if (comment_level == 0) {
-		// we have encountered a non-whitespace character that
-		// is not starting a comment, and we are not already inside
-		// a comment
-		ungetc(i);
-		return true;
-	    }
-	}
-	return false; // we encountered EOF
-    }
-
-    
-   protected boolean LegalVarChar(char ch)
-   {
-       if("<>|(){}[]=%:.-\"".indexOf(ch)>=0)
-            return false;
-       else
-           return true;             
-   }
 }
 

@@ -1,8 +1,10 @@
 %Set "show_includes".
 %Set "print_parsed".
 Set "check_spec_terminates".
-%Include trusted "../../lib/trie.g".
-Include "../../lib/trie.g".
+Set "trust_hypjoins".
+Include trusted "../../lib/trie.g".
+
+%Include "../../lib/trie.g".
 
 Include "gs_io.g".
 Include "check.g".
@@ -252,7 +254,6 @@ Unset "check_spec_terminates". %- not behaving properly during compilation -%
 %Set "debug_add_lets".
 %Set "debug_split_by_arity".
 %Set "comment_vars".
-%Set "Debug_compiler".
 %Set "debug_uniquify_vars".
 %Set "comment_vars". 
 %Set "debug_classify_casts".
@@ -261,6 +262,8 @@ Unset "check_spec_terminates". %- not behaving properly during compilation -%
 %Set "debug_refine_cases".
 %Set "expand_vars".
 
-Set "print_trusted_details".
+%Set "print_trusted_details".
 
-%Compile main to "golfsock.c".
+%Set "Debug_compiler".
+
+Compile main to "golfsock.c".

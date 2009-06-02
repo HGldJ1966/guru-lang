@@ -732,7 +732,7 @@ public class Compiler {
 	    Var v = (Var)i.t; // guaranteed by AddLets
 	    if (return_str != null)
 		os.print(return_str);
-	    emitCallInc(ctxt.getClassifier(v), name(v.name), false);
+	    emitCallInc(i.T, name(v.name), false);
 	    if (return_str != null)
 		os.println(";");
 	    break;
@@ -740,7 +740,7 @@ public class Compiler {
 	case Expr.DEC: {
 	    Dec d = (Dec)t;
 	    Var v = (Var)d.I; // guaranteed by AddLets
-	    emitCallDec(ctxt.getClassifier(v), name(v.name));
+	    emitCallDec(d.T, name(v.name));
 	    os.println("");
 	    compile(ctxt,d.t,return_str,returning);
 	    break;
@@ -893,6 +893,7 @@ public class Compiler {
 	    Define D = new Define(ctxt.isOpaque(c), ctxt.isTrusted(c),
 				  ctxt.isTypeFamilyAbbrev(c),
 				  ctxt.isPredicate(c),
+				  false,
 				  c, T, body, body.dropAnnos(ctxt));
 	    
 	    D.print(ctxt.w, ctxt);
@@ -1196,7 +1197,7 @@ public class Compiler {
 		ctxt2.w.flush();
 	    }
 
-	    Define D = new Define(false,false,false,false,c,null,body,bodyno);
+	    Define D = new Define(false,false,false,false,false,c,null,body,bodyno);
 	    if (h.size() > 0) {
 		Iterator hit = h.iterator();
 		handleError(ctxt2, body.pos,
@@ -1207,7 +1208,7 @@ public class Compiler {
 			    +"printed below.)\n"
 			    +"\n1. the function: "+c.toString(ctxt2)
 			    +"\n2. a free variable: "
-			    +((Var)hit.next()).toString(ctxt2)
+			    +((Var)hit.next()).defExpandTop(ctxt2).toString(ctxt2)
 			    +"\n3. the function's definition:\n"
 			    +D.toString(ctxt2));
 	    }
@@ -1315,7 +1316,7 @@ public class Compiler {
 		if (body == null)
 		    ctxt.w.println(d.name);
 		else {
-		    Define D = new Define(false, false, false, false,
+		    Define D = new Define(false, false, false, false, false,
 					  d, ctxt.getClassifier(d), 
 					  body, ctxt.getDefBodyNoAnnos(d));
 		    D.print(ctxt.w, ctxt);
@@ -1492,7 +1493,7 @@ public class Compiler {
 		ctxt.w.flush();
 	    }
 
-	    Define D = new Define(false, false, false, false,
+	    Define D = new Define(false, false, false, false, false,
 				  c, T, body, body.dropAnnos(ctxt));
 
 	    if (D.G.construct == Expr.FUN_TERM)

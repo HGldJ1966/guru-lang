@@ -1,8 +1,7 @@
 Include "plus.g".
-Include "list2.g".
+Include "list.g".
 Include "mult.g".
 Include "bool.g".
-Include "type_t.g".
 
 %Set "print_parsed".
 
@@ -11,20 +10,19 @@ Inductive vec : Fun(A:type)(n:nat).type :=
 | vecc : Fun(A:type)(spec n:nat)(a:A)(l:<vec A n>).
               <vec A (S n)>.
 
-Define spec vec_append :=
+Define vec_append :=
 fun vec_append(A:type)(spec n m:nat)(l1 : <vec A n>)(l2 : <vec A m>):
               <vec A (plus n m)>.
     match l1 with
-      vecn A' => cast l2 by
+      vecn _ => cast l2 by
                 cong <vec A *>
                  symm trans
                         cong (plus * m)
                             inj <vec ** *> l1_Eq
                         join (plus Z m) m
-    | vecc A' n' x l1' => 
+    | vecc _ n' x l1' => 
        cast
-          (vecc A' terminates (plus n' m) by plus_total
-             x (vec_append A' n' m l1' l2)) 
+          (vecc A (plus n' m) x (vec_append A n' m l1' l2)) 
        by cong <vec A *>
              trans
                symm join (plus (S n') m)

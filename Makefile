@@ -12,7 +12,10 @@
 #top:	all
 
 go:
-	javac -g guru/*.java guru/compiler/*java # -verbose
+	javac -source 1.4 -g guru/*.java guru/compiler/*java
+
+carraway:
+	javac -source 1.4 -g guru/*.java guru/carraway/*java
 
 # the name of the C++ compiler
 GCJ=gcj

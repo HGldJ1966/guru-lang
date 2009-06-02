@@ -68,7 +68,7 @@ public class StringExpr extends Expr {
 
     public Expr expand(Context ctxt) {
 	char[] a = val.toCharArray();
-	Expr ret = new Inc(_const(ctxt,"stringn"));
+	Expr ret = new Inc(_const(ctxt,"stringn"),_const(ctxt,"string"));
 	for (int i = a.length - 1, iend = 0; i >= iend; i--) 
 	    ret = new TermApp(_const(ctxt,"stringc"), 
 			      toCharExpr(ctxt,a[i]), ret);
