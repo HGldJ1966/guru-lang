@@ -1,0 +1,7 @@
+(declare-type Foo type)
+(declare-term foo Foo)
+(declare-type nat type)
+(declare-term Z nat)
+(declare-term S (! y nat nat))
+(check-term (! y nat nat) (\ z foo))
+
