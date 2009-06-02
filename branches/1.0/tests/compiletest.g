@@ -4,11 +4,15 @@ Include trusted "../lib/list.g".
 
 Define natlist := <list nat>.
 
-Define test := (dec natlist (cons nat (S (S Z)) (nil nat))).
+Define l1 := (cons nat (S (S Z)) (nil nat)).
 
-%Set "debug_to_carraway".
+Define l2 := (cons nat (S Z) (nil nat)).
+
+Define test := (dec natlist (append nat (inspect natlist l1) l2)).
+
+Set "debug_to_carraway".
 %Set "debug_eta_expand".
-%Set "debug_stages".
+Set "debug_stages".
 %Set "debug_symbols".
 Set "use_malloc".
 Compile test to "compiletest.c".

@@ -3,7 +3,7 @@ package guru;
 public class Init extends Command {
     public Const s;
     public Var v1, v2;
-    Ownership T1, T2, T3;
+    Ownership T1, T2, T3; // T1 and T2 are guaranteed to have status RESOURCE.
     String delim, code;
 
     public Init() {

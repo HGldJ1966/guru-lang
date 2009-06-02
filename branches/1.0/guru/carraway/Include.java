@@ -25,6 +25,7 @@ public class Include extends Command {
 
     public static void start_emit(Context ctxt) {
 	ctxt.cw.println("void release(int tp, void *x);\n");
+	ctxt.cw.flush();
     }
 
     public static void finish_emit(Context ctxt) {

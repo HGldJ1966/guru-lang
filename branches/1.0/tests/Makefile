@@ -1,3 +1,8 @@
+compiletest:	compiletest.g ../guru/Main.class
+	../bin/guru compiletest.g
+	gcc -O0 -ggdb -o compiletest compiletest.c
+	./compiletest 
+
 go:	test_cell
 
 test_cell: test_cell.g
@@ -21,15 +26,6 @@ llambda:
 
 append:
 	java -cp .. guru.Main append.g
-
-compiletest:	compiletest.g ../guru/Main.class
-	java -cp .. guru.Main compiletest.g
-	$(MAKE) c
-
-c:
-	gcc -O0 -ggdb -c compiletest.c
-	gcc -O0 -ggdb -o compiletest compiletest.o
-	./compiletest < compiletest-data
 
 foo:	foo.c
 	gcc -O0 -ggdb -c foo.c
