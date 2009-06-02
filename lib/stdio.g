@@ -1,24 +1,29 @@
-Include "char.g".
+Include trusted "char.g".
 Include "pair.g".
 Include "unit.g".
-Include "string.g".
+Include trusted "string.g".
 
-Define spec stdin_t := string.
+Define spec stdin_t := <pair string string>.
 
 Define spec cur_char := 
   fun(unique_owned x:stdin_t): char.
-    match x by u v with
+    match (fst string string x) with
       nil A => Cc0
     | cons A a l => a
     end.
 
 Define spec next_char := 
   fun(unique x:stdin_t): unique stdin_t.
-    match x by u v with
+    match (fst string string x) with
       nil A => x
-    | cons A a l => l
+    | cons A a l => (mkpair string string l (snd string string x))
     end.
 
+Define spec print_char := 
+  fun(unique x:stdin_t)(c:char): unique stdin_t.
+    (mkpair string string (fst string string x) (stringc c (snd string string x))).
+
+%-
 Define print_nat :=
   fun print_nat(owned n:nat):Unit.
     match n with
@@ -54,3 +59,4 @@ Define println_string :=
   fun(s:string).
     let ign = (print_string s) in
       (print_char Cnl).
+-%
