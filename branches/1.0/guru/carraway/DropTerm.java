@@ -54,7 +54,7 @@ public class DropTerm extends Expr {
 	if (pp != null)
 	    simulateError(ctxt,"The scrutinee of a match is already dropped by the time a match-case ends.\n\n"
 			  +"1. it was dropped at: "+pp.toString());
-	Collection c = ctxt.dropRef(r,pos);
+	Collection c = ctxt.dropRef(r,this,pos);
 
 	if (c != null && c.size() > 0) {
 	    Iterator it = c.iterator();

@@ -1,7 +1,10 @@
 compiletest:	compiletest.g ../guru/Main.class
 	../bin/guru compiletest.g
+	$(MAKE) c
+
+c:
 	gcc -O0 -ggdb -o compiletest compiletest.c
-	./compiletest 
+	valgrind ./compiletest 
 
 go:	test_cell
 

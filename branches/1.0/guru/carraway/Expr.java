@@ -99,16 +99,6 @@ public abstract class Expr {
 
     abstract protected void do_print(java.io.PrintStream w, Context ctxt);
    
-    public String posToString() {
-	java.io.ByteArrayOutputStream s = new java.io.ByteArrayOutputStream();
-	java.io.PrintStream w = new java.io.PrintStream(s);
-	if (pos == null)
-	    w.print("unknown position");
-	else
-	    pos.print(w);
-	return s.toString();
-    }
-
     public String toString(Context ctxt) {
 	java.io.ByteArrayOutputStream s = new java.io.ByteArrayOutputStream();
 	java.io.PrintStream w = new java.io.PrintStream(s);
@@ -213,7 +203,7 @@ public abstract class Expr {
 	    if (ret == null)
 		ctxt.w.println("  aborting");
 	    else
-		ctxt.w.println("  returning "+ret.toString(ctxt) + " (created at "+ret.posToString()+")");
+		ctxt.w.println("  returning "+ret.refString(ctxt));
 	    ctxt.w.flush();
 	}
 	return ret;

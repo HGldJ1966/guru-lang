@@ -499,47 +499,50 @@ public class Context extends guru.FlagManager {
 
     public static class RefStat {
 	public Sym ref;
-	public boolean created; // if false, it means the ref was dropped
-	public Position pos; // if dropped, where
 	public boolean non_ret;
 	public boolean consume;
 	public HashSet pinning;
 	public HashSet pinnedby;
-	public RefStat(RefStat u) {
+	public Position creating_pos; // in case creating_expr is a Sym.
+	public Expr creating_expr;
+	public Expr dropping_expr;
+	public Position dropping_pos;
+	protected RefStat(RefStat u) {
 	    ref = u.ref;
-	    created = u.created;
-	    pos = u.pos;
 	    non_ret = u.non_ret;
 	    consume = u.consume;
 	    pinning = new HashSet(u.pinning);
 	    pinnedby = new HashSet(u.pinnedby);
+	    creating_pos = u.creating_pos;
+	    creating_expr = u.creating_expr;
+	    dropping_expr = u.dropping_expr;
+	    dropping_pos = u.dropping_pos;
 	}
-	public RefStat(Sym ref, boolean created, Position pos, boolean non_ret, boolean consume) {
+	protected RefStat(Sym ref, Position creating_pos, Expr creating_expr, 
+			  Position dropping_pos, Expr dropping_expr, 
+			  boolean non_ret, boolean consume) {
 	    this.ref = ref;
-	    this.created = created;
-	    this.pos = pos;
 	    this.non_ret = non_ret;
 	    this.consume = consume;
-	    pinning = new HashSet(256);
-	    pinnedby = new HashSet(256);
-	}
-	public RefStat(Sym ref, boolean created, Position pos) {
-	    this.ref = ref;
-	    this.created = created;
-	    this.pos = pos;
-	    this.non_ret = false;
-	    this.consume = true;
+	    this.creating_pos = creating_pos;
+	    this.creating_expr = creating_expr;
+	    this.dropping_expr = dropping_expr;
+	    this.dropping_pos = dropping_pos;
 	    pinning = new HashSet(256);
 	    pinnedby = new HashSet(256);
 	}
 	public void print(java.io.PrintStream w, Context ctxt) {
 	    w.println("  -- "+ref.toString(ctxt));
-	    w.println("     created at "+ref.posToString());
+	    w.println("     created by "+creating_expr.toString(ctxt)+" at "+creating_pos.toString());
 	    if (non_ret)
 		w.println("     not to be returned.");
 	    else
 		w.println("     can be returned.");
-	    w.println("     current status: "+(created ? "created" : "dropped at "+pos.toString()));
+	    if (dropping_expr == null)
+		w.println("     not dropped yet.");
+	    else
+		w.println("     dropped by "+dropping_expr.toString(ctxt)+" at "+dropping_pos.toString());
+
 	    Iterator it = pinning.iterator();
 	    w.print("     pinning:");
 	    while(it.hasNext()) {
@@ -620,9 +623,9 @@ public class Context extends guru.FlagManager {
 
     /* create a new reference and add it to the refs data structure(s).
        The position is the one to associate with the new reference. */
-    public Sym newRef(Position p, boolean non_ret, boolean consume) {
+    public Sym newRef(Expr e, Position p, boolean non_ret, boolean consume) {
 	Sym r = new_ref(p);
-	RefStat s = new RefStat(r,true,null,non_ret,consume);
+	RefStat s = new RefStat(r,p,e,null,null,non_ret,consume);
 	refs.put(r, s);
 	changed_refs.add(r);
 	if (getFlag("debug_refs")) 
@@ -630,13 +633,18 @@ public class Context extends guru.FlagManager {
 	return r;
     }
 
-    public Sym newRef(Position p) {
-	return newRef(p,false,true);
+    public Sym newRef(Expr e) {
+	return newRef(e,e.pos,false,true);
+    }
+
+    public Sym newRef(Expr e, Position p) {
+	return newRef(e,p,false,true);
     }
 
     public Sym newRef(Position p, RefStat data) {
 	Sym r = new_ref(p);
-	RefStat s = new RefStat(r,true,null,data.non_ret,data.consume);
+	RefStat s = new RefStat(r,p,data.creating_expr,data.dropping_pos,
+				data.dropping_expr,data.non_ret,data.consume);
 	s.pinning = new HashSet(data.pinning);
 	s.pinnedby = new HashSet(data.pinnedby);
 	refs.put(r, s);
@@ -670,9 +678,9 @@ public class Context extends guru.FlagManager {
 
     public Position wasDropped(Sym r) {
 	RefStat s = (RefStat)refs.get(r);
-	if (s == null)
+	if (s == null || s.dropping_expr == null)
 	    return null;
-	return s.pos;
+	return s.dropping_expr.pos;
     }
 
     public RefStat refStatus(Sym r) {
@@ -688,13 +696,11 @@ public class Context extends guru.FlagManager {
 
        This function does not check to see if r was already dropped.
     */
-    public Collection dropRef(Sym r, Position p) {
+    public Collection dropRef(Sym r, Expr e, Position p) {
 	if (r == voidref)
 	    return null;
 	if (getFlag("debug_refs")) {
-	    w.println("Dropping "+r.toString(this));
-	    w.println("  1. created at: "+r.posToString());
-	    w.println("  2. dropped at: "+p.toString()+"\n");
+	    w.println("Dropping "+r.refString(this));
 	    w.flush();
 	}
 	RefStat uu = (RefStat)refs.get(r);
@@ -711,8 +717,8 @@ public class Context extends guru.FlagManager {
 	    vv.pinnedby.remove(r);
 	}
 
-	uu.created = false;
-	uu.pos = p;
+	uu.dropping_expr = e;
+	uu.dropping_pos = p;
 
 	changed_refs.add(r);
 	return uu.pinnedby;

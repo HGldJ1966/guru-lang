@@ -59,7 +59,7 @@ public class Define extends Command {
 		ctxt.w.println("Define about to classify "+G.toString(ctxt));
 		ctxt.w.flush();
 	    }
-	    cG = G.classify(ctxt, Expr.NO_APPROX, spec); 
+	    cG = G.classify(ctxt, Expr.NO_APPROX, spec_mode); 
 	}
 	    
 	if (A == null)
@@ -83,7 +83,7 @@ public class Define extends Command {
 	if (!spec_mode)
 	    G.checkSpec(ctxt, false /* in_type */);
 
-	if (spec) 
+	if (spec || primitive) 
 	    ctxt.markSpec(c); 
 	if (spec || primitive)
 	    ctxt.makeOpaque(c);

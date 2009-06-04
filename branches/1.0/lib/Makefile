@@ -4,6 +4,9 @@ bst-spec:
 bst:
 	time ../bin/guru bst.g
 
+pow:
+	../bin/guru pow.g
+
 minmax:
 	../bin/guru minmax.g
 
