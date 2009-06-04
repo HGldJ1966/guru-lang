@@ -62,7 +62,7 @@ public class Case extends Expr {
 		fprev[i] = ctxt.getSubst(f.vars[i]);
 		prev[i] = ctxt.getSubst(vars[i]);
 		if (T.consumable()) {
-		    Sym r = ctxt.newRef(vars[i].pos);
+		    Sym r = ctxt.newRef(vars[i]);
 		    ctxt.setSubst(f.vars[i],r); // so substituted pin-types will mention r
 		    ctxt.setSubst(vars[i],r);
 		    
@@ -87,7 +87,7 @@ public class Case extends Expr {
 	    if (u.non_ret)
 		simulateError(ctxt,"A match-case is returning a non-returnable reference.\n\n"
 			      +"1. the case: "+c.toString(ctxt)
-			      +"\n\n2. the reference was created at: "+ret.posToString());
+			      +"\n\n2. "+ret.refString(ctxt));
 	}
 	return ret;
     }

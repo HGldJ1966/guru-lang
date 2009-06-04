@@ -77,7 +77,7 @@ public class FunTerm extends FunBase {
 	for (int i = 0, iend = vars.length; i < iend; i++) {
 	    Expr T = types[i];
 	    if (T.consumable()) {
-		Sym r = ctxt.newRef(vars[i].pos,
+		Sym r = ctxt.newRef(vars[i],vars[i].pos,
 				    (consumps[i] == NOT_CONSUMED || consumps[i] == CONSUMED_NO_RET),
 				    (consumps[i] == CONSUMED_NO_RET || consumps[i] == CONSUMED_RET_OK));
 		prev[i] = ctxt.getSubst(vars[i]);
@@ -104,7 +104,7 @@ public class FunTerm extends FunBase {
 	    
 	if (u != null && u.non_ret)
 	    simulateError(ctxt,"An input designated as not to be returned is being returned.\n\n"
-			  +"1. the corresponding reference was created at: "+r.posToString());
+			  +"1. the corresponding reference: "+r.refString(ctxt));
 	
 	if (ctxt.getFlag("debug_simulate")) {
 	    ctxt.w.println("Dropping pre-existing references dropped in the body of a function:");
@@ -114,7 +114,7 @@ public class FunTerm extends FunBase {
 	while(it.hasNext()) {
 	    u = (Context.RefStat)it.next();
 		
-	    if (u.created) {
+	    if (u.dropping_expr == null) {
 		if (u.ref == r) 
 		    continue;
 		if (u.non_ret)
@@ -122,13 +122,12 @@ public class FunTerm extends FunBase {
 		    continue;
 		simulateError(ctxt,"A function is leaking a reference.\n\n"
 			      +"1. the function: "+f.toString(ctxt)
-			      +("\n\n1. the reference "+(ctxt.getFlag("debug_refs") ? r.toString(ctxt) + ", " : "is ")
-				+"created at: "+r.posToString()));
+			      +("\n\n2. "+r.refString(ctxt)));
 	    }
 	    else {
 		// drop the reference from the context as it will exist after processing this function.
 		if (ctxt.refStatus(u.ref) != null) 
-		    ctxt.dropRef(u.ref, pos);
+		    ctxt.dropRef(u.ref, this, pos);
 	    }
 	}
 	return ctxt.voidref;

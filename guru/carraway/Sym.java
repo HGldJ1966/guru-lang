@@ -44,10 +44,17 @@ public class Sym extends Expr {
     }    
 
     public String refString(Context ctxt) {
-	return ((ctxt.getFlag("debug_refs") ?
-		output_name + ", " : 
-		"a reference ")
-		+"created at: "+posToString());
+	Context.RefStat s = ctxt.refStatus(this);
+	String ret = "a reference ("+ output_name+")";
+
+	if (s == null) 
+	    return ret;
+
+	ret += "\n"+s.creating_expr.pos.toString()+", created by:\n"+s.creating_expr.toString(ctxt);
+
+	if (s.dropping_expr != null)
+	    ret += "\n\n"+s.dropping_expr.pos.toString()+", dropped by:\n"+s.dropping_expr.toString(ctxt)+"\n";
+	return ret;
     }
 
     public Expr simpleType(Context ctxt) {
@@ -115,7 +122,7 @@ public class Sym extends Expr {
 	    // 0-ary constructors create new references, unless they are untracked
 	    if (ctxt.getType(this).construct == UNTRACKED)
 		return this;
-	    return ctxt.newRef(p);
+	    return ctxt.newRef(this,p);
 	}
 	return (Sym)applySubst(ctxt);
     }

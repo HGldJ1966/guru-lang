@@ -203,7 +203,7 @@ public class App extends Expr{
 	}
 	
 	if (ctxt.getFlag("debug_def_eq")) {
-	    ctxt.w.println("App testing def. eq. of: ");
+	    ctxt.w.println("App testing def. eq. (spec = "+(new Boolean(spec)).toString()+") of: ");
 	    ctxt.w.print("1. ");
 	    print(ctxt.w,ctxt);
 	    ctxt.w.println("");

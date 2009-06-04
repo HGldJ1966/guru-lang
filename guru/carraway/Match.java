@@ -318,7 +318,7 @@ public class Match extends Expr {
 				      +"\n\n3. the earlier cases' reference profile:\n"+ret_data.toString(ctxt));
 		}
 
-		ctxt.dropRef(rs[i],C[i].lastpos);
+		ctxt.dropRef(rs[i],C[i],C[i].lastpos);
 	    }
 
 	    S[i] = ctxt.restoreRefs();
@@ -344,7 +344,7 @@ public class Match extends Expr {
 	    Iterator it = S[i].iterator();
 	    while (it.hasNext()) {
 		Context.RefStat u = (Context.RefStat)it.next();
-		if (u.created) {
+		if (u.dropping_expr == null) {
 		    if (u.ref != rs[i])
 			C[i].simulateError(ctxt,"A reference created in a case but not returned by it is being leaked.\n\n"
 					   +"1. "+u.ref.refString(ctxt));
@@ -371,6 +371,7 @@ public class Match extends Expr {
 		first = S2[i];
 		continue;
 	    }
+	    Expr e1 = null, e2 = null;
 	    Position p1 = null, p2 = null;
 	    Context.RefStat u = findDiff(ctxt,first,S2[i]);
 	    if (u == null) {
@@ -378,18 +379,22 @@ public class Match extends Expr {
 		if (u == null)
 		    // the sets are the same
 		    continue;
-		else
-		    p2 = u.pos;
+		else {
+		    e2 = u.dropping_expr;
+		    p2 = u.dropping_pos;
+		}
 	    }
-	    else
-		p1 = u.pos;
+	    else {
+		e1 = u.dropping_expr;
+		p1 = u.dropping_pos;
+	    }
 
 	    C[i].simulateError(ctxt,"Two match-cases consume different sets of earlier references.\n\n"
 			       +"1. the first case: "+C[0].c.toString(ctxt)
 			       +"\n\n2. the second case: "+C[i].c.toString(ctxt)
 			       +"\n\n3. " +u.ref.refString(ctxt)
-			       +"\n\n4. the first case "+(p1 == null ? "does not consume it." : "consumes it at: "+p1.toString())
-			       +"\n\n5. the second case "+(p2 == null ? "does not consume it." : "consumes it at: "+p2.toString()));
+			       +"\n\n4. the first case "+(p1 == null ? "does not consume it." : "consumes it at "+e1.toString(ctxt) + " ("+p1.toString()+")")
+			       +"\n\n5. the second case "+(p2 == null ? "does not consume it." : "consumes it at: "+e2.toString(ctxt) + " ("+p2.toString()+")"));
 	}
 	
 	ctxt.setSubst(x,prev_x);
@@ -403,8 +408,8 @@ public class Match extends Expr {
 	Iterator it = first.iterator();
 	while(it.hasNext()) {
 	    Context.RefStat u = (Context.RefStat)it.next();
-	    if (!u.created)
-		ctxt.dropRef(u.ref,u.pos);
+	    if (u.dropping_expr != null)
+		ctxt.dropRef(u.ref,u.dropping_expr,u.dropping_pos);
 	}
 
 	if (ret_data == null)

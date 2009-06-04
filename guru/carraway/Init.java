@@ -58,7 +58,7 @@ public class Init extends Command {
 	Position p = ctxt.addInit(init.s, (Sym)f.types[1],(Sym)f.types[2],f,init.code);
 	if (p != null) 
 	    handleError(ctxt,"A previous Init-command is being shadowed.\n\n"
-			+"1. the new command is at: "+init.T.posToString()
+			+"1. the new command is at: "+init.T.pos.toString()
 			+"\n\n2. the previous one is at: "+p.toString());
 
 	ctxt.stage = 2;

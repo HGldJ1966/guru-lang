@@ -28,7 +28,6 @@ public class Compile extends Command {
 	}
     }
 
-
     protected Collection cmds_for_resource_types(Context ctxt,guru.carraway.Context cctxt) {
 	ArrayList cmds = new ArrayList();
 
@@ -421,12 +420,10 @@ public class Compile extends Command {
 	    }
 	}
 
-	Collection resource_decls = cmds_for_resource_types(trans_ctxt, cctxt);
-	Collection init_cmds = init_cmds(trans_ctxt.initCmds,trans_ctxt,cctxt);
-	Collection defs = cmds_for_other_consts(ee.all_consts,trans_ctxt, cctxt);
-
 	if (ctxt.getFlag("debug_to_carraway")) 
-	    printContext("After preparing the lists of Carraway commands to process.", trans_ctxt);
+	    printContext("Just about to begin translating commands to Carraway.", trans_ctxt);
+
+	Collection resource_decls = cmds_for_resource_types(trans_ctxt, cctxt);
 
 	cctxt.setFile(ifile);
 
@@ -437,8 +434,12 @@ public class Compile extends Command {
 	cctxt.commentBox("Data types and resource types");
 	processCommands(resource_decls, trans_ctxt, cctxt);
 
+	Collection init_cmds = init_cmds(trans_ctxt.initCmds,trans_ctxt,cctxt);
+
 	cctxt.commentBox("Init functions");
 	processCommands(init_cmds, trans_ctxt, cctxt);
+
+	Collection defs = cmds_for_other_consts(ee.all_consts,trans_ctxt, cctxt);
 
 	cctxt.commentBox("Definitions");
 	processCommands(defs, trans_ctxt, cctxt);

@@ -143,20 +143,20 @@ public class App extends Expr {
 		Context.RefStat u = ctxt.refStatus(rs[i]);
 		if (!u.consume)
 		    simulateError(ctxt,"A reference that is marked not to be consumed is being consumed.\n\n"
-				  +"1. the reference was created at: "+rs[i].posToString()
+				  +"1. "+rs[i].refString(ctxt)
 				  +"\n\n2. the consuming function: "+head.toString(ctxt));
 		if (u.non_ret && f.consumps[i] == FunBase.CONSUMED_RET_OK)
 		    simulateError(ctxt,"A reference that is marked not to be returned is being passed to a function that\n"
 				  +"might return it.\n\n"
-				  +"1. the reference: "+rs[i].refString(ctxt)
+				  +"1. "+rs[i].refString(ctxt)
 				  +"\n\n2. the consuming function: "+head.toString(ctxt));
 
 		Position pp = ctxt.wasDropped(rs[i]);
 		if (pp != null) 
 		    simulateError(ctxt,"A reference that was already consumed is being consumed again.\n\n"
-				  +"1. the reference created at: "+rs[i].posToString()
-				  +"\n\n2. first consumed at: "+pp.toString());
-		rs_pinnedby[i] = ctxt.dropRef(rs[i], pos);
+				  +"1. "+rs[i].refString(ctxt)
+				  +"\n\n"+pp.toString()+": first consumed here.\n");
+		rs_pinnedby[i] = ctxt.dropRef(rs[i], this, pos);
 	    }
 	    prev[i] = ctxt.getSubst(f.vars[i]);
 	    ctxt.setSubst(f.vars[i],rs[i]);
@@ -166,8 +166,8 @@ public class App extends Expr {
 	    if (rs_pinnedby[i] != null && rs_pinnedby[i].size() > 0) {
 		Iterator it = rs_pinnedby[i].iterator();
 		simulateError(ctxt,"A pinned reference is being consumed.\n\n"
-			      +"1. the reference created at: "+rs[i].posToString()
-			      +"\n\n2. pinned by the reference created at: "+((Sym)it.next()).posToString());
+			      +"1. the reference  "+rs[i].refString(ctxt)
+			      +"\n\n2. pinned by the  "+((Sym)it.next()).refString(ctxt));
 	    }
 
 	Expr rettype = f.rettype.applySubst(ctxt);
@@ -180,7 +180,7 @@ public class App extends Expr {
 	    rettype.construct == UNTRACKED)
 	    return ctxt.voidref;
 
-	Sym ret = ctxt.newRef(pos);
+	Sym ret = ctxt.newRef(this);
 	if (rettype.construct == PIN) {
 	    // we need to make sure this does not depend on any consumed references
 
@@ -192,8 +192,7 @@ public class App extends Expr {
 		    simulateError(ctxt,"The return type of a function depends on a consumed reference.\n\n"
 				  +"1. the function: "+head.toString(ctxt)
 				  +"\n\n2. its type: "+f.toString(ctxt)
-				  +"\n\n3. the consumed reference was created at: "+pi.pinned[i].posToString()
-				  +"\n\n4. it was consumed at: "+pp.toString());
+				  +"\n\n3. "+pi.pinned[i].refString(ctxt));
 	    }
 
 	    ctxt.pin(ret,pi.pinned);

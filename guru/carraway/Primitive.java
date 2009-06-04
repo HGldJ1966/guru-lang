@@ -25,7 +25,7 @@ public class Primitive extends Command {
 
 	if (T.construct == Expr.SYM) 
 	    // we need to add a reference here for simulation purposes.
-	    ctxt.setSubst(s, ctxt.newRef(pos));
+	    ctxt.setSubst(s, ctxt.newRef(s,pos));
 
 	if (!ctxt.getFlag("output_ocaml")) {
 	    ctxt.cw.println(code);

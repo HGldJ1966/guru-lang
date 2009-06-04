@@ -49,7 +49,7 @@ public class Global extends Command {
 	while(it.hasNext()) {
 	    u = (Context.RefStat)it.next();
 		
-	    if (u.created) {
+	    if (u.dropping_expr == null) {
 		if (u.ref == r) 
 		    continue;
 		c.simulateError(ctxt,"The definition of a global is leaking a reference.\n\n"
@@ -59,12 +59,12 @@ public class Global extends Command {
 	    else {
 		// drop the reference from the context as it will exist after processing this global.
 		if (ctxt.refStatus(u.ref) != null) 
-		    ctxt.dropRef(u.ref, pos);
+		    ctxt.dropRef(u.ref, c, c.pos);
 	    }
 	}
 
 	if (ru != null)
-	    ctxt.setSubst(c,ctxt.newRef(pos,ru));
+	    ctxt.setSubst(c,ctxt.newRef(c.pos,ru));
 
 	t.comment_expr(c,ctxt);
 
