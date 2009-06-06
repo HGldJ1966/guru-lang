@@ -133,6 +133,21 @@ public class Do extends Expr {
 	return t.evalStep(ctxt);
     }
 
+    public Expr do_rewrite(Context ctxt, Expr e, Expr x, java.util.Stack boundVars) {
+	Expr nts[] = new Expr[ts.length];
+	boolean changed = false;
+	for (int i = 0, iend = ts.length; i < iend; i++) {
+	    nts[i] = ts[i].rewrite(ctxt,e,x,boundVars);
+	    changed = changed || (nts[i] != ts[i]);
+	}
+
+	Expr nt = t.rewrite(ctxt,e,x,boundVars);
+	if (changed || nt != t)
+	    return new Do(nts,nt);
+	return this;
+    }
+
+
     public guru.carraway.Expr toCarraway(Context ctxt) {
 	guru.carraway.Do D = new guru.carraway.Do();
 	D.pos = pos;

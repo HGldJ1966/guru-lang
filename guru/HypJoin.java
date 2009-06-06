@@ -520,6 +520,9 @@ public class HypJoin extends Expr{
     	{
     		returnValue = e;
     	}
+	else if (e.construct == DO) {
+	    
+	}
     	else
     	{
     		handleError(ctxt,

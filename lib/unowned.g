@@ -8,14 +8,6 @@ ResourceType unowned with
   }
 END.
 
-Define primitive inc : Fun(spec A:type)(! #unowned y:A).#unowned A := fun(A:type)(y:A).y <<END
-  void *ginc(void *);
-END.
-
-Define primitive dec : Fun(A:type)(^#unowned y:A).void := fun(A:type)(y:A).voidi <<END
-  #define gdec(A,y) gconsume_unowned(A,y)
-END.
-
 Init ginit_unowned_unowned(#unowned x)(#unowned y).#unowned <<END
   void *ginc(void *y) {
     inc(y);
@@ -27,3 +19,12 @@ Init ginit_unowned_unowned(#unowned x)(#unowned y).#unowned <<END
     return y;
   }
 END.
+
+Define primitive inc : Fun(spec A:type)(! #unowned y:A).#unowned A := fun(A:type)(y:A).y <<END
+  void *ginc(void *);
+END.
+
+Define primitive dec : Fun(A:type)(^#unowned y:A).void := fun(A:type)(y:A).voidi <<END
+  #define gdec(A,y) gconsume_unowned(A,y)
+END.
+
