@@ -81,7 +81,7 @@ Define pow_mult : Forall(y b x:nat). { (mult (pow b x) (pow b y)) = (pow b (plus
 
 Define pow2 := (pow (S (S Z))).
 
-Set "debug_def_eq".
+% Set "debug_def_eq".
 
 Define pow2_add : Forall (e : nat).{(plus (pow2 e) (pow2 e)) = (pow2 (S e))} :=
 	induction (e : nat) return {(plus (pow2 e) (pow2 e)) = (pow2 (S e))} with

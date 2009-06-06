@@ -1,3 +1,9 @@
+pair:
+	time ../bin/guru pair.g
+
+list:
+	time ../bin/guru list.g
+
 bst-spec:
 	time ../bin/guru bst-spec.g
 
