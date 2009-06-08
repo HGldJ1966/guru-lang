@@ -91,3 +91,20 @@ Define spec char_to_word : Fun(c:char).word :=
   cast
    (bv_append charlen (minus wordlen charlen) c (mkvec bool ff (minus wordlen charlen)))
   by cong <vec bool *> [plus_minus charlen wordlen join (le charlen wordlen) tt]. 
+
+% (NOT OPTIMAL) convertion from nat to word (dropping high bits)
+Define spec nat_to_word : Fun(n:nat).word :=
+  fun(n:nat).
+    match (to_bv n) with
+      mk_to_bv_t l v =>
+        match (lt wordlen l ) by u1 v1 with
+          ff => % zerofill
+            cast (bv_append l (minus wordlen l)
+                   v (mkvec bool ff (minus wordlen l))) by
+              cong <vec bool *>
+                   [plus_minus l wordlen [lt_ff_implies_le wordlen l u1]]
+        | tt => % drop high bits
+            (vec_head bool l v wordlen [lt_implies_le wordlen l u1])
+        end
+    end.
+
