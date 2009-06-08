@@ -474,3 +474,76 @@ Define eqvec_eq
       end
   end.
 
+
+% vec_head: get first m elements
+% similar to "head", but this gets m elements of the vector (not just one) 
+Define vec_head :=
+  fun vec_head(A:type)(spec n:nat)(v:<vec A n>)(m:nat)(u:{ (le m n) = tt })
+      : <vec A m>.
+    match m by m_eq m_Eq with
+      Z => cast (vecn A) by
+             cong <vec A *> symm m_eq
+    | S m' =>
+        match v by u1 v1 with
+          vecn _ => abort <vec A m> % cannot happen
+        | vecc _ n' a v' =>
+            abbrev p1 = trans symm [S_le_S m' n']
+                        trans hypjoin (le (S m') (S n')) (le m n) by
+                                m_eq inj <vec ** *> v1 end
+                              u
+            in
+              cast (vecc A m' a (vec_head A n' v' m' p1)) by
+                cong <vec A *> symm m_eq
+        end
+    end.
+
+Define vec_head_tot :
+  Forall(A:type)(n:nat)(v:<vec A n>)(m:nat)(u:{ (le m n) = tt }).
+    Exists(r:<vec A m>). { (vec_head v m) = r } :=
+  foralli(A:type).
+    induction(n:nat)(v:<vec A n>)(m:nat)
+      return Forall(u:{ (le m n) = tt }).
+               Exists(r:<vec A m>). { (vec_head v m) = r }
+    with
+      Z =>
+        abbrev a = cast (vecn A) by cong <vec A *> symm m_eq
+        in
+          foralli(u:{ (le m n) = tt }).
+            existsi a
+              { (vec_head v m) = * }
+              trans cong (vec_head v *) m_eq
+                    join (vec_head v Z) a
+    | S m' =>
+        case v with
+          vecn _ =>
+            foralli(u:{ (le m n) = tt }).
+              contra
+                abbrev u2 = trans cong (le m *) symm inj <vec A *> v_Eq
+                                  u
+                            % (le m Z) = tt
+                in
+                trans symm [le_Z1 m u2] % Z = m
+                trans m_eq  % m = (S m')
+                      [S_not_zero m'] % (S m') = Z
+                Exists(r:<vec A m>). { (vec_head v m) = r }
+        | vecc _ n' a v' =>
+            foralli(u:{ (le m n) = tt }).
+            abbrev p1 = trans symm [S_le_S m' n']
+                        trans hypjoin (le (S m') (S n')) (le m n) by
+                                m_eq inj <vec ** *> v_Eq end
+                              u
+            in
+            abbrev x = cast (vecc A m' a (vec_head A n' v' m' p1)) by
+                         cong <vec A *> symm m_eq
+            in
+            existsi x
+              { (vec_head v m) = * }
+              existse [[m_IH n' v' m'] p1] % Exists(r).{...}
+                foralli(r':<vec A m'>)(s:{ (vec_head v' m') = r' }).
+                  hypjoin (vec_head v m) x
+                    by m_eq v_eq inj <vec A *> v_Eq end
+        end
+    end.
+  
+Total vec_head vec_head_tot.
+
