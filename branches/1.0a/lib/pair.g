@@ -69,7 +69,7 @@ Define pair_lemma : Forall(A B : type)(p:<pair A B>).{ (mkpair ! ! (fst ! ! p) (
 			symm x1
 	end.
 
-	
-	
-	
-	
+Define eq_pair : Fun(A B:type)(eqA:Fun(x y : A). bool)(eqB:Fun(x y : B). bool)(owned p1 p2 : <pair A B>). bool :=
+  fun(A B:type)(eqA:Fun(x y : A). bool)(eqB:Fun(x y : B). bool)(owned  p1 p2 : <pair A B>).
+    (and (eqA (fst A B p1) (fst A B p2)) (eqB (snd A B p1) (snd A B p2))).
+
