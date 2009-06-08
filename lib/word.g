@@ -90,4 +90,4 @@ Define spec char_to_word : Fun(c:char).word :=
   fun(c:char).
   cast
    (bv_append charlen (minus wordlen charlen) c (mkvec bool ff (minus wordlen charlen)))
-  by cong <vec bool *> [plus_minus charlen wordlen join (lt charlen wordlen) tt]. 
+  by cong <vec bool *> [plus_minus charlen wordlen join (le charlen wordlen) tt]. 
