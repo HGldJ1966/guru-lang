@@ -521,7 +521,13 @@ public class HypJoin extends Expr{
     		returnValue = e;
     	}
 	else if (e.construct == DO) {
-	    
+
+    		Expr[] X = new Expr[subExprs.length - 1];
+    		for(int i = 0; i < subExprs.length - 1; ++i)
+    		{
+    			X[i] = subExprs[i];
+    		}
+    		returnValue = new Do(X, subExprs[subExprs.length - 1]);
 	}
     	else
     	{
@@ -652,24 +658,28 @@ public class HypJoin extends Expr{
     {
     	if(e.construct == ABORT)
     	{
-    		return 9;
+    		return 10;
     	}
     	else if(e.construct == BANG)
     	{
-    		return 8;
+	    return 9;
     	}
     	else if(e.construct == LET)
     	{
-    		return 7;
+    		return 8;
+    	}
+    	else if(e.construct == DO)
+    	{
+	    return 7;
     	}
     	else if(e.construct == MATCH || e.construct == SIZE)
     	{
-    		return 6;
+	    return 6;
     	}
     	else if(e.construct == TERM_APP && 
     			((TermApp)e).head.construct != CONST )
     	{
-    		return 5;
+	    return 5;
     	}
     	else if(e.construct == VAR)
     	{
@@ -737,6 +747,9 @@ public class HypJoin extends Expr{
     	{
     		return 0;
     	}
+	else if (e.construct == DO) {
+	    return ((Do)e).ts.length+1;
+	}
     	else
     	{
     		handleError(ctxt,
@@ -773,6 +786,9 @@ public class HypJoin extends Expr{
     	{
     		return 0;
     	}
+	else if (e.construct == DO) {
+	    return ((Do)e).ts.length+1;
+	}
     	else if(e.construct == CONST)
     	{
     		return 0;
@@ -838,6 +854,18 @@ public class HypJoin extends Expr{
     			returnValue = matche.C[index - 1].body;
     		}
     	}
+    	else if(e.construct == DO)
+    	{
+    		Do doe = (Do)e;
+    		if(index >= doe.ts.length)
+    		{
+		    returnValue = doe.t;
+    		}
+    		else
+    		{
+		    returnValue = doe.ts[index];
+    		}
+    	}
     	else if(e.construct == FUN_TERM)
     	{
     		FunTerm fune = (FunTerm)e;
@@ -855,7 +883,7 @@ public class HypJoin extends Expr{
     
     private void pushBoundVars(Context ctxt, Expr e, int index, Stack boundVars)
     {
-    	if(e.construct == TERM_APP || e.construct == SIZE)
+    	if(e.construct == TERM_APP || e.construct == SIZE || e.construct == DO)
     	{
     		// do nothing
     	}
@@ -912,7 +940,7 @@ public class HypJoin extends Expr{
     
     private void popBoundVars(Context ctxt, Expr e, int index, Stack boundVars)
     {
-    	if(e.construct == TERM_APP || e.construct == SIZE)
+    	if(e.construct == TERM_APP || e.construct == SIZE || e.construct == DO)
     	{
     		// do nothing
     	}

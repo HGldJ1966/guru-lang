@@ -13,14 +13,14 @@ Define zero := Z.
 Define isZ := fun(x:nat). match x with Z => tt | S x' => ff end.
 
 Define one : nat := (S Z).
-Define two : nat := (S (inc nat one)).
-Define three := (S (inc nat two)).
-Define four := (S (inc nat three)).
-Define five := (S (inc nat four)).
-Define six := (S (inc nat five)).
-Define seven := (S (inc nat six)).
-Define eight := (S (inc nat seven)).
-Define nine := (S (inc nat eight)).
+Define two : nat := (S one).
+Define three := (S two).
+Define four := (S three).
+Define five := (S four).
+Define six := (S five).
+Define seven := (S six).
+Define eight := (S seven).
+Define nine := (S eight).
 
 Define S_exists : Forall (n:nat).Exists(m:nat).{ (S n) = m} :=
 	induction(n:nat) by x1 x2 IH return Exists(m:nat).{ (S n) = m} with
