@@ -39,7 +39,7 @@ public class Ownership {
 	case SPEC:
 	    return "spec";
 	case UNTRACKED:
-	    return "untracked";
+	    return "#untracked";
 	case RESOURCE:
 	    return "#"+e1.toString(ctxt);
 	default:

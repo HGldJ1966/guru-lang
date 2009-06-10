@@ -1,3 +1,12 @@
+stdio:
+	time ../bin/guru stdio.g
+
+string:
+	time ../bin/guru string.g
+
+char:
+	time ../bin/guru char.g
+
 pair:
 	time ../bin/guru pair.g
 
