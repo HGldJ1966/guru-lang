@@ -1,56 +1,58 @@
-Include "char.g".
+Include trusted "char.g".
 Include "pair.g".
 Include "unit.g".
-Include "string.g".
+Include trusted "string.g".
+Include "unique.g".
 
-Define spec stdin_t := string.
+Define primitive stdio_t : type := <pair string string> <<END
+  #define gstdio_t int
+END.
 
-Define spec cur_char := 
-  fun(unique_owned x:stdin_t): char.
-    match x by u v with
-      nil A => Cc0
-    | cons A a l => a
-    end.
+Define primitive stdio : stdio_t := (mkpair string string stringn stringn) <<END
+  #define gstdio 0
+END.
 
-Define spec next_char := 
-  fun(unique x:stdin_t): unique stdin_t.
-    match x by u v with
-      nil A => x
-    | cons A a l => l
-    end.
+Define primitive cur_char : Fun(^#unique x:stdio_t).char := 
+  fun(^#unique x:stdio_t): char.
+    match (fst string string x) with
+      unil _ => Cc0
+    | ucons _ a l => a
+    end
+<<END
 
-Define print_nat :=
-  fun print_nat(owned n:nat):Unit.
-    match n with
-      Z => (print_char CZ)
-    | S n' => let ign = (print_char CS) in (print_nat n')
-    end.
+  void *curc = 0;
 
-Define print_nat_unique :=
-  fun print_nat_unique(unique_owned n:nat):Unit.
-    match n with
-      Z => (print_char CZ)
-    | S n' => let ign = (print_char CS) in (print_nat_unique n')
-    end.
+  int gcurc(void *s) {
+     if (curc == 0) {
+	int tmp = fgetc(stdin);
+	curc = (tmp == -1 ? 0 : tmp);
+     }
+     return curc;
+  }
 
-Define nat_to_string :=
-  fun nat_to_string(owned n:nat):string.
-    match n with
-      Z => (stringc CZ inc stringn)
-    | S n' => (stringc CS (nat_to_string n'))
-    end.
+END.
 
-Define print_string :=
-  fun print_string(s:string):Unit.
-    match s with
-      nil A => unit
-    | cons A a s' => 
-      abbrev P = symm inj <list *> s_Eq in
-      let ign = (print_char cast a by P) in
-        (print_string cast s' by cong <list *> P)
-    end.
+Define primitive next_char := 
+  fun(#unique x:stdio_t): #unique stdio_t.
+    match (fst string string x) with
+      unil _ => x
+    | ucons _ a l => (mkpair string string l (snd string string x))
+    end 
+<<END
 
-Define println_string := 
-  fun(s:string).
-    let ign = (print_string s) in
-      (print_char Cnl).
+  void *gnextc(void *x) {
+    curc = 0;
+    return x;
+  }
+
+END.
+
+Define primitive print_char := 
+  fun(#unique x:stdio_t)(c:char): #unique stdio_t.
+    (mkpair string string (fst string string x) (stringc c (snd string string x))) 
+<<END
+  gchar gprint_char(gchar c) {
+    fputc(c, stdout);
+  }
+END.
+

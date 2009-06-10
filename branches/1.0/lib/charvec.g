@@ -8,7 +8,7 @@ Include "minus.g".
 Define spec type_family_abbrev charvec := fun(A:type).<vec A num_chars>.
 
 Define spec mk_charvec := 
-  fun (A:type)(a:A):unique <charvec A>.
+  fun (A:type)(a:A):#unique <charvec A>.
     (mkvec A a num_chars).
 
 Define spec cvget := 

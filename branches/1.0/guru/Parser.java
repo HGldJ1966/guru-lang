@@ -1737,7 +1737,7 @@ public class Parser extends ParserBase {
 	}
 	if (tryToEat("spec"))
 	    return new Ownership(Ownership.SPEC);
-	if (tryToEat("untracked"))
+	if (tryToEat("#untracked"))
 	    return new Ownership(Ownership.UNTRACKED);
 	if (tryToEat("#",true))
 	    return new Ownership(Ownership.RESOURCE, readConst());
@@ -1773,6 +1773,9 @@ public class Parser extends ParserBase {
 	    if (!eat_ws())
 		handleError("Unexpected end of input reading a variable list.");
 	    anno = readAnno();
+	    if ((anno.status == Ownership.SPEC || anno.status == Ownership.UNTRACKED) 
+		&& consump != FunAbstraction.CONSUMED_RET_OK) 
+		handleError("An untracked or specificational argument is labeled with either \"^\" or \"!\".");
 	    if (!eat_ws())
 		handleError("Unexpected end of input reading a variable"
 			    +" list.");

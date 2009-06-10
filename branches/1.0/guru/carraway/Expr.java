@@ -250,5 +250,9 @@ public abstract class Expr {
     public Expr flattenType(Context ctxt) {
 	return this;
     }
-    
+ 
+    public boolean need_datatype_for_ctor_arg_resource_type() {
+	return (construct != Expr.FUN_TYPE && construct != Expr.TYPE && construct != Expr.UNTRACKED);
+    }
+   
 }

@@ -440,7 +440,7 @@ public class Parser extends guru.ParserBase {
 	    types.add(T);
 
 	    if (ctortype) {
-		if (T.construct != Expr.FUN_TYPE && T.construct != Expr.TYPE && T.construct != Expr.UNTRACKED) {
+		if (T.need_datatype_for_ctor_arg_resource_type()) {
 		    eat("&",where);
 		    rttypes.add(readIdentifier(false));
 		}

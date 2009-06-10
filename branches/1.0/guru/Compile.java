@@ -106,14 +106,9 @@ public class Compile extends Command {
 		    Expr D = ctxt.getClassifier(c);
 		    dc.ctors[j] = cctxt.newSym(c.name,c.pos);
 		    cctxt.declareConst(dc.ctors[j]);
-		    if (D.construct == Expr.CONST || D.construct == Expr.TYPE_APP) {
-			dc.types[j] = D.toCarrawayType(ctxt,false);
-			dc.rttypes[j] = D.toCarrawayType(ctxt,false);
-		    }
-		    else {
-			dc.types[j] = D.toCarrawayType(ctxt,false);
-			dc.rttypes[j] = D.toCarrawayType(ctxt,true);
-		    }
+		    dc.types[j] = D.toCarrawayType(ctxt,false);
+		    if (dc.types[j].need_datatype_for_ctor_arg_resource_type())
+			dc.rttypes[j] = D.toCarrawayType(ctxt,!(D.construct == Expr.CONST || D.construct == Expr.TYPE_APP));
 		    j++;
 		}
 		cmds.add(dc);

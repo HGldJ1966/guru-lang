@@ -25,4 +25,4 @@ Define main :=
   fun(unique stdin:stdin_t).
     let ign = (do_hist stdin (mk_hist Z)) in Z.
  
-%Compile main to "hist.c".
+Compile main to "hist.c".

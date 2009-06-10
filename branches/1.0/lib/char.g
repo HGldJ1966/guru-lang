@@ -12,11 +12,11 @@ Define num_chars := (pow2 charlen).
 
 Define num_chars_not_Z := [pow_not_zero (S (S Z)) charlen clash (S (S Z)) Z].
 
-Define spec char := <bv charlen>.
+Define primitive char : type := <bv charlen> <<END
+  #define gchar char
+END.
 
-Untracked char.
-
-Define spec mkchar : Fun(b6 b5 b4 b3 b2 b1 b0:bool).char := 
+Define primitive mkchar : Fun(b6 b5 b4 b3 b2 b1 b0:bool).char := 
   fun (b6 b5 b4 b3 b2 b1 b0:bool).
     (bvc (S (S (S (S (S (S Z)))))) b6
     (bvc (S (S (S (S (S Z))))) b5
@@ -24,7 +24,12 @@ Define spec mkchar : Fun(b6 b5 b4 b3 b2 b1 b0:bool).char :=
     (bvc (S (S (S Z))) b3
     (bvc (S (S Z)) b2
     (bvc (S Z) b1
-    (bvc Z b0 bvn))))))).
+    (bvc Z b0 bvn)))))))
+<<END
+  gchar gmkchar(gbool b6, gbool b5, gbool b4, gbool b3, gbool b2, gbool b1, gbool b0) {
+    return (b6 << 0) | (b5 << 1) | (b4 << 2) | (b3 << 3) | (b2 << 4) | (b1 << 5) | (b0 << 6);
+  }
+END.
 
 Define Cc0 : char := (mkchar ff ff ff ff ff ff ff). 
 Define Cc1 : char := (mkchar tt ff ff ff ff ff ff). 
@@ -159,7 +164,13 @@ Define CLast : char := Cdel.
 
 Define Cnl : char := C10.
 
-Define spec eqchar : Fun(c1 c2:char).bool := (eqbv charlen).
+Define primitive eqchar : Fun(#untracked c1 c2:char).bool := (eqbv charlen) <<END
+
+inline gbool geqchar(gchar c1,gchar c2) {
+  return (c1 == c2);
+}
+
+END.
 
 Define eqchar_refl := [eqbv_refl charlen].
 
@@ -170,19 +181,25 @@ Define is_whitespace :=
    (or (eqchar a Cc9)
        (eqchar a C13)))).
 
-Define spec print_char := fun(c:char).unit.
-
 Inductive char_inc_t : type :=
   mk_char_inc_t : Fun(c:char)(carry:bool).char_inc_t.
 
-Define spec char_inc :=
+Define primitive char_inc :=
   fun(c:char).
     let r = (bv_inc charlen c) in
     match r with
       mk_bv_inc_t l' v' carry => 
         (mk_char_inc_t cast v' by cong <bv *> symm inj <bv_inc_t *> r_Eq 
            carry)
-      end.
+      end
+<<END
+
+  gchar_inc_t gchar_inc(gchar c) {
+    int t = c+1;
+    return gmk_char_inc_t((char)t, (t > 127));
+  }
+
+END.
 
 Define char_inc_tot : Forall(c:char).Exists(r:char_inc_t).{(char_inc c) = r} :=
   foralli(c:char).

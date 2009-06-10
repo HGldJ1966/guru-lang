@@ -1,3 +1,8 @@
+test-stdio:	test-stdio.g
+	../bin/guru test-stdio.g
+	gcc -O0 -ggdb -o test-stdio test-stdio.c
+	valgrind ./test-stdio
+
 compiletest:	compiletest.g ../guru/Main.class
 	../bin/guru compiletest.g
 	$(MAKE) c
