@@ -227,6 +227,9 @@ public class EtaExpand {
 	    if (src.isTypeFamilyAbbrev(c))
 		dst.markTypeFamilyAbbrev(c);
 
+	    if (src.isSpec(c))
+		dst.markSpec(c);
+
 	    Expr cT = expand(src.getClassifier(c),false,null);
 
 	    if (src.isOpaque(c) && src.isDefined(c)) {

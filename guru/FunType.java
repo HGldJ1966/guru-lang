@@ -123,7 +123,7 @@ public class FunType extends FunAbstraction {
 	return null;
     }
     
-    public guru.carraway.Expr toCarrawayType(Context ctxt, boolean rttype) {
+    public guru.carraway.Expr toCarrawayType(Context ctxt, boolean dtype) {
 	guru.carraway.Context cctxt = ctxt.carraway_ctxt;
 	guru.carraway.FunType F = new guru.carraway.FunType();
 	F.pos = pos;
@@ -139,10 +139,19 @@ public class FunType extends FunAbstraction {
 	    vl.add(v);
 	    cctxt.pushVar(v);
 	    Expr tp = types[i].defExpandTop(ctxt,false,false);
-	    if (rttype || tp.construct == FUN_TYPE || tp.construct == TYPE) 
-		tl.add(tp.toCarrawayType(ctxt,rttype));
+
+	    // if we are computing the corresponding Carraway datatype (as opposed
+	    // to resource type), then we are supposed to use the datatype for this
+	    // argument iff its resource type requires that we do.
+
+	    guru.carraway.Expr resource_tp = owned[i].toCarrawayType(ctxt,types[i].pos);
+	    if (tp.construct == TYPE)
+		tl.add(new guru.carraway.Type());
+	    else if (dtype && resource_tp.need_datatype_for_ctor_arg_resource_type())
+		tl.add(tp.toCarrawayType(ctxt,true));
 	    else
-		tl.add(owned[i].toCarrawayType(ctxt, pos));
+		tl.add(resource_tp);
+
 	    cl.add(new Integer(consumps[i]));
 	    cur++;
 	}
@@ -153,7 +162,7 @@ public class FunType extends FunAbstraction {
 	Expr tp = body.defExpandTop(ctxt,false,false);
 	if (ret_stat.status == Ownership.DEFAULT && 
 	    (tp.construct == FUN_TYPE || tp.construct == VOID || tp.construct == TYPE))
-	    F.rettype = body.toCarrawayType(ctxt,rttype);
+	    F.rettype = body.toCarrawayType(ctxt,dtype);
 	else
 	    F.rettype = ret_stat.toCarrawayType(ctxt, pos);
 	

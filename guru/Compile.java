@@ -87,7 +87,7 @@ public class Compile extends Command {
 		Collection ctors = ctxt.getTermCtors(d);
 		
 		if (ctxt.getFlag("debug_to_carraway")) {
-		    ctxt.w.println("\nTranslating type constructor \""+d.toString(ctxt)+"\".");
+		    ctxt.w.println("\nTranslating type constructor \""+d.toString(ctxt)+"\"(");
 		    ctxt.w.flush();
 		}
 
@@ -106,10 +106,34 @@ public class Compile extends Command {
 		    Expr D = ctxt.getClassifier(c);
 		    dc.ctors[j] = cctxt.newSym(c.name,c.pos);
 		    cctxt.declareConst(dc.ctors[j]);
+		    if (ctxt.getFlag("debug_to_carraway")) {
+			ctxt.w.println("Translating term constructor \""+d.toString(ctxt)+"\"(");
+			ctxt.w.flush();
+		    }
+
+		    // the resource type
 		    dc.types[j] = D.toCarrawayType(ctxt,false);
-		    if (dc.types[j].need_datatype_for_ctor_arg_resource_type())
-			dc.rttypes[j] = D.toCarrawayType(ctxt,!(D.construct == Expr.CONST || D.construct == Expr.TYPE_APP));
+
+		    if (ctxt.getFlag("debug_to_carraway")) {
+			ctxt.w.println("Its resource type: "+dc.types[j].toString(cctxt)+".");
+			ctxt.w.flush();
+		    }
+
+		    if (D.construct == Expr.CONST || D.construct == Expr.TYPE_APP)
+			dc.rttypes[j] = D.toCarrawayType(ctxt,false);
+		    else
+			dc.rttypes[j] = D.toCarrawayType(ctxt,true);
+
+		    if (ctxt.getFlag("debug_to_carraway")) {
+			ctxt.w.println("Its data type: "+dc.rttypes[j].toString(cctxt)+".");
+			ctxt.w.println(") done translating term constructor \""+d.toString(ctxt)+"\".");
+			ctxt.w.flush();
+		    }
 		    j++;
+		}
+		if (ctxt.getFlag("debug_to_carraway")) {
+		    ctxt.w.println(") done translating type constructor \""+d.toString(ctxt)+"\".");
+		    ctxt.w.flush();
 		}
 		cmds.add(dc);
 	    }
@@ -121,9 +145,14 @@ public class Compile extends Command {
 		    ctxt.w.flush();
 		}
 
-		if (ctxt.isDropFunc(c))
+		if (ctxt.isDropFunc(c)) {
 		    // we include drop functions when we process resource types
+		    if (ctxt.getFlag("debug_to_carraway")) {
+			ctxt.w.println("skipping, since this is a drop function (already included with resource types).");
+			ctxt.w.flush();
+		    }
 		    continue;
+		}
 		else if (ctxt.getDefCode(c) != null) {
 		    // this is a primitive
 
@@ -141,30 +170,28 @@ public class Compile extends Command {
 		    p.code = ctxt.getDefCode(c);
 		    cmds.add(p);
 		}
-		else {
-		    // not a primitive
-
-		    if (ctxt.isSpec(c)) {
-			if (ctxt.getFlag("debug_to_carraway")) {
-			    ctxt.w.println("Skipping specificational \""+c.toString(ctxt)+"\".");
-			    ctxt.w.flush();
-			}
-			continue;
+		// not a primitive
+		else if (ctxt.isSpec(c)) {
+		    if (ctxt.getFlag("debug_to_carraway")) {
+			ctxt.w.println("Skipping specificational \""+c.toString(ctxt)+"\".");
+			ctxt.w.flush();
 		    }
-
-		    if (c.isProof(ctxt)) {
-			if (ctxt.getFlag("debug_to_carraway")) {
-			    ctxt.w.println("Skipping proof \""+c.toString(ctxt)+"\".");
-			    ctxt.w.flush();
-			}
-			continue;
+		    continue;
+		}
+		else if (c.isProof(ctxt)) {
+		    if (ctxt.getFlag("debug_to_carraway")) {
+			ctxt.w.println("Skipping proof \""+c.toString(ctxt)+"\".");
+			ctxt.w.flush();
 		    }
+		    continue;
+		}
+		else { 
 
 		    if (ctxt.getFlag("debug_to_carraway")) {
 			ctxt.w.println("Defined constant \""+c.toString(ctxt)+"\" is not a primitive.");
 			ctxt.w.flush();
 		    }
-
+		    
 		    Expr body = ctxt.getDefBody(c);
 
 		    if (c.isTypeOrKind(ctxt)) {
@@ -235,7 +262,7 @@ public class Compile extends Command {
 	    
 	    Expr T = ctxt.getClassifier(c);
 	    
-	    Define D = new Define(ctxt.isOpaque(c), (ctxt.getDefCode(c) != null), ctxt.isTrusted(c),
+	    Define D = new Define(ctxt.isSpec(c), (ctxt.getDefCode(c) != null), ctxt.isTrusted(c),
 				  ctxt.isTypeFamilyAbbrev(c),
 				  ctxt.isPredicate(c),
 				  false,
@@ -386,6 +413,13 @@ public class Compile extends Command {
 	
 	Context trans_ctxt = new Context(); 
 	trans_ctxt.copyFlags(ctxt);
+
+	// pull in unowned before everything else (which ee.expand() will pull in),
+	// because it is implicitly needed lots of places (since it is the default
+	// ownership type).
+
+	pull_in_unowned_if(ctxt,trans_ctxt);
+
 	guru.compiler.EtaExpand ee = new guru.compiler.EtaExpand(ctxt,trans_ctxt);
 	ee.expand(cmain);
 
@@ -396,8 +430,6 @@ public class Compile extends Command {
 	    ctxt.w.println("Translation to Carraway begins.");
 	    ctxt.w.flush();
 	}
-
-	pull_in_unowned_if(ctxt,trans_ctxt);
 
 	copy_needed_init_cmds(ctxt,trans_ctxt);
 
@@ -429,11 +461,13 @@ public class Compile extends Command {
 	cctxt.commentBox("Data types and resource types");
 	processCommands(resource_decls, trans_ctxt, cctxt);
 
+	cctxt.stage = 0;
 	Collection init_cmds = init_cmds(trans_ctxt.initCmds,trans_ctxt,cctxt);
 
 	cctxt.commentBox("Init functions");
 	processCommands(init_cmds, trans_ctxt, cctxt);
 
+	cctxt.stage = 0;
 	Collection defs = cmds_for_other_consts(ee.all_consts,trans_ctxt, cctxt);
 
 	cctxt.commentBox("Definitions");

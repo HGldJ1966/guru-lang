@@ -5,10 +5,10 @@ Include "bv.g".
 Include "minus.g".
 
 % number of bits per character
-Define charlen := (S (S (S (S (S (S (S Z))))))).
+Define spec charlen := (S (S (S (S (S (S (S Z))))))).
 
 % number of characters.
-Define num_chars := (pow2 charlen).
+Define spec num_chars := (pow2 charlen).
 
 Define num_chars_not_Z := [pow_not_zero (S (S Z)) charlen clash (S (S Z)) Z].
 

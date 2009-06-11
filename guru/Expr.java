@@ -708,7 +708,9 @@ public abstract class Expr {
     }
 
 
-    public guru.carraway.Expr toCarrawayType(Context ctxt, boolean rttype) {
+    // if dtype is true, compute the carraway datatype (aka runtime type), 
+    // if dtype is false, compute the carraway resource type.
+    public guru.carraway.Expr toCarrawayType(Context ctxt, boolean dtype) {
 	handleError(ctxt, "Internal error: toCarraway() or toCarrawayType() is "
 		    + "unimplemented for construct "
 		    + (new Integer(construct)));
