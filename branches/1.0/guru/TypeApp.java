@@ -72,7 +72,7 @@ public class TypeApp extends ReducibleApp{
     public void getFreeVarsComputational(Context ctxt,
 					 java.util.Collection vars) { }
 
-    public guru.carraway.Expr toCarrawayType(Context ctxt, boolean rttype) {
-	return head.toCarrawayType(ctxt,rttype);
+    public guru.carraway.Expr toCarrawayType(Context ctxt, boolean dtype) {
+	return head.toCarrawayType(ctxt,dtype);
     }
 }

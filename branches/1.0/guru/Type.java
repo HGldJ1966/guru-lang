@@ -38,8 +38,8 @@ public class Type extends Expr{
 
     public void checkSpec(Context ctxt, boolean in_type) { }
 
-    public guru.carraway.Expr toCarrawayType(Context ctxt, boolean rttype) {
-	if (rttype)
+    public guru.carraway.Expr toCarrawayType(Context ctxt, boolean dtype) {
+	if (dtype)
 	    return new guru.carraway.Untracked();
 	else
 	    return new guru.carraway.Type();
