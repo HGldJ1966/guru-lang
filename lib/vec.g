@@ -10,6 +10,28 @@ Inductive vec : Fun(A:type)(n:nat).type :=
 | vecc : Fun(A:type)(spec n:nat)(a:A)(l:<vec A n>).
               <vec A (S n)>.
 
+Define vec_foldr : Fun( A B C : type )( spec n : nat )(owned cookie:C)
+                      ( f : Fun(owned cookie:C)( owned a : A )( y : B). B )
+                      (b:B)( v : <vec A n>). B :=
+  fun vec_fold( A B C : type )( spec n : nat )(owned cookie:C)
+              ( f : Fun(owned cookie:C)( owned a : A )( y : B). B )
+              (b:B)( v : <vec A n>): B.
+  match v with
+    vecn _ => b
+  | vecc _ n' a' v' => (f cookie a' (vec_fold A B C n' cookie f b v'))
+  end.
+
+Define vec_foldl : Fun( A B C : type )( spec n : nat )(owned cookie:C)
+                      ( f : Fun(owned cookie:C)(owned a : A )( y : B). B )
+                      (b:B)( v : <vec A n>). B :=
+  fun vec_foldl( A B C : type )( spec n : nat )(owned cookie:C)
+               ( f : Fun(owned cookie:C)(owned a : A )( y : B). B )
+               (b:B)( v : <vec A n>): B.
+  match v with
+    vecn _ => b
+  | vecc _ n' a' v' => (vec_foldl A B C n' cookie f (f cookie a' b) v')
+  end.
+
 Define vec_append :=
 fun vec_append(A:type)(spec n m:nat)(l1 : <vec A n>)(l2 : <vec A m>):
               <vec A (plus n m)>.
