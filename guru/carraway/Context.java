@@ -396,7 +396,7 @@ public class Context extends guru.FlagManager {
 	return name(s.name);
     }
 
-    protected String name(String n) {
+    public String name(String n) {
 	int iend = n.length() + 1;
 	char[] buf = new char[iend];
 	buf[0] = 'g';

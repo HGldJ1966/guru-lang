@@ -156,19 +156,46 @@ public class Compile extends Command {
 		else if (ctxt.getDefCode(c) != null) {
 		    // this is a primitive
 
-		    if (ctxt.getFlag("debug_to_carraway")) {
-			ctxt.w.println("Defined constant \""+c.toString(ctxt)+"\" is a primitive.");
-			ctxt.w.flush();
-		    }
-
 		    guru.carraway.Primitive p = new guru.carraway.Primitive();
 		    p.pos = c.pos;
-		    p.s = cctxt.newSym(c.name,c.pos);
-		    cctxt.declareConst(p.s);
-		    p.T = ctxt.getClassifier(c).toCarrawayType(ctxt, false);
-		    p.delim = ctxt.getDefDelim(c);
-		    p.code = ctxt.getDefCode(c);
-		    cmds.add(p);
+		    guru.carraway.Sym cc = cctxt.newSym(c.name,c.pos);
+
+		    if (c.isTypeOrKind(ctxt)) {
+			// primitive types are translated as Datatype commands
+
+			if (ctxt.getFlag("debug_to_carraway")) {
+			    ctxt.w.println("Defined constant \""+c.toString(ctxt)+"\" is a primitive type.");
+			    ctxt.w.flush();
+			}
+
+			guru.carraway.Datatype dc = new guru.carraway.Datatype();
+			dc.tp = cc;
+			cctxt.declareConst(cc);
+
+			// build the delete primitive
+			p.s = cctxt.newSym("delete_"+cc.name, c.pos);
+			p.T = dc.buildDeleteType(cctxt);
+			p.delim = ctxt.getDefDelim(c);
+			p.code = ctxt.getDefCode(c);
+
+
+			dc.del = p;
+
+			cmds.add(dc);
+		    }
+		    else {
+			if (ctxt.getFlag("debug_to_carraway")) {
+			    ctxt.w.println("Defined constant \""+c.toString(ctxt)+"\" is a primitive term.");
+			    ctxt.w.flush();
+			}
+
+			p.s = cc;
+			cctxt.declareConst(p.s);
+			p.T = ctxt.getClassifier(c).toCarrawayType(ctxt, false);
+			p.delim = ctxt.getDefDelim(c);
+			p.code = ctxt.getDefCode(c);
+			cmds.add(p);
+		    }
 		}
 		// not a primitive
 		else if (ctxt.isSpec(c)) {
@@ -351,13 +378,17 @@ public class Compile extends Command {
 	return cmds;
     }
 
+    protected Const lookup_const(Context ctxt, String name) {
+	Expr e = ctxt.lookup(name);
+	if (e == null || e.construct != Expr.CONST)
+	    handleError(ctxt, "Guru declaration missing for \""+name+"\", needed for compilation.");
+	return (Const)e;
+    }
+	
+
     // add unowned to trans_ctxt, if it is not there already.
     protected void pull_in_unowned_if(Context ctxt, Context trans_ctxt) {
-	Expr e = ctxt.lookup("unowned");
-	if (e == null || e.construct != Expr.CONST)
-	    handleError(ctxt, "Guru declaration missing for \"unowned\".\n\n"
-			+"You need to include lib/unowned.g");
-	Const unowned = (Const)e;
+	Const unowned = lookup_const(ctxt,"unowned");
 	if (!trans_ctxt.isResourceType(unowned)) {
 	    // we might have pulled this in already via ee.expand(cmain).
 	    trans_ctxt.addResourceType(unowned);

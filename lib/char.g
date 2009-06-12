@@ -14,9 +14,10 @@ Define num_chars_not_Z := [pow_not_zero (S (S Z)) charlen clash (S (S Z)) Z].
 
 Define primitive char : type := <bv charlen> <<END
   #define gchar char
+  #define gdelete_char(c) 
 END.
 
-Define primitive mkchar : Fun(b6 b5 b4 b3 b2 b1 b0:bool).char := 
+Define primitive mkchar : Fun(#untracked b6 b5 b4 b3 b2 b1 b0:bool).char := 
   fun (b6 b5 b4 b3 b2 b1 b0:bool).
     (bvc (S (S (S (S (S (S Z)))))) b6
     (bvc (S (S (S (S (S Z))))) b5
