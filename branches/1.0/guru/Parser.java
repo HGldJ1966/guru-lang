@@ -493,34 +493,44 @@ public class Parser extends ParserBase {
 	    }
 	    else
 		break; // out of while loop
-	    
-	    if (!eat_ws())
-		handleError("Unexpected end of input parsing a Define.");
-	}
 
-	cmd.c = readBindingConst();
-	eat_ws();
-	
-	if (!tryToEat(":="))
-	{
-	    eat(":", "Define");
 	    if (!eat_ws())
 		handleError("Unexpected end of input parsing a Define.");
-	    cmd.A = readA();
-	    eat(":=", "Define"); 
 	}
-	
-	if (!eat_ws())
-	    handleError("Unexpected end of input parsing a Define.");
 
 	if (allow_type_fam_abbrev && allow_predicate) 
 	    handleError("A defined constant cannot be both a type family\n"
 			+"abbreviation and a predicate.");
 
-	cmd.G = readAny();
+	cmd.c = readBindingConst();
+
+	if (!eat_ws())
+	    handleError("Unexpected end of input parsing a Define.");
+
+	while(true) {
+	    if (tryToEat(":=")) {
+		cmd.G = readAny();
+		if (!eat_ws())
+		    handleError("Unexpected end of input parsing a Define.");
+		break;
+	    }
+	    else {
+		if (tryToEat(":")) {
+		    if (cmd.A != null)
+			handleError("Multiple types declared (following \":\") in a Define.");
+		    cmd.A = readA();
+		    if (!eat_ws())
+			handleError("Unexpected end of input parsing a Define.");
+		}
+	    }
+	}
 
 	if (cmd.primitive) {
 	    eat("<<","Primitive");
+	    if (cmd.G == null)
+		// this is a primitive without a functional model
+		cmd.G = new Var(cmd.c.name);
+	    
 	    cmd.delim = readID();
 	    cmd.code = read_until_newline_delim(cmd.delim);
 	}
@@ -2552,7 +2562,7 @@ public class Parser extends ParserBase {
 	    tryToEat(".") ||
 	    tryToEat("=") ||
 	    tryToEat("|"))
-	    handleError("Unexpected punctuation.");
+	    handleError("Unexpected punctuation." );
 
         return Expr.VAR;
     }

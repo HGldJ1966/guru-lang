@@ -3,7 +3,7 @@ Inductive bool : type :=
 | tt : bool.
 
 Define or :=
-	fun(x y :bool).
+    fun(x y :bool).
 	match x return bool with
 	ff => y
 	| tt => tt
