@@ -1,3 +1,5 @@
+%Set "print_parsed".
+
 Include trusted "char.g".
 Include "pair.g".
 Include "unit.g".
@@ -8,9 +10,11 @@ Define primitive stdio_t : type := <pair string string> <<END
   #define gstdio_t int
 END.
 
-Define primitive stdio : stdio_t := (mkpair string string stringn stringn) <<END
+%-
+Define primitive stdio : stdio_t <<END
   #define gstdio 0
 END.
+-%
 
 Define primitive cur_char : Fun(^#unique x:stdio_t).char := 
   fun(^#unique x:stdio_t): char.

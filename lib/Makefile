@@ -1,6 +1,9 @@
 stdio:
 	time ../bin/guru stdio.g
 
+plus:
+	time ../bin/guru plus.g
+
 string:
 	time ../bin/guru string.g
 
@@ -30,9 +33,6 @@ minmax-le:
 
 trie:
 	time java -cp .. guru.Main trie.g
-
-plus:
-	time java -cp .. guru.Main plus.g
 
 word:
 	java -cp .. guru.Main word.g

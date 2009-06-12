@@ -3,8 +3,6 @@
 Include "plus.g".
 Include "unit.g".
 
-%Set "print_parsed".
-
 Inductive list : Fun(A:type).type :=
   nil : Fun(A:type).<list A>
 | cons : Fun(A:type)(a:A)(l:<list A>). <list A>.
