@@ -6,15 +6,15 @@ Include "unit.g".
 Include trusted "string.g".
 Include "unique.g".
 
+%Set "print_parsed".
+
 Define primitive stdio_t : type := <pair string string> <<END
   #define gstdio_t int
 END.
 
-%-
-Define primitive stdio : stdio_t <<END
-  #define gstdio 0
+Define primitive stdio : Fun(#untracked u:Unit).#unique stdio_t <<END
+  #define gstdio(x) 0
 END.
--%
 
 Define primitive cur_char : Fun(^#unique x:stdio_t).char := 
   fun(^#unique x:stdio_t): char.

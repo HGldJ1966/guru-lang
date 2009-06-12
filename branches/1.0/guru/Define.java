@@ -205,7 +205,7 @@ public class Define extends Command {
         return s;
     }
 
-    // this is just for definitions of primitives.
+    // this is just used for definitions of primitives.
     public guru.carraway.Primitive toCarraway(Context ctxt) {
 	if (!primitive)
 	    handleError(ctxt,"Internal error: toCarraway() function called on a non-primitive definition.");

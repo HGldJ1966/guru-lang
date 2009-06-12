@@ -236,6 +236,20 @@ public class EtaExpand {
 		if (src.isTypeFamilyAbbrev(c)) 
 		    return c;
 		Expr t = src.getDefBody(c);
+		if (t.construct == Expr.VAR) {
+		    /* we handle one corner case here, where this is a
+		       variable introduced by the Parser for the body
+		       of a primitive definition without a functional
+		       model.  We just need to map over the type from
+		       src to dst in that case. */
+		    Var v = (Var)t;
+		    if (dst.getClassifier(v) == null)
+			/* this is in case we have a global Var (for a primitive
+			   definition without a functional model).  We will not
+			   otherwise set its type in dst. */
+			dst.setClassifier(v,src.getClassifier(v));
+		}
+
 		if (c.isTypeOrKind(src)) 
 		    /* so that we recognize later that c is a type 
 		       or kind (by looking at its definition) */
@@ -275,7 +289,8 @@ public class EtaExpand {
 		// a corner case where c is defined to be a term
 		// constructor d.  Then, we should not replace
 		// c with d, because they behave differently with
-		// respect to reference counting.
+		// respect to reference counting (0-ary ctors construct
+		// data, 0-ary definitions do not).
 		return addDef(e2,orig,c,cT);
 
 	    return e2;
@@ -319,7 +334,7 @@ public class EtaExpand {
 	    }
 	    return e;
 	}
-	case Expr.VAR:
+	case Expr.VAR: 
 	    return e;
 	case Expr.ABORT:
 	    return e;

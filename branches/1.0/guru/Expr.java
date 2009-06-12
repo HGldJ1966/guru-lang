@@ -513,7 +513,7 @@ public abstract class Expr {
 	case EABBREV:
 	case FUN_TYPE:
 	case TYPE_APP:
-	    // shouldn't TYPE be here, too?
+	case TYPE:
 	    return true;
 	}
 	return false;

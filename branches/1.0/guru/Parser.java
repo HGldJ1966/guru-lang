@@ -522,14 +522,25 @@ public class Parser extends ParserBase {
 		    if (!eat_ws())
 			handleError("Unexpected end of input parsing a Define.");
 		}
+		else
+		    break;
 	    }
 	}
 
 	if (cmd.primitive) {
 	    eat("<<","Primitive");
-	    if (cmd.G == null)
+	    if (cmd.G == null) {
 		// this is a primitive without a functional model
-		cmd.G = new Var(cmd.c.name);
+		if (cmd.A == null) 
+		    handleError("A primitive definition without a functional model is given without a type.");
+		if (!cmd.A.isTypeOrKind(ctxt))
+		    handleError("A primitive definition without a functional model is given with a classifier\n"
+				+"which is not a type or a kind.\n\n");
+
+		Var v = new Var(cmd.c.name);
+		cmd.G = v;
+		ctxt.setClassifier(v,cmd.A);
+	    }
 	    
 	    cmd.delim = readID();
 	    cmd.code = read_until_newline_delim(cmd.delim);
