@@ -1,3 +1,6 @@
+ulist:
+	time ../bin/guru ulist.g
+
 stdio:
 	time ../bin/guru stdio.g
 

@@ -1,4 +1,5 @@
-Include "unit.g".
+Include "nat.g".
+Include "owned.g".
 
 Inductive ulist : Fun(A:type).type :=
   unil : Fun(spec A:type).<ulist A>
@@ -26,9 +27,9 @@ Define ufoldrTot : Forall(A B C : type)
          (fTot:Forall(x:A)(y:B).Exists(z:B).{(f cookie x y) = z})(b:B).
     induction(l:<ulist A>) by u v IH 
       return Exists(z:B). {(ufoldr cookie f b l) = z } with
-        nil A' => existsi b {(ufoldr cookie f b l) = *}
+        unil _ => existsi b {(ufoldr cookie f b l) = *}
                    hypjoin (ufoldr cookie f b l) b by u end
-      | cons _ a' l' => existse [IH l']
+      | ucons _ a' l' => existse [IH l']
                          foralli(z:B)(u1:{(ufoldr cookie f b l') = z}).
                            existse [fTot a' z]
                            foralli(z':B)(u2:{(f cookie a' z) = z'}).
@@ -53,19 +54,19 @@ Define uappend : Fun(A : type)(^#owned l1:<ulist A>)(l2: <ulist A>).<ulist A> :=
     end.
 
 Define equlist : Fun(A:type)(eqA:Fun(#untracked x1 x2:A).bool)
-                    (^#owned l1 l2:<list A>)
+                    (^#owned l1 l2:<ulist A>)
                     .bool :=
-  fun equlist(A:type)(eqA:Fun(#untracked x1 x2:A).bool)(^#owned l1 l2:<list A>):bool.
+  fun equlist(A:type)(eqA:Fun(#untracked x1 x2:A).bool)(^#owned l1 l2:<ulist A>):bool.
   match l1 with
-    nil _ =>
+    unil _ =>
       match l2 with
-        nil _ => tt
-      | cons _ h2 t2 => ff
+        unil _ => tt
+      | ucons _ h2 t2 => ff
       end
-  | cons _ h1 t1 =>
+  | ucons _ h1 t1 =>
       match l2 with
-        nil _ => ff
-      | cons _ h2 t2 => 
+        unil _ => ff
+      | ucons _ h2 t2 => 
          match (eqA h1 h2) with
            ff => ff
          | tt => (equlist A eqA t1 t2)
