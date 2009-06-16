@@ -252,7 +252,25 @@ Define minus_plus2 : Forall(a b:nat).{ (minus (plus a b) b) = a } :=
       end
   end.
 
-Define trusted plus_minus : Forall(x y:nat)(u:{ (lt x y) = tt}). { (plus x (minus y x)) = y } := truei.
+Define plus_minus : Forall(x y:nat)(u:{ (lt x y) = tt}). { (plus x (minus y x)) = y } := 
+         induction(x:nat) return Forall(y:nat)(u:{ (lt x y) = tt}). { (plus x (minus y x)) = y } with
+  		  Z =>  foralli(y:nat)(u:{ (lt x y) = tt}).
+			trans cong (plus * (minus y *)) x_eq
+			      join (plus Z (minus y Z)) y			 
+		| S x' => foralli(y:nat)(u:{ (lt x y) = tt}).	
+                          abbrev P = [Sa_lt_implies_a_lt x' y 
+                                        symm trans symm u 
+	                                           cong (lt * y) x_eq] in	  
+			  trans cong (plus * (minus y x )) x_eq
+			  trans [plusS_hop x' terminates (minus y x) by [minus_tot y x [lt_ltff x y u]]] 
+			  trans cong (plus x' (S (minus y * ))) x_eq
+			  trans cong (plus x' *) 
+                                 symm 
+                                 [minusS2 y x' P]
+							         
+			  [x_IH x' y P] 
+			
+		end.			
 
 Define minus_le : Forall(x y z:nat)(u:{ (minus x y) = z }).{ (le z x) = tt } :=
   induction(x:nat) by xp xt IHx return Forall(y z:nat)(u:{ (minus x y) = z }).{ (le z x) = tt } with
