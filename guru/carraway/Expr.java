@@ -70,14 +70,6 @@ public abstract class Expr {
 	System.exit(2);
     }
 
-    final public void Print(java.io.PrintStream w, Context ctxt) {
-	/*	if (pos != null)
-	    ctxt.output_pos = new Position(pos.linenum,pos.column,"output");
-	else
-	ctxt.output_pos = new Position(1,0,"output"); */
-	print(w,ctxt);
-    }
-
     final protected void print(java.io.PrintStream w, Context ctxt) {
 	/*
 	if (pos != null) {
@@ -102,7 +94,7 @@ public abstract class Expr {
     public String toString(Context ctxt) {
 	java.io.ByteArrayOutputStream s = new java.io.ByteArrayOutputStream();
 	java.io.PrintStream w = new java.io.PrintStream(s);
-	Print(w,ctxt);
+	print(w,ctxt);
 	return s.toString();
     }
 

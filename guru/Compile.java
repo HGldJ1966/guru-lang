@@ -390,7 +390,6 @@ public class Compile extends Command {
     protected void pull_in_unowned_if(Context ctxt, Context trans_ctxt) {
 	Const unowned = lookup_const(ctxt,"unowned");
 	if (!trans_ctxt.isResourceType(unowned)) {
-	    // we might have pulled this in already via ee.expand(cmain).
 	    trans_ctxt.addResourceType(unowned);
 	    trans_ctxt.setDropFunc(unowned,ctxt.getDropFuncDef(ctxt.getDropFunc(unowned)));
 	}

@@ -1,3 +1,10 @@
+hello-world:	hello-world.g Makefile
+	../bin/guru hello-world.g
+	gcc -O0 -ggdb -w -o hello-world hello-world.c
+	echo "c" | valgrind ./hello-world
+	@echo ""
+	@./hello-world 
+
 test-stdio:	test-stdio.g
 	../bin/guru test-stdio.g
 	gcc -O0 -ggdb -w -o test-stdio test-stdio.c

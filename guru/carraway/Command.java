@@ -28,6 +28,16 @@ public class Command {
         System.exit(5);
     }
 
+    public void process_new_typedefs(Context ctxt) {
+	// print any typedefs that were queued up
+	java.util.Iterator it = ctxt.new_typedefs.iterator();
+	while(it.hasNext()) {
+	    Command c = (Command)it.next();
+	    c.process(ctxt);
+	}
+	ctxt.new_typedefs.clear();
+    }
+
     public String toString(Context ctxt) {
 	java.io.ByteArrayOutputStream s = new java.io.ByteArrayOutputStream();
 	java.io.PrintStream w = new java.io.PrintStream(s);
