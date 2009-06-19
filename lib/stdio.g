@@ -12,8 +12,8 @@ Define primitive stdio_t : type := <pair string string> <<END
   #define gdelete_stdio_t(x) 
 END.
 
-Define primitive stdio : Fun(#untracked u:Unit).#unique stdio_t <<END
-  #define gstdio(x) 0
+Define primitive stdio : #unique stdio_t <<END
+  #define gstdio 0
 END.
 
 Define primitive cur_char : Fun(! #unique x:stdio_t). #untracked char := 

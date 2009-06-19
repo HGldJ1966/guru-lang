@@ -78,7 +78,8 @@ public class EtaExpand {
 		src.w.flush();
 	    }
 	    all_consts_add(c);
-	    dst.define(c, T, e, e2, src.getDefDelim(c), src.getDefCode(c));
+	    dst.define(c, src.getDefOwnership(c), T, e, e2,
+		       src.getDefDelim(c), src.getDefCode(c));
 	    return c;
 	}
 	// come up with a reasonable const to use.
@@ -98,7 +99,8 @@ public class EtaExpand {
 	if (basename == null)
 	    basename = "anon";
 	
-	Const c2 = dst.define(basename, T, e, e2, src.getDefDelim(c), src.getDefCode(c));
+	Const c2 = dst.define(basename, src.getDefOwnership(c), 
+			      T, e, e2, src.getDefDelim(c), src.getDefCode(c));
 	all_consts_add(c2);
 
 	if (dst.getFlag("debug_eta_expand")) {
@@ -255,7 +257,8 @@ public class EtaExpand {
 		       or kind (by looking at its definition) */
 		    t = expand(t.defExpandTop(src),false,c);
 		all_consts_add(c);
-		dst.define(c, cT, t, src.getDefBodyNoAnnos(c), src.getDefDelim(c), src.getDefCode(c));
+		dst.define(c, src.getDefOwnership(c), cT, t,
+			   src.getDefBodyNoAnnos(c), src.getDefDelim(c), src.getDefCode(c));
 		dst.makeOpaque(c);
 		return c;
 	    }

@@ -191,7 +191,11 @@ public class Compile extends Command {
 
 			p.s = cc;
 			cctxt.declareConst(p.s);
-			p.T = ctxt.getClassifier(c).toCarrawayType(ctxt, false);
+			Ownership o = ctxt.getDefOwnership(c);
+			if (o.status != Ownership.DEFAULT)
+			    p.T = o.toCarrawayType(ctxt, c.pos);
+			else
+			    p.T = ctxt.getClassifier(c).toCarrawayType(ctxt, false);
 			p.delim = ctxt.getDefDelim(c);
 			p.code = ctxt.getDefCode(c);
 			cmds.add(p);
@@ -293,7 +297,7 @@ public class Compile extends Command {
 				  ctxt.isTypeFamilyAbbrev(c),
 				  ctxt.isPredicate(c),
 				  false,
-				  c, T, body, body.dropAnnos(ctxt),
+				  c, ctxt.getDefOwnership(c), T, body, body.dropAnnos(ctxt),
 				  ctxt.getDefDelim(c), ctxt.getDefCode(c));
 	    
 	    if (ctxt.isDropFunc(c)) 
