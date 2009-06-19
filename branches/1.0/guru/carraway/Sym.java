@@ -120,7 +120,8 @@ public class Sym extends Expr {
     public Sym simulate_h(Context ctxt, Position p) {
 	if (ctxt.isCtor(this)) {
 	    // 0-ary constructors create new references, unless they are untracked
-	    if (ctxt.getType(this).construct == UNTRACKED)
+	    Expr T = ctxt.getType(this);
+	    if (T.construct == UNTRACKED || T.construct == FUN_TYPE)
 		return this;
 	    return ctxt.newRef(this,p);
 	}
@@ -129,7 +130,7 @@ public class Sym extends Expr {
 
     public Expr linearize(Context ctxt, Position p, Sym dest, Collection decls, Collection defs) {
 	Expr e;
-	if (ctxt.isCtor(this))
+	if (ctxt.isCtor(this) && ctxt.getType(this).construct != FUN_TYPE)
 	    e = new App(this,p);
 	else
 	    e = this;

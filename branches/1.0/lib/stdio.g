@@ -60,8 +60,15 @@ Define primitive print_char :=
   }
 END.
 
-%-
 Define print_string : Fun(#unique x:stdio_t)(s:string).#unique stdio_t :=
   fun print_string(#unique x:stdio_t)(s:string):#unique stdio_t.
-  -%  
+    match s with
+      unil _ => x
+    | ucons _ c s' => let x' = (print_char x c) in
+                        (print_string x' s')
+    end.
   
+Define println_string : Fun(#unique x:stdio_t)(s:string).#unique stdio_t :=
+  fun(#unique x:stdio_t)(s:string):#unique stdio_t.
+    let x' = (print_string x s) in
+    (print_char x' Cnl).

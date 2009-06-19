@@ -72,6 +72,10 @@ public class Global extends Command {
  
 	ctxt.stage = 3;
 
+	T = T.flattenType(ctxt);
+
+	process_new_typedefs(ctxt);
+
 	if (ctxt.getFlag("output_ocaml")) {
 	    ctxt.cw.println("let "+c.toString(ctxt)+" = ");
 	    t.print(ctxt.cw,ctxt);

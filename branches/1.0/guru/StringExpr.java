@@ -59,6 +59,7 @@ public class StringExpr extends Expr {
 	l.add(_const(ctxt,"mkchar"));
 	l.add(_const(ctxt,"tt"));
 	l.add(_const(ctxt,"ff"));
+	l.add(_const(ctxt,"inc"));
 	return l;
     }
 
@@ -68,7 +69,7 @@ public class StringExpr extends Expr {
 
     public Expr expand(Context ctxt) {
 	char[] a = val.toCharArray();
-	Expr ret = new TermApp(_const(ctxt,"inc"), _const(ctxt,"string"), 
+	Expr ret = new TermApp(_const(ctxt,"inc"), // _const(ctxt,"string"), 
 			       _const(ctxt,"stringn"));
 	for (int i = a.length - 1, iend = 0; i >= iend; i--) 
 	    ret = new TermApp(_const(ctxt,"stringc"), 
@@ -91,4 +92,7 @@ public class StringExpr extends Expr {
     public void checkSpec(Context ctxt, boolean in_type){
     }
 
+    public guru.carraway.Expr toCarraway(Context ctxt) {
+	return expand(ctxt).toCarraway(ctxt);
+    }
 }

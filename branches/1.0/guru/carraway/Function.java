@@ -31,13 +31,7 @@ public class Function extends Command {
 	ctxt.stage = 3;
 	FunTerm lin = (FunTerm)t.linearize(ctxt,null,null); // last two vals ignored
 
-	// print any typedefs that were queued up
-	java.util.Iterator it = ctxt.new_typedefs.iterator();
-	while(it.hasNext()) {
-	    Command c = (Command)it.next();
-	    c.process(ctxt);
-	}
-	ctxt.new_typedefs.clear();
+	process_new_typedefs(ctxt);
 
 	ctxt.stage = 3; // still stage 3
 
