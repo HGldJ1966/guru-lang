@@ -1,9 +1,9 @@
 Include trusted "../lib/stdio.g".
 
 Define test := 
-  let stdio = (stdio unit) in
   let s = "hello world!" in
-    (println_string stdio s).
+  let stdio' = (println_string stdio (inc string s)) in
+    (println_string stdio' s).
 
 %Set "debug_to_carraway".
 %Set "debug_stages".

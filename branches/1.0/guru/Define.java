@@ -11,6 +11,7 @@ public class Define extends Command {
     public boolean abbrev;
 
     public Const c;
+    public Ownership o;
     public Expr A;
     public Expr G;
     public Expr G_no_annos;
@@ -23,11 +24,12 @@ public class Define extends Command {
 
     public Define(boolean spec, boolean primitive, boolean trusted, boolean type_family_abbrev,
 		  boolean predicate, boolean abbrev,
-		  Const c, Expr A, Expr G, Expr G_no_annos, String delim, String code) {
+		  Const c, Ownership o, Expr A, Expr G, Expr G_no_annos, String delim, String code) {
 	super(DEFINE);
 	this.spec = spec;
 	this.primitive = primitive;
 	this.c = c;
+	this.o = o;
 	this.A = A;
 	this.G = G;
 	this.G_no_annos = G_no_annos;
@@ -157,7 +159,7 @@ public class Define extends Command {
 			+tmp.toString(ctxt));
 	}
 
-	ctxt.define(c, A, G, G_no_annos, delim, code);
+	ctxt.define(c, o, A, G, G_no_annos, delim, code);
 
 	if(trusted)
 	    ctxt.markTrusted(c);

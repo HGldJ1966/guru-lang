@@ -20,6 +20,7 @@ public class Context extends FlagManager {
     protected HashMap totalityThms;
     protected HashMap defs;
     protected HashMap defsBody;
+    protected HashMap defsOwn;
     protected HashMap defsBodyNoAnnos;
     protected HashMap defsClassifier;
     protected HashMap defsDelim;
@@ -60,6 +61,7 @@ public class Context extends FlagManager {
 	totalityThms = new HashMap(256);
 	defs = new HashMap(2048);
 	defsBody = new HashMap(2048);
+	defsOwn = new HashMap(2048);
 	defsBodyNoAnnos = new HashMap(2048);
 	defsClassifier = new HashMap(2048);
 	defsDelim = new HashMap(2048);
@@ -275,7 +277,7 @@ public class Context extends FlagManager {
     // like define(Const,...), except that we create a new Const with a 
     // name like basename but not shared by any other Const.  We return
     // the new Const.
-    public Const define(String basename, 
+    public Const define(String basename, Ownership o,
 			Expr classifier, Expr body, Expr bodyNoAnnos,
 			String delim, String code) {
 	String name = basename;
@@ -284,15 +286,16 @@ public class Context extends FlagManager {
 	while (defs.containsKey(name))
 	    name = basename+(new Integer(tick++)).toString();
 	Const c = new Const(name);
-	define(c, classifier, body, bodyNoAnnos, delim, code);
+	define(c, o, classifier, body, bodyNoAnnos, delim, code);
 	return c;
     }
 
     // delim and code are null unless this is a primitive definition.
-    public void define(Const c, 
+    public void define(Const c, Ownership o,
 		       Expr classifier, Expr body, Expr bodyNoAnnos,
 		       String delim, String code) {
 	defs.put(c.name, c);
+	defsOwn.put(c, o);
 	defsBody.put(c, body);
 	defsBodyNoAnnos.put(c, bodyNoAnnos);
 	defsClassifier.put(c, classifier);
@@ -307,6 +310,10 @@ public class Context extends FlagManager {
 
     public Expr getDefBody(Const c) {
 	return (Expr)defsBody.get(c);
+    }
+    
+    public Ownership getDefOwnership(Const c) {
+	return (Ownership)defsOwn.get(c);
     }
     
     public Expr getDefBodyNoAnnos(Const c) {

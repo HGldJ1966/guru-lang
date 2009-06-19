@@ -1,7 +1,6 @@
 Include "../lib/stdio.g".
 
 Define test := 
-  let stdio = (stdio unit) in
   let c = (cur_char stdio) in
     (print_char (print_char (print_char stdio c) c) Cba).
 

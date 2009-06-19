@@ -518,14 +518,21 @@ public class Parser extends ParserBase {
 		if (tryToEat(":")) {
 		    if (cmd.A != null)
 			handleError("Multiple types declared (following \":\") in a Define.");
+		    if (cmd.primitive) {
+			eat_ws();
+			cmd.o = readAnno();
+			eat_ws();
+		    }
 		    cmd.A = readA();
-		    if (!eat_ws())
-			handleError("Unexpected end of input parsing a Define.");
+		    eat_ws();
 		}
 		else
 		    break;
 	    }
 	}
+
+	if (cmd.o == null)
+	    cmd.o = new Ownership(Ownership.DEFAULT);
 
 	if (cmd.primitive) {
 	    eat("<<","Primitive");
