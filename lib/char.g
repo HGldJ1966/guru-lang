@@ -13,11 +13,10 @@ Define spec num_chars := (pow2 charlen).
 Define num_chars_not_Z := [pow_not_zero (S (S Z)) charlen clash (S (S Z)) Z].
 
 Define primitive char : type := <bv charlen> <<END
-  #define gchar char
   #define gdelete_char(c) 
 END.
 
-Define primitive mkchar : Fun(#untracked b6 b5 b4 b3 b2 b1 b0:bool).char := 
+Define primitive mkchar : Fun(#untracked b6 b5 b4 b3 b2 b1 b0:bool).#untracked char := 
   fun (b6 b5 b4 b3 b2 b1 b0:bool).
     (bvc (S (S (S (S (S (S Z)))))) b6
     (bvc (S (S (S (S (S Z))))) b5
@@ -27,7 +26,7 @@ Define primitive mkchar : Fun(#untracked b6 b5 b4 b3 b2 b1 b0:bool).char :=
     (bvc (S Z) b1
     (bvc Z b0 bvn)))))))
 <<END
-  gchar gmkchar(gbool b6, gbool b5, gbool b4, gbool b3, gbool b2, gbool b1, gbool b0) {
+  int gmkchar(int b6, int b5, int b4, int b3, int b2, int b1, int b0) {
     return (b6 << 0) | (b5 << 1) | (b4 << 2) | (b3 << 3) | (b2 << 4) | (b1 << 5) | (b0 << 6);
   }
 END.
@@ -167,7 +166,7 @@ Define Cnl : char := C10.
 
 Define primitive eqchar : Fun(#untracked c1 c2:char).bool := (eqbv charlen) <<END
 
-inline gbool geqchar(gchar c1,gchar c2) {
+inline int geqchar(int c1,int c2) {
   return (c1 == c2);
 }
 

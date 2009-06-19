@@ -215,14 +215,14 @@ public class Context extends guru.FlagManager {
     }
 
     public Sym lookup(String name) {
-	if (consts.containsKey(name))
-	    return (Sym)consts.get(name);
 	if (vars.containsKey(name)) {
 	    Stack S = (Stack)vars.get(name);
 	    if (S == null || S.empty())
 		return null;
 	    return (Sym)S.peek();
 	}
+	if (consts.containsKey(name))
+	    return (Sym)consts.get(name);
 	return null;
     }
 

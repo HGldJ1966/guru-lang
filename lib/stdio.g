@@ -9,15 +9,15 @@ Include "unique.g".
 %Set "print_parsed".
 
 Define primitive stdio_t : type := <pair string string> <<END
-  #define gstdio_t int
+  #define gdelete_stdio_t(x) 
 END.
 
 Define primitive stdio : Fun(#untracked u:Unit).#unique stdio_t <<END
   #define gstdio(x) 0
 END.
 
-Define primitive cur_char : Fun(^#unique x:stdio_t).char := 
-  fun(^#unique x:stdio_t): char.
+Define primitive cur_char : Fun(! #unique x:stdio_t). #untracked char := 
+  fun(x:stdio_t): char.
     match (fst string string x) with
       unil _ => Cc0
     | ucons _ a l => a
@@ -26,7 +26,7 @@ Define primitive cur_char : Fun(^#unique x:stdio_t).char :=
 
   void *curc = 0;
 
-  int gcurc(void *s) {
+  int gcur_char(void *s) {
      if (curc == 0) {
 	int tmp = fgetc(stdin);
 	curc = (tmp == -1 ? 0 : tmp);
@@ -52,11 +52,16 @@ Define primitive next_char :=
 END.
 
 Define primitive print_char := 
-  fun(#unique x:stdio_t)(c:char): #unique stdio_t.
+  fun(#unique x:stdio_t)(#untracked c:char): #unique stdio_t.
     (mkpair string string (fst string string x) (stringc c (snd string string x))) 
 <<END
-  gchar gprint_char(gchar c) {
+  int gprint_char(int stdio /* ignore */, int c) {
     fputc(c, stdout);
   }
 END.
 
+%-
+Define print_string : Fun(#unique x:stdio_t)(s:string).#unique stdio_t :=
+  fun print_string(#unique x:stdio_t)(s:string):#unique stdio_t.
+  -%  
+  

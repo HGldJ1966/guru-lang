@@ -137,6 +137,12 @@ public class App extends Expr {
 	Collection[] rs_pinnedby = new Collection[args.length];
 	Sym[] prev = new Sym[args.length];
 	for (int i = 0, iend = args.length; i < iend; i++) {
+	    Position pp = ctxt.wasDropped(rs[i]);
+	    if (pp != null) 
+		simulateError(ctxt,"A reference that was already consumed is being used later.\n\n"
+			      +"1. "+rs[i].refString(ctxt)
+			      +"\n\n2. used again by: "+toString(ctxt)
+			      +", at "+pos.toString()+"\n");
 	    if ((f.consumps[i] == FunBase.CONSUMED_RET_OK || f.consumps[i] == FunBase.CONSUMED_NO_RET) 
 		&& f.types[i].consumable()) {
 		// this is a reference we are supposed to consume
@@ -151,11 +157,6 @@ public class App extends Expr {
 				  +"1. "+rs[i].refString(ctxt)
 				  +"\n\n2. the consuming function: "+head.toString(ctxt));
 
-		Position pp = ctxt.wasDropped(rs[i]);
-		if (pp != null) 
-		    simulateError(ctxt,"A reference that was already consumed is being consumed again.\n\n"
-				  +"1. "+rs[i].refString(ctxt)
-				  +"\n\n"+pp.toString()+": first consumed here.\n");
 		rs_pinnedby[i] = ctxt.dropRef(rs[i], this, pos);
 	    }
 	    prev[i] = ctxt.getSubst(f.vars[i]);
