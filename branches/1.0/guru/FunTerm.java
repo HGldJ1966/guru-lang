@@ -263,7 +263,7 @@ public class FunTerm extends FunAbstraction {
     public void checkTermination(Context ctxt) {
 	for (int i = 0, iend = vars.length; i < iend; i++) {
 	    if (owned[i].status == Ownership.SPEC || 
-		types[i].isTypeOrKind(ctxt) ||
+		vars[i].isTypeOrKind(ctxt) ||
 		types[i].isFormula(ctxt))
 		continue;
 	    /* we have reached a non-spec argument.  The fun-term will
