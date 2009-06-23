@@ -22,6 +22,15 @@ Define foldr : Fun(A B C: type)(^#owned cookie:C)
                          (foldr A B C (clone_owned C cookie) fcn b l'))
    end. 
 
+Define foldl : Fun(A B : type) (fcn : Fun (x : A) (y : B) . B) (b : B)
+  (l : <list A>) . B :=
+  fun foldl (A B : type) (fcn : Fun (x : A) (y : B) . B) (b : B)
+    (l : <list A>) : B .
+    match l with
+        nil _ => b
+      | cons _ a' l' => (foldl A B fcn (fcn a' b) l')
+  end.
+
 Define foldrTot : Forall(A B C : type)
                         (cookie:C)(f:Fun(cookie:C)(x:A)(y:B).B)
                         (fTot:Forall(x:A)(y:B).Exists(z:B).
@@ -680,7 +689,13 @@ Define member_total : Forall(A:type)
 
 Total member member_total.
 
-Define all : Fun(A C:type)(^#owned c:C)
+
+Define list_exists : Fun(A C:type)(^#owned c:C)
+                      (f:Fun(^#owned c:C)(^#owned a:A).bool)(^#owned l:<list A>).bool :=
+fun(A C:type)(^#owned c:C)(f:Fun(^#owned c:C)(^#owned a:A).bool).
+  (foldr A bool C c fun(^#owned c:C)(^#owned a:A)(b:bool).(or (f c a) b) ff).
+
+Define list_forall : Fun(A C:type)(^#owned c:C)
                 (f:Fun(^#owned c:C)(^#owned a:A).bool)(^#owned l:<list A>).bool :=
   fun(A C:type)(^#owned c:C)(f:Fun(^#owned c:C)(^#owned a:A).bool).
     (foldr A bool C c fun(^#owned c:C)(^#owned a:A)(b:bool).(and (f c a) b) tt).

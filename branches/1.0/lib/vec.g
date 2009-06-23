@@ -10,6 +10,29 @@ Inductive vec : Fun(A:type)(n:nat).type :=
 | vecc : Fun(A:type)(spec n:nat)(a:A)(l:<vec A n>).
               <vec A (S n)>.
 
+Define vec_fold : Fun( A B C : type )( spec n : nat )(^#owned cookie:C)
+               ( f : Fun(^#owned cookie:C)( ^#owned a : A )( y : B). B )
+               (b:B)( ^#owned v : <vec A n>). B :=
+   fun vec_fold( A B C : type )( spec n : nat )(^#owned cookie:C)
+               ( f : Fun(^#owned cookie:C)( ^#owned a : A )( y : B). B )
+               (b:B)( ^#owned v : <vec A n>): B.
+   match v with
+      vecn A' => b
+      | vecc A' n' a' l' => (f cookie a' (vec_fold A B C n' cookie f b l'))
+   end.
+
+Define vec_foldr := vec_fold.
+Define vec_foldl : Fun( A B C : type )( spec n : nat )(^#owned cookie:C)
+                      ( f : Fun(^#owned cookie:C)( a : A )( y : B). B )
+                      (b:B)( v : <vec A n>). B :=
+  fun vec_foldl( A B C : type )( spec n : nat )(^#owned cookie:C)
+               ( f : Fun(^#owned cookie:C)( a : A )( y : B). B )
+               (b:B)( v : <vec A n>): B.
+  match v with
+    vecn _ => b
+  | vecc _ n' a' v' => (vec_foldl A B C n' cookie f (f cookie a' b) v')
+  end.
+
 Define vec_append :=
 fun vec_append(A:type)(spec n m:nat)(l1 : <vec A n>)(l2 : <vec A m>):
               <vec A (plus n m)>.
@@ -474,3 +497,70 @@ Define eqvec_eq
       end
   end.
 
+Define vec_exists : Fun(A C:type)( spec n : nat )(^#owned c:C)
+                      (f:Fun(^#owned c:C)(^#owned a:A).bool)(^#owned l:<vec A n>).bool :=
+fun(A C:type)( spec n : nat )(^#owned c:C)(f:Fun(^#owned c:C)(^#owned a:A).bool).
+  (vec_foldr A bool C n c fun(^#owned c:C)(^#owned a:A)(b:bool).(or (f c a) b) ff).
+    
+Define vec_forall : Fun(A C:type)( spec n : nat )(^#owned c:C)
+                      (f:Fun(^#owned c:C)(^#owned a:A).bool)(^#owned l:<vec A n>).bool :=
+fun(A C:type)( spec n : nat )(^#owned c:C)(f:Fun(^#owned c:C)(^#owned a:A).bool).
+  (vec_foldr A bool C n c fun(^#owned c:C)(^#owned a:A)(b:bool).(and (f c a) b) tt).
+    
+Define list_to_vec : Fun( A : type )( L : < list A > ). <vec A (length A L)> :=
+fun list_to_vec( A : type )( L : < list A > ) : <vec A (length A L)>.
+  match L with
+    nil _ => cast (vecn A) by
+                cong <vec A *>
+                  symm trans cong (length A *) L_eq
+                  join (length A nil) Z
+
+  | cons _ a L' => cast (vecc A (length A L') a (list_to_vec A L')) by
+                cong <vec A *>
+                    symm trans cong (length *) L_eq
+                              join (length (cons a L')) (S (length L'))
+  end.
+  
+Define vec_to_list : Fun( A : type )(spec n:nat)(V : <vec A n>). <list A > :=
+fun vec_to_list( A : type )(spec n:nat)(V : <vec A n>): < list A >.
+  match V with
+    vecn _ => (nil A)
+  | vecc _ n' a V' => (cons A a (vec_to_list A n' V'))
+  end.
+
+
+Define list_vec_list:
+   Forall (A:type)(L:<list A>).{(vec_to_list (list_to_vec L)) = L} :=
+   foralli (A:type).
+   induction (L:<list A>)
+   return {(vec_to_list (list_to_vec L)) = L} with
+
+        nil _ => trans cong (vec_to_list (list_to_vec *)) L_eq
+                 trans join (vec_to_list (list_to_vec nil)) nil
+                       symm L_eq
+
+
+      | cons _ a L' =>  trans cong (vec_to_list (list_to_vec *)) L_eq
+                        trans join (vec_to_list (list_to_vec (cons a L')))
+                                   (cons a (vec_to_list (list_to_vec L')))
+                        trans cong (cons a *) [L_IH L']
+                              symm  L_eq
+end.
+  
+
+Define vec_list_vec:
+   Forall (A:type)(n:nat)(V:<vec A n>).{(list_to_vec (vec_to_list V)) = V} :=
+   foralli (A:type).
+   induction (n:nat)(V:<vec A n>)
+   return {(list_to_vec (vec_to_list V)) = V} with
+
+       vecn _ => trans cong (list_to_vec (vec_to_list *)) V_eq
+                 trans join (list_to_vec (vec_to_list vecn)) vecn
+                       symm V_eq
+
+      | vecc _ n' a V' => trans cong (list_to_vec (vec_to_list *)) V_eq
+                          trans join (list_to_vec (vec_to_list (vecc a V')))
+                                     (vecc a (list_to_vec (vec_to_list V')))
+                          trans cong (vecc a *) [V_IH n' V']
+                                symm V_eq
+end.
