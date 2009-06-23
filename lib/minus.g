@@ -252,25 +252,31 @@ Define minus_plus2 : Forall(a b:nat).{ (minus (plus a b) b) = a } :=
       end
   end.
 
-Define plus_minus : Forall(x y:nat)(u:{ (lt x y) = tt}). { (plus x (minus y x)) = y } := 
-         induction(x:nat) return Forall(y:nat)(u:{ (lt x y) = tt}). { (plus x (minus y x)) = y } with
-  		  Z =>  foralli(y:nat)(u:{ (lt x y) = tt}).
-			trans cong (plus * (minus y *)) x_eq
-			      join (plus Z (minus y Z)) y			 
-		| S x' => foralli(y:nat)(u:{ (lt x y) = tt}).	
-                          abbrev P = [Sa_lt_implies_a_lt x' y 
-                                        symm trans symm u 
-	                                           cong (lt * y) x_eq] in	  
-			  trans cong (plus * (minus y x )) x_eq
-			  trans [plusS_hop x' terminates (minus y x) by [minus_tot y x [lt_ltff x y u]]] 
-			  trans cong (plus x' (S (minus y * ))) x_eq
-			  trans cong (plus x' *) 
-                                 symm 
-                                 [minusS2 y x' P]
+Define plus_minus_le: Forall(x y:nat)(u:{ (le x y) = tt}). { (plus x (minus y x)) = y } :=
+	induction(x:nat) return Forall(y:nat)(u:{ (le x y) = tt}). { (plus x (minus y x)) = y } with
+	     Z => foralli(y:nat)(u:{ (le x y) = tt}).
+		  trans cong (plus * (minus y *)) x_eq
+			      join (plus Z (minus y Z)) y		
+	   | S x' => foralli(y:nat)(u:{ (le x y) = tt}).
+		     abbrev W = [ltle_trans x' (S x') y [lt_S x'] 
+							    symm trans symm u
+							 	       cong (le * y) x_eq ] in
+
+		     trans cong (plus * (minus y x)) x_eq
+		     trans [plusS_hop x' terminates (minus y x) by [minus_tot2 x y u]] 
+		     trans cong (plus x' (S (minus y * ))) x_eq
+	 	     trans cong (plus x' *) 
+                           symm 
+                           [minusS2 y x' W]
 							         
-			  [x_IH x' y P] 
+		     [x_IH x' y [lt_implies_le x' y W]] 
 			
-		end.			
+	   end.
+
+Define plus_minus_lt : Forall(x y:nat)(u:{ (lt x y) = tt}). { (plus x (minus y x)) = y } :=
+	foralli(x y:nat)(u:{ (lt x y) = tt}).
+	     [plus_minus_le x y [lt_implies_le x y u]]
+	.		
 
 Define minus_le : Forall(x y z:nat)(u:{ (minus x y) = z }).{ (le z x) = tt } :=
   induction(x:nat) by xp xt IHx return Forall(y z:nat)(u:{ (minus x y) = z }).{ (le z x) = tt } with
