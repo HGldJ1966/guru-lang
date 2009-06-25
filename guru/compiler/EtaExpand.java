@@ -235,8 +235,6 @@ public class EtaExpand {
 	    Expr cT = expand(src.getClassifier(c),false,null);
 
 	    if (src.isOpaque(c) && src.isDefined(c)) {
-		if (src.isTypeFamilyAbbrev(c)) 
-		    return c;
 		Expr t = src.getDefBody(c);
 		if (t.construct == Expr.VAR) {
 		    /* we handle one corner case here, where this is a

@@ -43,8 +43,7 @@ public class Sym extends Expr {
 	}
     }    
 
-    public String refString(Context ctxt) {
-	Context.RefStat s = ctxt.refStatus(this);
+    public String refString(Context ctxt, Context.RefStat s) {
 	String ret = "a reference ("+ output_name+")";
 
 	if (s == null) 
@@ -55,6 +54,11 @@ public class Sym extends Expr {
 	if (s.dropping_expr != null)
 	    ret += "\n\n"+s.dropping_expr.pos.toString()+", dropped by:\n"+s.dropping_expr.toString(ctxt)+"\n";
 	return ret;
+    }
+
+    public String refString(Context ctxt) {
+	Context.RefStat s = ctxt.refStatus(this);
+	return refString(ctxt,s);
     }
 
     public Expr simpleType(Context ctxt) {

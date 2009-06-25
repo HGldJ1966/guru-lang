@@ -139,7 +139,7 @@ public class Datatype extends Command {
 		
 		    if (!ctxt.alloc_committed) {
 			ctxt.alloc_committed = true;
-			if (!ctxt.getFlag("use_malloc")) 
+			if (!ctxt.getFlag("use_malloc")) {
 			    ctxt.cw.println("char *carraway_mem_start = 0;\n"+
 					    "char *carraway_mem_end = 0;\n"+
 					    "inline char *carraway_alloc(int numchars) {\n"+
@@ -150,6 +150,13 @@ public class Datatype extends Command {
 					    "  carraway_mem_start += numchars; \n"+
 					    "  return ret; \n"+
 					    "}");
+			}
+			else {
+			    ctxt.cw.println("#define carraway_malloc(x) malloc(x)");
+			    ctxt.cw.println("#define carraway_free(x) free(x)");
+			}
+			ctxt.cw.println("#define guru_malloc(x) carraway_malloc(x)");
+			ctxt.cw.println("#define guru_free(x) carraway_free(x)");
 		    }
 		    
 		    if (!ctxt.getFlag("use_malloc")) {

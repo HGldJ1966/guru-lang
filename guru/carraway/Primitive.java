@@ -28,6 +28,10 @@ public class Primitive extends Command {
 	    ctxt.setSubst(s, ctxt.newRef(s,pos));
 
 	if (!ctxt.getFlag("output_ocaml")) {
+	    ctxt.stage = 0;
+	    ctxt.commentBox(s.toString(ctxt));
+	    T.comment_expr(s,ctxt);
+	    
 	    ctxt.cw.println(code);
 	    ctxt.cw.println("");
 	    ctxt.cw.flush();

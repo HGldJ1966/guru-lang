@@ -15,6 +15,12 @@ public class InitTerm extends Expr {
 	super(INIT_TERM);
     }
 
+    /* -- var is the variable that will be initialized, 
+       -- field is the name of the field from the scrutinee that will be extracted for the initialization
+       -- scrut is the scrutinee, with scruttp its type
+       -- ctor is which ctor built the scrutinee
+       -- 
+*/
     public InitTerm(Context.InitH h, Sym rttype, Sym scrut, Sym scruttp, Sym ctor, Sym field, Sym var) {
 	super(INIT_TERM);
 	this.h = h;
