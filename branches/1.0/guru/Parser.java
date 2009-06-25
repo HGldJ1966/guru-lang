@@ -707,6 +707,7 @@ public class Parser extends ParserBase {
 	int c = getc();
 	ArrayList cs = new ArrayList();
 	ArrayList Ds = new ArrayList();
+	Ownership ret_stat = null;
 	while ((char)c != '.') {
 	    ungetc(c);
             Const cst = readBindingConst();
@@ -715,6 +716,15 @@ public class Parser extends ParserBase {
 	    p = getPos();
 	    Expr D = readD(cmd.d);
 	    D.pos = p;
+	    if (ret_stat != null) {
+		if (D.construct == Expr.FUN_TYPE)
+		    if (!((FunType)D).ret_stat.equalOwnership(ret_stat))
+			handleError("The return type for a term constructor has a different resource type specification"
+				    +"\nthan that of the previous term constructors."
+				    +"\n\n1. the term constructor: "+cst.toString(ctxt)
+				    +"\n\n1. its resource type: "+((FunType)D).ret_stat.toString(ctxt)
+				    +"\n\n1. the previous constructors' resource type: "+ret_stat.toString(ctxt));
+	    }
 	    Ds.add(D);
 	    if (!eat_ws())
 		handleError("Unexpected end of input parsing an Inductive");
@@ -756,9 +766,6 @@ public class Parser extends ParserBase {
 				+" disallowed way:"
 				+"\n1. the type: "+T.toString(ctxt));
 	    }
-	    if (e.ret_stat.status != Ownership.DEFAULT)
-		handleError("The return type for a term constructor has a resource type specification."
-			    +"\n\n1. the term constructor's type: "+ee.toString(ctxt));
 	    ran = e.body;
 	}
 	else

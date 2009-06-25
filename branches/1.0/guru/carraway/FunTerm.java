@@ -104,7 +104,7 @@ public class FunTerm extends FunBase {
 	    
 	if (u != null && u.non_ret)
 	    simulateError(ctxt,"An input designated as not to be returned is being returned.\n\n"
-			  +"1. the corresponding reference: "+r.refString(ctxt));
+			  +"1. the corresponding reference: "+r.refString(ctxt,u));
 	
 	if (ctxt.getFlag("debug_simulate")) {
 	    ctxt.w.println("Dropping pre-existing references dropped in the body of a function:");
@@ -122,7 +122,7 @@ public class FunTerm extends FunBase {
 		    continue;
 		simulateError(ctxt,"A function is leaking a reference.\n\n"
 			      +"1. the function: "+f.toString(ctxt)
-			      +("\n\n2. "+r.refString(ctxt)));
+			      +("\n\n2. "+r.refString(ctxt,u)));
 	    }
 	    else {
 		// drop the reference from the context as it will exist after processing this function.

@@ -10,6 +10,8 @@ Define string_appnl := fun(s1:string)(s2:string).
                          (string_app (stringc Cnl s1) s2).
 Define stringeq := (equlist char eqchar).
 
+Define string_mem := (ulist_mem char eqchar).
+
 Define stringeqEq : Forall(s1 s2:string)(u: {(stringeq s1 s2) = tt}).
                       { s1 = s2 } :=
   foralli(s1 s2:string).

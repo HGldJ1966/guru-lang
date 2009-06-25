@@ -30,6 +30,12 @@ public class Ownership {
 	return (status != DEFAULT && status != SPEC && status != UNTRACKED);
     }
 
+    public boolean equalOwnership(Ownership r) {
+	return ((status == r.status) && 
+		(e1 == r.e1) &&
+		(e2 == r.e2));
+    }	
+
     public String toString(Context ctxt) {
 	switch (status) {
 	case DEFAULT:

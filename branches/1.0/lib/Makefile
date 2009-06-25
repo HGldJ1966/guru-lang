@@ -1,3 +1,6 @@
+ucharvec:
+	time ../bin/guru ucharvec.g
+
 ulist:
 	time ../bin/guru ulist.g
 
@@ -15,6 +18,9 @@ char:
 
 pair:
 	time ../bin/guru pair.g
+
+qpair:
+	time ../bin/guru qpair.g
 
 list:
 	time ../bin/guru list.g

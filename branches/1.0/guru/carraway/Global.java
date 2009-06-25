@@ -54,7 +54,7 @@ public class Global extends Command {
 		    continue;
 		c.simulateError(ctxt,"The definition of a global is leaking a reference.\n\n"
 				+"1. the global: "+c.toString(ctxt)
-				+"\n\n2. the reference "+r.refString(ctxt));
+				+"\n\n2. "+r.refString(ctxt,u));
 	    }
 	    else {
 		// drop the reference from the context as it will exist after processing this global.
