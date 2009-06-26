@@ -99,6 +99,10 @@ public abstract class Expr {
     }
 
     public void comment_expr(Sym s, Context ctxt) {
+	comment_expr(s,ctxt,false);
+    }
+
+    public void comment_expr(Sym s, Context ctxt, boolean is_typing) {
 	String stage_num = (new Integer(ctxt.stage)).toString();
 	if (ctxt.getFlag("debug_stage"+stage_num) || ctxt.getFlag("debug_stages")) {
 	    if (ctxt.getFlag("output_ocaml"))
@@ -108,15 +112,22 @@ public abstract class Expr {
 	    ctxt.cw.println("*\n * stage "+stage_num);
 	    ctxt.cw.println(" *");
 	    ctxt.cw.println("\n");
-	    if (s != null)
-		ctxt.cw.print("Global "+s.toString(ctxt)+" := ");
-	    else {
-		if (ctxt.stage <= 2)
-		    ctxt.cw.print("Function ");
+	    if (is_typing) {
+		if (s != null)
+		    ctxt.cw.print(s.toString(ctxt)+" : ");
 	    }
-	    
+	    else {
+		if (s != null)
+		    ctxt.cw.print("Global "+s.toString(ctxt)+" := ");
+		else {
+		    if (ctxt.stage <= 2)
+			ctxt.cw.print("Function ");
+		}
+	    }
+
 	    print(ctxt.cw,ctxt);
 	    ctxt.cw.print(".\n*");
+
 	    if (ctxt.getFlag("output_ocaml"))
 		ctxt.cw.print(")");
 	    else

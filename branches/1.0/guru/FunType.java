@@ -147,8 +147,12 @@ public class FunType extends FunAbstraction {
 	    guru.carraway.Expr resource_tp = owned[i].toCarrawayType(ctxt,types[i].pos);
 	    if (tp.construct == TYPE)
 		tl.add(new guru.carraway.Type());
-	    else if (dtype && resource_tp.need_datatype_for_ctor_arg_resource_type())
-		tl.add(tp.toCarrawayType(ctxt,true));
+	    else if (dtype) {
+		if (resource_tp.need_datatype_for_ctor_arg_resource_type())
+		    tl.add(tp.toCarrawayType(ctxt,true));
+		else
+		    tl.add(new guru.carraway.Untracked());
+	    }
 	    else
 		tl.add(resource_tp);
 

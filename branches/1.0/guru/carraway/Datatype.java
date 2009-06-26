@@ -50,10 +50,17 @@ public class Datatype extends Command {
 	else 
 	    ctxt.addDatatype(tp,ctors,types,rttypes);
 
-	ctxt.stage = 3;
-	
+	ctxt.stage = 0;
+
 	ctxt.commentBox(tp.name);
 
+	for (int i = 0, iend = ctors.length; i < iend; i++) {
+	    types[i].comment_expr(ctors[i],ctxt,true);
+	    rttypes[i].comment_expr(ctors[i],ctxt,true);
+	}
+
+	ctxt.stage = 3;
+	
 	if (!ctxt.getFlag("output_ocaml")) 
 	    ctxt.cw.println("#define "+tp.toString(ctxt)+" "+(new Integer(ctxt.type_num++)).toString()+"\n");
 
