@@ -722,5 +722,31 @@ Define length_fill : Forall (A : type) (a : A) (n : nat) .
         trans join (length (fill a (S x'))) (S (length (fill a x')))
         trans cong (S *) [n_IH x']
               symm n_eq
-  end
-.
+  end.
+
+ Define list_all : Fun(A:type)(f:Fun(a:A).bool)(l:<list A>) . bool :=
+   fun list_all (A:type)(f:Fun(a:A).bool)(l:<list A>) : bool .
+      match l with
+         nil _ => tt
+
+       | cons _ a l' => match (f a) with
+                          ff =>  ff
+                        | tt =>  (list_all A f l')
+                        end
+       end.
+
+
+Define list_subset : Fun(A:type)(eqA : Fun(^ #owned a b: A).bool)(l1 l2:<list A>) . bool :=
+  fun list_subset (A:type)(eqA:Fun(^ #owned a b:A).bool)(l1 l2:<list A>) : bool .
+                     (list_all A fun(a:A).(member A a l2 eqA) l1).
+
+
+Define list_seteq: Fun(A:type)(eqA : Fun(^ #owned a b: A).bool)(l1 l2 :<list A>).bool :=
+   fun list_seteq (A:type)(eqA : Fun(^ #owned a b: A).bool)(l1 l2:<list A>) : bool .
+       match (list_subset A eqA l1 l2) with
+                 ff => ff
+               | tt => match (list_subset A eqA l2 l1) with
+                            ff => ff
+                          | tt => tt
+                          end
+               end.
