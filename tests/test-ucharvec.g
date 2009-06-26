@@ -12,7 +12,7 @@ Define test :=
   let a = Z in
   let arr = (mk_ucharvec <charvec nat> nat (inspect nat a) func) in
   do (dec nat a)
-     (ucvfree <charvec nat> stringn arr)
+     (ucvfree <charvec nat> arr)
   end.
 
 Compile test to "test-ucharvec.c".

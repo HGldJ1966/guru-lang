@@ -524,8 +524,12 @@ public class EtaExpand {
 	    Expr nhead = expand(T.head,false,null);
 	    int iend = T.X.length;
 	    Expr[] nX = new Expr[iend];
-	    for (int i = 0; i < iend; i++) 
-		nX[i] = expand(T.X[i],false,null);
+	    for (int i = 0; i < iend; i++) {
+		if (T.X[i].isTypeOrKind(src))
+		    nX[i] = expand(T.X[i],false,null);
+		else
+		    nX[i] = T.X[i]; // basically, we want this to be ignored later
+	    }
 	    Expr ret = new TypeApp(nhead,nX); 
 	    ret.pos = e.pos;
 	    return ret;

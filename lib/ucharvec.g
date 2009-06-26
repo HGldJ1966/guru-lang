@@ -10,11 +10,11 @@ Include trusted "unique.g".
 % the string tells which characters' values are checked out right now.
 
 Define primitive type_family_abbrev ucharvec := fun(A:type)(s:string).<vec A num_chars> <<END
-#define gdelete_charvec(x) carraway_free(x)
+#define gdelete_ucharvec(x) carraway_free(x)
 END.
 
 Define primitive mk_ucharvec 
-  : Fun(A B:type)(^#owned b:B)(f:Fun(^#owned b:B).#unique A).#unique <ucharvec A stringn>
+  : Fun(spec A B:type)(^#owned b:B)(f:Fun(^#owned b:B).#unique A).#unique <ucharvec A stringn>
  := fun(A B:type)(b:B)(f:Fun(b:B).A).
       (mkvec A (f b) num_chars) <<END
 typedef void *(*funtp_gmk_ucharvec)(void *);
@@ -58,11 +58,14 @@ Define primitive ucvmod_checkin
  }
 END.
 
-Define primitive ucvfree : Fun(A:type)(spec s:string)(^ #unique l:<ucharvec A s>).void :=
-  fun(A:type)(spec s:string)(l:<ucharvec A s>).voidi <<END
-void gcvfree(int A, void *l) {
+Define primitive ucvfree : Fun(A:type)(^ #unique l:<ucharvec A stringn>).void :=
+  fun(A:type)(l:<ucharvec A stringn>).voidi <<END
+void gucvfree(int A, void *l) {
   int c;
   for (c = 0; c <= 127; c++) 
+
+   // this is wrong: we should take in a function to do the cleanup.
+
     release(A,((void **)l)[c]);
   carraway_free(l);
 }

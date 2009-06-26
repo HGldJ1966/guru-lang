@@ -15,6 +15,7 @@ Define primitive mk_charvec : Fun(spec A:type)(^#owned a:A).#unique <charvec A> 
   fun(A:type)(a:A). (mkvec A a num_chars) <<END
 void *gmk_charvec(void *a) {
   void **h = (void **)guru_malloc(sizeof(void *)*128);
+  // fprintf(stdout,"gmk_charvec(%x).\n", h);
   int c;
   for (c = 0; c <= 127; c++)
     h[c] = ginc(a); 
@@ -45,6 +46,7 @@ Define primitive cvfree : Fun(A:type)(^ #unique l:<charvec A>).void :=
   fun(A:type)(l:<charvec A>).voidi <<END
 void gcvfree(int A, void *l) {
   int c;
+  // fprintf(stdout,"gcvfree(%x).\n", l);
   for (c = 0; c <= 127; c++) 
     gdec(A,((void **)l)[c]);
   carraway_free(l);

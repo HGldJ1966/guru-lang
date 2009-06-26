@@ -54,9 +54,11 @@ public class Datatype extends Command {
 
 	ctxt.commentBox(tp.name);
 
-	for (int i = 0, iend = ctors.length; i < iend; i++) {
-	    types[i].comment_expr(ctors[i],ctxt,true);
-	    rttypes[i].comment_expr(ctors[i],ctxt,true);
+	if (del == null) {
+	    for (int i = 0, iend = ctors.length; i < iend; i++) {
+		types[i].comment_expr(ctors[i],ctxt,true);
+		rttypes[i].comment_expr(ctors[i],ctxt,true);
+	    }
 	}
 
 	ctxt.stage = 3;
