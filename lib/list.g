@@ -741,12 +741,6 @@ Define list_subset : Fun(A:type)(eqA : Fun(^ #owned a b: A).bool)(l1 l2:<list A>
                      (list_all A fun(a:A).(member A a l2 eqA) l1).
 
 
-Define list_seteq: Fun(A:type)(eqA : Fun(^ #owned a b: A).bool)(l1 l2 :<list A>).bool :=
-   fun list_seteq (A:type)(eqA : Fun(^ #owned a b: A).bool)(l1 l2:<list A>) : bool .
-       match (list_subset A eqA l1 l2) with
-                 ff => ff
-               | tt => match (list_subset A eqA l2 l1) with
-                            ff => ff
-                          | tt => tt
-                          end
-               end.
+Define list_seteq: Fun(A:type)(eqA : Fun(^ #owned a b: A).bool)(l1 l2 :<list A>). bool := 
+   fun list_seteq (A:type)(eqA : Fun(^ #owned a b: A).bool)(l1 l2:<list A>) : bool.
+                   (and (list_subset A eqA l1 l2)(list_subset A eqA l2 l1)).
