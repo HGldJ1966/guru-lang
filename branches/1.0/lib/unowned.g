@@ -4,6 +4,7 @@ ResourceType unowned with
 
   void *ginc(void *y) {
     inc(y);
+    // fprintf(stdout,"ginc(%x) = %d\n", y, op(y) >> 8);
     return y;
   }
 
@@ -11,6 +12,7 @@ ResourceType unowned with
 
   void gconsume_unowned(int A, void *r) {
     dec(r);
+    // fprintf(stdout,"gdec(%x) = %d\n", r, op(r) >> 8);
     if (op(r) < 256)
       release(A,r);
   }

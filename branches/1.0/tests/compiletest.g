@@ -16,6 +16,6 @@ Define test := do
 Set "debug_to_carraway".
 %Set "debug_eta_expand".
 Set "debug_stages".
-Set "debug_symbols".
+%Set "debug_symbols".
 Set "use_malloc".
 Compile test to "compiletest.c".

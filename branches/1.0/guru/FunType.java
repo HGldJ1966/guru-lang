@@ -145,15 +145,13 @@ public class FunType extends FunAbstraction {
 	    // argument iff its resource type requires that we do.
 
 	    guru.carraway.Expr resource_tp = owned[i].toCarrawayType(ctxt,types[i].pos);
-	    if (tp.construct == TYPE)
-		tl.add(new guru.carraway.Type());
-	    else if (dtype) {
-		if (resource_tp.need_datatype_for_ctor_arg_resource_type())
-		    tl.add(tp.toCarrawayType(ctxt,true));
-		else
-		    tl.add(new guru.carraway.Untracked());
-	    }
-	    else
+	    if (tp.construct == TYPE || tp.construct == FUN_TYPE)
+		tl.add(tp.toCarrawayType(ctxt,dtype));
+	    else if (resource_tp.construct == guru.carraway.Expr.UNTRACKED)
+		tl.add(resource_tp);
+	    else if (dtype) 
+		tl.add(tp.toCarrawayType(ctxt,true));
+	    else 
 		tl.add(resource_tp);
 
 	    cl.add(new Integer(consumps[i]));

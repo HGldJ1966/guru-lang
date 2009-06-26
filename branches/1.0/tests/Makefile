@@ -16,17 +16,17 @@ hello-world:	hello-world.g Makefile
 	@echo ""
 	@./hello-world 
 
+compiletest:	compiletest.g ../guru/Main.class Makefile
+	../bin/guru compiletest.g
+	$(MAKE) c
+
 test-stdio:	test-stdio.g
 	../bin/guru test-stdio.g
 	gcc -O0 -ggdb -w -o test-stdio test-stdio.c
 	echo "c" | valgrind ./test-stdio 
 
-compiletest:	compiletest.g ../guru/Main.class
-	../bin/guru compiletest.g
-	$(MAKE) c
-
 c:
-	gcc -O0 -ggdb -o compiletest compiletest.c
+	gcc -O0 -ggdb -w -o compiletest compiletest.c
 	valgrind ./compiletest 
 
 go:	test_cell

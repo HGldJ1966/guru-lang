@@ -107,7 +107,7 @@ public class Compile extends Command {
 		    dc.ctors[j] = cctxt.newSym(c.name,c.pos);
 		    cctxt.declareConst(dc.ctors[j]);
 		    if (ctxt.getFlag("debug_to_carraway")) {
-			ctxt.w.println("Translating term constructor \""+d.toString(ctxt)+"\"(");
+			ctxt.w.println("Translating term constructor \""+c.toString(ctxt)+"\"(");
 			ctxt.w.flush();
 		    }
 
