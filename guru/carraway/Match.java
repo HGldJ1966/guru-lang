@@ -107,7 +107,17 @@ public class Match extends Expr {
 	    if (rf.types[i].construct != UNTRACKED) {
 		// we have a runtime type for this var
 
-		Sym rt = (Sym)rf.types[i].applySubst(ctxt);
+		Sym rt = null;
+		try {
+		    rt = (Sym)rf.types[i].applySubst(ctxt);
+		}
+		catch(Exception e) {
+		    C.classifyError(ctxt,"Internal error: the runtime type we have for a constructor argument"
+				    +"\nis untracked, but not a symbol."
+				    +"\n\n1. the constructor: "+C.c.toString(ctxt)
+				    +"\n\n2. the argument: "+C.vars[i].toString(ctxt)
+				    +"\n\n3. its runtime type: "+rf.types[i].applySubst(ctxt).toString(ctxt));
+		}
 		
 		Sym q = null;
 		if (f.types[i].construct == SYM)

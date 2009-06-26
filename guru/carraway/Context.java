@@ -188,6 +188,11 @@ public class Context extends guru.FlagManager {
     }
 
     public void declareConst(Sym s) {
+	if (getFlag("debug_symbols")) {
+	    w.println("Carraway context: declaring constant: "+s.toString(this));
+	    w.flush();
+	}
+
 	String n = s.name;
 	consts.put(n,s);	
     }
@@ -217,9 +222,8 @@ public class Context extends guru.FlagManager {
     public Sym lookup(String name) {
 	if (vars.containsKey(name)) {
 	    Stack S = (Stack)vars.get(name);
-	    if (S == null || S.empty())
-		return null;
-	    return (Sym)S.peek();
+	    if (S != null && !S.empty())
+		return (Sym)S.peek();
 	}
 	if (consts.containsKey(name))
 	    return (Sym)consts.get(name);
@@ -449,7 +453,7 @@ public class Context extends guru.FlagManager {
 	String un = unique(name(n));
 
 	if (getFlag("debug_symbols")) {
-	    w.println("Carraway context: adding symbol \""+n+"\", with output name \""+un+"\".");
+	    w.println("Carraway context: creating symbol \""+n+"\", with output name \""+un+"\".");
 	    w.flush();
 	}
 
