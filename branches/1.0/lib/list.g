@@ -736,6 +736,7 @@ Define length_fill : Forall (A : type) (a : A) (n : nat) .
        end.
 
 
+% l1 is a subset of l2
 Define list_subset : Fun(A:type)(eqA : Fun(^ #owned a b: A).bool)(l1 l2:<list A>) . bool :=
   fun list_subset (A:type)(eqA:Fun(^ #owned a b:A).bool)(l1 l2:<list A>) : bool .
                      (list_all A fun(a:A).(member A a l2 eqA) l1).
@@ -744,3 +745,76 @@ Define list_subset : Fun(A:type)(eqA : Fun(^ #owned a b: A).bool)(l1 l2:<list A>
 Define list_seteq: Fun(A:type)(eqA : Fun(^ #owned a b: A).bool)(l1 l2 :<list A>). bool := 
    fun list_seteq (A:type)(eqA : Fun(^ #owned a b: A).bool)(l1 l2:<list A>) : bool.
                    (and (list_subset A eqA l1 l2)(list_subset A eqA l2 l1)).
+
+Define trusted list_subset_total :
+  Forall(A:type)
+        (eqA:Fun(a b: A).bool)
+        (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+        (l1 l2:<list A>).
+  Exists(x:bool).
+    { (list_subset A eqA l1 l2) = x }
+  :=
+  truei.
+
+Define trusted list_seteq_total :
+  Forall(A:type)
+        (eqA:Fun(a b: A).bool)
+        (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+        (l1 l2:<list A>).
+  Exists(x:bool).
+    { (list_seteq A eqA l1 l2) = x }
+  :=
+  truei.
+
+%- you might want to prove these
+Define trusted list_subset_cons_tt_member :
+  Forall(A:type)
+        (eqA:Fun(a b: A).bool)
+        %maybe (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+        (a:A)(l1 l2:clause)
+        (u:{ (list_subset eqA (cons a l1) l2) = tt }).
+    { (member a l2 eqA) = tt }
+  :=
+  truei.
+
+Define trusted list_subset_cons_tt_subset :
+  Forall(A:type)
+        (eqA:Fun(a b: A).bool)
+        %maybe (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+        (a:A)(l1 l2:clause)
+        (u:{ (list_subset eqA (cons a l1) l2) = tt }).
+    { (list_subset eqA l1 l2) = tt }
+  :=
+  truei.
+%-
+
+% may require the lemmas above
+Define trusted list_subset_tt_subset_append:
+  Forall(A:type)
+        (eqA:Fun(a b: A).bool)
+        %maybe (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+        (l1 l2 l3:<list A>)
+        (u:{ (list_subset A eqA l1 l2) = tt }).
+    { (list_subset eqA l1 (append l2 l3)) = tt }
+  :=
+  truei.
+
+Define trusted list_subset_tt_subset_cons :
+  Forall(A:type)
+        (eqA:Fun(a b: A).bool)
+        %maybe (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+        (a:A)(l1 l2:clause)
+        (u:{ (list_subset eqA l1 l2) = tt }).
+    { (list_subset eqA l1 (cons a l2)) = tt }
+  :=
+  truei.
+
+Define trusted list_subset_tt_subset_append_front:
+  Forall(A:type)
+        (eqA:Fun(a b: A).bool)
+        %maybe (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+        (l1 l2 l3:<list A>)
+        (u:{ (list_subset A eqA l1 l2) = tt }).
+    { (list_subset eqA l1 (append l3 l2)) = tt }
+  :=
+  truei.
