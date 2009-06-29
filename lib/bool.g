@@ -257,34 +257,38 @@ Define iff_refl : Forall(x:bool). {(iff x x) = tt} :=
   end.
 
 Define neq_iff : Forall(x y : bool)(u: { x != y}).{ (iff x y) = ff} :=
-   induction(x:bool) return Forall(y:bool)(u:{ x !=y}).{ (iff x y) = ff} with
-	  ff =>
-   	     induction(y:bool) return Forall(u:{ x != y}).{ (iff x y) = ff} with
-		  ff => foralli(u:{ x != y}).
+   foralli(x:bool).
+      case x with
+	  ff => foralli(y:bool).
+   	          case y with 
+		    ff => foralli(u:{ x != y}).
 			contra  trans x_eq
 				trans symm y_eq
 				      symm u
 			   { (iff x y) = ff}
-		| tt => foralli(u:{x != y}).
+		  | tt => foralli(u:{x != y}).
 			   hypjoin (iff x y) ff by x_eq y_eq end
 		end
-	| tt =>
-	    induction(y:bool) return Forall(u:{ x != y}).{ (iff x y) = ff} with
-		  ff => foralli(u:{x != y}).
+	| tt => foralli(y:bool).
+	          case y with
+		    ff => foralli(u:{x != y}).
 			  hypjoin (iff x y) ff by x_eq y_eq end
-		| tt => foralli(u:{x != y}).
+		  | tt => foralli(u:{x != y}).
 			  contra trans x_eq
 				 trans symm y_eq
 				       symm u
 			    { (iff x y) = ff}
-		end
+		  end
 	end.
 
 
+
+
 Define iff_neq : Forall(x y:bool)(u:{ (iff x y) = ff }).{ x != y } :=
-  induction(x:bool) return Forall(y:bool)(u:{ (iff x y) = ff }).{ x != y } with
-       ff => 
-	     induction(y:bool) return Forall(u:{ (iff x y) = ff }).{ x != y } with
+  foralli(x:bool).
+     case x with
+       ff => foralli(y:bool).
+	       case y with
 		   ff => foralli(u:{ (iff x y) = ff }).
 			    contra trans symm u
 				   trans hypjoin (iff x y) tt by x_eq y_eq end
@@ -295,8 +299,8 @@ Define iff_neq : Forall(x y:bool)(u:{ (iff x y) = ff }).{ x != y } :=
 				symm trans y_eq
 			 	    clash tt ff
 		  end
-     | tt => 
-	    induction(y:bool) return Forall(u:{ (iff x y) = ff }).{ x != y } with
+     | tt => foralli(y:bool).
+	       case y with
 		  ff => foralli(u:{ (iff x y) = ff }).
 			   trans x_eq	
 				 symm trans y_eq
@@ -308,7 +312,6 @@ Define iff_neq : Forall(x y:bool)(u:{ (iff x y) = ff }).{ x != y } :=
 			  { x !=y}
 		end
      end.
-
 
 Define and_eq_tt1 : Forall(x y:bool)(u:{(and x y) = tt}).{x = tt} :=
   induction(x:bool) by ux ign ign 
