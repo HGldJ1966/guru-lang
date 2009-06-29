@@ -34,131 +34,6 @@ Define xor :=
 	| tt => (not y)
 	end.
 
-Define eqbool :=
-  fun(x y:bool).
-  match x return bool with
-    ff => (not y)
-  | tt => y
-  end.
-
-Define eqboolEq : Forall(x y:bool)(u:{ (eqbool x y) = tt }).{ x = y } :=
-  induction(x:bool) by xp xt IHx return Forall(y:bool)(u:{ (eqbool x y) = tt }).{ x = y } with
-    ff =>
-      induction(y:bool) by yp yt IHy return Forall(u:{ (eqbool x y) = tt }).{ x = y } with
-        ff =>
-          foralli(u:{ (eqbool x y) = tt }).
-            trans xp symm yp
-      | tt =>
-          foralli(u:{ (eqbool x y) = tt }).
-            contra trans symm u
-                   trans hypjoin (eqbool x y) ff by xp yp end
-                         clash ff tt
-              { x = y }
-      end
-  | tt =>
-      induction(y:bool) by yp yt IHy return Forall(u:{ (eqbool x y) = tt }).{ x = y } with
-        ff =>
-          foralli(u:{ (eqbool x y) = tt }).
-            contra trans symm u
-                   trans hypjoin (eqbool x y) ff by xp yp end
-                         clash ff tt
-              { x = y }
-      | tt =>
-          foralli(u:{ (eqbool x y) = tt }).
-            trans xp symm yp
-      end
-  end.
-
-Define eqboolNeq : Forall(x y:bool)(u:{ (eqbool x y) = ff }).{ x != y } :=
-  induction(x:bool) by xp xt IHx return Forall(y:bool)(u:{ (eqbool x y) = ff }).{ x != y } with
-    ff =>
-      induction(y:bool) by yp yt IHy return Forall(u:{ (eqbool x y) = ff }).{ x != y } with
-        ff =>
-          foralli(u:{ (eqbool x y) = ff }).
-            contra trans symm u
-                   trans hypjoin (eqbool x y) tt by xp yp end
-                         clash tt ff
-              { x != y }
-      | tt =>
-          foralli(u:{ (eqbool x y) = ff }).
-            trans xp
-                  symm trans yp
-                             clash tt ff
-      end
-  | tt =>
-      induction(y:bool) by yp yt IHy return Forall(u:{ (eqbool x y) = ff }).{ x != y } with
-        ff =>
-          foralli(u:{ (eqbool x y) = ff }).
-            trans xp
-                  symm trans yp
-                             clash ff tt
-      | tt =>
-          foralli(u:{ (eqbool x y) = ff }).
-            contra trans symm u
-                   trans hypjoin (eqbool x y) tt by xp yp end
-                         clash tt ff
-              { x != y }
-      end
-  end.
-
-Define eqEqbool : Forall(x y:bool)(u:{ x = y }).{ (eqbool x y) = tt } :=
-  induction(x:bool) by xp xt IHx return Forall(y:bool)(u:{ x = y }).{ (eqbool x y) = tt } with
-    ff =>
-      induction(y:bool) by yp yt IHy return Forall(u:{ x = y }).{ (eqbool x y) = tt } with
-        ff =>
-          foralli(u:{ x = y }).
-            hypjoin (eqbool x y) tt by xp yp end
-      | tt =>
-          foralli(u:{ x = y }).
-            contra trans symm xp
-                   trans u
-                   trans yp
-                         clash tt ff
-              { (eqbool x y) = tt }
-      end
-  | tt =>
-      induction(y:bool) by yp yt IHy return Forall(u:{ x = y }).{ (eqbool x y) = tt } with
-        ff =>
-          foralli(u:{ x = y }).
-            contra trans symm xp
-                   trans u
-                   trans yp
-                         clash ff tt
-              { (eqbool x y) = tt }
-      | tt =>
-          foralli(u:{ x = y }).
-            hypjoin (eqbool x y) tt by xp yp end
-      end
-  end.
-
-Define neqEqbool : Forall(x y:bool)(u:{ x != y }).{ (eqbool x y) = ff } :=
-  induction(x:bool) by xp xt IHx return Forall(y:bool)(u:{ x != y }).{ (eqbool x y) = ff } with
-    ff =>
-      induction(y:bool) by yp yt IHy return Forall(u:{ x != y }).{ (eqbool x y) = ff } with
-        ff =>
-          foralli(u:{ x != y }).
-            contra trans xp
-                   trans symm yp
-                         symm u
-              { (eqbool x y) = ff }
-      | tt =>
-          foralli(u:{ x != y }).
-            hypjoin (eqbool x y) ff by xp yp end
-      end
-  | tt =>
-      induction(y:bool) by yp yt IHy return Forall(u:{ x != y }).{ (eqbool x y) = ff } with
-        ff =>
-          foralli(u:{ x != y }).
-            hypjoin (eqbool x y) ff by xp yp end
-      | tt =>
-          foralli(u:{ x != y }).
-            contra trans xp
-                   trans symm yp
-                         symm u
-              { (eqbool x y) = ff }
-      end
-  end.
-
 Define not_total : Forall(x:bool).Exists(z:bool).{ (not x) = z } :=
   foralli(x:bool).
     case x with
@@ -299,6 +174,8 @@ Define iff :=
       ff => (not b)
     | tt => b
     end.
+    
+Define eqbool := iff.
 
 Define or_total : Forall(x y:bool).Exists(z:bool).{(or x y) = z} :=
 	induction(x:bool) by x1 x2 IH return Forall(y:bool).Exists(z:bool).{(or x y) = z} with
