@@ -379,6 +379,60 @@ Define iff_refl : Forall(x:bool). {(iff x x) = tt} :=
     default bool => hypjoin (iff x x) tt by x_eq end
   end.
 
+Define neq_iff : Forall(x y : bool)(u: { x != y}).{ (iff x y) = ff} :=
+   induction(x:bool) return Forall(y:bool)(u:{ x !=y}).{ (iff x y) = ff} with
+	  ff =>
+   	     induction(y:bool) return Forall(u:{ x != y}).{ (iff x y) = ff} with
+		  ff => foralli(u:{ x != y}).
+			contra  trans x_eq
+				trans symm y_eq
+				      symm u
+			   { (iff x y) = ff}
+		| tt => foralli(u:{x != y}).
+			   hypjoin (iff x y) ff by x_eq y_eq end
+		end
+	| tt =>
+	    induction(y:bool) return Forall(u:{ x != y}).{ (iff x y) = ff} with
+		  ff => foralli(u:{x != y}).
+			  hypjoin (iff x y) ff by x_eq y_eq end
+		| tt => foralli(u:{x != y}).
+			  contra trans x_eq
+				 trans symm y_eq
+				       symm u
+			    { (iff x y) = ff}
+		end
+	end.
+
+
+Define iff_neq : Forall(x y:bool)(u:{ (iff x y) = ff }).{ x != y } :=
+  induction(x:bool) return Forall(y:bool)(u:{ (iff x y) = ff }).{ x != y } with
+       ff => 
+	     induction(y:bool) return Forall(u:{ (iff x y) = ff }).{ x != y } with
+		   ff => foralli(u:{ (iff x y) = ff }).
+			    contra trans symm u
+				   trans hypjoin (iff x y) tt by x_eq y_eq end
+					 clash tt ff
+			   { x != y}
+		 | tt => foralli(u:{ (iff x y) = ff }).
+			   trans x_eq
+				symm trans y_eq
+			 	    clash tt ff
+		  end
+     | tt => 
+	    induction(y:bool) return Forall(u:{ (iff x y) = ff }).{ x != y } with
+		  ff => foralli(u:{ (iff x y) = ff }).
+			   trans x_eq	
+				 symm trans y_eq
+				      clash ff tt
+		| tt => foralli(u:{ (iff x y) = ff }).
+			  contra trans symm u
+				 trans hypjoin (iff x y) tt by x_eq y_eq end
+				       clash tt ff
+			  { x !=y}
+		end
+     end.
+
+
 Define and_eq_tt1 : Forall(x y:bool)(u:{(and x y) = tt}).{x = tt} :=
   induction(x:bool) by ux ign ign 
   return Forall(y:bool)(u:{(and x y) = tt}).{x = tt} with
