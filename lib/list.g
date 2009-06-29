@@ -689,6 +689,136 @@ Define member_total : Forall(A:type)
 
 Total member member_total.
 
+Define member_or_append :
+  Forall(A:type)
+        (eq:Fun(a b:A).bool)
+        (eq_tot:Forall(a b:A).Exists(z:bool).{ (eq a b) = z })
+        (x:A)
+        (l1:<list A>)(l2:<list A>).
+    { (or (member x l1 eq) (member x l2 eq))
+      = (member x (append l1 l2) eq) }
+  :=
+  foralli(A:type)
+         (eq:Fun(a b:A).bool)
+         (eq_tot:Forall(a b:A).Exists(z:bool).{ (eq a b) = z })
+         (x:A).
+  induction(l1:<list A>)
+    return Forall(l2:<list A>).
+             { (or (member x l1 eq) (member x l2 eq))
+               = (member x (append l1 l2) eq) }
+  with
+    nil _ =>
+      foralli(l2:<list A>).
+      existse [member_total A x l2 eq eq_tot]
+        foralli(z2:bool)(z2_pf:{(member x l2 eq) = z2}).
+      hypjoin (or (member x l1 eq) (member x l2 eq))
+              (member x (append l1 l2) eq)
+        by l1_eq z2_pf [append_nil A l1] [or_comm ff z2] [or_def2ff z2] end
+  | cons _ a l1' =>
+      foralli(l2:<list A>).
+      existse [eq_tot x a]
+        foralli(za:bool)(za_pf:{(eq x a) = za}).
+      existse [member_total A x l1' eq eq_tot]
+        foralli(z1':bool)(z1'_pf:{(member x l1' eq) = z1'}).
+      existse [member_total A x l2 eq eq_tot]
+        foralli(z2:bool)(z2_pf:{(member x l2 eq) = z2}).
+      trans hypjoin (or (member x l1 eq) (member x l2 eq))
+                    (or (or za z1') z2) by l1_eq za_pf z1'_pf z2_pf end
+      trans [or_assoc za z1' z2]
+      trans hypjoin (or za (or z1' z2))
+                    (or (eq x a) (or (member x l1' eq) (member x l2 eq)))
+              by l1_eq za_pf z1'_pf z2_pf end
+      trans cong (or (eq x a) *) [l1_IH l1' l2]
+            hypjoin (or (eq x a) (member x (append l1' l2) eq))
+                    (member x (append l1 l2) eq)
+              by l1_eq end
+            
+  end.
+
+Define member_tt_append :
+  Forall(A:type)
+        (eq:Fun(a b:A).bool)
+        (eq_tot:Forall(a b:A).Exists(z:bool).{ (eq a b) = z })
+        (a:A)(l1:<list A>)(l2:<list A>)
+        (u1: {(member a l1 eq) = tt}).
+        { (member a (append l1 l2) eq) = tt }
+  :=
+  foralli(A:type)
+         (eq:Fun(a b:A).bool)
+         (eq_tot:Forall(a b:A).Exists(z:bool).{ (eq a b) = z })
+         (a:A)(l1:<list A>)(l2:<list A>)
+         (u1: {(member a l1 eq) = tt}).
+  trans symm [member_or_append A eq eq_tot a l1 l2]
+  trans cong (or * (member a l2 eq)) u1
+  trans [or_comm tt (member A a l2 eq)]
+        [or_tt (member A a l2 eq)]
+	.
+
+Define member_tt_cons :
+  Forall(A:type)
+        (eq:Fun(a b:A).bool)
+        (eq_tot:Forall(a b:A).Exists(z:bool).{ (eq a b) = z })
+        (a:A)(l:<list A>)(b:A)
+        (u: {(member a l eq) = tt}).
+        { (member a (cons b l) eq) = tt }
+  :=
+  foralli(A:type)
+         (eq:Fun(a b:A).bool)
+         (eq_tot:Forall(a b:A).Exists(z:bool).{ (eq a b) = z })
+         (a:A)(l:<list A>)(b:A)
+         (u: {(member a l eq) = tt}).
+  existse [eq_tot a b]
+    foralli(z:bool)(z_eq:{ (eq a b) = z }).
+  trans hypjoin (member a (cons b l) eq)
+                (or z tt)
+          by u z_eq end
+        [or_tt z]
+	.
+
+Define member_tt_append_front :
+  Forall(A:type)
+        (eq:Fun(a b:A).bool)
+        (eq_tot:Forall(a b:A).Exists(z:bool).{ (eq a b) = z })
+        (a:A)(l1:<list A>)(l2:<list A>)
+        (u1: {(member a l1 eq) = tt}).
+        { (member a (append l2 l1) eq) = tt }
+  :=
+  foralli(A:type)
+         (eq:Fun(a b:A).bool)
+         (eq_tot:Forall(a b:A).Exists(z:bool).{ (eq a b) = z })
+         (a:A)(l1:<list A>)(l2:<list A>)
+         (u1: {(member a l1 eq) = tt}).
+  trans symm [member_or_append A eq eq_tot a l2 l1]
+        % (member a l2++l1) = (or (member a l2) (member a l1))
+  trans cong (or (member a l2 eq) *) u1
+        % = (or (member a l2) tt)
+        [or_tt (member A a l2 eq)]
+	.
+
+Define member_cons_ff_member :
+  Forall(A:type)
+        (eq:Fun(a b:A).bool)
+        (eq_tot:Forall(a b:A).Exists(z:bool).{ (eq a b) = z })
+        (a b:A)(l:<list A>)
+        (u: {(member a (cons b l) eq) = ff}).
+    { (member a l eq) = ff }
+  :=
+  foralli(A:type)
+         (eq:Fun(a b:A).bool)
+         (eq_tot:Forall(a b:A).Exists(z:bool).{ (eq a b) = z })
+         (a b:A)(l:<list A>)
+         (u: {(member a (cons b l) eq) = ff}).
+  existse [eq_tot a b]
+    foralli(z1:bool)(z1_pf:{ (eq a b) = z1 }).
+  existse [member_total A a l eq eq_tot]
+    foralli(z2:bool)(z2_pf:{ (member a l eq) = z2 }).
+  abbrev p1 = 
+    hypjoin (or z1 z2) ff
+      by u z1_pf z2_pf end
+  in
+  trans z2_pf
+        [or_ffr z1 z2 p1]
+  .
 
 Define list_exists : Fun(A C:type)(^#owned c:C)
                       (f:Fun(^#owned c:C)(^#owned a:A).bool)(^#owned l:<list A>).bool :=
