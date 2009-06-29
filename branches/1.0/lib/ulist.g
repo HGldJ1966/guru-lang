@@ -75,12 +75,42 @@ Define equlist : Fun(A:type)(eqA:Fun(#untracked x1 x2:A).bool)
       end
   end.
 
-Define trusted equlist_total
+Define equlist_total
  : Forall(A:type)
          (eqA:Fun(x1 x2:A).bool)
          (eqA_total:Forall(x1 x2:A).Exists(o:bool).{ (eqA x1 x2) = o })
          (l1 l2:<ulist A>).
-      Exists(o:bool).{ (equlist eqA l1 l2) = o } := truei.
+      Exists(o:bool).{ (equlist eqA l1 l2) = o } := 
+	 foralli(A:type)
+         (eqA:Fun(x1 x2:A).bool)
+         (eqA_total:Forall(x1 x2:A).Exists(o:bool).{ (eqA x1 x2) = o }).
+    induction(l1:<ulist A>) by u v IH
+      return Forall(l2:<ulist A>).Exists(o:bool).{ (equlist eqA l1 l2) = o } with
+         unil _ => foralli(l2:<ulist A>).
+			case l2 with
+			  unil _ => existsi tt { (equlist eqA l1 l2) = * } 
+						hypjoin (equlist eqA l1 l2) tt by u l2_eq end
+			| ucons _ h2 t2  => existsi ff { (equlist eqA l1 l2) = * } 
+						hypjoin (equlist eqA l1 l2) ff by u l2_eq end
+			end
+
+	| ucons _ h1 t1 => foralli(l2:<ulist A>).
+			     case l2 with
+			        unil _ => existsi ff { (equlist eqA l1 l2 ) = * } 
+						hypjoin (equlist eqA l1 l2) ff by u l2_eq end
+			       | ucons _ h2 t2 => 
+				    case terminates (eqA h1 h2) by [eqA_total h1 h2] by g _ with
+           				ff => existsi ff { (equlist eqA l1 l2) = * } 
+						hypjoin (equlist eqA l1 l2) ff by u l2_eq g end
+         				| tt => existsi terminates (equlist A eqA t1 t2) by [IH  t1 t2] 
+							{ (equlist eqA l1 l2 ) = *} 
+							hypjoin (equlist eqA l1 l2) 
+							terminates (equlist eqA t1 t2) by [IH  t1 t2] 
+							      by u l2_eq g end
+					end
+         							
+			        end
+	end.
 
 Define trusted equlistEq
  : Forall(A:type)
