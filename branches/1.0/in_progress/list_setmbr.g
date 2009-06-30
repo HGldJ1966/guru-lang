@@ -1,5 +1,12 @@
-Define list_setmbr: Forall(A:type)(a:A)(eqA:Fun(^ #owned x y: A).bool)(l' l'':<list A>)(u:{(eqA a a) = tt}).{(member a (append l' (cons a l'')) eqA) = tt } :=
-  foralli(A:type)(a:A)(eqA:Fun(^ #owned x y: A).bool)(l'':<list A>)(u:{(eqA a a) = tt}).
+Include trusted "../lib/plus.g".
+Include trusted "../lib/bool.g".
+Include trusted "../lib/mult.g".
+Include trusted "../lib/pow.g".
+Include trusted "../lib/list.g".
+
+
+Define list_setmbr: Forall(A:type)(a:A)(eqA:Fun(x y: A).bool)(l' l'':<list A>)(u:{(eqA a a) = tt}).{(member a (append l' (cons a l'')) eqA) = tt } :=  truei.
+  foralli(A:type)(a:A)(eqA:Fun(x y: A).bool)(l'':<list A>)(u:{(eqA a a) = tt}).
   induction(l':<list A>) return { (member a (append l' (cons a l'')) eqA) = tt } with
 
        nil _ => show 
