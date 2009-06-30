@@ -338,6 +338,7 @@ public class Compile extends Command {
 	    C.init.T = new guru.carraway.FunType();
 	    guru.carraway.FunType F = new guru.carraway.FunType();
 	    C.init.T = F;
+	    C.must_consume_scrut = I.must_consume_scrut;
 	    F.pos = I.v1.pos;
 	    F.vars = new guru.carraway.Sym[3];
 	    F.types = new guru.carraway.Expr[3];

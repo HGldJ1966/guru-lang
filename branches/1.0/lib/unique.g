@@ -8,12 +8,12 @@ ResourceType unique with
   }
 END.
 
-Init ginit_unique_unique(#unique x)(#unique y).#unique <<END
-  #define ginit_unowned_unique(A,x,y) y
+Init must_consume_scrutinee ginit_unique_unique(#unique x)(#unique y).#unique <<END
+  #define ginit_unique_unique(A,x,y) y
 END.
 
 Init ginit_unique_owned(#unique x)(#owned y).#owned <<END
-  #define ginit_unowned_unique(A,x,y) y
+  #define ginit_unique_owned(A,x,y) y
 END.
 
 Init ginit_unique_unowned(#unique x)(#unowned y).#unowned <<END

@@ -3,7 +3,7 @@ import guru.Position;
 
 public class Init extends Command {
     public Primitive init; // we don't actually use the process() method for this.
-
+    public boolean must_consume_scrut;
     public Init() {
 	super(INIT);
     }
@@ -55,7 +55,8 @@ public class Init extends Command {
 			+"1. the given name: "+init.s.toString(ctxt)
 			+"\n\n2. the required name: "+n);
 
-	Position p = ctxt.addInit(init.s, (Sym)f.types[1],(Sym)f.types[2],f,init.code);
+	Position p = ctxt.addInit(init.s, (Sym)f.types[1],(Sym)f.types[2],f,
+				  must_consume_scrut,init.code);
 	if (p != null) 
 	    handleError(ctxt,"A previous Init-command is being shadowed.\n\n"
 			+"1. the new command is at: "+init.T.pos.toString()
@@ -72,6 +73,8 @@ public class Init extends Command {
     public void print(java.io.PrintStream w, 
 		      Context ctxt) {
 	w.print("Init ");
+	if (must_consume_scrut)
+	    w.print("must_consume_scrutinee ");
 	init.print_h(w,ctxt);
     }
 

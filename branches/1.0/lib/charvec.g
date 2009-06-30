@@ -8,7 +8,7 @@ Include trusted "unique.g".
 %Set "print_parsed".
 
 Define primitive type_family_abbrev charvec := fun(A:type).<vec A num_chars> <<END
-#define gdelete_charvec(x) carraway_free(x)
+#define gdelete_charvec(x)
 END.
 
 Define primitive mk_charvec : Fun(spec A:type)(^#owned a:A).#unique <charvec A> := 

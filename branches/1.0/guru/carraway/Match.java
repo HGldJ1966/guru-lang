@@ -357,7 +357,7 @@ public class Match extends Expr {
 		if (u.dropping_expr == null) {
 		    if (u.ref != rs[i])
 			C[i].simulateError(ctxt,"A reference created in a case but not returned by it is being leaked.\n\n"
-					   +"1. "+u.ref.refString(ctxt));
+					   +"1. "+u.ref.refString(ctxt,u));
 		    continue;
 		}
 		

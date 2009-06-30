@@ -19,8 +19,8 @@ public class InitTerm extends Expr {
        -- field is the name of the field from the scrutinee that will be extracted for the initialization
        -- scrut is the scrutinee, with scruttp its type
        -- ctor is which ctor built the scrutinee
-       -- 
-*/
+       -- rttype is the runtime type of the variable (var).
+    */
     public InitTerm(Context.InitH h, Sym rttype, Sym scrut, Sym scruttp, Sym ctor, Sym field, Sym var) {
 	super(INIT_TERM);
 	this.h = h;
@@ -112,6 +112,12 @@ public class InitTerm extends Expr {
 
 	Sym r = var.simulate(ctxt,pos);
 	
+	Context.RefStat u = ctxt.refStatus(ctxt.getSubst(scrut));
+	if (!u.consume && h.must_consume_scrut)
+	    simulateError(ctxt,p,"An Init function requires the scrutinee to be consumed, but "
+			  +"this match's\nscrutinee is marked not to be consumed.\n\n"
+			  +"1. the init function: "+h.init.toString(ctxt));
+
 	Sym v = h.F.vars[1];
 	Sym prev = ctxt.getSubst(v);
 	ctxt.setSubst(v, scrut);

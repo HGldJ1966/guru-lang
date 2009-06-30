@@ -316,7 +316,10 @@ public class FunTerm extends FunAbstraction {
 	    handleError(ctxt,"We are trying to compile a fun-term whose return type has not been computed.\n"
 			+"Probably this is a trusted definition: try compiling with it not trusted, or \n"
 			+"explicitly add the return type.");
-	F.rettype = ret_stat.toCarrawayType(ctxt,T.pos);
+	if (T.construct == VOID || T.construct == FUN_TYPE)
+	    F.rettype = T.toCarrawayType(ctxt,true);
+	else
+	    F.rettype = ret_stat.toCarrawayType(ctxt,T.pos);
 	F.consumps = nconsumps;
 	F.types = ntypes;
 	F.vars = nvars;
