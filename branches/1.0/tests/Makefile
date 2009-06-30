@@ -1,12 +1,12 @@
-test-charvec:	test-charvec.g Makefile
-	../bin/guru test-charvec.g
-	gcc -O0 -ggdb -w -o test-charvec test-charvec.c
-	valgrind ./test-charvec
+test-qcharray:	test-qcharray.g Makefile
+	../bin/guru test-qcharray.g
+	gcc -O0 -ggdb -w -o test-qcharray test-qcharray.c
+	valgrind ./test-qcharray
 
-test-ucharvec:	test-ucharvec.g Makefile
-	../bin/guru test-ucharvec.g
-	gcc -O0 -ggdb -w -o test-ucharvec test-ucharvec.c
-	valgrind ./test-ucharvec
+test-charray:	test-charray.g Makefile
+	../bin/guru test-charray.g
+	gcc -O0 -ggdb -w -o test-charray test-charray.c
+	valgrind ./test-charray
 
 
 hello-world:	hello-world.g Makefile

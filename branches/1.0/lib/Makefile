@@ -1,8 +1,8 @@
 trie:
 	time ../bin/guru trie.g
 
-ucharvec:
-	time ../bin/guru ucharvec.g
+qcharray:
+	time ../bin/guru qcharray.g
 
 ulist:
 	time ../bin/guru ulist.g
