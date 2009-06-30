@@ -1,0 +1,15 @@
+To Do List
+
+ 1) List/Set subset proofs
+    -list_setmbr.g
+    -list_selfSubS.g
+    -Reflexivity/Transitivity/Symmetry
+
+ 2) Lexographic Order Proofs
+    -Reflexivity/Transitivity/Symmetry
+
+ 3) Migrate list_forall and list_exists based on foldl
+
+ 4) Lemmas about foldl?
+
+ 5)  
