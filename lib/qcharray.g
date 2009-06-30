@@ -9,17 +9,17 @@ Include trusted "unique.g".
 
 % the string tells which characters' values are checked out right now.
 
-Define primitive type_family_abbrev ucharvec := fun(A:type)(s:string).<vec A num_chars> <<END
-#define gdelete_ucharvec(x) 
+Define primitive type_family_abbrev qcharray := fun(A:type)(s:string).<vec A num_chars> <<END
+#define gdelete_qcharray(x) 
 END.
 
-Define primitive mk_ucharvec 
-  : Fun(spec A B:type)(^#owned b:B)(f:Fun(^#owned b:B).#unique A).#unique <ucharvec A stringn>
+Define primitive qcharray_new 
+  : Fun(spec A B:type)(^#owned b:B)(f:Fun(^#owned b:B).#unique A).#unique <qcharray A stringn>
  := fun(A B:type)(b:B)(f:Fun(b:B).A).
       (mkvec A (f b) num_chars) <<END
-typedef void *(*funtp_gmk_ucharvec)(void *);
+typedef void *(*funtp_gmk_qcharray)(void *);
 
-void *gmk_ucharvec(void *b, funtp_gmk_ucharvec f) {
+void *gqcharray_new(void *b, funtp_gmk_qcharray f) {
   void **h = (void **)guru_malloc(sizeof(void *)*128);
   int c;
   for (c = 0; c <= 127; c++)
@@ -28,45 +28,60 @@ void *gmk_ucharvec(void *b, funtp_gmk_ucharvec f) {
 }
 END.
 
-Inductive ucvmod_t : Fun(A:type)(s:string).type :=
-  mk_ucvmod : Fun(spec A:type)(#unique a:A)(#untracked c:char)(spec s:string)
-                 (#unique l:<ucharvec A (stringc c s)>).#unique <ucvmod_t A s>.
+Inductive qcharray_mod_t : Fun(A:type)(c:char)(s:string).type :=
+  mk_qcharray_mod : Fun(spec A:type)(#unique a:A)(spec c:char)(spec s:string)
+                       (#unique l:<qcharray A (stringc c s)>).#unique <qcharray_mod_t A c s>.
 
 % check out the unique value for c, assuming c is not already checked out.
 
-Define primitive ucvmod_checkout 
-  : Fun(spec A:type)(#untracked c:char)(spec s : string)(#unique l:<ucharvec A s>)
+Define primitive qcharray_out 
+  : Fun(spec A:type)(#untracked c:char)(spec s : string)(#unique l:<qcharray A s>)
        (u : { (string_mem c s) = ff}).
-    #unique <ucvmod_t A s>
- := fun(A:type)(c:char)(spec s:string)(l:<ucharvec A s>)(u:{(string_mem c s) = ff}).
-      (mk_ucvmod A (vec_get A num_chars l (which_char c) [chars_bounded c]) c s l) <<END
- void *gucvmod_checkout(int c, void *l) {
-   return gmk_ucvmod(((void **)l)[c],c,l);
+    #unique <qcharray_mod_t A c s>
+ := fun(A:type)(c:char)(spec s:string)(l:<qcharray A s>)(u:{(string_mem c s) = ff}).
+      (mk_qcharray_mod A (vec_get A num_chars l (which_char c) [chars_bounded c]) c s l) <<END
+ void *gqcharray_out(int c, void *l) {
+   return gmk_qcharray_mod(((void **)l)[c],l);
  }
 END.
 
-Define primitive ucvmod_checkin
+Define primitive qcharray_in
   : Fun(spec A:type)(#untracked c:char)(#unique a:A)(spec s1 s2:string)
-       (#unique l:<ucharvec A (string_app s1 (stringc c s2))>). 
-    #unique <ucharvec A (string_app s1 s2)>
+       (#unique l:<qcharray A (string_app s1 (stringc c s2))>). 
+    #unique <qcharray A (string_app s1 s2)>
 := fun(A:type)(c:char)(a:A)(spec s1 s2:string)
-      (l:<ucharvec A (string_app s1 (stringc c s2))>). 
+      (l:<qcharray A (string_app s1 (stringc c s2))>). 
     (vec_update A num_chars l (which_char c) a [chars_bounded c]) <<END
- void *gucvmod_checkin(int c, void *a, void *l) {
+ void *gqcharray_in(int c, void *a, void *l) {
    ((void **)l)[c] = a;
    return l;
  }
 END.
 
-Define primitive ucvfree : Fun(spec A C:type)(^ #unique l:<ucharvec A stringn>)
-                              (^#owned cookie:C)
-                              (delA : Fun(^#owned cookie:C)(^#unique a:A).void).void :=
-  fun(spec A C:type)(l:<ucharvec A stringn>)
+% simpler interface to qcharray_in, for when you have checked out the
+% value for just one character.
+Define qcharray_in1 : Fun(spec A:type)(#untracked c:char)(#unique a:A)
+                         (#unique l:<qcharray A (stringc c stringn)>). 
+                       #unique <qcharray A stringn> :=
+  fun(spec A:type)(#untracked c:char)(#unique a:A)
+     (#unique l:<qcharray A (stringc c stringn)>).
+     cast
+     (qcharray_in A c a stringn stringn
+        cast l
+        by cong <qcharray A *> 
+             join (stringc c stringn) (string_app stringn (stringc c stringn)))
+     by cong <qcharray  A *> join (string_app stringn stringn) stringn.
+
+Define primitive qcharray_free
+   : Fun(spec A C:type)(^ #unique l:<qcharray A stringn>)
+        (^#owned cookie:C)
+        (delA : Fun(^#owned cookie:C)(^#unique a:A).void).void :=
+  fun(spec A C:type)(l:<qcharray A stringn>)
      (cookie:C)
      (delA : Fun(cookie:C)(a:A).void).voidi <<END
 typedef void (*ucvfree_fun_t)(void *cookie, void *a);
 
-void gucvfree(void *l, void *cookie, ucvfree_fun_t delA) {
+void gqcharray_free(void *l, void *cookie, ucvfree_fun_t delA) {
   int c;
   for (c = 0; c <= 127; c++) 
     delA(cookie,((void **)l)[c]);
@@ -77,12 +92,12 @@ END.
 %-
 
 Inductive cvfold_i : Fun(A B:type).type :=
-  mk_cvfold_i : Fun(A B C:type)(unique_owned l:<charvec A>)
+  mk_cvfold_i : Fun(A B C:type)(unique_owned l:<charray A>)
                    (start next : char)
                    (fcookie:C)
                    (f:Fun(owned fcookie:C)(c:char)(unique_owned a:A)(b:B).B)
                    (b:B)
-                   (r:Fun(A B C:type)(unique_owned l:<charvec A>)
+                   (r:Fun(A B C:type)(unique_owned l:<charray A>)
                          (start : char)
                          (owned fcookie:C)
                          (f:Fun(owned fcookie:C)
@@ -90,7 +105,7 @@ Inductive cvfold_i : Fun(A B:type).type :=
                          (b:B).B). <cvfold_i A B>.
 
 Define cvfold_h :=
-  fun cvfold_h(A B C:type)(unique_owned l:<charvec A>)
+  fun cvfold_h(A B C:type)(unique_owned l:<charray A>)
               (start : char)
               (owned fcookie:C)
               (f:Fun(owned fcookie:C)(c:char)(unique_owned a:A)(b:B).B)
@@ -101,7 +116,7 @@ Define cvfold_h :=
               match wrapped with
                 ff => (mk_cvfold_i A B C l start next inc fcookie f b cvfold_h)
               | tt => (mk_cvfold_i A B C l start next inc fcookie f b 
-                         fun(A B C:type)(unique_owned l:<charvec A>)
+                         fun(A B C:type)(unique_owned l:<charray A>)
                             (start : char)
                             (owned fcookie:C)
                             (f:Fun(owned fcookie:C)(c:char)
@@ -149,7 +164,7 @@ Define minus_char_inc
 %- prove that cvfolding using a function that is terminating given
    smaller As than l is terminating. -%
 Define cvfold_h_sztot 
-  : Forall(A B C:type)(l:<charvec A>)
+  : Forall(A B C:type)(l:<charray A>)
           (start : char)
           (fcookie:C)
           (f:Fun(fcookie:C)(c:char)(a:A)(b:B).B)
@@ -157,7 +172,7 @@ Define cvfold_h_sztot
                         (b:B).Exists(r:B).{(f fcookie c a b) = r})
           (b:B).
      Exists(r:B). {(cvfold_h l start fcookie f b) = r} :=
-  foralli(A B C:type)(l:<charvec A>)
+  foralli(A B C:type)(l:<charray A>)
          (start : char)
          (fcookie:C)
          (f:Fun(fcookie:C)(c:char)(a:A)(b:B).B)
@@ -232,21 +247,21 @@ Define cvfold_h_sztot
 %- We fold the given function over all elements of the array.  Element
    0 is folded last: (f 0 a0 (f 1 a1 ...)). -%
 Define cvfold := 
-  fun(A B C:type)(unique_owned l:<charvec A>)
+  fun(A B C:type)(unique_owned l:<charray A>)
      (owned cookie:C)
      (f:Fun(owned cookie:C)(c:char)(unique_owned a:A)(b:B).B)
      (b:B).
     (cvfold_h A B C l Cc0 %- first character -% cookie f b).
 
 Define cvfold_sztot 
-  : Forall(A B C:type)(l:<charvec A>)
+  : Forall(A B C:type)(l:<charray A>)
           (fcookie:C)
           (f:Fun(fcookie:C)(c:char)(a:A)(b:B).B)
           (ftot : Forall(c:char)(a:A)(u:{ (lt size a size l) = tt})
                         (b:B).Exists(r:B).{(f fcookie c a b) = r})
           (b:B).
      Exists(r:B). {(cvfold l fcookie f b) = r} :=
-  foralli(A B C:type)(l:<charvec A>)
+  foralli(A B C:type)(l:<charray A>)
          (fcookie:C)
          (f:Fun(fcookie:C)(c:char)(a:A)(b:B).B)
          (ftot : Forall(c:char)(a:A)(u:{ (lt size a size l) = tt})
@@ -260,7 +275,7 @@ Define cvfold_sztot
             uq.
 
 Define cvfold_h_tot 
-  : Forall(A B C:type)(l:<charvec A>)
+  : Forall(A B C:type)(l:<charray A>)
           (start : char)
           (fcookie:C)
           (f:Fun(fcookie:C)(c:char)(a:A)(b:B).B)
@@ -268,7 +283,7 @@ Define cvfold_h_tot
                         (b:B).Exists(r:B).{(f fcookie c a b) = r})
           (b:B).
      Exists(r:B). {(cvfold_h l start fcookie f b) = r} :=
-  foralli(A B C:type)(l:<charvec A>)
+  foralli(A B C:type)(l:<charray A>)
          (start : char)
          (fcookie:C)
          (f:Fun(fcookie:C)(c:char)(a:A)(b:B).B)

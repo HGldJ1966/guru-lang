@@ -1,4 +1,4 @@
-Include "ucharvec.g".
+Include "qcharray.g".
 Include "string.g".
 Include "option.g".
 Include "pair.g".
@@ -8,24 +8,19 @@ Include "pair.g".
    trie_next holds data in "o" if the empty string maps to
    that data. -%
 Inductive trie : Fun(A:type).type :=
-  trie_none : Fun(A:type).#unique <trie A>
+  trie_none : Fun(spec A:type).#unique <trie A>
 | trie_exact : Fun(A:type)(s:string)(a:A).#unique <trie A>
 | trie_next : Fun(A:type)(o:<option A>)
-                 (#unique l:<charvec <trie A>>). 
+                 (#unique l:<qcharray <trie A> stringn>). 
               #unique <trie A>.
-
-Define mk_trievec 
-  : Fun(A B:type)(owned b:B)(f:Fun(owned b:B).unique <trie A>).
-       #unique <charvec <trie A>> 
-  := fun(A:type). (mk_ucharvec <trie A>).
 
 Inductive trie_insert_i : Fun(A:type).type :=
   mk_trie_insert_i : Fun(A:type).<trie_insert_i A>.
 
 % insert (s,a) into t, discarding any previous value stored for s.
-Define trie_insert : Fun(A:type)(s:string)(a:A)(unique t:<trie A>).
-                         unique <trie A> :=
-  fun trie_insert(A:type)(s:string)(a:A)(unique t:<trie A>) : unique <trie A> .
+Define trie_insert : Fun(A:type)(s:string)(a:A)(#unique t:<trie A>).
+                         #unique <trie A> :=
+  fun trie_insert(A:type)(s:string)(a:A)(#unique t:<trie A>) : #unique <trie A> .
     match t with
       trie_none _ => (trie_exact A s a)
     | trie_exact _ s' a' =>
@@ -33,86 +28,59 @@ Define trie_insert : Fun(A:type)(s:string)(a:A)(unique t:<trie A>).
       %- insert (s',a') into a new blank trie_next, then
          insert (s,a) into the result. -%
 
-      abbrev P = symm inj <trie *> t_Eq in
-      let b = (mk_trie_insert_i A) in
-      let v = (mk_trievec A <trie_insert_i A> b
-                 fun(owned b:<trie_insert_i A>) : unique <trie A>.
-                     match b with
-                        mk_trie_insert_i A' => (trie_none A') 
-                     end in
+      let cookie = Z in
+      let v = (qcharray_new <trie A> nat cookie
+                 fun(^#owned cookie:nat) : #unique <trie A>.
+                     (trie_none A)) in
       do 
-        (dec <trie_insert_i A> b)
+        (dec nat cookie)
         (trie_insert A s a
-        (trie_insert A s' cast a' by P
-           (trie_next A (nothing A) v)))
+        (trie_insert A s' a' (trie_next A (nothing A) v)))
       end
     | trie_next _ o l' => 
         match s with
-          nil _ => do (dec <option A> o) 
+          unil _ => do (dec <option A> o) 
                       (trie_next A (something A a) l')
                    end
-        | cons _ b s' => 
-          let m = (trievec_mod A l' b) in
-          match m with
-            mk_ucvmod_t _ a' B b f =>
-              abbrev e = cast a' by P2 in
+        | ucons _ c s' => 
+          match (qcharray_out <trie A> c stringn l' join (string_mem c stringn) ff) with
+            mk_qcharray_mod _ a' _ _ l'' =>
               let r = (trie_insert A s' a a') in 
-                (trie_next A o (f b r))
+                (trie_next A o 
+                   (qcharray_in1 <trie A> c r l''))
           end
         end
     end.
           
-Define trie_remove : Fun(A:type)(owned s:string)(unique t:<trie A>).
-                         unique <trie A> :=
-  fun trie_remove(A:type)(owned s:string)(unique t:<trie A>) : unique <trie A>.
+Define trie_remove : Fun(spec A:type)(^#owned s:string)(#unique t:<trie A>).
+                         #unique <trie A> :=
+  fun trie_remove(spec A:type)(^#owned s:string)(#unique t:<trie A>) : #unique <trie A>.
     match t with
-      trie_none A' => (trie_none A)
+      trie_none _ => (trie_none A)
     | trie_exact A' s' a' =>
         match (stringeq s s') with
-          ff => cast (trie_exact A' s' a')
-                by symm t_Eq
-        | tt => dec a' dec s' (trie_none A)
+          ff => (trie_exact A' s' a')
+        | tt => do (dec A' a')
+                   (dec string s')
+                   (trie_none A)
+                end
         end
     | trie_next A' o l' => 
-        abbrev cl' = cast l' by cong <charvec <trie *>>
-                                 symm inj <trie *> t_Eq in
         match s with
-          nil B => dec o 
-                   (trie_next A (nothing A) cl')
-        | cons B b s' => 
-          abbrev PB = symm inj <list *> s_Eq in
-          abbrev cb = cast b by PB in
-          abbrev ss = cast s' by cong <list *> PB in
-          let m = (trievec_mod A cl' cb) in
-          match m with
-            mk_ucvmod_t A' a' B b f =>
-              abbrev P2 = symm inj <ucvmod_t *> m_Eq in
-              abbrev e = cast a' by P2 in
-              let r = (trie_remove A ss e) in 
-                (trie_next A cast o by cong <option *> symm inj <trie *> t_Eq 
-                   cast (f b cast r by inj <ucvmod_t *> m_Eq) 
-                   by cong <charvec *> P2)
+          unil _ => do (dec <option A> o) 
+                      (trie_next A' (nothing A) l')
+                   end
+        | ucons _ c s' => 
+          match (qcharray_out <trie A> c stringn l' join (string_mem c stringn) ff) with
+            mk_qcharray_mod _ a' _ _ l'' =>
+              let r = (trie_remove A s' a') in 
+                (trie_next A' o 
+                   (qcharray_in1 <trie A> c r l''))
           end
         end
     end.
 
-Inductive trie_lookup_i : Fun(A:type).type :=
-  mk_trie_lookup_i : Fun(A:type)
-                        (f:Fun(A:type)(unique_owned t:<trie A>)
-                              (owned s:string). <option A>)
-                        (s:string).<trie_lookup_i A>.
-
-Define trie_lookup_h := 
-  fun(spec A:type)(m:<trie_lookup_i A>)(unique_owned e:<trie A>).
-    match m with 
-     mk_trie_lookup_i A' f s =>
-       abbrev P2 = inj <trie_lookup_i *> m_Eq in
-       let r = cast (f A' cast e by cong <trie *> P2 s) 
-               by cong <option *> symm P2 in
-       dec s r
-    end.
-
-Define trie_lookup : Fun(A:type)(unique_owned t:<trie A>)(owned s:string).
+Define trie_lookup : Fun(A:type)(^#unique_owned t:<trie A>)(owned s:string).
                         <option A> :=
   fun trie_lookup(A:type)(unique_owned t:<trie A>)(owned s:string)
       : <option A> .
