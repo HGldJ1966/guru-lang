@@ -1,3 +1,6 @@
+trie:
+	time ../bin/guru trie.g
+
 ucharvec:
 	time ../bin/guru ucharvec.g
 
@@ -39,9 +42,6 @@ minmax:
 
 minmax-le:
 	../bin/guru minmax-le.g
-
-trie:
-	time java -cp .. guru.Main trie.g
 
 word:
 	java -cp .. guru.Main word.g

@@ -8,24 +8,16 @@ Include "pair.g".
    trie_next holds data in "o" if the empty string maps to
    that data. -%
 Inductive trie : Fun(A:type).type :=
-  trie_none : Fun(A:type).<trie A>
-| trie_exact : Fun(A:type)(s:string)(a:A).<trie A>
+  trie_none : Fun(A:type).#unique <trie A>
+| trie_exact : Fun(A:type)(s:string)(a:A).#unique <trie A>
 | trie_next : Fun(A:type)(o:<option A>)
-                 (unique l:<charvec <trie A>>). 
-              <trie A>.
+                 (#unique l:<charvec <trie A>>). 
+              #unique <trie A>.
 
 Define mk_trievec 
   : Fun(A B:type)(owned b:B)(f:Fun(owned b:B).unique <trie A>).
-       unique <charvec <trie A>> 
+       #unique <charvec <trie A>> 
   := fun(A:type). (mk_ucharvec <trie A>).
-Define trievec_mod
-    : Fun(A:type)(unique l : <charvec <trie A>>)(c:char).
-         unique <ucvmod_t <trie A>>
-    := fun(A:type). (ucvmod <trie A>).
-Define trievec_get
-    : Fun(A:type)(unique_owned l : <charvec <trie A>>)
-         (c:char)(B C : type)(b:B)(f:Fun(b:B)(unique_owned a:<trie A>).C).C
-    := fun(A:type). (ucvget <trie A>).
 
 Inductive trie_insert_i : Fun(A:type).type :=
   mk_trie_insert_i : Fun(A:type).<trie_insert_i A>.
@@ -35,45 +27,37 @@ Define trie_insert : Fun(A:type)(s:string)(a:A)(unique t:<trie A>).
                          unique <trie A> :=
   fun trie_insert(A:type)(s:string)(a:A)(unique t:<trie A>) : unique <trie A> .
     match t with
-      trie_none A' => (trie_exact A s a)
-    | trie_exact A' s' a' =>
+      trie_none _ => (trie_exact A s a)
+    | trie_exact _ s' a' =>
   
       %- insert (s',a') into a new blank trie_next, then
          insert (s,a) into the result. -%
 
       abbrev P = symm inj <trie *> t_Eq in
       let b = (mk_trie_insert_i A) in
-      let unique v = (mk_trievec A <trie_insert_i A> b
-                         fun(owned b:<trie_insert_i A>) : unique <trie A>.
-                            match b with
-                              mk_trie_insert_i A' =>
-                                cast (trie_none A') 
-                                by cong <trie *> 
-                                    symm inj <trie_insert_i *> b_Eq
-                              end) in
-      dec b
+      let v = (mk_trievec A <trie_insert_i A> b
+                 fun(owned b:<trie_insert_i A>) : unique <trie A>.
+                     match b with
+                        mk_trie_insert_i A' => (trie_none A') 
+                     end in
+      do 
+        (dec <trie_insert_i A> b)
         (trie_insert A s a
         (trie_insert A s' cast a' by P
            (trie_next A (nothing A) v)))
-    | trie_next A' o l' => 
-        abbrev cl' = cast l' by cong <charvec <trie *>>
-                                 symm inj <trie *> t_Eq in
+      end
+    | trie_next _ o l' => 
         match s with
-          nil B => dec o 
-                     (trie_next A (something A a) cl')
-        | cons B b s' => 
-          abbrev PB = symm inj <list *> s_Eq in
-          abbrev cb = cast b by PB in
-          abbrev ss = cast s' by cong <list *> PB in
-          let m = (trievec_mod A cl' cb) in
+          nil _ => do (dec <option A> o) 
+                      (trie_next A (something A a) l')
+                   end
+        | cons _ b s' => 
+          let m = (trievec_mod A l' b) in
           match m with
-            mk_ucvmod_t A' a' B b f =>
-              abbrev P2 = symm inj <ucvmod_t *> m_Eq in
+            mk_ucvmod_t _ a' B b f =>
               abbrev e = cast a' by P2 in
-              let r = (trie_insert A ss a e) in 
-                (trie_next A cast o by cong <option *> symm inj <trie *> t_Eq 
-                   cast (f b cast r by inj <ucvmod_t *> m_Eq) 
-                   by cong <charvec *> P2)
+              let r = (trie_insert A s' a a') in 
+                (trie_next A o (f b r))
           end
         end
     end.

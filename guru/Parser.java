@@ -357,6 +357,12 @@ public class Parser extends ParserBase {
 	Init a = new Init();
 	if (!eat_ws())
 	    handleError("Unexpected end of input reading an Init-command.");
+
+	if (tryToEat("must_consume_scrutinee")) {
+	    a.must_consume_scrut = true;
+	    eat_ws();
+	}
+
 	a.s = readBindingConst();
 
 	eat("(","Init");

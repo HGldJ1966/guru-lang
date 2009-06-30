@@ -53,8 +53,12 @@ public abstract class Expr {
     }
 
     public void simulateError(Context ctxt, String msg) {
-	if (pos != null) {
-	    pos.print(System.out);
+	simulateError(ctxt,pos,msg);
+    }
+
+    public void simulateError(Context ctxt, Position p, String msg) {
+	if (p != null) {
+	    p.print(System.out);
 	    System.out.print(": ");
 	}
 	System.out.println("Carraway simulation error.\n\n"+msg);
