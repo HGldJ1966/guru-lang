@@ -51,8 +51,14 @@ public class Sym extends Expr {
 
 	ret += "\n"+s.creating_expr.pos.toString()+", created by:\n"+s.creating_expr.toString(ctxt);
 
-	if (s.dropping_expr != null)
-	    ret += "\n\n"+s.dropping_expr.pos.toString()+", dropped by:\n"+s.dropping_expr.toString(ctxt)+"\n";
+	if (s.dropping_expr != null) {
+	    ret += "\n\n";
+	    if (s.dropping_pos != null)
+		ret += s.dropping_pos.toString();
+	    else 
+		ret += s.dropping_expr.pos.toString();
+	    ret += ", dropped by:\n"+s.dropping_expr.toString(ctxt)+"\n";
+	}
 	return ret;
     }
 

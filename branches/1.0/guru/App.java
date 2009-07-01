@@ -124,7 +124,8 @@ public class App extends Expr{
 	       either. */
 	    if (ctxt.getFlag("debug_classify_apps")) {
 		ctxt.w.println("(About to classify argument "+
-			       (new Integer(arg+1)).toString());
+			       (new Integer(arg+1)).toString() + ": " +
+			       X[arg].toString(ctxt));
 		ctxt.w.flush();
 	    }
 

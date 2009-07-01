@@ -1,6 +1,7 @@
 Include "qcharray.g".
 Include "string.g".
 Include "option.g".
+Include "unique_owned.g".
 Include "pair.g".
 
 %- <trie A> is the type for tries storing elts of type A. 
