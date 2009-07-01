@@ -1,3 +1,8 @@
+test-unique-owned:	test-unique-owned.g Makefile
+	../bin/guru test-unique-owned.g
+	gcc -O0 -ggdb -w -o test-unique-owned test-unique-owned.c
+	valgrind ./test-unique-owned
+
 test-qcharray:	test-qcharray.g Makefile
 	../bin/guru test-qcharray.g
 	gcc -O0 -ggdb -w -o test-qcharray test-qcharray.c

@@ -547,8 +547,11 @@ public class Context extends guru.FlagManager {
 		w.println("     can be returned.");
 	    if (dropping_expr == null)
 		w.println("     not dropped yet.");
-	    else
-		w.println("     dropped by "+dropping_expr.toString(ctxt)+" at "+dropping_pos.toString());
+	    else {
+		w.println("     dropped by "+dropping_expr.toString(ctxt));
+		if (dropping_pos != null)
+		    w.println(" at "+dropping_pos.toString());
+	    }
 
 	    Iterator it = pinning.iterator();
 	    w.print("     pinning:");

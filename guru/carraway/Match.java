@@ -426,7 +426,7 @@ public class Match extends Expr {
 	    // this can only happen if we are returning void
 	    return ctxt.voidref;
 
-	return ctxt.newRef(pos,ret_data);
+	return ctxt.newRef(this,pos,ret_data.non_ret,ret_data.consume);
     }
 
     public Expr linearize(Context ctxt, guru.Position p, Sym dest, Collection decls, Collection defs) {
