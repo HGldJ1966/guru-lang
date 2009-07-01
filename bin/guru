@@ -1,3 +1,8 @@
 #!/bin/sh
 
-java -cp ~/guru-lang/ guru.Main $*
+if [ $GURU_LANG ]
+then
+  java -cp $GURU_LANG guru.Main $*
+else
+  java -cp ~/guru-lang/ guru.Main $*
+fi
