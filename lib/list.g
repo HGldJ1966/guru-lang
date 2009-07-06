@@ -931,6 +931,78 @@ Define list_seteq: Fun(A:type)(eqA : Fun(^ #owned a b: A).bool)(l1 l2 :<list A>)
    fun list_seteq (A:type)(eqA : Fun(^ #owned a b: A).bool)(l1 l2:<list A>) : bool.
                    (and (list_subset A eqA l1 l2)(list_subset A eqA l2 l1)).
 
+Define append_helper : Forall(A:type)(a:A)(eqA : Fun(^ #owned a b: A).bool)(l'' l' : <list A>). {(append l' (cons a l'')) = (append (append l' (cons a nil)) l'')} :=
+   foralli(A:type)(a:A)(eqA : Fun(^ #owned a b: A).bool)( l'' : <list A>).
+     induction(l' : <list A>) return  {(append l' (cons a l'')) = (append (append l' (cons a nil)) l'')} with
+         nil _ =>
+                  trans cong (append * (cons a l'')) l'_eq
+                  trans join (append nil (cons a l'')) (append (append nil (cons a nil)) l'')
+                        cong (append (append * (cons a nil)) l'') symm l'_eq
+
+       | cons _ b k =>
+                       trans cong (append * (cons a l'')) l'_eq
+                       trans join (append (cons b k) (cons a l'')) (append (cons b nil)(append k (cons a l'')))
+                       trans cong (append (cons b nil) *) [l'_IH k]
+                       trans join (append (cons b nil) (append (append k (cons a nil)) l''))
+                                  (append (append (cons b k) (cons a nil)) l'')
+                             cong (append (append * (cons a nil)) l'') symm l'_eq
+
+
+       end.
+
+
+Define list_setmember: Forall(A:type)(a:A)
+                         (eqA:Fun(^ #owned x y: A).bool)
+                         (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+                         (u:{(eqA a a)= tt})(l'' l':<list A>).
+                         { (member a (append l' (cons a l'')) eqA) = tt } :=
+   foralli(A:type)(a:A)(eqA:Fun(^ #owned x y: A).bool)
+          (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+          (u: {(eqA a a) = tt})(l'':<list A>).
+       induction(l':<list A>) return  { (member a (append l' (cons a l'')) eqA) = tt } with
+
+        nil _ =>
+               trans cong (member a (append * (cons a l'')) eqA) l'_eq
+                     hypjoin (member a (append nil (cons a l'')) eqA) tt by u end
+
+     | cons _ b k =>
+                   trans cong (member a (append * (cons a l'')) eqA) l'_eq
+                   trans join (member a (append (cons b k) (cons a l'')) eqA)
+                        (member a (append (cons b nil) (append k (cons a l''))) eqA)
+                   trans join (member a (append (cons b nil) (append k (cons a l''))) eqA)
+                        (member a (append (cons b k) (cons a l'')) eqA)
+                   trans join (member a (append (cons b k) (cons a l'')) eqA)
+                        (member a (append (cons b nil) (append k (cons a l''))) eqA)
+                   case terminates (eqA a b) by eqA_total by eqAp eqAt with
+                         default bool => hypjoin (member a (append (cons b nil) (append k (cons a l''))) eqA)
+                                         tt by eqAp [l'_IH k] end
+                       end  
+    end.
+
+
+Define list_SubsetOfSelf : Forall(A:type)(eqA : Fun(^ #owned a b: A).bool)
+                            (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+                            (u: Forall(a:A).{(eqA a a ) = tt})
+                            (l : <list A>).
+                            Forall(l': <list A>).{(list_subset A eqA l (append l' l)) = tt} :=
+   foralli(A:type)(eqA : Fun(^ #owned a b: A).bool)
+          (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+          (u: Forall(a:A). {(eqA a a ) = tt}).
+        induction(l : <list A>) return Forall(l':<list A>).{(list_subset A eqA l (append l' l)) = tt} with
+             nil _ => foralli(l': <list A>).
+                        trans cong (list_subset eqA * (append l' *)) l_eq
+                              join (list_subset eqA nil (append l' nil)) tt
+           | cons _ a l'' =>  foralli(l': <list A>).
+                                trans cong (list_subset eqA * (append l' *)) l_eq
+                                trans hypjoin (list_subset eqA (cons a l'')(append l' (cons a l'')))
+                                              (list_subset eqA l'' (append l' (cons a l'')))
+                                              by [list_setmember A a eqA eqA_total [u a] l'' l' ] end
+                                trans cong (list_subset eqA A l'' *) [append_helper A a eqA l'' l' ]
+                                [l_IH l'' (append A l' (cons A a (nil A))) ]
+
+
+           end.
+
 Define trusted list_subset_total :
   Forall(A:type)
         (eqA:Fun(a b: A).bool)
