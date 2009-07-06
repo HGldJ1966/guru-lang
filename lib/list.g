@@ -909,17 +909,37 @@ Define length_fill : Forall (A : type) (a : A) (n : nat) .
               symm n_eq
   end.
 
- Define list_all : Fun(A:type)(f:Fun(a:A).bool)(l:<list A>) . bool :=
-   fun list_all (A:type)(f:Fun(a:A).bool)(l:<list A>) : bool .
-      match l with
-         nil _ => tt
+% early terminating version of list_forall/_exists (not using foldl)
+Define list_all : Fun(A:type)(f:Fun(a:A).bool)(l:<list A>) . bool :=
+  fun list_all (A:type)(f:Fun(a:A).bool)(l:<list A>) : bool .
+    match l with
+      nil _ => tt
+    | cons _ a l' => match (f a) with
+                       ff =>  ff
+                     | tt =>  (list_all A f l')
+                     end
+    end.
 
-       | cons _ a l' => match (f a) with
-                          ff =>  ff
-                        | tt =>  (list_all A f l')
-                        end
-       end.
+Define list_any : Fun(A:type)(f:Fun(^#owned a:A).bool)(^#owned l:<list A>) . bool :=
+  fun list_any (A:type)(f:Fun(^#owned a:A).bool)(^#owned l:<list A>) : bool .
+    match l with
+      nil _ => ff
+    | cons _ a l' => match (f a) with
+                       ff =>  (list_any A f l')
+                     | tt =>  tt
+                     end
+    end.
 
+% member (early terminating)
+Define member2 : Fun(A:type)
+                    (eqA:Fun(^#owned x1 x2:A).bool)
+                    (^#owned x:A)
+                    (^#owned l:<list A>).bool :=
+  fun(A:type)
+     (eqA:Fun(^#owned x1 x2:A).bool)
+     (^#owned x:A)
+     (^#owned l:<list A>).
+  (list_any A (eqA x) l).
 
 % l1 is a subset of l2
 Define list_subset : Fun(A:type)(eqA : Fun(^ #owned a b: A).bool)(l1 l2:<list A>) . bool :=
