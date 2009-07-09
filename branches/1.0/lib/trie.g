@@ -72,7 +72,7 @@ Define trie_remove : Fun(spec A:type)(^#owned s:string)(#unique t:<trie A>).
                       (trie_next A' (nothing A) l')
                    end
         | ucons _ c s' => 
-          match (qcharray_out <trie A> c stringn l' join (string_mem c stringn) ff) with
+          match (qcharray_out1 <trie A> c l') with
             mk_qcharray_mod _ a' _ _ l'' =>
               let r = (trie_remove A s' a') in 
                 (trie_next A' o 
@@ -81,33 +81,31 @@ Define trie_remove : Fun(spec A:type)(^#owned s:string)(#unique t:<trie A>).
         end
     end.
 
-Define trie_lookup : Fun(A:type)(^#unique_owned t:<trie A>)(owned s:string).
+Define trie_lookup : Fun(A:type)(^#unique_owned t:<trie A>)(^#owned s:string).
                         <option A> :=
-  fun trie_lookup(A:type)(unique_owned t:<trie A>)(owned s:string)
+  fun trie_lookup(A:type)(^#unique_owned t:<trie A>)(^#owned s:string)
       : <option A> .
     match t with
-      trie_none A' => (nothing A)
-    | trie_exact A' s' a' => 
+      trie_none _ => (nothing A)
+    | trie_exact _ s' a' => 
         match (stringeq s s') with
           ff => (nothing A)
-        | tt => (something A 
-                   cast inc a' by symm inj <trie *> t_Eq)
+        | tt => (something A a')
         end
-    | trie_next A' o' l' =>
-      abbrev P = symm inj <trie *> t_Eq in
-      abbrev cl' = cast l' by cong <charvec <trie *>> P in
+    | trie_next _ o' l' =>
         match s with
-          nil B => inc cast o' by cong <option *> P
-        | cons B b s' => 
-          abbrev PB = symm inj <list *> s_Eq in
-          abbrev cb = cast b by PB in
-          abbrev ss = cast s' by cong <list *> PB in
-          (trievec_get A cl' cb <trie_lookup_i A> <option A> 
-            (mk_trie_lookup_i A trie_lookup inc ss)
-            (trie_lookup_h A))
+          unil _ => (inc <option A> o')
+        | ucons _ c s' => 
+          let r = (trie_lookup A (qcharray_read <trie A> c l') s') in 
+          do
+            (consume_owned <option A> o')
+            (consume_unique_owned <qcharray <trie A> stringn> l')
+            r
+          end
         end
      end.
 
+%-
 Inductive trie_interp_i1 : Fun(A:type).type :=
   mk_trie_interp_i1 : Fun(A:type)
                         (c:char).
@@ -937,3 +935,4 @@ Define trie_interp_range2 :
               cong (append (map unit fun(u).snd l1) *)
                 join (map unit fun(u).snd (cons (mkpair s a) l2))
                      (cons a (map unit fun(u).snd l2)).
+-%
