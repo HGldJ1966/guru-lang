@@ -5,7 +5,7 @@
 Include trusted "vec.g".
 Include trusted "string.g".
 Include trusted "minus.g".
-Include trusted "unique.g".
+Include trusted "unique_owned.g".
 
 % the string tells which characters' values are checked out right now.
 
@@ -60,6 +60,14 @@ END.
 
 % simpler interface to qcharray_in, for when you have checked out the
 % value for just one character.
+Define qcharray_out1 : Fun(spec A:type)(#untracked c:char)
+                          (#unique l:<qcharray A stringn>). 
+                          #unique <qcharray_mod_t A c stringn> :=
+  fun(spec A:type)(#untracked c:char)(#unique l:<qcharray A stringn>).
+    (qcharray_out A c stringn l join (string_mem c stringn) ff).
+
+% simpler interface to qcharray_in, for when you have checked out the
+% value for just one character.
 Define qcharray_in1 : Fun(spec A:type)(#untracked c:char)(#unique a:A)
                          (#unique l:<qcharray A (stringc c stringn)>). 
                        #unique <qcharray A stringn> :=
@@ -71,6 +79,16 @@ Define qcharray_in1 : Fun(spec A:type)(#untracked c:char)(#unique a:A)
         by cong <qcharray A *> 
              join (stringc c stringn) (string_app stringn (stringc c stringn)))
      by cong <qcharray  A *> join (string_app stringn stringn) stringn.
+
+% read-only access
+Define primitive qcharray_read
+ : Fun(spec A:type)(#untracked c:char)
+      (#unique_owned l:<qcharray A stringn>). 
+    #unique_owned A :=
+  fun(spec A:type)(c:char)(l:<qcharray A stringn>).
+    (vec_get A num_chars l (which_char c) [chars_bounded c]) <<END
+#define gqcharray_read(int c, void *a) a[c]
+END.
 
 Define primitive qcharray_free
    : Fun(spec A C:type)(^ #unique l:<qcharray A stringn>)
