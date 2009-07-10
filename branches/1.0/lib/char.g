@@ -1,8 +1,9 @@
-Include "bool.g".
-Include "unit.g".
-Include "pow.g".
-Include "bv.g".
-Include "minus.g".
+Include trusted "bool.g".
+Include trusted "unit.g".
+Include trusted "pow.g".
+Include trusted "bv.g".
+Include trusted "minus.g".
+Include trusted "list.g".
 
 % number of bits per character
 Define spec charlen := (S (S (S (S (S (S (S Z))))))).
@@ -193,12 +194,10 @@ Define primitive char_inc :=
            carry)
       end
 <<END
-
   gchar_inc_t gchar_inc(gchar c) {
     int t = c+1;
     return gmk_char_inc_t((char)t, (t > 127));
   }
-
 END.
 
 Define char_inc_tot : Forall(c:char).Exists(r:char_inc_t).{(char_inc c) = r} :=
@@ -216,6 +215,14 @@ Define char_inc_tot : Forall(c:char).Exists(r:char_inc_t).{(char_inc c) = r} :=
     end.
 
 Define spec which_char : Fun(c:char).nat := (to_nat charlen). 
+
+Define primitive char_inc1 : Fun(c:char)(u:{(lt (which_char c) (which_char CLast)) = tt}).char 
+  := fun(c:char)(u:{(lt (which_char c) (which_char CLast)) = tt}).
+     match (char_inc c) with
+       mk_char_inc_t c' overflow => c'
+     end <<END
+ #define gchar_inc1(c) (c+1)
+END.
 
 Define eqchar_tot : Forall(c1 c2:char).Exists(b:bool).
                          { (eqchar c1 c2) = b } := 
@@ -312,3 +319,19 @@ Define minus_which_char_Z :
          terminates (which_char c) by to_nat_tot
          terminates (which_char d) by to_nat_tot
          m]].
+
+%-
+Define char_range
+ : Fun(c1 c2 : char)(u : { (le (which_char c1) (which_char c2)) = tt }). <list char> :=
+fun char_range(c1 c2 : char)(u : { (le (which_char c1) (which_char c2)) = tt }): <list char>.
+  match (eqchar c1 c2) by v ign with
+    ff => (cons char c1 (char_range (char_inc1 c1 [ltle_trans (which_char c1) (which_char c2) (which_char CLast)
+                                                      [eqnat_ff_implies_lt (which_char c1) (which_char c2) 
+                                                         [to_nat_neq1 charlen c1 c2 v] u]
+                                                      [chars_bounded c2]])
+                            c2))
+  | tt => (nil char)
+  end.
+
+Define all_chars := "hi". % this is wrong
+-%

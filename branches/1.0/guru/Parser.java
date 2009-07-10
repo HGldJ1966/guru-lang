@@ -1714,9 +1714,14 @@ public class Parser extends ParserBase {
     protected Const readBindingConst() throws IOException
     {
 	Var v = (Var)readIdentifier(true);
-	if (ctxt.lookup(v.name) != null) 
+	Expr e = ctxt.lookup(v.name);
+	if (e != null) 
 	    handleError("A previous definition or "
-			+"declaration is being shadowed.");
+			+"declaration is being shadowed:"
+			+"\n\n1. the defined constant: "+v.toString(ctxt)
+			+(e.pos != null ?
+			  "\n\n2. previously defined at: "+e.pos.toString()
+			  : ""));
 	Const c = new Const(v.name);
 
 	c.pos = v.pos;

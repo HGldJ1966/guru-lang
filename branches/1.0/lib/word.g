@@ -2,12 +2,18 @@ Include "string.g".
 
 Define wordlen := (mult2 (mult2 (S (S (S (S (S (S (S (S Z)))))))))).
 
-Define spec word := <bv wordlen>.
+Define primitive word := <bv wordlen> <<END
+#define gdelete_word(x)
+END.
 
-Untracked word.
+Define primitive word0 : word := (mkvec bool ff wordlen) <<END
+#define gword0 0
+END.
 
-Define spec word0 : word := (mkvec bool ff wordlen).
-Define spec eqword : Fun(w1 w2:word).bool := (eqbv wordlen).
+Define primitive eqword : Fun(w1 w2:word).bool := (eqbv wordlen) <<END
+  #define eqword(w1,w2) (w1 == w2)
+END.
+
 Define eqword_eq := [eqbv_eq wordlen].
 Define eqword_tot := [eqbv_tot wordlen].
 Total eqword eqword_tot.
@@ -16,14 +22,20 @@ Define eqword_refl := [eqbv_refl wordlen].
 Inductive word_inc_t : type :=
   mk_word_inc_t : Fun(b:word)(carry:bool).word_inc_t.
 
-Define spec word_inc :=
+Define primitive word_inc :=
   fun(b:word).
     let r = (bv_inc wordlen b) in
     match r with
       mk_bv_inc_t l' v' carry => 
         (mk_word_inc_t cast v' by cong <bv *> symm inj <bv_inc_t *> r_Eq 
            carry)
-      end.
+      end
+<<END
+#include <limits.h>
+gword_inc_t gword_inc(gword c) {
+  return gmk_word_inc_t(c+1, (c == UINT_MAX));
+}
+END.
 
 Define word_inc2 :=
   fun(b:word).
@@ -86,8 +98,12 @@ Define word_to_nat_inc2
            [condplusff terminates (pow2 wordlen) by pow_total
               terminates (word_to_nat w2) by word_to_nat_tot].
 
-Define spec char_to_word : Fun(c:char).word :=
+Define primitive char_to_word : Fun(c:char).word :=
   fun(c:char).
   cast
    (bv_append charlen (minus wordlen charlen) c (mkvec bool ff (minus wordlen charlen)))
-  by cong <vec bool *> [plus_minus_lt charlen wordlen join (lt charlen wordlen) tt]. 
+  by cong <vec bool *> [plus_minus_lt charlen wordlen join (lt charlen wordlen) tt]
+<<END
+  #define gchar_to_word(c) c
+END. 
+

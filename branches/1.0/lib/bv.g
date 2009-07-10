@@ -1,7 +1,7 @@
 %Unset "check_drop_annos_idem".
 
-Include "pow.g".
-Include "vec.g".
+Include trusted "pow.g".
+Include trusted "vec.g".
 
 Define bv := <vec bool>.
 Define bvn := (vecn bool).
@@ -689,3 +689,17 @@ Define to_nat_neq
         clash tt ff
       { (eqbv v1 v2) = ff }
   end.
+
+Define to_nat_eq
+  : Forall(l:nat)(v1:<bv l>)(v2:<bv l>)
+          (u:{(eqbv v1 v2) = tt}).
+     {(eqnat (to_nat v1) (to_nat v2)) = tt} :=
+  foralli(l:nat)(v1:<bv l>)(v2:<bv l>)
+         (u:{(eqbv v1 v2) = tt}).
+  trans cong (eqnat (to_nat v1) (to_nat *)) 
+          symm [eqbv_eq l v1 v2 u]
+        [eqnat_refl (to_nat l v1)].
+   
+Define trusted to_nat_neq1 : Forall(l:nat)(v1:<bv l>)(v2:<bv l>)
+                                   (u:{(eqbv v1 v2) = ff}).
+                               {(eqnat (to_nat v1) (to_nat v2)) = ff} := truei.

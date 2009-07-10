@@ -44,7 +44,7 @@ minmax-le:
 	../bin/guru minmax-le.g
 
 word:
-	java -cp .. guru.Main word.g
+	../bin/guru word.g
 
 vec:
 	java -cp .. guru.Main vec.g
