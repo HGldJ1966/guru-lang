@@ -1153,3 +1153,4 @@ Define eqnat_le : Forall(x y:nat)(u:{ (eqnat x y) = tt }).{ (le x y) = tt } :=
 
 Define eqnat_implies_le := eqnat_le.
 
+Define trusted eqnat_ff_implies_lt : Forall(x y:nat)(u:{(eqnat x y) = ff})(v:{(le x y) = tt}).{(lt x y) = tt} := truei.

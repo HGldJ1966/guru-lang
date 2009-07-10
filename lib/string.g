@@ -20,3 +20,5 @@ Define stringeqEq : Forall(s1 s2:string)(u: {(stringeq s1 s2) = tt}).
 Define stringeqTot := 
   foralli(s1 s2:string).[equlist_total char eqchar eqchar_tot s1 s2].
 
+
+

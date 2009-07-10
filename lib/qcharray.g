@@ -28,6 +28,15 @@ void *gqcharray_new(void *b, funtp_gmk_qcharray f) {
 }
 END.
 
+%-
+Define primitive qcharray_empty 
+  : Fun(A:type).#unique <qcharray A all_chars> <<END
+void *gqcharray_empty(int A) {
+  return (void **)guru_malloc(sizeof(void *)*128);
+}
+END.
+-%
+
 Inductive qcharray_mod_t : Fun(A:type)(c:char)(s:string).type :=
   mk_qcharray_mod : Fun(spec A:type)(#unique a:A)(spec c:char)(spec s:string)
                        (#unique l:<qcharray A (stringc c s)>).#unique <qcharray_mod_t A c s>.
