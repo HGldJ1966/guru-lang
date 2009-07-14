@@ -71,8 +71,30 @@ public class StringExpr extends Expr {
 	char[] a = val.toCharArray();
 	Expr ret = new TermApp(_const(ctxt,"inc"), // _const(ctxt,"string"), 
 			       _const(ctxt,"stringn"));
-	for (int i = a.length - 1, iend = 0; i >= iend; i--) 
-	    ret = new TermApp(_const(ctxt,"stringc"), 
+	String s = "";
+	for (int i = 0; i < a.length; i++) {
+	    if (a[i] == '\\') {
+		if (a[++i] == -1)
+			break;
+		switch(a[i]) {
+		    case '\\': s += '\\'; break;
+		    case '\'': s += '\''; break;
+		    case '\"': s += '\"'; break;
+		    case '0' : s += '\0'; break;
+		    case 'b' : s += '\b'; break;
+		    case 't' : s += '\t'; break;
+		    case 'n' : s += '\n'; break;
+		    case 'f' : s += '\f'; break;
+		    case 'r' : s += '\r'; break;
+		    default  : s += a[i]; break;
+		}
+	    } else
+		s += a[i];
+	}
+
+	a = s.toCharArray();
+	for (int i = a.length - 1, iend = 0; i >= iend; i--)
+	    ret = new TermApp(_const(ctxt,"stringc"),
 			      toCharExpr(ctxt,a[i]), ret);
 	return ret;
     }
