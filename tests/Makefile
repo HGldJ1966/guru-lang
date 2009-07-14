@@ -1,3 +1,6 @@
+show:
+	../bin/guru show.g
+
 test-unique-owned:	test-unique-owned.g Makefile
 	../bin/guru test-unique-owned.g
 	gcc -O0 -ggdb -w -o test-unique-owned test-unique-owned.c
