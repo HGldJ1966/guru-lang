@@ -313,6 +313,7 @@ public class EtaExpand {
 	    }
 
 	    Expr b = f.body;
+
 	    Expr nT = expand(f.T,false,null);
 	    Ownership nret_stat = expand(f.ret_stat);
 	    f = new FunTerm(f.r, nT, f.vars, ntypes, nowned, f.consumps,
@@ -331,7 +332,7 @@ public class EtaExpand {
 	    Iterator it = ((StringExpr)e).getConstsUsed(src).iterator();
 	    while(it.hasNext()) {
 		Const c = (Const)it.next();
-		expand(c,from_fun,from_const);
+		expand(c,from_fun,null);
 	    }
 	    return e;
 	}

@@ -84,7 +84,7 @@ public class Case extends Expr {
 	
 	if (ret != ctxt.voidref) {
 	    Context.RefStat u = ctxt.refStatus(ret);
-	    if (u.non_ret)
+	    if (u != null && u.non_ret)
 		simulateError(ctxt,"A match-case is returning a non-returnable reference.\n\n"
 			      +"1. the case: "+c.toString(ctxt)
 			      +"\n\n2. "+ret.refString(ctxt));

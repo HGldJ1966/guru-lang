@@ -243,6 +243,8 @@ public class Compile extends Command {
 			    F.r = new Var(c.name);
 			    F.r.pos = c.pos;
 			}
+			else 
+			    F.r.name = c.name;
 			g.t = (guru.carraway.FunTerm)body.toCarraway(ctxt);
 			cmds.add(g);
 			continue;

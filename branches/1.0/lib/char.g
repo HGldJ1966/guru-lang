@@ -165,7 +165,7 @@ Define CLast : char := Cdel.
 
 Define Cnl : char := C10.
 
-Define primitive eqchar : Fun(#untracked c1 c2:char).bool := (eqbv charlen) <<END
+Define primitive eqchar : Fun(#untracked c1 c2:char).#untracked bool := (eqbv charlen) <<END
 
 inline int geqchar(int c1,int c2) {
   return (c1 == c2);
@@ -176,7 +176,7 @@ END.
 Define eqchar_refl := [eqbv_refl charlen].
 
 Define is_whitespace :=
- fun(a:char).
+ fun(#untracked a:char):#untracked bool.
    (or (eqchar a Cnl)
    (or (eqchar a Csp) 
    (or (eqchar a Cc9)
