@@ -121,6 +121,7 @@ public class ParserBase {
     {
         int c;
         String s="";
+        boolean escaped = false;
 	c=getc();
 
 	if ((char)c != '"')
@@ -128,9 +129,22 @@ public class ParserBase {
 			+" string.");
         do{
 	    c=getc();
-	    if (c == -1 || (char)c == '"') {
-		break; 
+	    if ((char)c == '\\') {
+	        if (! escaped)
+                    escaped = true;
+                else
+                    escaped = false;
+            } else if ((char)c == '"') {
+                if (!escaped)
+                    break;
+                escaped = false;
+            } else if (c == -1) {
+                handleError("Expecting a double quotation mark (\") to end a"
+                            +" string");
+            } else {
+                escaped = false;
             }
+
             s+=(char)c;
         } while(true);
         
