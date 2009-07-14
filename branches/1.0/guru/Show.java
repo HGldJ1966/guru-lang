@@ -54,7 +54,8 @@ public class Show extends Expr{
     protected String show_proof(Context ctxt, Expr pf, boolean in_trans, boolean multiple_proofs) {
 	String str = (!multiple_proofs || !in_trans ? (new Integer(step++)).toString() + ". " : "   ");
 	if (pf.construct == TRANS) {
-	    Atom a1 = (Atom)((Trans)pf).P1.classify(ctxt).dropAnnos(ctxt);
+	    Expr c1 = ((Trans)pf).P1.classify(ctxt).dropAnnos(ctxt);
+	    Atom a1 = (Atom)c1;
 	    str += a1.Y1.toString(ctxt) + " =\n\n";
 	    str += show_proof(ctxt,((Trans)pf).P2,true,multiple_proofs);
 	}
@@ -77,6 +78,7 @@ public class Show extends Expr{
 	String str = "We have the following classifications:\n\n";
 	step = 1;
 	for (int i = 0, iend = P.length; i < iend; i++) {
+	    P[i].classify(ctxt);
 	    str += show_proof(ctxt,P[i],false,iend > 1);
 	}
 
