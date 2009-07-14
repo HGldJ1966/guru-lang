@@ -799,10 +799,9 @@ Define iszero :=
 
 \noindent Let us walk through this definition.  First, we see it is
 written across several lines, with changing indentation.  Whitespace
-in \guru, as in most sensible languages, has no semantic impact.  So
-the indentation and line breaks are just (intended) to make it easier
-to read the code.  It would have the same meaning if we wrote it all
-on one line, like this:
+in \guru has no semantic impact.  So the indentation and line breaks
+are just (intended) to make it easier to read the code.  It would have
+the same meaning if we wrote it all on one line, like this:
 
 \begin{verbatim}
 Define iszero := fun(x:nat). match x with Z => tt | S x' => ff end.
@@ -2996,7 +2995,7 @@ existsi x { (le x *) = (le * x) } P
 \begin{verbatim}
 Define ltcomm : Forall(x:nat).Exists(y:nat). { (le x y) = (le y x) } :=
   foralli(x:nat).
-    existsi x { (le x *) = (le * x) } refl (le x x)
+    existsi x { (le x *) = (le * x) } refl (le x x).
 \end{verbatim}
 
 \noindent We start off with \texttt{foralli}, to introduce the
@@ -3150,7 +3149,7 @@ is then the following (the line numbers are not valid \guru syntax):
 
 \begin{enumerate}
 \item Introduce our arbitrary \texttt{x} of type \texttt{nat}.
-\item Use existential elimination.  The proof \texttt{[existslt x]} is
+\item Use existential elimination.  The proof \texttt{[existsle x]} is
 our instantiation of the previously proved theorem.  It proves
 \texttt{Exists(y:nat).\{(le x y) = tt\}}.  This is the first proof that
 \texttt{existse} requires, namely, the proof that something exists which
