@@ -3,7 +3,7 @@ Include trusted "unit.g".
 Include trusted "pow.g".
 Include trusted "bv.g".
 Include trusted "minus.g".
-Include trusted "list.g".
+Include trusted "ulist.g".
 
 % number of bits per character
 Define spec charlen := (S (S (S (S (S (S (S Z))))))).
@@ -214,6 +214,8 @@ Define char_inc_tot : Forall(c:char).Exists(r:char_inc_t).{(char_inc c) = r} :=
       by ur r_eq end
     end.
 
+Total char_inc char_inc_tot.
+
 Define spec which_char : Fun(c:char).nat := (to_nat charlen). 
 
 Define primitive char_inc1 : Fun(c:char)(u:{(lt (which_char c) (which_char CLast)) = tt}).char 
@@ -310,6 +312,18 @@ Define to_nat_char_inc : Forall(c d:char)(carry:bool)
            inj (mk_char_inc_t * **) P
      end.
 
+Define char_inc1_lem : Forall(c:char)(u:{(lt (which_char c) (which_char CLast)) = tt}).
+                        { (which_char (char_inc1 c)) = (S (which_char c)) } := 
+  foralli(c:char)(u:{(lt (which_char c) (which_char CLast)) = tt}).
+  case (char_inc c) by v ign with
+  mk_char_inc_t d carry =>
+    symm trans [to_nat_char_inc c d ff
+                  trans v cong (mk_char_inc_t d *) [char_inc_notfull c d carry u v]]
+         hypjoin (condplus ff (pow2 charlen) (to_nat d)) 
+                 (which_char (char_inc1 c))
+         by v end
+  end.
+
 Define minus_which_char_Z :
   Forall(c d:char)(m:{(minus (which_char c) (which_char d)) = Z}).
     { c = d } :=
@@ -320,18 +334,3 @@ Define minus_which_char_Z :
          terminates (which_char d) by to_nat_tot
          m]].
 
-%-
-Define char_range
- : Fun(c1 c2 : char)(u : { (le (which_char c1) (which_char c2)) = tt }). <list char> :=
-fun char_range(c1 c2 : char)(u : { (le (which_char c1) (which_char c2)) = tt }): <list char>.
-  match (eqchar c1 c2) by v ign with
-    ff => (cons char c1 (char_range (char_inc1 c1 [ltle_trans (which_char c1) (which_char c2) (which_char CLast)
-                                                      [eqnat_ff_implies_lt (which_char c1) (which_char c2) 
-                                                         [to_nat_neq1 charlen c1 c2 v] u]
-                                                      [chars_bounded c2]])
-                            c2))
-  | tt => (nil char)
-  end.
-
-Define all_chars := "hi". % this is wrong
--%

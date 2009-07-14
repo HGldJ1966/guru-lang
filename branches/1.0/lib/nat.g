@@ -922,6 +922,8 @@ Define lt_pred : Forall(x y z:nat)(u:{ y = (S x) })(v:{ (lt z y) = tt }).{ (le z
       end
   end.
 
+Define trusted lt_S_le : Forall(x y:nat)(u:{(lt x y) = tt}). { (le (S x) y) = tt } := truei.  
+
 Define ltff_le : Forall(a b:nat)(u:{ (lt a b) = ff }).{ (le b a) = tt } :=
   induction(a:nat) by ap at IHa return Forall(b:nat)(u:{ (lt a b) = ff }).{ (le b a) = tt } with
     Z =>
