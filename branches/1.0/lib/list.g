@@ -920,6 +920,39 @@ Define list_all : Fun(A:type)(f:Fun(a:A).bool)(l:<list A>) . bool :=
                      end
     end.
 
+Define list_all_append:  Forall(A:type)(f:Fun(a:A).bool)(ftot : Forall(a:A).Exists(b:bool). {(f a) = b})
+(l1 l2:<list A>)(u:{(list_all f l1) = tt}).{(list_all f (append l1 l2)) = (list_all f l2)} :=
+foralli(A:type)(f:Fun(a:A).bool)(ftot: Forall(a:A).Exists(b:bool).{(f a) = b})(l1 l2:<list A>)(u:{(list_all f l1) = tt}).
+[
+induction (l1:<list A>) return 
+Forall(u:{(list_all f l1) = tt}).{(list_all f (append l1 l2)) = (list_all f l2)} 
+with
+
+         nil _ =>  foralli(u:{(list_all f l1) = tt}).
+		   trans cong (list_all f (append * l2))l1_eq
+                         join (list_all f (append nil l2))(list_all f l2)
+   
+| cons _ a l1' => foralli(u:{(list_all f l1) = tt}).
+		  case terminates (f a) by ftot by v ign with
+                     ff => contra
+                           trans symm u
+			   trans hypjoin (list_all f l1) ff by l1_eq v end
+                                 clash ff tt
+                           {(list_all f (append l1 l2)) = (list_all f l2)}
+
+                                                      
+                   | tt => trans hypjoin (list_all f (append l1 l2)) (list_all f (append l1' l2)) by l1_eq v end
+			   abbrev l1'_tt = symm trans symm u
+                                           hypjoin (list_all f l1) (list_all f l1') by l1_eq v end in
+                           [l1_IH l1' l1'_tt]
+                           
+                           end
+                                    
+end
+
+l1 u].
+
+
 Define list_any : Fun(A:type)(f:Fun(^#owned a:A).bool)(^#owned l:<list A>) . bool :=
   fun list_any (A:type)(f:Fun(^#owned a:A).bool)(^#owned l:<list A>) : bool .
     match l with
