@@ -140,7 +140,7 @@ public class CasesExpr extends Expr {
 
     public Expr classify(Context ctxt, int approx, boolean spec) {
 	Expr clt = t.classify(ctxt,approx,spec).defExpandTop(ctxt,false,spec);
-	if (!clt.isdtype(ctxt, spec))
+	if (approx != APPROX_TRIVIAL && !clt.isdtype(ctxt, spec))
 	    handleError(ctxt,
 			"The scrutinee's type in a match-term is not"
 			+" an inductive type (or is opaque).\n"

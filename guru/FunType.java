@@ -149,6 +149,8 @@ public class FunType extends FunAbstraction {
 		tl.add(tp.toCarrawayType(ctxt,dtype));
 	    else if (resource_tp.construct == guru.carraway.Expr.UNTRACKED)
 		tl.add(resource_tp);
+	    else if (!tp.isTrackedType(ctxt))
+		tl.add(new guru.carraway.Untracked());
 	    else if (dtype) 
 		tl.add(tp.toCarrawayType(ctxt,true));
 	    else 
@@ -165,6 +167,8 @@ public class FunType extends FunAbstraction {
 	if (ret_stat.status == Ownership.DEFAULT && 
 	    (tp.construct == FUN_TYPE || tp.construct == VOID || tp.construct == TYPE))
 	    F.rettype = body.toCarrawayType(ctxt,dtype);
+	else if (!tp.isTrackedType(ctxt))
+	    F.rettype = new guru.carraway.Untracked();
 	else
 	    F.rettype = ret_stat.toCarrawayType(ctxt, pos);
 	

@@ -129,9 +129,8 @@ public class Sym extends Expr {
 
     public Sym simulate_h(Context ctxt, Position p) {
 	if (ctxt.isCtor(this)) {
-	    // 0-ary constructors create new references, unless they are untracked
 	    Expr T = ctxt.getType(this);
-	    if (T.construct == UNTRACKED || T.construct == FUN_TYPE)
+	    if (!T.consumable())
 		return this;
 	    return ctxt.newRef(this,p);
 	}

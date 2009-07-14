@@ -304,9 +304,12 @@ public class FunTerm extends FunAbstraction {
 	guru.carraway.Expr[] ntypes = new guru.carraway.Expr[iend];
 	int[] nconsumps = new int[iend];
 	for (int i = 0; i < iend; i++) {
-	    ntypes[i] = ((types[i].construct == TYPE || types[i].construct == FUN_TYPE)
-			 ? types[i].toCarrawayType(ctxt,false)
-			 : owned[i].toCarrawayType(ctxt,vars[i].pos));
+	    if (types[i].construct == TYPE || types[i].construct == FUN_TYPE)
+		ntypes[i] = types[i].toCarrawayType(ctxt,false);
+	    else if (!types[i].isTrackedType(ctxt))
+		ntypes[i] = new guru.carraway.Untracked();
+	    else
+		ntypes[i] = owned[i].toCarrawayType(ctxt,vars[i].pos);
 	    nvars[i] = cctxt.newSym(vars[i].name,vars[i].pos);
 	    cctxt.pushVar(nvars[i]);
 	    nconsumps[i] = consumps[i];
@@ -318,6 +321,8 @@ public class FunTerm extends FunAbstraction {
 			+"explicitly add the return type.");
 	if (T.construct == VOID || T.construct == FUN_TYPE)
 	    F.rettype = T.toCarrawayType(ctxt,true);
+	else if (!T.isTrackedType(ctxt))
+	    F.rettype = new guru.carraway.Untracked();
 	else
 	    F.rettype = ret_stat.toCarrawayType(ctxt,T.pos);
 	F.consumps = nconsumps;

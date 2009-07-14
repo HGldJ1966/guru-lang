@@ -638,8 +638,11 @@ public class Context extends guru.FlagManager {
 	RefStat s = new RefStat(r,p,e,null,null,non_ret,consume);
 	refs.put(r, s);
 	changed_refs.add(r);
-	if (getFlag("debug_refs")) 
+	if (getFlag("debug_refs")) {
+	    w.print("creating new reference: ");
 	    s.print(w,this);
+	    w.println();
+	}
 	return r;
     }
 

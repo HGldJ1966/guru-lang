@@ -314,21 +314,29 @@ public class Match extends Expr {
 	    rs[i] = C[i].simulate(ctxt,pos);
 
 	    // consume the reference produced by the case (the case checks to make sure the reference is returnable).
-	    if (rs[i] != null) {
-		if (ret_data == null)
-		    ret_data = ctxt.refStatus(rs[i]);
-		else {
-		    Context.RefStat s1 = ctxt.refStatus(rs[i]);
-		    if (!ret_data.pinnedby.equals(s1.pinnedby) ||
-			!ret_data.pinning.equals(s1.pinning))
-			simulateError(ctxt,"The reference returned in a match-case has a different pinning/pinnedby profile than "
-				      +"\nthe earlier cases.\n\n"
-				      +"1. the case: "+C[i].c.toString(ctxt)
-				      +"\n\n2. its reference profile:\n"+s1.toString(ctxt)
-				      +"\n\n3. the earlier cases' reference profile:\n"+ret_data.toString(ctxt));
+	    Context.RefStat s1 = ctxt.refStatus(rs[i]);
+	    if (s1 == null) {
+		// rs[i] must be untracked
+		if (ctxt.getFlag("debug_refs")) {
+		    ctxt.w.println("Reference "+rs[i].toString(ctxt)+" returned by case is untracked.");
+		    ctxt.w.flush();
 		}
-
-		ctxt.dropRef(rs[i],C[i],C[i].lastpos);
+	    }
+	    else {
+		if (rs[i] != null) {
+		    if (ret_data == null)
+			ret_data = ctxt.refStatus(rs[i]);
+		    else 
+			if (!ret_data.pinnedby.equals(s1.pinnedby) ||
+			    !ret_data.pinning.equals(s1.pinning))
+			    simulateError(ctxt,"The reference returned in a match-case has a different pinning/pinnedby profile than "
+					  +"\nthe earlier cases.\n\n"
+					  +"1. the case: "+C[i].c.toString(ctxt)
+					  +"\n\n2. its reference profile:\n"+s1.toString(ctxt)
+					  +"\n\n3. the earlier cases' reference profile:\n"+ret_data.toString(ctxt));
+		    
+		    ctxt.dropRef(rs[i],C[i],C[i].lastpos);
+		}
 	    }
 
 	    S[i] = ctxt.restoreRefs();

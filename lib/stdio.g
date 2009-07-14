@@ -44,7 +44,7 @@ Define primitive next_char :=
     end 
 <<END
 
-  void *gnextc(void *x) {
+  void *gnext_char(void *x) {
     curc = 0;
     return x;
   }
