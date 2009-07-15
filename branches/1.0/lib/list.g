@@ -1252,7 +1252,53 @@ Define list_seteq_symm : Forall(A:type)(eqA : Fun(^ #owned a b: A).bool)
 			   u [equal_to_subset A eqA eqA_total l1 l2 u] end
 	     hypjoin (list_subset A eqA l1 l2)(list_seteq A eqA l2 l1) by A1 A2 end
 	
-.		
+.
+
+Define list_seteq_trans: Forall(A:type)(eqA: Fun(a b: A).bool)
+				 (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+				 (l1 l2 l3: <list A>)(u:{(list_seteq eqA l1 l2) = tt})
+				 (v:{(list_seteq eqA l2 l3) = tt})(w:Forall(a:A).{(eqA a a) = tt})
+				 (eqA_to_equals: Forall(a b:A)(k:{(eqA a b) = tt}).{ a = b}).
+				 { (list_seteq eqA l1 l3) = tt}:=
+	foralli(A:type)(eqA: Fun(a b: A).bool)
+				 (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+				 (l1 l2 l3: <list A>)(u:{(list_seteq eqA l1 l2) = tt})
+				 (v:{(list_seteq eqA l2 l3) = tt})(w:Forall(a:A).{(eqA a a) = tt})
+				 (eqA_to_equals: Forall(a b:A)(k:{(eqA a b) = tt}).{ a = b}).
+	   case terminates (list_subset A eqA l1 l3) by list_subset_total by lsp lst with
+		  ff => contra
+			
+		   abbrev U1 = hypjoin (list_subset A eqA l1 l2) tt by [equal_to_subset A eqA eqA_total l1 l2 u] end in
+		   abbrev U2 = hypjoin (list_subset A eqA l2 l3) tt by [equal_to_subset A eqA eqA_total l2 l3 v] end in	
+
+			trans symm [list_transitivity A eqA eqA_total l1 l2 l3 U1 U2 w eqA_to_equals]
+			trans hypjoin (list_subset A eqA l1 l3) ff by lsp end
+			clash ff tt
+			{ (list_seteq eqA l1 l3) = tt}
+		| tt => case terminates (list_subset A eqA l3 l1) by list_subset_total by lsp2 lst2 with
+			   ff => contra
+				    abbrev v' = hypjoin (list_seteq eqA l3 l2) tt by 
+					[list_seteq_symm A eqA eqA_total l2 l3 v ] end in 
+
+				    abbrev V1 = hypjoin (list_subset A eqA l3 l2) tt by 
+					[equal_to_subset A eqA eqA_total l3 l2 v'] end in
+
+				   abbrev u' = hypjoin (list_seteq eqA l2 l1) tt by
+				       [list_seteq_symm A eqA eqA_total l1 l2 u] end in					
+
+				    abbrev V2 = hypjoin (list_subset A eqA l2 l1) tt by 
+					[equal_to_subset A eqA eqA_total l2 l1 u'] end in
+			
+				    trans symm [list_transitivity A eqA eqA_total l3 l2 l1 V1 V2 w eqA_to_equals]
+
+				    trans hypjoin  (list_subset eqA l3 l1) ff by lsp2 end
+				clash ff tt
+				{ (list_seteq eqA l1 l3) = tt}
+				 
+			 | tt => hypjoin (list_seteq A eqA l1 l3) tt by lsp lsp2 end
+			 end
+		end.
+		
 
 
 %- you might want to prove these
