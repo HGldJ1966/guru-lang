@@ -1,15 +1,14 @@
-Include trusted "bool.g".
-Include trusted "unit.g".
 Include trusted "pow.g".
-Include trusted "bv.g".
+Include trusted "word.g".
 Include trusted "minus.g".
 Include trusted "ulist.g".
 
 % number of bits per character
-Define spec charlen := (S (S (S (S (S (S (S Z))))))).
+Define spec charlen : nat := (to_nat wordlen word7).
 
 % number of characters.
-Define spec num_chars := (pow2 charlen).
+Define spec num_chars_word : word := (word_set_bit word7 join (lt (to_nat word7) wordlen) tt word0).
+Define spec num_chars : nat := (to_nat wordlen num_chars_word).
 
 Define num_chars_not_Z := [pow_not_zero (S (S Z)) charlen clash (S (S Z)) Z].
 
@@ -19,6 +18,7 @@ END.
 
 Define primitive mkchar : Fun(#untracked b6 b5 b4 b3 b2 b1 b0:bool).#untracked char := 
   fun (b6 b5 b4 b3 b2 b1 b0:bool).
+  cast
     (bvc (S (S (S (S (S (S Z)))))) b6
     (bvc (S (S (S (S (S Z))))) b5
     (bvc (S (S (S (S Z)))) b4
@@ -26,11 +26,21 @@ Define primitive mkchar : Fun(#untracked b6 b5 b4 b3 b2 b1 b0:bool).#untracked c
     (bvc (S (S Z)) b2
     (bvc (S Z) b1
     (bvc Z b0 bvn)))))))
+  by cong <bv *> join seven (to_nat word7)
 <<END
   int gmkchar(int b6, int b5, int b4, int b3, int b2, int b1, int b0) {
     return (b6 << 0) | (b5 << 1) | (b4 << 2) | (b3 << 3) | (b2 << 4) | (b1 << 5) | (b0 << 6);
   }
 END.
+
+Define primitive c2w : Fun(c:char).word :=
+  fun(c:char).
+  cast
+   (bv_append charlen (minus wordlen charlen) c (mkvec bool ff (minus wordlen charlen)))
+  by cong <vec bool *> [plus_minus_lt charlen wordlen join (lt charlen wordlen) tt]
+<<END
+  #define gc2w(c) c
+END. 
 
 Define Cc0 : char := (mkchar ff ff ff ff ff ff ff). 
 Define Cc1 : char := (mkchar tt ff ff ff ff ff ff). 
@@ -236,17 +246,29 @@ Define eqchar_eq : Forall(c1 c2:char)(u:{(eqchar c1 c2) = tt}).
 
 Define chars_bounded
  : Forall(c:char). { (lt (which_char c) num_chars) = tt } :=
-   foralli(c:char). [lt_to_nat charlen c].  
+   foralli(c:char). trans cong (lt (which_char c) *) [word0_set_bit_pow2 word7 join (lt (to_nat word7) wordlen) tt]
+                          [lt_to_nat charlen c].  
 
 Define chars_bounded2
  : Forall(c:char). { (le (which_char c) (which_char CLast)) = tt } :=
    foralli(c:char).
-   [lt_pred
-      terminates (which_char CLast) by to_nat_tot
-      terminates num_chars by pow_total
-      terminates (which_char c) by to_nat_tot
+   [lt_pred (which_char CLast) num_chars (which_char c)
       join num_chars (S (which_char CLast))
       [chars_bounded c]].
+
+Define to_nat_c2w : Forall(c:char). { (to_nat (c2w c)) = (which_char c) } :=
+  foralli(c:char). 
+    trans cong (to_nat *) join (c2w c) (vec_append c (mkvec ff (minus wordlen charlen)))
+    trans [to_nat_append charlen terminates (minus wordlen charlen) by eval (minus wordlen charlen) c 
+            (mkvec bool ff (minus wordlen charlen))]
+          hypjoin (plus (to_nat c) (mult (pow2 charlen) (to_nat (mkvec ff (minus wordlen charlen)))))
+                  (to_nat c)
+          by [multZ (pow2 charlen)] [plusZ (to_nat charlen c)] end.
+
+Define chars_bounded3
+ : Forall(c:char). { (lt (to_nat (c2w c)) num_chars) = tt } :=
+   foralli(c:char). trans cong (lt * num_chars) [to_nat_c2w c]
+                          [chars_bounded c].
 
 Define char_inc_notfull
   : Forall(c d:char)(carry:bool)

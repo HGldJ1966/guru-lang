@@ -260,9 +260,6 @@ Define to_nat_eq_Z2 : Forall(l:nat)(v:<bv l>)
      end
   end.
 
-
-Set "show_spec_args".
-
 Define to_bv_nat : Forall(l:nat)(v:<bv l>).
                    { (to_bv (to_nat v)) = (normalize v) } :=
   induction(l:nat)(v:<bv l>) 
@@ -703,3 +700,4 @@ Define to_nat_eq
 Define trusted to_nat_neq1 : Forall(l:nat)(v1:<bv l>)(v2:<bv l>)
                                    (u:{(eqbv v1 v2) = ff}).
                                {(eqnat (to_nat v1) (to_nat v2)) = ff} := truei.
+

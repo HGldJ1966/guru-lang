@@ -60,7 +60,7 @@ public class Terminates extends Expr{
     public void checkTermination(Context ctxt) {
         boolean dbg = ctxt.getFlag("debug_terminates");
 
-        /* We implement the terminating judgments:
+        /* We implement the terminating judgment defined by these three rules:
          *
          * P : Forall(xs).Exists(y).{ (f xs) = y }
          * t_i : T_i
@@ -74,6 +74,14 @@ public class Terminates extends Expr{
          * t_i terminates
          * -------------------------------------------------------------
          * terminates (f ts) by P   terminates
+	 *
+         *
+         * P : { (f ts) = I }, I inactive (Expr.isI())
+         * t_i terminates
+         * -------------------------------------------------------------
+         * terminates (f ts) by P   terminates
+	 *
+	 *
          */
 
         ArrayList ts = new ArrayList();
@@ -122,8 +130,24 @@ public class Terminates extends Expr{
             } while(p.construct == FORALL);
         }
 
+	if (p.construct == ATOM) {
+	    Atom a = (Atom)p;
+	    if (!t.defEq(ctxt,a.Y1))
+		handleError(ctxt, "terminates...by is given a proof of an equation whose lhs does not match the term to"
+			    +"be proved terminating."
+			    +"\n\n1. the equation proved: "+a.toString(ctxt)
+			    +"\n\n2. the term: "+t.toString(ctxt));
+	    if (!a.Y2.isI(ctxt))
+		handleError(ctxt, "terminates...by is given a proof of an equation whose rhs is not a value."
+			    +"\n\n1. the equation proved: "+a.toString(ctxt));
+
+	    // no more checks needed, since the term equals a value.
+
+	    return;
+	}
+
         if(p.construct != EXISTS || ((Exists)p).vars.length != 1)
-            handleError(ctxt, "terminates...by requires a proof proving a"
+            handleError(ctxt, "terminates...by requires a proof proving a "
                         +"formula of the form\n"
 			+"Forall(xs).Exists(y).{ (f xs) = y } or "
                         +"Exists(y).{ (f ts) = y }."

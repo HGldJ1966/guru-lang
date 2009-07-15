@@ -375,8 +375,8 @@ public abstract class Expr {
 	if (construct == CONST) {
 	    Const c = (Const)this;
 	    boolean not_opaque_if = spec || !ctxt.isOpaque(c);
-	    if (ctxt.isDefined(c) && not_opaque_if)
-		return c.defExpandTop(ctxt).isdtype(ctxt, spec);
+	    if (ctxt.isDefined(c) && not_opaque_if) 
+		return c.defExpandTop(ctxt,false,true).isdtype(ctxt, spec);
 	    return (ctxt.isTypeCtor((Const)this) && not_opaque_if);
 	}
 	if (construct != TYPE_APP)

@@ -1,5 +1,7 @@
-show:
-	../bin/guru show.g
+test-charray:	test-charray.g Makefile
+	../bin/guru test-charray.g
+	gcc -O0 -ggdb -w -o test-charray test-charray.c
+	valgrind ./test-charray
 
 test-unique-owned:	test-unique-owned.g Makefile
 	../bin/guru test-unique-owned.g
@@ -10,11 +12,6 @@ test-qcharray:	test-qcharray.g Makefile
 	../bin/guru test-qcharray.g
 	gcc -O0 -ggdb -w -o test-qcharray test-qcharray.c
 	valgrind ./test-qcharray
-
-test-charray:	test-charray.g Makefile
-	../bin/guru test-charray.g
-	gcc -O0 -ggdb -w -o test-charray test-charray.c
-	valgrind ./test-charray
 
 
 hello-world:	hello-world.g Makefile

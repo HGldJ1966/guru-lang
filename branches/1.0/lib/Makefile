@@ -1,8 +1,17 @@
+warray:
+	time ../bin/guru warray.g
+
+wlist:
+	time ../bin/guru wlist.g
+
 trie:
 	time ../bin/guru trie.g
 
 qcharray:
 	time ../bin/guru qcharray.g
+
+charray:
+	time ../bin/guru charray.g
 
 ulist:
 	time ../bin/guru ulist.g

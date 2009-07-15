@@ -163,9 +163,24 @@ public class App extends Expr{
     public App spineForm(Context ctxt, boolean drop_annos, 
 			 boolean spec,
 			 boolean expand_defs) {
+	if (ctxt.getFlag("debug_spine_form")) {
+	    ctxt.w.println("spineForm "+toString(ctxt)
+			   +"(drop_annos = "+(new Boolean(drop_annos)).toString()
+			   +", spec = "+(new Boolean(spec)).toString()
+			   +", expand_defs = "+(new Boolean(expand_defs)).toString()
+			   +") ( ");
+	    ctxt.w.flush();
+	}
+
 	Expr h = head;
-	if (expand_defs)
+	if (expand_defs) {
 	    h = h.defExpandTop(ctxt, drop_annos, spec);
+	    if (ctxt.getFlag("debug_spine_form")) {
+		ctxt.w.println("spineForm expanding head to: "+h.toString(ctxt));
+		ctxt.w.flush();
+	    }
+	}
+	App ret = null;
 	if (h.construct == construct) {
 	    App e = ((App)h).spineForm(ctxt, drop_annos, spec, expand_defs);
 	    int eXlen = e.X.length;
@@ -174,15 +189,18 @@ public class App extends Expr{
 		X2[i] = e.X[i];
 	    for (int i = 0, iend = X.length; i < iend; i++)
 		X2[i+eXlen] = X[i];
-	    return (App)((new App(construct, e.head, X2))
-			 .doBeta(ctxt,drop_annos, spec, expand_defs));
+	    
+	    ret = (App)((new App(construct, e.head, X2))
+			.doBeta(ctxt,drop_annos, spec, expand_defs));
 	}
-	return (App)doBeta(ctxt,drop_annos,spec,expand_defs);
-	/*	if (h == head)
-	    return (App)doBeta(ctxt,drop_annos,spec,expand_defs);
-	return (App)((new App(construct, h, X)).doBeta(ctxt,drop_annos,
-						       spec, expand_defs));
-	*/
+	else
+	    ret = (App)doBeta(ctxt,drop_annos,spec,expand_defs);
+	
+	if (ctxt.getFlag("debug_spine_form")) {
+	    ctxt.w.println(") spineForm = "+ret.toString(ctxt));
+	    ctxt.w.flush();
+	}
+	return ret;
     }
 
     /* do beta-reduction as appropriate, leaving the result in spine form */
