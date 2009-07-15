@@ -122,13 +122,13 @@ Define trusted equlistEq
        { l1 = l2 } :=
   truei.
 
-Define ulist_mem : Fun(A:type)(eqA:Fun(#untracked a b:A).bool)(a:A)(l:<ulist A>).bool :=
-  fun ulist_mem(A:type)(eqA:Fun(#untracked a b:A).bool)(a:A)(l:<ulist A>):bool.
+Define ulist_mem : Fun(A:type)(eqA:Fun(#untracked a b:A).bool)(#untracked a:A)(l:<ulist A>).bool :=
+  fun ulist_mem(A:type)(eqA:Fun(#untracked a b:A).bool)(#untracked a:A)(l:<ulist A>):bool.
     match l with
       unil _ => ff
     | ucons _ a' l' => match (eqA a a') with
                         ff => (ulist_mem A eqA a l')
-                      | tt => tt
+                      | tt => do (dec <ulist A> l') tt end
                       end
     end.
 
