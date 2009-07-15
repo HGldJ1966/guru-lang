@@ -95,6 +95,20 @@ Define andtt_e2 : Forall(x y:bool)(u:{ (and x y) = tt }).{ y = tt } :=
       end
   end.
 
+Define andtt_ande2e1:  Forall(x y:bool)(u:{(and x y) = tt}).{(and y x) = tt} :=
+   induction(x:bool) return Forall(y:bool)(u:{(and x y) = tt }).{(and y x) = tt} with
+     ff =>  foralli(y:bool)(u:{(and x y) = tt}).
+            contra trans symm u
+                   trans cong (and * y) x_eq
+                   trans join (and ff y) ff
+                         clash ff tt
+             {(and y x) = tt}
+   | tt =>  foralli(y:bool)(u:{(and x y) = tt }).
+                   trans cong (and * x) [andtt_e2 x y u]
+                   trans cong (and tt *) x_eq 
+                         join (and tt tt) tt
+   end.
+
 Define andff_i1 : Forall(x y:bool)(u:{ x = ff }).{ (and x y) = ff } :=
   foralli(x y:bool)(u:{ x = ff }).
     hypjoin (and x y)
