@@ -923,7 +923,6 @@ Define list_all : Fun(A:type)(f:Fun(a:A).bool)(l:<list A>) . bool :=
 Define list_all_append:  Forall(A:type)(f:Fun(a:A).bool)(ftot : Forall(a:A).Exists(b:bool). {(f a) = b})
 (l1 l2:<list A>)(u:{(list_all f l1) = tt}).{(list_all f (append l1 l2)) = (list_all f l2)} :=
 foralli(A:type)(f:Fun(a:A).bool)(ftot: Forall(a:A).Exists(b:bool).{(f a) = b})(l1 l2:<list A>)(u:{(list_all f l1) = tt}).
-
 [
 induction (l1:<list A>) return 
 Forall(u:{(list_all f l1) = tt}).{(list_all f (append l1 l2)) = (list_all f l2)} 
@@ -963,32 +962,6 @@ Define list_any : Fun(A:type)(f:Fun(^#owned a:A).bool)(^#owned l:<list A>) . boo
                      | tt =>  tt
                      end
     end.
-
-Define list_any_append: Forall(A:type)(f:Fun(a:A).bool)(ftot : Forall(a:A).Exists(b:bool).{(f a) = b})(l1 l2:<list A>)(u:{(list_any f l1) = tt}).{(list_any f (append l1 l2)) = tt} :=
-foralli(A:type)(f:Fun(a:A).bool)(ftot : Forall(a:A).Exists(b:bool).{(f a) = b})(l1 l2:<list A>)(u:{(list_any f l1) = tt}).
-[
-induction (l1:<list A>) return
-Forall(u:{(list_any f l1) = tt}).{(list_any f (append l1 l2)) = tt} with
-         nil _ => foralli(u:{(list_any f l1) = tt}).
-                  contra 
-                  trans symm u
-                  trans cong (list_any f *) l1_eq
-                  trans join (list_any f nil) ff
-                        clash ff tt
-                  {(list_any f (append l1 l2)) = tt}                        
-   
-| cons _ a l1' => foralli(u:{(list_any f l1) = tt}).
-                  case terminates (f a) by ftot by v ign with
-                      ff => trans hypjoin (list_any f (append l1 l2)) (list_any f (append l1' l2)) by l1_eq v end
-			    abbrev l1'_tt = symm trans symm u
-                                   hypjoin (list_any f l1) (list_any f l1') by l1_eq v end in
-                           [l1_IH l1' l1'_tt] 
-                            
-                    | tt => hypjoin (list_any f (append l1 l2)) tt by l1_eq v end
-                            
-                  end         
-end
-l1 u].
 
 % member (early terminating)
 Define member2 : Fun(A:type)
@@ -1255,7 +1228,31 @@ Define equal_to_subset : Forall(A:type)(eqA : Fun(^ #owned a b: A).bool)
 	  [andtt_e1 terminates (list_subset A eqA l1 l2) by list_subset_total 
 		    terminates (list_subset A eqA l2 l1) by list_subset_total u']
 	.
-		
+
+Define list_seteq_symm : Forall(A:type)(eqA : Fun(^ #owned a b: A).bool)
+		(eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })(l1 l2 :<list A>)
+		(u:{ (list_seteq eqA l1 l2) = tt}).
+		{(list_seteq eqA l2 l1) = tt} :=
+   foralli(A:type)(eqA : Fun(^ #owned a b: A).bool)
+	  (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })(l1 l2 :<list A>)
+	  (u:{ (list_seteq eqA l1 l2) = tt}).
+	
+	abbrev A1 =	
+	abbrev u' = hypjoin  (and (list_subset A eqA l1 l2)(list_subset A eqA l2 l1)) tt by u end in
+	   [andtt_e1 terminates (list_subset A eqA l1 l2) by list_subset_total 
+		    terminates (list_subset A eqA l2 l1) by list_subset_total u'] in
+	
+	abbrev A2 = 
+	abbrev v' = hypjoin (and (list_subset A eqA l1 l2)(list_subset A eqA l2 l1)) tt by u end in
+	   [andtt_e2 terminates (list_subset A eqA l1 l2) by list_subset_total 
+		    terminates (list_subset A eqA l2 l1) by list_subset_total v'] in
+	
+	symm trans symm u
+	     trans hypjoin (list_seteq A eqA l1 l2) (list_subset A eqA l1 l2) by 
+			   u [equal_to_subset A eqA eqA_total l1 l2 u] end
+	     hypjoin (list_subset A eqA l1 l2)(list_seteq A eqA l2 l1) by A1 A2 end
+	
+.		
 
 
 %- you might want to prove these
