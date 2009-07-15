@@ -1179,15 +1179,41 @@ Define list_subset_total :
 	 end.
                                               
 
-Define trusted list_seteq_total :
+Define list_seteq_total :
   Forall(A:type)
         (eqA:Fun(a b: A).bool)
         (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
         (l1 l2:<list A>).
   Exists(x:bool).
-    { (list_seteq A eqA l1 l2) = x }
-  :=
-  truei.
+    { (list_seteq A eqA l1 l2) = x } :=
+  foralli(A:type)(eqA : Fun(^ #owned a b: A).bool)
+			         (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z }).
+	    induction(l1 : <list A>) return Forall(l2 :<list A>). Exists(z:bool).{(list_seteq eqA l1 l2) = z} with
+		 nil _ => foralli(l2: <list A>).
+		            case l2 with
+			      nil _ => existsi tt {(list_seteq eqA l1 l2) = * }
+					  hypjoin (list_seteq eqA l1 l2) tt by l1_eq l2_eq end
+			    | cons _ b w => existsi ff {(list_seteq eqA l1 l2) = *}
+					  hypjoin (list_seteq eqA l1 l2) ff by l1_eq l2_eq end
+			    end
+	      |  cons _ a t => foralli(l2: <list A>).
+		                 case l2 with
+				     nil _ => existsi ff {(list_seteq eqA l1 l2) = *}
+						 hypjoin (list_seteq eqA l1 l2) ff by l1_eq l2_eq end
+				   | cons _ b' w' => case terminates (list_subset A eqA l1 l2) by 
+								list_subset_total by lsp lst with
+						ff => existsi ff {(list_seteq eqA l1 l2) = *}
+								hypjoin (list_seteq eqA l1 l2) ff by l1_eq l2_eq lsp end
+					      | tt => case terminates (list_subset A eqA l2 l1) by
+						  list_subset_total by lsp2 lst2 with
+						     ff => existsi ff {(list_seteq eqA l1 l2) = *}
+							  hypjoin (list_seteq eqA l1 l2) ff by l1_eq l2_eq lsp lsp2 end
+						   | tt => existsi tt {(list_seteq eqA l1 l2) = *}
+							  hypjoin (list_seteq eqA l1 l2) tt by l1_eq l2_eq lsp lsp2 end
+						   end
+					     end
+				   end
+	      end.
 
 %- you might want to prove these
 Define trusted list_subset_cons_tt_member :
