@@ -923,6 +923,7 @@ Define list_all : Fun(A:type)(f:Fun(a:A).bool)(l:<list A>) . bool :=
 Define list_all_append:  Forall(A:type)(f:Fun(a:A).bool)(ftot : Forall(a:A).Exists(b:bool). {(f a) = b})
 (l1 l2:<list A>)(u:{(list_all f l1) = tt}).{(list_all f (append l1 l2)) = (list_all f l2)} :=
 foralli(A:type)(f:Fun(a:A).bool)(ftot: Forall(a:A).Exists(b:bool).{(f a) = b})(l1 l2:<list A>)(u:{(list_all f l1) = tt}).
+
 [
 induction (l1:<list A>) return 
 Forall(u:{(list_all f l1) = tt}).{(list_all f (append l1 l2)) = (list_all f l2)} 
@@ -962,6 +963,32 @@ Define list_any : Fun(A:type)(f:Fun(^#owned a:A).bool)(^#owned l:<list A>) . boo
                      | tt =>  tt
                      end
     end.
+
+Define list_any_append: Forall(A:type)(f:Fun(a:A).bool)(ftot : Forall(a:A).Exists(b:bool).{(f a) = b})(l1 l2:<list A>)(u:{(list_any f l1) = tt}).{(list_any f (append l1 l2)) = tt} :=
+foralli(A:type)(f:Fun(a:A).bool)(ftot : Forall(a:A).Exists(b:bool).{(f a) = b})(l1 l2:<list A>)(u:{(list_any f l1) = tt}).
+[
+induction (l1:<list A>) return
+Forall(u:{(list_any f l1) = tt}).{(list_any f (append l1 l2)) = tt} with
+         nil _ => foralli(u:{(list_any f l1) = tt}).
+                  contra 
+                  trans symm u
+                  trans cong (list_any f *) l1_eq
+                  trans join (list_any f nil) ff
+                        clash ff tt
+                  {(list_any f (append l1 l2)) = tt}                        
+   
+| cons _ a l1' => foralli(u:{(list_any f l1) = tt}).
+                  case terminates (f a) by ftot by v ign with
+                      ff => trans hypjoin (list_any f (append l1 l2)) (list_any f (append l1' l2)) by l1_eq v end
+			    abbrev l1'_tt = symm trans symm u
+                                   hypjoin (list_any f l1) (list_any f l1') by l1_eq v end in
+                           [l1_IH l1' l1'_tt] 
+                            
+                    | tt => hypjoin (list_any f (append l1 l2)) tt by l1_eq v end
+                            
+                  end         
+end
+l1 u].
 
 % member (early terminating)
 Define member2 : Fun(A:type)
