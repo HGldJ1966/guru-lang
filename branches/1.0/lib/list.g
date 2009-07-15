@@ -1056,6 +1056,102 @@ Define list_SubsetOfSelf : Forall(A:type)(eqA : Fun(^ #owned a b: A).bool)
 
            end.
 
+
+Define member_trans_lemma: Forall(A:type)(a:A)(eqA :Fun(^ #owned a b: A).bool)
+				 (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+				 (l1 l2: <list A>) (u: {(member A a l1 eqA) = tt})(v:{(list_subset eqA l1 l2) = tt}) 
+				 (eqA_to_equals: Forall(a b:A)(k:{(eqA a b) = tt}).{ a = b}).
+					{(member A a l2 eqA) = tt} :=
+	foralli (A:type)(a:A)(eqA :Fun(^ #owned a b: A).bool)
+		(eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z }).
+	   induction(l1: <list A>) return Forall(l2:<list A>)(u: {(member A a l1 eqA) = tt})
+		    (v:{(list_subset eqA l1 l2) = tt})(eqA_to_equals:Forall(a b:A)(k:{(eqA a b) = tt}).{ a = b}).
+			{(member A a l2 eqA) = tt} with
+	  	nil _ => foralli (l2:<list A>)(u: {(member A a l1 eqA) = tt})
+				 (v:{(list_subset eqA l1 l2) = tt})
+				 (eqA_to_equals:Forall(a b:A)(k:{(eqA a b) = tt}).{ a = b}).
+			contra
+			trans symm u
+			trans cong (member A a * eqA) l1_eq
+			trans join (member A a nil eqA) ff
+			clash ff tt
+			{(member A a l2 eqA) = tt}
+				
+	    | cons _ b l1' => foralli (l2:<list A>)(u: {(member A a l1 eqA) = tt})
+				      (v:{(list_subset eqA l1 l2) = tt})
+				      (eqA_to_equals:Forall(a b:A)(k:{(eqA a b) = tt}).{ a = b}).			
+				case terminates (eqA a b) by eqA_total by eqAp eqAt with
+				   ff => 						
+					case terminates (member A b l2 eqA) by member_total by memp memt with
+					   ff => contra
+						 trans symm v
+						 trans hypjoin (list_subset eqA l1 l2) ff by memp l1_eq end
+						 clash ff tt
+						 {(member A a l2 eqA) = tt}
+					| tt => 
+					 abbrev H = symm hypjoin tt (list_subset eqA l1' l2) by memp l1_eq u v end in
+					 abbrev H2 = hypjoin (member A a l1' eqA) tt by eqAp u l1_eq end in
+					 [l1_IH l1' l2 H2 H eqA_to_equals]
+					 end
+				| tt => 			
+				    case terminates (member A b l2 eqA) by member_total by memp memt with
+					ff => contra
+					      trans symm v
+					      trans hypjoin (list_subset eqA l1 l2) ff by memp l1_eq end
+					      clash ff tt
+					      {(member A a l2 eqA) = tt}
+				      | tt => hypjoin (member A a l2 eqA) tt by memp eqAp [eqA_to_equals a b eqAp] end
+									
+				      end
+				end
+				
+	  end.
+
+
+Define list_transitivity : Forall(A:type)(eqA: Fun(a b: A).bool)
+				 (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+				 (l1 l2 l3: <list A>)(u:{(list_subset eqA l1 l2) = tt})
+				 (v:{(list_subset eqA l2 l3) = tt})(w:Forall(a:A).{(eqA a a) = tt})
+				 (eqA_to_equals: Forall(a b:A)(k:{(eqA a b) = tt}).{ a = b}).
+				 {(list_subset eqA l1 l3) = tt} :=
+    foralli(A:type)(eqA: Fun(a b: A).bool)(eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z }).
+	induction(l1: <list A>) return Forall(l2 l3: <list A>)(u:{(list_subset eqA l1 l2) = tt})
+					     (v:{(list_subset eqA l2 l3) = tt})(w:Forall(a:A).{(eqA a a) = tt})
+					     (eqA_to_equals: Forall(a b:A)(k:{(eqA a b) = tt}).{ a = b}).
+					     {(list_subset eqA l1 l3) = tt} with
+	     nil _ => foralli(l2 l3: <list A>)(u:{(list_subset eqA l1 l2) = tt})(v:{(list_subset eqA l2 l3) = tt})
+			(w:Forall(a:A).{(eqA a a) = tt})(eqA_to_equals: Forall(a b:A)(k:{(eqA a b) = tt}).{ a = b}).
+			hypjoin (list_subset eqA l1 l3) tt by l1_eq end
+	   | cons _ a l1' =>  foralli(l2 l3: <list A>)(u:{(list_subset eqA l1 l2) = tt})
+		                     (v:{(list_subset eqA l2 l3) = tt})(w:Forall(a:A).{(eqA a a) = tt})
+                                     (eqA_to_equals: Forall(a b:A)(k:{(eqA a b) = tt}).{ a = b}).
+			
+			abbrev l1'_subset_l3 =
+			abbrev U1 =
+			abbrev U1' =		
+			symm trans symm hypjoin (list_subset eqA l1' (cons a l1')) tt by 
+			                        [list_SubsetOfSelf A eqA eqA_total w l1' (cons A a (nil A)) ] end
+			     symm cong (list_subset eqA l1' * ) l1_eq in
+			[l1_IH l1' l1 l2 U1' u w eqA_to_equals] in
+			[l1_IH l1' l2 l3 U1 v w eqA_to_equals] in
+
+			abbrev a_in_l3 = 
+			abbrev a_in_l2 = 
+			abbrev a_in_l1 = hypjoin (member A a l1 eqA) tt by [w a] l1_eq end in
+			hypjoin (member A a l2 eqA) tt by 
+				[member_trans_lemma A a eqA eqA_total l1 l2 a_in_l1 u eqA_to_equals] end in
+
+			hypjoin (member A a l3 eqA) tt by 
+				[member_trans_lemma A a eqA eqA_total l2 l3 a_in_l2 v eqA_to_equals] end  in
+
+			hypjoin (list_subset eqA l1 l3) tt by l1_eq l1'_subset_l3 a_in_l3 end
+			
+
+
+			
+			
+	   end.
+
 Define trusted list_subset_total :
   Forall(A:type)
         (eqA:Fun(a b: A).bool)
