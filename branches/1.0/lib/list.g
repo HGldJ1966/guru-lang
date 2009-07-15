@@ -1242,6 +1242,22 @@ Define list_seteq_total :
 				   end
 	      end.
 
+
+
+Define equal_to_subset : Forall(A:type)(eqA : Fun(^ #owned a b: A).bool)
+		(eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })(l1 l2 :<list A>)
+		(u:{ (list_seteq eqA l1 l2) = tt}).
+		{(list_subset eqA l1 l2) = tt} :=
+	foralli(A:type)(eqA : Fun(^ #owned a b: A).bool)
+		(eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })(l1 l2: <list A>) 
+		(u:{ (list_seteq eqA l1 l2) = tt}).
+		abbrev u' = hypjoin  (and (list_subset A eqA l1 l2)(list_subset A eqA l2 l1)) tt by u end in
+	  [andtt_e1 terminates (list_subset A eqA l1 l2) by list_subset_total 
+		    terminates (list_subset A eqA l2 l1) by list_subset_total u']
+	.
+		
+
+
 %- you might want to prove these
 Define trusted list_subset_cons_tt_member :
   Forall(A:type)
