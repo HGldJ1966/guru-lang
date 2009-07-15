@@ -1301,17 +1301,27 @@ Define list_seteq_trans: Forall(A:type)(eqA: Fun(a b: A).bool)
 		
 
 
-%- you might want to prove these
-Define trusted list_subset_cons_tt_member :
+
+Define  list_subset_cons_tt_member :
   Forall(A:type)
         (eqA:Fun(a b: A).bool)
-        %maybe (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
-        (a:A)(l1 l2:clause)
-        (u:{ (list_subset eqA (cons a l1) l2) = tt }).
-    { (member a l2 eqA) = tt }
-  :=
-  truei.
+        (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+        (a:A)(l1 l2:<list A>)
+        (u:{ (list_subset eqA (cons a l1) l2) = tt })
+	(v:Forall(a:A).{(eqA a a) = tt})
+	(eqA_to_equals: Forall(a b:A)(k:{(eqA a b) = tt}).{ a = b}).
+        { (member a l2 eqA) = tt } :=
 
+  	    foralli(A:type)(eqA:Fun(a b: A).bool)(eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+        	   (a:A)(l1 l2:<list A>)(u:{ (list_subset eqA (cons a l1) l2) = tt })
+		   (v:Forall(a:A).{(eqA a a) = tt})
+		   (eqA_to_equals: Forall(a b:A)(k:{(eqA a b) = tt}).{ a = b}).
+	
+	abbrev u' = hypjoin (member A a (cons a l1) eqA) tt by [v a] end in
+	[member_trans_lemma A a eqA eqA_total (cons A a l1) l2 u' u eqA_to_equals]
+  	
+.
+%-
 Define trusted list_subset_cons_tt_subset :
   Forall(A:type)
         (eqA:Fun(a b: A).bool)
@@ -1321,7 +1331,7 @@ Define trusted list_subset_cons_tt_subset :
     { (list_subset eqA l1 l2) = tt }
   :=
   truei.
-%-
+
 
 % may require the lemmas above
 Define trusted list_subset_tt_subset_append:
