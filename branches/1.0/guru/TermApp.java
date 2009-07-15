@@ -428,16 +428,22 @@ public class TermApp extends App{
 	    anno_t.X[i].checkTermination(ctxt);
     }
 
-    public void checkSpec(Context ctxt, boolean in_type){
-	head.checkSpec(ctxt, in_type);
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
+	head.checkSpec(ctxt, in_type, pos);
 	
 	// we set specarg[i] in classify() above
 
 	for (int i = 0;i < X.length; i++) {
 	    if (X[i].isProof(ctxt))
 		continue;
-	    if (!specarg[i])
-		X[i].checkSpec(ctxt, in_type);
+	    if (!specarg[i]) 
+		X[i].checkSpec(ctxt, in_type, pos);
+	    else {
+		if (ctxt.getFlag("debug_check_spec")) {
+		    ctxt.w.println("checkSpec: skipping specificational argument: "+X[i].toString(ctxt));
+		    ctxt.w.flush();
+		}
+	    }
 	}
     }
 

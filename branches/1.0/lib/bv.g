@@ -1,7 +1,7 @@
 %Unset "check_drop_annos_idem".
 
-Include trusted "pow.g".
-Include trusted "vec.g".
+Include "pow.g".
+Include "vec.g".
 
 Define bv := <vec bool>.
 Define bvn := (vecn bool).

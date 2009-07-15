@@ -1,7 +1,7 @@
 Include "../lib/charray.g".
 
-Set "debug_eta_expand".
-Set "debug_to_carraway".
+%Set "debug_eta_expand".
+%Set "debug_to_carraway".
 
 Set "use_malloc".
 

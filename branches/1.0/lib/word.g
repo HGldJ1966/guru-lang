@@ -1,4 +1,4 @@
-Include trusted "bv.g".
+Include "bv.g".
 
 Define wordlen := (mult2 (mult2 (S (S (S (S (S (S (S (S Z)))))))))).
 
@@ -6,7 +6,9 @@ Define primitive word := <bv wordlen> <<END
 #define gdelete_word(x)
 END.
 
-Define primitive eqword : Fun(#untracked w1 w2:word).bool := (eqbv wordlen) <<END
+Untracked word.
+
+Define primitive eqword : Fun(w1 w2:word).bool := (eqbv wordlen) <<END
   #define eqword(w1,w2) (w1 == w2)
 END.
 
@@ -19,7 +21,7 @@ Inductive word_inc_t : type :=
   mk_word_inc_t : Fun(b:word)(carry:bool).word_inc_t.
 
 Define primitive word_inc :=
-  fun(b:word).
+  fun( b:word).
     let r = (bv_inc wordlen b) in
     match r with
       mk_bv_inc_t l' v' carry => 
@@ -28,7 +30,7 @@ Define primitive word_inc :=
       end
 <<END
 #include <limits.h>
-gword_inc_t gword_inc(gword c) {
+void *gword_inc(int c) {
   return gmk_word_inc_t(c+1, (c == UINT_MAX));
 }
 END.
@@ -95,17 +97,21 @@ Define word_to_nat_inc2
               terminates (word_to_nat w2) by word_to_nat_tot].
 
 Define primitive word_set_bit
- : Fun(i:word)(u:{(lt (to_nat i) wordlen) = tt})(#untracked w:word).#untracked word :=
+ : Fun(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word). word :=
    fun(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word).
     (vec_update bool wordlen w (to_nat wordlen i) tt u) <<END
-#define gword_set_bit(i, w) ((1 << i) | w);
+inline int gword_set_bit(int i, int w) {
+    return  ((1 << i) | w);
+}
 END.
 
 Define primitive word_clear_bit
- : Fun(i:word)(u:{(lt (to_nat i) wordlen) = tt})(#untracked w:word).#untracked word :=
+ : Fun(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word). word :=
    fun(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word).
     (vec_update bool wordlen w (to_nat wordlen i) ff u) <<END
-#define gword_clear_bit(i, w) (~(1 << i) & w)
+inline int gword_clear_bit(int i, int w) {
+    return (~(1 << i) & w);
+}
 END.
 
 Define primitive word0 : word := (mkvec bool ff wordlen) <<END
@@ -117,7 +123,8 @@ Define word2 := (word_inc2 word1).
 Define word3 := (word_inc2 word2).
 Define word8 := (word_set_bit word3 join (lt (to_nat word3) wordlen) tt word0).
 
-Define word7 := (word_set_bit word2 join (lt (to_nat word2) wordlen) tt
+Define word7 :=
+                (word_set_bit word2 join (lt (to_nat word2) wordlen) tt
                 (word_set_bit word1 join (lt (to_nat word1) wordlen) tt
                 (word_set_bit word0 join (lt (to_nat word0) wordlen) tt word0))).
 
@@ -125,3 +132,4 @@ Define trusted word0_set_bit_pow2
   : Forall(i:word)(u:{(lt (to_nat i) wordlen) = tt}).
       { (to_nat (word_set_bit i word0)) = (pow2 (to_nat i)) } :=
   truei.
+

@@ -85,10 +85,10 @@ public class Do extends Expr {
         return s;
     }
 
-    public void checkSpec(Context ctxt, boolean in_type){
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
 	for (int i = 0, iend = ts.length; i < iend; i++) 
-	    ts[i].checkSpec(ctxt,in_type);
-	t.checkSpec(ctxt, in_type);
+	    ts[i].checkSpec(ctxt,in_type, pos);
+	t.checkSpec(ctxt, in_type, pos);
     }
 
     public void getFreeVarsComputational(Context ctxt, 

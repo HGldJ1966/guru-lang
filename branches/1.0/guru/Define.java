@@ -83,11 +83,11 @@ public class Define extends Command {
 	}
 
 	if (!spec_mode)
-	    G.checkSpec(ctxt, false /* in_type */);
+	    G.checkSpec(ctxt, false /* in_type */, c.pos);
 
-	if (spec || primitive) 
+	if (spec) 
 	    ctxt.markSpec(c); 
-	if (spec || primitive)
+	if (primitive)
 	    ctxt.makeOpaque(c);
 
 	if (type_family_abbrev) {

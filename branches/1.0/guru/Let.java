@@ -156,9 +156,9 @@ public class Let extends Expr{
         return s;
     }
 
-    public void checkSpec(Context ctxt, boolean in_type){
-	t1.checkSpec(ctxt, in_type);
-	t2.checkSpec(ctxt, in_type);
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
+	t1.checkSpec(ctxt, in_type, pos);
+	t2.checkSpec(ctxt, in_type, pos);
     }
 
     public guru.carraway.Expr toCarraway(Context ctxt) {

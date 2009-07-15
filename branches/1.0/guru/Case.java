@@ -290,7 +290,7 @@ public class Case extends Expr{
 	}
     }
 
-    public void checkSpec(Context ctxt, boolean in_type) {
+    public void checkSpec(Context ctxt, boolean in_type, Position p) {
 	
 	Expr e = ctxt.getClassifier(c);
 	
@@ -303,7 +303,7 @@ public class Case extends Expr{
 		    ctxt.markSpec(x[i]);
 	}
 
-	body.checkSpec(ctxt, in_type);
+	body.checkSpec(ctxt, in_type, pos);
     }
 
     public void clearDefs(Context ctxt) {

@@ -242,10 +242,10 @@ public class Abstraction extends VarListExpr{
         return s;
     }
 
-    public void checkSpec(Context ctxt, boolean in_type){
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
 	for (int i = 0; i < vars.length; i++)
-	    types[i].checkSpec(ctxt, in_type);
-	body.checkSpec(ctxt, in_type);
+	    types[i].checkSpec(ctxt, in_type, pos);
+	body.checkSpec(ctxt, in_type, pos);
     }
 
 }

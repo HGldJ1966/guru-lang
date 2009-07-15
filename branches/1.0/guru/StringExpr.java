@@ -111,7 +111,7 @@ public class StringExpr extends Expr {
     public void checkTermination(Context ctxt) {
     }
 
-    public void checkSpec(Context ctxt, boolean in_type){
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
     }
 
     public guru.carraway.Expr toCarraway(Context ctxt) {

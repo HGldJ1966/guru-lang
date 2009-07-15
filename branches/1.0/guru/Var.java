@@ -137,7 +137,7 @@ public class Var extends Expr{
 	    ctxt.getDefBody(this).checkTermination(ctxt);
     }
 
-    public void checkSpec(Context ctxt, boolean in_type){
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
 	if (ctxt.isSpec(this) && !in_type) {
 	    /*	    Expr n = null;
 	      n.print(ctxt.w,ctxt); */

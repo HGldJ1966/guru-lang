@@ -104,7 +104,12 @@ public class Const extends Expr implements Comparable {
         return name.compareTo(((Const)o).name);
     }
 
-    public void checkSpec(Context ctxt, boolean in_type){
+    public void checkSpec(Context ctxt, boolean in_type, Position p) {
+	if (ctxt.isSpec(this) && !in_type) {
+	    handleError(ctxt, p, "Specificational constant used in" 
+			+ " non-specificational location.\n"
+                        + "\n1. the constant: " + toString(ctxt));
+	}
     }
 
     public guru.carraway.Expr toCarrawayType(Context ctxt, boolean rttype) {

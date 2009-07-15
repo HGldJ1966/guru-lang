@@ -1,3 +1,6 @@
+charray:
+	time ../bin/guru charray.g
+
 warray:
 	time ../bin/guru warray.g
 
@@ -10,8 +13,6 @@ trie:
 qcharray:
 	time ../bin/guru qcharray.g
 
-charray:
-	time ../bin/guru charray.g
 
 ulist:
 	time ../bin/guru ulist.g
@@ -53,7 +54,7 @@ minmax-le:
 	../bin/guru minmax-le.g
 
 word:
-	../bin/guru word.g
+	time ../bin/guru word.g
 
 vec:
 	java -cp .. guru.Main vec.g
