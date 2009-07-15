@@ -1152,15 +1152,32 @@ Define list_transitivity : Forall(A:type)(eqA: Fun(a b: A).bool)
 			
 	   end.
 
-Define trusted list_subset_total :
+Define list_subset_total :
   Forall(A:type)
         (eqA:Fun(a b: A).bool)
         (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
         (l1 l2:<list A>).
   Exists(x:bool).
-    { (list_subset A eqA l1 l2) = x }
-  :=
-  truei.
+    { (list_subset A eqA l1 l2) = x } :=
+  foralli(A:type)(eqA : Fun(^ #owned a b: A).bool)
+		   (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z }).
+	induction(l1: <list A>) return Forall(l2:<list A>).Exists(z:bool).{(list_subset eqA l1 l2) = z} with
+	   nil _ => foralli(l2:<list A>).
+		      existsi tt {(list_subset eqA l1 l2) = * } 
+			  hypjoin (list_subset eqA l1 l2) tt by l1_eq end
+	 | cons _ a t => foralli(l2:<list A>).
+			   case terminates (member A a l2 eqA) by member_total by memp memt with
+				  ff => existsi ff {(list_subset eqA l1 l2) = * }
+					   hypjoin (list_subset eqA l1 l2) ff by l1_eq  memp end
+				| tt => existsi terminates (list_subset A eqA t l2) by [l1_IH t]
+							 {(list_subset eqA l1 l2) = *}
+					   hypjoin (list_subset eqA l1 l2) (list_subset eqA t l2) by memp l1_eq end
+					
+					
+				end
+				
+	 end.
+                                              
 
 Define trusted list_seteq_total :
   Forall(A:type)
