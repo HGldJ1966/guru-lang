@@ -56,20 +56,43 @@ public class ReducibleApp extends App{
 
     protected Expr doBeta(Context ctxt, boolean drop_annos, boolean spec,
 			  boolean expand_defs) {
-	if (head.construct != CONST)
+	if (ctxt.getFlag("debug_spine_form")) {
+	    ctxt.w.println("doBeta "+toString(ctxt)
+			   +"(drop_annos = "+(new Boolean(drop_annos)).toString()
+			   +", spec = "+(new Boolean(spec)).toString()
+			   +", expand_defs = "+(new Boolean(expand_defs)).toString()
+			   +") ( ");
+	    ctxt.w.flush();
+	}
+
+	if (head.construct != CONST) {
+	    if (ctxt.getFlag("debug_spine_form")) {
+		ctxt.w.println(") doBeta1 = "+toString(ctxt));
+		ctxt.w.flush();
+	    }
 	    return this;
-	
+	}
 	Const c = (Const)head;
 
-	if (!headBetaOk(ctxt,spec))
+	if (!headBetaOk(ctxt,spec)) {
+	    if (ctxt.getFlag("debug_spine_form")) {
+		ctxt.w.println(") doBeta2 = "+toString(ctxt));
+		ctxt.w.flush();
+	    }
 	    return this;
+	}
 
 	Expr nhead = drop_annos ? ctxt.getDefBodyNoAnnos(c) : ctxt.getDefBody(c);
 	FunTerm f = (FunTerm)nhead;
 
-	if (f.vars.length > X.length)
+	if (f.vars.length > X.length) {
 	    // we do not beta-reduce until we have all arguments
+	    if (ctxt.getFlag("debug_spine_form")) {
+		ctxt.w.println(") doBeta3 = "+toString(ctxt));
+		ctxt.w.flush();
+	    }
 	    return this;
+	}
 
 	int i = 0;
 	while (nhead.construct == FUN_TERM) {
@@ -79,14 +102,33 @@ public class ReducibleApp extends App{
 
 	int iend = X.length, start = i;
 
-	if (start == iend)
+	if (start == iend) {
+	    if (nhead.construct == construct) {
+		// should put in spine form in case there are further
+		// beta reductions to do.
+		if (ctxt.getFlag("debug_spine_form")) {
+		    ctxt.w.println(") doBeta4 = "+nhead.toString(ctxt));
+		    ctxt.w.flush();
+		}
+		return ((App)nhead).spineForm(ctxt,drop_annos,spec,expand_defs);
+	    }
+	    if (ctxt.getFlag("debug_spine_form")) {
+		ctxt.w.println(") doBeta5 = "+nhead.toString(ctxt));
+		ctxt.w.flush();
+	    }
 	    return nhead;
+	}
 	Expr[] nX = new Expr[iend - start];
 	for (; i < iend; i++)
 	    nX[i-start] = X[i];
 
-	return ((new ReducibleApp(construct, nhead,nX))
-		.spineForm(ctxt, drop_annos, spec, expand_defs));
+	Expr ret = ((new ReducibleApp(construct, nhead,nX))
+		    .spineForm(ctxt, drop_annos, spec, expand_defs));
+	if (ctxt.getFlag("debug_spine_form")) {
+	    ctxt.w.println(") doBeta6 = "+ret.toString(ctxt));
+	    ctxt.w.flush();
+	}
+	return ret;
     }
 
     protected boolean defEqNoAnnoApprox(Context ctxt, Expr ee, boolean spec) {

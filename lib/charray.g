@@ -3,52 +3,25 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Include trusted "char.g".
-Include trusted "unique.g".
+Include trusted "warray.g".
 
 %Set "print_parsed".
 
-Define primitive type_family_abbrev charray := fun(A:type).<vec A num_chars> <<END
-#define gdelete_charray(x)
-END.
+Define type_family_abbrev charray := fun(A:type).<warray A num_chars_word>.
 
-Define primitive charray_new : Fun(spec A:type)(^#owned a:A).#unique <charray A> := 
-  fun(A:type)(a:A). (mkvec A a num_chars) <<END
-void *gcharray_new(void *a) {
-  void **h = (void **)guru_malloc(sizeof(void *)*128);
-  // fprintf(stdout,"gmk_charray(%x).\n", h);
-  int c;
-  for (c = 0; c <= 127; c++)
-    h[c] = ginc(a); 
-  return h;
-}
-END.
+Define charray_new : Fun(spec A:type)(^#owned a:A).#unique <charray A> := 
+ fun(spec A:type)(^#owned a:A):#unique <charray A>.
+  (warray_new A num_chars_word a).
 
-Define primitive charray_get : Fun(spec A:type)(!#unique l:<charray A>)(#untracked c:char). #<owned l> A := 
-  fun(A:type)(l:<charray A>)(c:char). 
-    (vec_get A num_chars l (which_char c) [chars_bounded c]) <<END
-void *gcharray_get(void *l, int c) {
-  return ((void **)l)[c];
-}
-END.
+Define charray_get : Fun(spec A:type)(!#unique l:<charray A>)(#untracked c:char). #<owned l> A := 
+  fun(spec A:type)(!#unique l:<charray A>)(#untracked c:char):#<owned l> A. 
+    (warray_get A num_chars_word l (c2w c) [chars_bounded3 c]).
 
-Define primitive charray_mod 
+Define charray_mod 
   : Fun(A:type)(#untracked c:char)(a:A)(#unique l:<charray A>). #unique <charray A> :=
-  fun(A:type)(c:char)(a:A)(l:<charray A>).
-   (vec_update A num_chars l (which_char c) a [chars_bounded c]) <<END
-void *gcharray_mod(int A, int c, void *d, void *l) {
-  gdec(A,((void **)l)[c]);
-  ((void **)l)[c] = d;
-  return l;
-}
-END.
+  fun(A:type)(#untracked c:char)(a:A)(#unique l:<charray A>).
+   (warray_mod A (c2w c) a num_chars_word l [chars_bounded3 c]).
 
-Define primitive charray_free : Fun(A:type)(^ #unique l:<charray A>).void :=
-  fun(A:type)(l:<charray A>).voidi <<END
-void gcharray_free(int A, void *l) {
-  int c;
-  // fprintf(stdout,"gcvfree(%x).\n", l);
-  for (c = 0; c <= 127; c++) 
-    gdec(A,((void **)l)[c]);
-  carraway_free(l);
-}
-END.
+Define charray_free : Fun(A:type)(^ #unique l:<charray A>).void :=
+  fun(A:type)(^ #unique l:<charray A>).
+    (warray_free A num_chars_word l).

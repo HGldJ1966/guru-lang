@@ -112,6 +112,8 @@ Define mkvec_tot : Forall(A:type)(a:A)(n:nat).
           by ur n_eq end
     end.         
 
+Total mkvec mkvec_tot.
+
 Define mkvec_sz : Forall(A:type)(a:A)(n:nat).
                    { (lt size a size (mkvec a (S n))) = tt } :=
   foralli(A:type)(a:A)(n:nat).
