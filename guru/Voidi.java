@@ -34,5 +34,5 @@ public class Voidi extends Expr{
     public void getFreeVarsComputational(Context ctxt,
 					 java.util.Collection vars) { }
 
-    public void checkSpec(Context ctxt, boolean in_type) { }
+    public void checkSpec(Context ctxt, boolean in_type, Position p) { }
 }

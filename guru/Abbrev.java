@@ -118,7 +118,7 @@ public class Abbrev extends Expr{
     }
     
 
-    public void checkSpec(Context ctxt, boolean in_type){
-	subst().checkSpec(ctxt, in_type);
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
+	subst().checkSpec(ctxt, in_type, p);
     }
 }

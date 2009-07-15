@@ -151,10 +151,10 @@ public class Cutoff extends Expr
 	return create_nat_t(ctxt, true);
     }
 
-    public void checkSpec(Context ctxt, boolean in_type){
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
 	create_nat_t(ctxt, false);
 	ctxt.setClassifier(new_fun_name, nat_t_T);
-	nat_t.checkSpec(ctxt, in_type);
+	nat_t.checkSpec(ctxt, in_type, pos);
 	return;
     }
 }

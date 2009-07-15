@@ -232,8 +232,8 @@ public class FunAbstraction extends Abstraction {
 	return this;
     }
 
-    public void checkSpec(Context ctxt, boolean in_type){
-	super.checkSpec(ctxt, in_type);
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
+	super.checkSpec(ctxt, in_type, pos);
 	for (int i = 0; i < vars.length; i++)
 	    if (owned[i].status == Ownership.SPEC)
 		ctxt.markSpec(vars[i]);

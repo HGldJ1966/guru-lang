@@ -205,12 +205,11 @@ public class ReducibleApp extends App{
 	return this;
     }
 
-    public void checkSpec(Context ctxt, boolean in_type){
-	head.checkSpec(ctxt, in_type);
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
+	head.checkSpec(ctxt, in_type, pos);
 	for (int i = 0; i < X.length; i++)
-	    X[i].checkSpec(ctxt, true /* here we finally cross from
-					 types or formulas possibly to
-					 terms */);
+	    X[i].checkSpec(ctxt, true /* here we cross to types or formulas */,
+			   pos);
     }
 
     /* a type application is compiled to the head of its spine form,

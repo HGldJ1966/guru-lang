@@ -302,14 +302,22 @@ public class EtaExpand {
 	    if (tmp.construct != Expr.FUN_TERM)
 		return expand(tmp,from_fun,from_const);
 
-	    f = (FunTerm)tmp;
+	    /* we need to set classifiers of non-computational inputs,
+	       which might be mentioned in types of later inputs. */
 
 	    int iend = f.vars.length;
+	    for (int i = 0; i < iend; i++) 
+		dst.setClassifier(f.vars[i],expand(f.types[i],false,null));
+
+	    f = (FunTerm)tmp;
+	    
+	    iend = f.vars.length;
 	    Expr[] ntypes = new Expr[iend];
 	    Ownership[] nowned = new Ownership[iend];
 	    for (int i = 0; i < iend; i++) {
 		nowned[i] = expand(f.owned[i]);
-		ntypes[i] = expand(f.types[i],false,null);
+		// we already expanded the type for f.vars[i] above
+		ntypes[i] = expand(dst.getClassifier(f.vars[i]),false,null);
 	    }
 
 	    Expr b = f.body;

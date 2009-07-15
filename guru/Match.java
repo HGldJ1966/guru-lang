@@ -141,10 +141,10 @@ public class Match extends CasesExpr{
     }
 
 
-    public void checkSpec(Context ctxt, boolean in_type){
-	t.checkSpec(ctxt, in_type);
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
+	t.checkSpec(ctxt, in_type, pos);
 	for (int i = 0; i < C.length; i++){
-	    C[i].checkSpec(ctxt, in_type);
+	    C[i].checkSpec(ctxt, in_type, pos);
 	}
     }
 

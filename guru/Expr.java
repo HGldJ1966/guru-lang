@@ -348,8 +348,12 @@ public abstract class Expr {
     }
 
     public void handleError(Context ctxt, String msg) {
-	if (pos != null) {
-	    pos.print(System.out);
+	handleError(ctxt,pos,msg);
+    }
+
+    public void handleError(Context ctxt, Position p, String msg) {
+	if (p != null) {
+	    p.print(System.out);
 	    System.out.print(": ");
 	}
 	System.out.println("classification error.\n\n"+msg);
@@ -696,7 +700,7 @@ public abstract class Expr {
     }
 
 
-    public void checkSpec(Context ctxt, boolean in_type) {
+    public void checkSpec(Context ctxt, boolean in_type, Position p) {
 	handleError(ctxt, "Internal error: checkSpec() is "
 		    + "unimplemented for construct "
 		    + (new Integer(construct)));

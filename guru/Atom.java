@@ -64,7 +64,7 @@ public class Atom extends Expr
         return s;
     }
 
-    public void checkSpec(Context ctxt, boolean in_type) { }
+    public void checkSpec(Context ctxt, boolean in_type, Position p) { }
 
     public void getFreeVarsComputational(Context ctxt,
 					 java.util.Collection vars) { }

@@ -2,10 +2,12 @@
 % char-indexed arrays of refcounted data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Include trusted "char.g".
-Include trusted "warray.g".
+Include "char.g".
+Include "warray.g".
 
 %Set "print_parsed".
+
+%Set "debug_check_spec".
 
 Define type_family_abbrev charray := fun(A:type).<warray A num_chars_word>.
 
@@ -19,7 +21,7 @@ Define charray_get : Fun(spec A:type)(!#unique l:<charray A>)(#untracked c:char)
 
 Define charray_mod 
   : Fun(A:type)(#untracked c:char)(a:A)(#unique l:<charray A>). #unique <charray A> :=
-  fun(A:type)(#untracked c:char)(a:A)(#unique l:<charray A>).
+  fun(A:type)(#untracked c:char)(a:A)(#unique l:<charray A>):#unique <charray A>.
    (warray_mod A (c2w c) a num_chars_word l [chars_bounded3 c]).
 
 Define charray_free : Fun(A:type)(^ #unique l:<charray A>).void :=

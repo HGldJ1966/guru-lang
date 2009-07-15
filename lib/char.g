@@ -3,11 +3,18 @@ Include trusted "word.g".
 Include trusted "minus.g".
 Include trusted "ulist.g".
 
+%-
+Include "pow.g".
+Include "word.g".
+Include "minus.g".
+Include "ulist.g".
+-%
+
 % number of bits per character
 Define spec charlen : nat := (to_nat wordlen word7).
 
 % number of characters.
-Define spec num_chars_word : word := (word_set_bit word7 join (lt (to_nat word7) wordlen) tt word0).
+Define num_chars_word : word := (word_set_bit word7 join (lt (to_nat word7) wordlen) tt word0).
 Define spec num_chars : nat := (to_nat wordlen num_chars_word).
 
 Define num_chars_not_Z := [pow_not_zero (S (S Z)) charlen clash (S (S Z)) Z].
@@ -15,6 +22,8 @@ Define num_chars_not_Z := [pow_not_zero (S (S Z)) charlen clash (S (S Z)) Z].
 Define primitive char : type := <bv charlen> <<END
   #define gdelete_char(c) 
 END.
+
+Untracked char.
 
 Define primitive mkchar : Fun(#untracked b6 b5 b4 b3 b2 b1 b0:bool).#untracked char := 
   fun (b6 b5 b4 b3 b2 b1 b0:bool).
@@ -36,7 +45,8 @@ END.
 Define primitive c2w : Fun(c:char).word :=
   fun(c:char).
   cast
-   (bv_append charlen (minus wordlen charlen) c (mkvec bool ff (minus wordlen charlen)))
+   abbrev l' = terminates (minus wordlen charlen) by eval (minus wordlen charlen) in
+   (bv_append charlen l' c (mkvec bool ff l'))
   by cong <vec bool *> [plus_minus_lt charlen wordlen join (lt charlen wordlen) tt]
 <<END
   #define gc2w(c) c

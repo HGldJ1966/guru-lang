@@ -280,14 +280,14 @@ public class FunTerm extends FunAbstraction {
         return s;
     }
 
-    public void checkSpec(Context ctxt, boolean in_type){
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
 	for (int i = 0; i < vars.length; i++){
 	    if (owned[i].status == Ownership.SPEC)
 		ctxt.markSpec(vars[i]);
 	    //types[i].checkSpec(ctxt, in_type);
 	}
 	
-	body.checkSpec(ctxt, in_type);
+	body.checkSpec(ctxt, in_type, pos);
     }
 
     // we assume r is non-null (Compile sets it if it is null).
@@ -336,4 +336,10 @@ public class FunTerm extends FunAbstraction {
 	return F;
     }
 
+    // this could only happen if this FunTerm defines a type family abbreviation.
+    public guru.carraway.Expr toCarrawayType(Context ctxt, boolean dtype) {
+	return body.toCarrawayType(ctxt,dtype);
+    }
+
 }
+

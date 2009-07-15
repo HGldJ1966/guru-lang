@@ -35,7 +35,7 @@ public class Case extends Expr {
 	    c.print(w,ctxt);
 	    w.println(": {\n");
 	    body.print(w,ctxt);
-	    w.print("break;");
+	    w.print(";\nbreak;");
 	    w.println("} /* case "+c.toString(ctxt)+" */");
 	}
     }    

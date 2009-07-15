@@ -331,8 +331,8 @@ public class Terminates extends Expr{
         return s;
     }
 
-    public void checkSpec(Context ctxt, boolean in_type){
-	t.checkSpec(ctxt, in_type);
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
+	t.checkSpec(ctxt, in_type, pos);
     }
 
     public void getFreeVarsComputational(Context ctxt, 

@@ -1,5 +1,14 @@
+test-qcharray:	test-qcharray.g Makefile
+	../bin/guru test-qcharray.g
+	gcc -O0 -ggdb -w -o test-qcharray test-qcharray.c
+	valgrind ./test-qcharray
+
+
 test-charray:	test-charray.g Makefile
 	../bin/guru test-charray.g
+	$(MAKE) test-charray-C
+
+test-charray-C:
 	gcc -O0 -ggdb -w -o test-charray test-charray.c
 	valgrind ./test-charray
 
@@ -7,11 +16,6 @@ test-unique-owned:	test-unique-owned.g Makefile
 	../bin/guru test-unique-owned.g
 	gcc -O0 -ggdb -w -o test-unique-owned test-unique-owned.c
 	valgrind ./test-unique-owned
-
-test-qcharray:	test-qcharray.g Makefile
-	../bin/guru test-qcharray.g
-	gcc -O0 -ggdb -w -o test-qcharray test-qcharray.c
-	valgrind ./test-qcharray
 
 
 hello-world:	hello-world.g Makefile

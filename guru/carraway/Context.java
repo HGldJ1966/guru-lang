@@ -249,7 +249,7 @@ public class Context extends guru.FlagManager {
     }
 
     public boolean isVar(Sym s) {
-	return (!isPrimitive(s) && !isDatatype(s) &&
+	return (!isPrimitive(s) && !isDatatype(s) && !isTypeDef(s) &&
 		!isGlobal(s) && !isResourceType(s) && !isFunction(s));
     }
 

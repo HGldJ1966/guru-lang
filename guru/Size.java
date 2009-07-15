@@ -90,7 +90,7 @@ public class Size extends Expr {
 	return this;
     }
 
-    public void checkSpec(Context ctxt, boolean in_type){
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
 	handleError(ctxt, "A size-term is being" 
 		    + " used in a non-specificational location.\n"
 		    + "1. the size-term: " + toString(ctxt));

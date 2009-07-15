@@ -89,8 +89,7 @@ public class Abort extends Expr{
         return T.getDependences();
     }
 
-    public void checkSpec(Context ctxt, boolean in_type){
-
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
     }
 
     public guru.carraway.Expr toCarraway(Context ctxt) {
