@@ -110,6 +110,18 @@ Define map_total : Forall(A B C: type)(cookie:C)
     trans join (map cookie fcn l1) (foldr Fcookie map_h nil l1)
           uz.
 
+
+Define filter : Fun(A:type)(f:Fun(a:A).bool)(l1:<list A>) . <list A> :=
+  fun filter (A:type)(f:Fun(a:A).bool)(l1:<list A>) : <list A> .
+     match l1 with
+        nil _ => (nil A)
+     | cons _ a l' => match (f a) with 
+                        ff => (filter A f l')
+                      | tt => (cons A a (filter A f l'))
+                      end
+     end.
+
+
 Inductive append_i : Fun(A:type).type :=
   mk_append_i : Fun(A:type).<append_i A>.
 
@@ -238,6 +250,7 @@ Define append_nil : Forall(A:type)(l:<list A>).{ (append l nil) = l } :=
                    [IHl cast t by cong <list *> symm inj <list *> lt]
               symm lp
     end.
+
 
 Define length : Fun(A: type)(^#owned l : <list A>).nat :=
 	fun length (A: type)(^#owned l : <list A>) : nat.
@@ -983,6 +996,12 @@ Define list_subset : Fun(A:type)(eqA : Fun(^ #owned a b: A).bool)(l1 l2:<list A>
 Define list_seteq: Fun(A:type)(eqA : Fun(^ #owned a b: A).bool)(l1 l2 :<list A>). bool := 
    fun list_seteq (A:type)(eqA : Fun(^ #owned a b: A).bool)(l1 l2:<list A>) : bool.
                    (and (list_subset A eqA l1 l2)(list_subset A eqA l2 l1)).
+
+
+Define list_intersect : Fun(A:type)(eqA : Fun(^ #owned a b: A).bool)(l1 l2:<list A>) . <list A> :=
+  fun list_intersect (A:type)(eqA:Fun(^ #owned a b:A).bool)(l1 l2:<list A>) : <list A> .
+                     (filter A fun(a:A).(member A a l2 eqA) l1).
+
 
 Define append_helper : Forall(A:type)(a:A)(eqA : Fun(^ #owned a b: A).bool)(l'' l' : <list A>). {(append l' (cons a l'')) = (append (append l' (cons a nil)) l'')} :=
    foralli(A:type)(a:A)(eqA : Fun(^ #owned a b: A).bool)( l'' : <list A>).
