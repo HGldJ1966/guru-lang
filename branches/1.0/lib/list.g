@@ -1225,9 +1225,22 @@ Define equal_to_subset : Forall(A:type)(eqA : Fun(^ #owned a b: A).bool)
 		(eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })(l1 l2: <list A>) 
 		(u:{ (list_seteq eqA l1 l2) = tt}).
 		abbrev u' = hypjoin  (and (list_subset A eqA l1 l2)(list_subset A eqA l2 l1)) tt by u end in
-	  [andtt_e1 terminates (list_subset A eqA l1 l2) by list_subset_total 
-		    terminates (list_subset A eqA l2 l1) by list_subset_total u']
+	  [andtt_e1 terminates (list_subset A eqA l1 l2) by [list_subset_total A eqA eqA_total l1 l2]
+		    terminates (list_subset A eqA l2 l1) by [list_subset_total A eqA eqA_total l2 l1] u']
 	.
+
+Define list_seteq_reflx : Forall(A:type)(eqA : Fun(^ #owned a b: A).bool)
+	(eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })(u:Forall(a:A).{(eqA a a) = tt})(l: <list A>).
+		{(list_seteq eqA l l) = tt} :=
+   foralli(A:type)(eqA : Fun(^ #owned a b: A).bool)
+	(eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })(u:Forall(a:A).{(eqA a a) = tt})(l: <list A>).
+	
+	
+	abbrev u' = hypjoin (list_subset eqA l l) tt by [list_SubsetOfSelf A eqA eqA_total u l (nil A)] end in
+	symm trans symm u'
+	hypjoin (list_subset eqA l l) (list_seteq eqA l l ) by u' end
+	
+.
 
 Define list_seteq_symm : Forall(A:type)(eqA : Fun(^ #owned a b: A).bool)
 		(eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })(l1 l2 :<list A>)
@@ -1239,13 +1252,13 @@ Define list_seteq_symm : Forall(A:type)(eqA : Fun(^ #owned a b: A).bool)
 	
 	abbrev A1 =	
 	abbrev u' = hypjoin  (and (list_subset A eqA l1 l2)(list_subset A eqA l2 l1)) tt by u end in
-	   [andtt_e1 terminates (list_subset A eqA l1 l2) by list_subset_total 
-		    terminates (list_subset A eqA l2 l1) by list_subset_total u'] in
+	   [andtt_e1 terminates (list_subset A eqA l1 l2) by [list_subset_total A eqA eqA_total l1 l2]
+		    terminates (list_subset A eqA l2 l1) by [list_subset_total A eqA eqA_total l2 l1 ] u'] in
 	
 	abbrev A2 = 
 	abbrev v' = hypjoin (and (list_subset A eqA l1 l2)(list_subset A eqA l2 l1)) tt by u end in
-	   [andtt_e2 terminates (list_subset A eqA l1 l2) by list_subset_total 
-		    terminates (list_subset A eqA l2 l1) by list_subset_total v'] in
+	   [andtt_e2 terminates (list_subset A eqA l1 l2) by [list_subset_total A eqA eqA_total l1 l2] 
+		    terminates (list_subset A eqA l2 l1) by [list_subset_total A eqA eqA_total l2 l1 ] v'] in
 	
 	symm trans symm u
 	     trans hypjoin (list_seteq A eqA l1 l2) (list_subset A eqA l1 l2) by 
