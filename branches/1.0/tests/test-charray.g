@@ -12,7 +12,7 @@ Define test :=
   let a = Z in
   let arr = (charray_new nat (inspect nat a)) in
   let val = (charray_get nat arr Cnl) in
-  let arr' = (charray_mod nat Cnl (S (owned_to_unowned nat val)) arr) in
+  let arr' = (charray_set nat Cnl (S (owned_to_unowned nat val)) arr) in
   let x = (mk_tmp arr') in
   match x with
     mk_tmp arr1 =>

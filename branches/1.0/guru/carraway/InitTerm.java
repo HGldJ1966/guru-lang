@@ -84,21 +84,21 @@ public class InitTerm extends Expr {
 		if (ctxt.getFlag("output_ocaml"))
 		    var.print(w,ctxt);
 		else {
+		    String field_access = 
+			"(("+scruttp.toString(ctxt)+"_"+ctor.toString(ctxt)
+			+" *)"+ scrut.toString(ctxt)+")->";
+
 		    var.print(w,ctxt);
 		    w.print(" = ");
 		    h.init.print(w,ctxt);
 		    w.print("(");
+		    if (ctxt.isVar((Sym)rttype))
+			w.print(field_access);
 		    rttype.print(w,ctxt);
 		    w.print(", ");
 		    scrut.print(w,ctxt);
 		    w.print(", ");
-		    w.print("((");
-		    scruttp.print(w,ctxt);
-		    w.print("_");
-		    ctor.print(w,ctxt);
-		    w.print(" *)");
-		    scrut.print(w,ctxt);
-		    w.print(")->");
+		    w.print(field_access);
 		    field.print(w,ctxt);
 		    w.print(")");
 		}

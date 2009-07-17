@@ -140,20 +140,19 @@ public class FunType extends FunAbstraction {
 	    cctxt.pushVar(v);
 	    Expr tp = types[i].defExpandTop(ctxt,false,false);
 
-	    // if we are computing the corresponding Carraway datatype (as opposed
-	    // to resource type), then we are supposed to use the datatype for this
-	    // argument iff its resource type requires that we do.
-
 	    guru.carraway.Expr resource_tp = owned[i].toCarrawayType(ctxt,types[i].pos);
-	    if (tp.construct == TYPE || tp.construct == FUN_TYPE)
-		tl.add(tp.toCarrawayType(ctxt,dtype));
-	    else if (resource_tp.construct == guru.carraway.Expr.UNTRACKED)
-		tl.add(resource_tp);
-	    else if (!tp.isTrackedType(ctxt))
+
+	    if (tp.construct == TYPE || tp.construct == FUN_TYPE) {
+		if (dtype) 
+		    tl.add(new guru.carraway.Untracked());
+		else 
+		    tl.add(tp.toCarrawayType(ctxt,false));
+	    }
+	    else if (!tp.isTrackedType(ctxt) || resource_tp.construct == guru.carraway.Expr.UNTRACKED)
 		tl.add(new guru.carraway.Untracked());
-	    else if (dtype) 
+	    else if (dtype)
 		tl.add(tp.toCarrawayType(ctxt,true));
-	    else 
+	    else
 		tl.add(resource_tp);
 
 	    cl.add(new Integer(consumps[i]));
