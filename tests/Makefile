@@ -1,12 +1,13 @@
-test-qcharray:	test-qcharray.g Makefile
-	../bin/guru test-qcharray.g
-	gcc -O0 -ggdb -w -o test-qcharray test-qcharray.c
-	valgrind ./test-qcharray
-
 
 test-charray:	test-charray.g Makefile
 	../bin/guru test-charray.g
 	$(MAKE) test-charray-C
+
+
+test-qcharray:	test-qcharray.g Makefile
+	../bin/guru test-qcharray.g
+	gcc -O0 -ggdb -w -o test-qcharray test-qcharray.c
+	valgrind ./test-qcharray
 
 test-charray-C:
 	gcc -O0 -ggdb -w -o test-charray test-charray.c

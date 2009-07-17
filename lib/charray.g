@@ -19,10 +19,10 @@ Define charray_get : Fun(spec A:type)(!#unique l:<charray A>)(#untracked c:char)
   fun(spec A:type)(!#unique l:<charray A>)(#untracked c:char):#<owned l> A. 
     (warray_get A num_chars_word l (c2w c) [chars_bounded3 c]).
 
-Define charray_mod 
+Define charray_set 
   : Fun(A:type)(#untracked c:char)(a:A)(#unique l:<charray A>). #unique <charray A> :=
   fun(A:type)(#untracked c:char)(a:A)(#unique l:<charray A>):#unique <charray A>.
-   (warray_mod A (c2w c) a num_chars_word l [chars_bounded3 c]).
+   (warray_set A (c2w c) a num_chars_word l [chars_bounded3 c]).
 
 Define charray_free : Fun(A:type)(^ #unique l:<charray A>).void :=
   fun(A:type)(^ #unique l:<charray A>).

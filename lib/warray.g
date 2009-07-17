@@ -33,12 +33,12 @@ Define primitive warray_get
 #define gwarray_get(l,i) (((void **)l)[i])
 END.
 
-Define primitive warray_mod 
+Define primitive warray_set 
   : Fun(A:type)(i:word)(a:A)(spec n:word)(#unique l:<warray A n>)
        (u:{(lt (to_nat i) (to_nat n)) = tt}). #unique <warray A n> :=
   fun(A:type)(i:word)(a:A)(spec n:word)(l:<warray A n>)(u:{(lt (to_nat i) (to_nat n)) = tt}).
    (vec_update A (to_nat wordlen n) l (to_nat wordlen i) a u) <<END
-void *gwarray_mod(int A, int c, void *d, void *l) {
+void *gwarray_set(int A, int c, void *d, void *l) {
   gdec(A,((void **)l)[c]);
   ((void **)l)[c] = d;
   return l;
