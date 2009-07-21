@@ -4,6 +4,7 @@
 
 Include trusted "word.g".
 Include trusted "unique.g".
+Include trusted "comparator.g".
 
 %Set "print_parsed".
 
@@ -55,3 +56,51 @@ void gwarray_free(int A, int n, void *l) {
   carraway_free(l);
 }
 END.
+
+
+Define warray_binary_search
+  : Fun(A:type)			%% type of the warray
+       (spec n:word)		%% length of the warray
+       (#unique l:<warray A n>) %% the warray to search
+       (first last:word)    	%% first and last index of the search
+       (value:A)		%% value to search for
+       (c:Fun(a b:A). comp)	%% comparator function
+       (u:{(lt (to_nat first) (to_nat n)) = tt})
+       (v:{(lt (to_nat last) (to_nat n)) = tt})
+       . bool :=
+  fun warray_binary_search(A:type)(spec n:word)(#unique l:<warray A n>)
+     (first last:word)(value:A)
+     (c:Fun(a b:A). comp)
+     (u:{(lt (to_nat first) (to_nat n)) = tt})
+     (v:{(lt (to_nat last) (to_nat n)) = tt}):bool.
+    let mid = (word_plus first (word_div2 (word_minus last first))) by midu in
+    abbrev midP = (word_to_nat (word_plus first (word_div2 (word_minus last first)))) in
+    abbrev midProof = [lt_trans midP (word_to_nat last)	(word_to_nat n)
+	                [ltle_trans midP
+	      		  (word_to_nat (word_plus first (word_minus last first)))
+			  (word_to_nat last)
+                          [word_plus_shrink first (word_div2 (word_minus last first))
+	      	            (word_minus last first)
+		            [word_div2_shrink (word_minus last first)]]
+	                  [word_plus_minus_shrink first last]]
+	                v] in
+    abbrev midMinusOneProof = [lt_trans (word_to_nat (word_minus (word_plus first (word_div2 (word_minus last first))) word1))
+	     	 	        midP
+		 		(word_to_nat n)
+	         		[word_minus_shrink (word_plus first (word_div2 (word_minus last first)))]
+	         		midProof] in
+    match (ltword first last) with
+      ff => ff %not found
+    | tt =>
+    match (c (warray_get A n l 
+              (word_plus first (word_div2 (word_minus last first)))
+	      midProof)
+           value) with
+      LT => (warray_binary_search A n l (word_plus (word_plus first (word_div2 (word_minus last first))) word1)
+      	     last value c midMinusOneProof v)
+    | EQ => tt %found
+    | GT => (warray_binary_search A n l first
+      	     (word_minus (word_plus first (word_div2 (word_minus last first))) word1)
+	     value c u midMinusOneProof)
+    end
+    end.
