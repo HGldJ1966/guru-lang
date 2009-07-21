@@ -49,7 +49,15 @@ public class App extends Expr{
     // convert this App to spine form, in which the head of the App is not
     // an App (and is top-level def-expanded).
     public Expr getHead(Context ctxt, boolean spec) {
-	return (spineForm(ctxt, false, spec, true)).head;
+	return getHead(ctxt,false,spec,true);
+    }
+
+    public Expr getHead(Context ctxt, boolean drop_annos, 
+			boolean spec, boolean expand_defs) {
+	Expr r = spineForm(ctxt, drop_annos, spec, expand_defs);
+	if (r.construct == CONST)
+	    return r;
+	return ((App)r).head;
     }
 
     public Expr subst(Expr e, Expr x) {
@@ -160,7 +168,10 @@ public class App extends Expr{
     // return an equivalent expr where the head is not an App,
     // and is top-level def-expanded.  This must be overridden in child
     // classes.  Also, doBeta() may be overridden to do beta-reduction.
-    public App spineForm(Context ctxt, boolean drop_annos, 
+    //
+    // This will return either an App or a CONST -- assuming type family
+    // abbreviations' bodies can only be those.
+    public Expr spineForm(Context ctxt, boolean drop_annos, 
 			 boolean spec,
 			 boolean expand_defs) {
 	if (ctxt.getFlag("debug_spine_form")) {
@@ -180,21 +191,26 @@ public class App extends Expr{
 		ctxt.w.flush();
 	    }
 	}
-	App ret = null;
+	Expr ret = null;
 	if (h.construct == construct) {
-	    App e = ((App)h).spineForm(ctxt, drop_annos, spec, expand_defs);
-	    int eXlen = e.X.length;
-	    Expr[] X2 = new Expr[X.length + eXlen];
-	    for (int i = 0; i < eXlen; i++)
-		X2[i] = e.X[i];
-	    for (int i = 0, iend = X.length; i < iend; i++)
-		X2[i+eXlen] = X[i];
-	    
-	    ret = (App)((new App(construct, e.head, X2))
-			.doBeta(ctxt,drop_annos, spec, expand_defs));
+	    Expr e = ((App)h).spineForm(ctxt, drop_annos, spec, expand_defs);
+	    App a;
+	    if (e.construct == CONST) 
+		a = new App(construct, (Const)e, X);
+	    else {
+		a = (App)e;
+		int eXlen = a.X.length;
+		Expr[] X2 = new Expr[X.length + eXlen];
+		for (int i = 0; i < eXlen; i++)
+		    X2[i] = a.X[i];
+		for (int i = 0, iend = X.length; i < iend; i++)
+		    X2[i+eXlen] = X[i];
+		a = new App(construct, a.head, X2);
+	    }
+	    ret = a.doBeta(ctxt,drop_annos, spec, expand_defs);
 	}
 	else
-	    ret = (App)doBeta(ctxt,drop_annos,spec,expand_defs);
+	    ret = doBeta(ctxt,drop_annos,spec,expand_defs);
 	
 	if (ctxt.getFlag("debug_spine_form")) {
 	    ctxt.w.println(") spineForm = "+ret.toString(ctxt));
@@ -231,8 +247,8 @@ public class App extends Expr{
 	    ctxt.w.println("");
 	}
 
-	App e1 = spineForm(ctxt, true, spec, true);
-	App e2 = ((App)ee).spineForm(ctxt, true, spec, true);
+	Expr e1 = spineForm(ctxt, true, spec, true);
+	Expr e2 = ((App)ee).spineForm(ctxt, true, spec, true);
 
 	if (ctxt.getFlag("debug_def_eq")) {
 	    ctxt.w.println("Spine forms: ");
@@ -245,18 +261,33 @@ public class App extends Expr{
 	    ctxt.w.println("------------------------------------------------- {");
 	}
 
-	int iend = e1.X.length;
-	if (iend != e2.X.length) {
+	if (e1.construct == CONST) {
+	    if (e2.construct == CONST)
+		return e1.defEqNoAnno(ctxt,e2,spec);
+	    ctxt.notDefEq(e1,e2);
+	    return false;
+	}
+	
+	if (e2.construct == CONST) {
+	    ctxt.notDefEq(e1,e2);
+	    return false;
+	}
+    
+	App a1 = (App)e1;
+	App a2 = (App)e2;
+
+	int iend = a1.X.length;
+	if (iend != a2.X.length) {
 	    ctxt.notDefEq(this,ee);
 	    return false;
 	}
 
 	for (int i = 0; i < iend; i++){
-	    if (!e1.X[i].defEqNoAnno(ctxt, e2.X[i], spec)){
+	    if (!a1.X[i].defEqNoAnno(ctxt, a2.X[i], spec)){
 		return false;
 	    }
 	}
-	boolean ret = e1.head.defEqNoAnno(ctxt, e2.head, spec);
+	boolean ret = a1.head.defEqNoAnno(ctxt, a2.head, spec);
 
 	if (ctxt.getFlag("debug_def_eq")) {
 	    ctxt.w.println("} " + (new Boolean(ret)).toString());
@@ -274,21 +305,31 @@ public class App extends Expr{
 	ee = ee.defExpandTop(ctxt);
 	if (ee.construct != construct)
 	    return new isInstC();
-	App e1 = spineForm(ctxt,false,true,true);
-	App e2 = ((App)ee).spineForm(ctxt,false,true,true);
-	int iend = e1.X.length;
-	if (iend != e2.X.length)
+	Expr e1 = spineForm(ctxt,false,true,true);
+	Expr e2 = ((App)ee).spineForm(ctxt,false,true,true);
+
+	if (e1.construct == CONST)
+	    return e1.isInstance(ctxt,e2);
+
+	if (e2.construct == CONST)
+	    return new isInstC();
+
+	App a1 = (App)e1;
+	App a2 = (App)e2;
+
+	int iend = a1.X.length;
+	if (iend != a2.X.length)
 	    return new isInstC();
 	isInstC q, found = null;
 	for (int i = 0; i < iend; i++) {
-	    q = e1.X[i].isInstance(ctxt, e2.X[i]);
+	    q = a1.X[i].isInstance(ctxt, a2.X[i]);
 	    if (!q.is)
 		return q;
 	    if (q.val != null)
 		found = q;
 	}
 	
-	q = e1.head.isInstance(ctxt, e2.head);
+	q = a1.head.isInstance(ctxt, a2.head);
 	if (!q.is)
 	    return q;
 	if (q.val != null)

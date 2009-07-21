@@ -42,12 +42,14 @@ public class ReducibleApp extends App{
 	return this;
     }
     
-    public App spineForm(Context ctxt, boolean drop_annos, boolean spec,
+    public Expr spineForm(Context ctxt, boolean drop_annos, boolean spec,
 			 boolean expand_defs) {
-	App s = (App)super.spineForm(ctxt, drop_annos, spec, expand_defs);
-	if (s != this)
-	    return new ReducibleApp(construct,s);
-	return this;
+	Expr s = super.spineForm(ctxt, drop_annos, spec, expand_defs);
+	if (s == this)
+	    return this;
+	if (s.construct == CONST)
+	    return s;
+	return new ReducibleApp(construct,(App)s);
     }
 
     protected boolean headBetaOk(Context ctxt, boolean spec) {
@@ -148,6 +150,14 @@ public class ReducibleApp extends App{
 	    ctxt.w.flush();
 	}
 
+	Expr e1 = spineForm(ctxt, true, spec, true);
+
+	if (e1 != this) {
+	    if (approx)
+		return e1.defEqNoAnnoApprox(ctxt,ee,spec);
+	    return e1.defEqNoAnno(ctxt,ee,spec);
+	}
+
 	ee = ee.defExpandTop(ctxt,true,spec);
 	
 	if (ee.construct != construct) {
@@ -155,8 +165,7 @@ public class ReducibleApp extends App{
 	    return false;
 	}
 	
-	App e1 = spineForm(ctxt, true, spec, true);
-	App e2 = ((App)ee).spineForm(ctxt, true, spec, true);
+	Expr e2 = ((App)ee).spineForm(ctxt, true, spec, true);
 
 	if (ctxt.getFlag("debug_type_app_def_eq")) {
 	    ctxt.w.println("Spine forms:"
@@ -165,22 +174,30 @@ public class ReducibleApp extends App{
 	    ctxt.w.flush();
 	}
 
-	int iend = e1.X.length;
+	if (e2.construct == CONST) {
+	    ctxt.notDefEq(e1,e2);
+	    return false;
+	}
+    
+	App a1 = (App)e1;
+	App a2 = (App)e2;
+
+	int iend = a1.X.length;
 
 	if (approx)
-	    return e1.head.defEqNoAnnoApprox(ctxt, e2.head, spec);
+	    return a1.head.defEqNoAnnoApprox(ctxt, a2.head, spec);
 
-	if (iend != e2.X.length) {
+	if (iend != a2.X.length) {
 	    ctxt.notDefEq(this,ee);
 	    return false;
 	}
 
 	for (int i = 0; i < iend; i++) {
-	    if (!e1.X[i].defEqNoAnno(ctxt, e2.X[i], spec)){
+	    if (!a1.X[i].defEqNoAnno(ctxt, a2.X[i], spec)){
 		return false;
 	    }
 	}
-	return e1.head.defEqNoAnno(ctxt, e2.head, spec);
+	return a1.head.defEqNoAnno(ctxt, a2.head, spec);
     }
 
     public Expr do_rewrite(Context ctxt, Expr e, Expr x, Stack boundVars)

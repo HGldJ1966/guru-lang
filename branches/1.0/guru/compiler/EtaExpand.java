@@ -128,6 +128,18 @@ public class EtaExpand {
     // 7. replace type applications with their heads.
     //
     public Expr expand(Expr e) {
+	// pull in all resource types
+
+	Iterator it = src.getResourceTypes().iterator();
+	while (it.hasNext()) {
+	    Const c = (Const)it.next();
+	    Define drop = src.getDropFuncDef(src.getDropFunc(c));
+	    dst.addResourceType(c);
+	    dst.setDropFunc(c,drop);
+	    all_consts_add(c);
+	    all_consts_add(drop.c);
+	}
+
 	return expand(e, false, null);
     }
 
@@ -182,14 +194,9 @@ public class EtaExpand {
 		/* must be a constructor or a resource type.  Add all
 		   the type and related term ctors to dst. */
 
-		if (src.isResourceType(c)) {
-		    Define drop = src.getDropFuncDef(src.getDropFunc(c));
-		    dst.addResourceType(c);
-		    dst.setDropFunc(c,drop);
-		    all_consts_add(c);
-		    all_consts_add(drop.c);
+		if (src.isResourceType(c)) 
+		    // already pulled in, in expand(Expr) above
 		    return c;
-		}
 
 		Const d = c;
 		if (src.isTermCtor(c)) 
@@ -209,6 +216,7 @@ public class EtaExpand {
 		}
 
 		dst.addTypeCtor(d,dT);
+		dst.setTypeCtorRetStat(d,src.getTypeCtorRetStat(d));
 		all_consts_add(d);
 
 		// 2. now add the term ctors to dst

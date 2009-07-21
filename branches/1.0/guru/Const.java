@@ -55,6 +55,14 @@ public class Const extends Expr implements Comparable {
 
 	    return n.defEqNoAnno(ctxt, e, spec);
 	}
+	if (e.construct == TYPE_APP) {
+	    // might beta reduce to this.
+	    
+	    Expr ep = ((App)e).spineForm(ctxt,false,spec,true);
+	    if (ep.construct == CONST)
+		return defEqNoAnno(ctxt,ep,spec);
+	}
+
 	Expr tmp = e.defExpandTop(ctxt,true,spec);
 	boolean ret = (this == tmp);
 	if (!ret)

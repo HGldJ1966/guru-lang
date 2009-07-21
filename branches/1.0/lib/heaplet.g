@@ -9,6 +9,7 @@
 % count is known (statically) to be zero.
 
 Include trusted "list.g".
+Include "unique.g".
 
 Define natlist := <list nat>.
 Define natlistn := (nil nat).
@@ -54,15 +55,33 @@ void *gnew_heaplet(int I) {
 }
 END.
 
+% <alias I> is the type for a pointer into the (unique) heaplet with heaplet id I.
+%
+% In the functional model, p:<alias I> is the position in the heaplet, starting from
+% the end, where the data pointed to by the pointer is stored.
+%
+% In the actual implementation, p:<alias I> is pointer directly to the data.
+
 Define primitive type_family_abbrev alias := fun(I:heaplet_id).nat <<END
 #define gconsume_alias(x)
 END.
 
-Inductive heaplet_in_t : Fun(A:type)(I:heaplet_id)(L:natlist).type :=
-  return_heaplet_in : Fun(spec A:type)(spec I:heaplet_id)(spec L:natlist)
-                         (#unique h:<heaplet A I L>)(#unique a:<alias I>)
+Inductive heaplet_alias_t : Fun(A:type)(I:heaplet_id)(L:natlist).type :=
+  return_heaplet_alias : Fun(spec A:type)(spec I:heaplet_id)(spec L:natlist)
+                            (#unique h:<heaplet A I L>)(#unique p:<alias I>).<heaplet_in_t A I L>.
 
-Define heaplet_in : Fun(spec A:type)(spec I:heaplet_id)(spec L:natlist)
-                       (h:<heaplet A I L>)(a:A).<heaplet A I (natlistc (S Z) L)> :=
-  Fun(A:type)(spec I:heaplet_id)(spec L:natlist)
-     (h:<heaplet A I L>)(a:A).(heaplistc A Z a 
+Define primitive heaplet_in : Fun(spec A:type)(spec I:heaplet_id)(spec L:natlist)
+                                 (h:<heaplet A I L>)(a:A).
+                              <heaplet_alias_t A I (append nat L (natlistc (S Z) natlistn))> :=
+  fun r(A:type)(spec I:heaplet_id)(spec L:natlist)
+       (h:<heaplet A I L>)(a:A):
+    <heaplet_alias_t A I (append nat L (natlistc (S Z) natlistn))>.
+    match h with
+      heaplistn _ => cast (heaplistc A n a natlistn (heaplistn A))
+                     by cong <heaplist A *> join (natlist (S Z) natlistn
+
+void *gheaplet_in(void *h, void *a) {
+  return greturn_heaplet_alias(h,a);
+}
+END.
+

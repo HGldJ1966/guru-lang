@@ -131,8 +131,8 @@ public class TermApp extends App{
 	return this;
     }
 
-    public App spineForm(Context ctxt, boolean drop_annos, boolean spec,
-			 boolean expand_defs) {
+    public Expr spineForm(Context ctxt, boolean drop_annos, boolean spec,
+			  boolean expand_defs) {
 	Expr h = head;
 	Expr prev = null;
 	if (expand_defs) {
@@ -157,7 +157,7 @@ public class TermApp extends App{
 	    ctxt.w.println("Head expands to "+h.toString(ctxt));
 	    ctxt.w.flush();
 	}
-	App ret = this;
+	Expr ret = this;
 	if (h.construct == construct) {
 	    TermApp e = (TermApp)((TermApp)h).spineForm(ctxt, drop_annos,
 							spec, expand_defs);

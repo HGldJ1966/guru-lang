@@ -1,8 +1,11 @@
+test-queue:	test-queue.g Makefile
+	../bin/guru test-queue.g
+	gcc -O0 -ggdb -w -o test-queue test-queue.c
+	valgrind ./test-queue
 
 test-charray:	test-charray.g Makefile
 	../bin/guru test-charray.g
 	$(MAKE) test-charray-C
-
 
 test-qcharray:	test-qcharray.g Makefile
 	../bin/guru test-qcharray.g
