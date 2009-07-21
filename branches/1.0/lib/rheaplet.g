@@ -10,6 +10,12 @@
 % dynamically of the number of aliases, and to enable replacement
 % of the aliased value (while preserving the fact that aliases
 % point to it -- via the holder cells).
+%
+% Use model for compiled code:
+%
+% -- call init_rheaplets once per compiled program.
+% -- call new_rheaplet to allocate a new rheaplet.
+% -- use the other functions below to create aliased cells, and read and write them.
 
 Include trusted "list.g".
 Include "holder.g".
@@ -23,15 +29,21 @@ Include "unique_owned.g".
 % rheaplet_ids do not exist at runtime (again, a dummy value is passed through for them).
 
 Define primitive rheaplet_id := nat <<END
-  #define gconsume_rheaplet_id(x)
+  #define gdelete_rheaplet_id(x)
 END.
 
 Define primitive rheaplet_id0 : #unique rheaplet_id := Z <<END
   #define grheaplet_id0 1
 END.
 
+% call this once per compiled program, just to have the compiler pull in functions
+% we need in our C code.
+Define init_rheaplets : Fun(u:Unit).Unit :=
+  fun(u:Unit).
+    let x = mk_holder in unit.
+
 Define primitive type_family_abbrev rheaplet := fun(A:type)(I:rheaplet_id).<list A> <<END
-  #define gconsume_rheaplet(x)
+  #define gdelete_rheaplet(x)
 END.
 
 Inductive new_rheaplet_t : Fun(A:type)(I:rheaplet_id).type :=
@@ -46,7 +58,7 @@ void *gnew_rheaplet(int I) {
 }
 END.
 
-% <alias I> is the type for a pointer into the (unique) rheaplet with rheaplet id I.
+% <alias I> is the type for a pointer into the (sole) rheaplet with rheaplet id I.
 %
 % In the functional model, p:<alias I> is the position in the rheaplet, starting from
 % the end, where the data pointed to by the pointer is stored.
@@ -55,39 +67,38 @@ END.
 % use refcounts to count the number of aliases.
 
 Define primitive type_family_abbrev alias := fun(I:rheaplet_id).nat <<END
-#define gconsume_alias(x) x
+void gdelete_alias(void *x) {
+     release(gholder,x); // this will decrement the refcount for the data pointed to.
+}
+END.
+
+Define primitive alias_eq : Fun(spec I:rheaplet_id)(^#owned p1 p2:<alias I>).bool :=
+  fun(spec I:rheaplet_id)(^#owned p1 p2:<alias I>).
+    (eqnat p1 p2) <<END
+#define galias_eq(x,y) ((x) == (y))
 END.
 
 Inductive rheaplet_in_t : Fun(A:type)(I:rheaplet_id).type :=
   return_rheaplet_in : Fun(spec A:type)(spec I:rheaplet_id)
                              (#unique h:<rheaplet A I>)
-                             (#unique p:<alias I>).
+                             (p:<alias I>).
                           #unique <rheaplet_in_t A I>.
 
-Define primitive rheaplet_in : Fun(spec A:type)(spec I:rheaplet_id)
+Define primitive rheaplet_in : Fun(A:type)(spec I:rheaplet_id)
                                   (#unique h:<rheaplet A I>)(a:A).
                                #unique <rheaplet_in_t A I> :=
   fun (A:type)(spec I:rheaplet_id)(h:<rheaplet A I>)(a:A).
    (return_rheaplet_in A I (append A h (cons A a (nil A))) (length A h)) <<END
-void *grheaplet_in(int h, void *a) {
+void *grheaplet_in(int A, int h, void *a) {
   return greturn_rheaplet_in(1,gmk_holder(A,a));
 }
 END.
 
-Define primitive rheaplet_alias : Fun(spec A:type)(spec I:rheaplet_id)(!#unique p:<alias I>).
-                                  #unique <alias I> :=
-  fun (A:type)(spec I:rheaplet_id)(p:<alias I>). p <<END
-#define grheaplet_alias(h,a) ginc(a)
-END.
-
-Define primitive rheaplet_drop : Fun(A:type)(spec I:rheaplet_id)(#unique p:<alias I>).
-                                   void :=
-  fun (A:type)(spec I:rheaplet_id)(p:<alias I>). voidi <<END
-#define grheaplet_drop(A,h,a) gdec(A,a)
-END.
+% to create a new alias, use inc (unowned.g)
+% to drop an alias, use dec (unowned.g)
 
 Define primitive rheaplet_get : Fun(spec A:type)(spec I:rheaplet_id)
-                                   (!#unique h:<rheaplet A I>)(^#unique_owned p:<alias I>).
+                                   (!#unique_owned h:<rheaplet A I>)(^#owned p:<alias I>).
                                #<owned h> A :=
   fun (A:type)(spec I:rheaplet_id)(h:<rheaplet A I>)(p:<alias I>). (nth A p h) <<END
 #define grheaplet_get(h, p) select_holder_mk_holder_a(p)
@@ -95,7 +106,7 @@ Define primitive rheaplet_get : Fun(spec A:type)(spec I:rheaplet_id)
 END.
 
 Define primitive rheaplet_set : Fun(A:type)(spec I:rheaplet_id)
-                                   (#unique h:<rheaplet A I>)(!#unique p:<alias I>)(a:A).
+                                   (#unique h:<rheaplet A I>)(^#owned p:<alias I>)(a:A).
                                #unique <rheaplet A I> :=
   fun (A:type)(spec I:rheaplet_id)(h:<rheaplet A I>)(p:<alias I>)(a:A). (set_nth A p h a) <<END
 int grheaplet_get(int A, int h, void *p, void *a) {

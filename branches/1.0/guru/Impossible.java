@@ -104,5 +104,11 @@ public class Impossible extends Expr{
     public void getFreeVarsComputational(Context ctxt, 
 					 java.util.Collection vars) {
     }
+
+    public guru.carraway.Expr toCarraway(Context ctxt) {
+	guru.carraway.Expr e = new guru.carraway.Abort();
+	e.pos = pos;
+	return e;
+    }
 }
 

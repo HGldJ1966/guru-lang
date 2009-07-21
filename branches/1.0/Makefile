@@ -17,6 +17,14 @@ go:
 carraway:
 	javac -source 1.4 -g guru/*.java guru/carraway/*java
 
+status:
+	@echo "###########################################"
+	@echo "# Files with svn status other than '?':"
+	@echo "###########################################"
+	@sh -c 'svn status | grep "^[^?]"'
+
+
+
 # the name of the C++ compiler
 GCJ=gcj
 

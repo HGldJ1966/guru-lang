@@ -390,11 +390,13 @@ public class Context extends guru.FlagManager {
 	public FunType F;
 	public String code;
 	boolean must_consume_scrut;
-	public InitH(Sym init, FunType F, boolean must_consume_scrut, String code) {
+	boolean take_pointer;
+	public InitH(Sym init, FunType F, boolean must_consume_scrut, boolean take_pointer, String code) {
 	    this.init = init;
 	    this.F = F;
 	    this.code = code;
 	    this.must_consume_scrut = must_consume_scrut;
+	    this.take_pointer = take_pointer;
 	}
     }
 
@@ -481,7 +483,8 @@ public class Context extends guru.FlagManager {
     /* return the pos of a previously added FunType iff we already had one
        registered for this pair of scrut_tp, pat_var_tp. */
     public Position addInit(Sym init, Sym scrut_tp, Sym pat_var_tp, FunType F, 
-			    boolean must_consume_scrut, String code) {
+			    boolean must_consume_scrut, boolean take_pointer,
+			    String code) {
 	boolean ret = false;
 	HashMap m = (HashMap)inits.get(scrut_tp);
 	if (m == null) {
@@ -492,7 +495,7 @@ public class Context extends guru.FlagManager {
 	if (h != null)
 	    return h.F.pos;
 	
-	h = new InitH(init,F,must_consume_scrut,code);
+	h = new InitH(init,F,must_consume_scrut,take_pointer,code);
 	m.put(pat_var_tp,h);
 	return null;
     }

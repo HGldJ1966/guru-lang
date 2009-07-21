@@ -79,10 +79,14 @@ public class Parser extends guru.ParserBase {
 
     protected Init readInit() throws IOException {
 	Init a = new Init();
-	eat_ws();
-	if (tryToEat("must_consume_scrutinee")) {
-	    a.must_consume_scrut = true;
+	while(true) {
 	    eat_ws();
+	    if (tryToEat("must_consume_scrutinee")) 
+		a.must_consume_scrut = true;
+	    else if (tryToEat("take_pointer")) 
+		a.take_pointer = true;
+	    else 
+		break;
 	}
 	a.init = readPrimitive();
 	return a;

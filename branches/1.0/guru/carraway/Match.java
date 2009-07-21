@@ -366,7 +366,8 @@ public class Match extends Expr {
 		if (u.dropping_expr == null) {
 		    if (u.ref != rs[i])
 			C[i].simulateError(ctxt,"A reference created in a case but not returned by it is being leaked.\n\n"
-					   +"1. "+u.ref.refString(ctxt,u));
+					   +"1. the case: "+C[i].c.toString(ctxt)
+					   +"\n\n2. "+u.ref.refString(ctxt,u));
 		    continue;
 		}
 		
@@ -440,8 +441,10 @@ public class Match extends Expr {
 
     public Expr linearize(Context ctxt, guru.Position p, Sym dest, Collection decls, Collection defs) {
 	boolean toplevel = (dest != null);
-	if (dest == null && rettype.construct != VOID)
+	if (dest == null && rettype.construct != VOID) {
 	    dest = ctxt.newVar(pos);
+	    decls.add(dest);
+	}
 	Expr nt = null;
 	if (t != x) {
 	    decls.add(x);

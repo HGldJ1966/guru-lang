@@ -101,6 +101,15 @@ public class InitTerm extends Expr {
 		    w.print(field_access);
 		    field.print(w,ctxt);
 		    w.print(")");
+		    
+		    if (h.take_pointer) {
+			w.println(";");
+			w.print(field_access);
+			field.print(w,ctxt);
+			w.print(" = 0");
+		    }
+		    else
+			w.println("");
 		}
 	    }
 	}
