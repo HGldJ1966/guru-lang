@@ -355,12 +355,14 @@ public class Parser extends ParserBase {
 
     protected Init readInit() throws IOException {
 	Init a = new Init();
-	if (!eat_ws())
-	    handleError("Unexpected end of input reading an Init-command.");
-
-	if (tryToEat("must_consume_scrutinee")) {
-	    a.must_consume_scrut = true;
+	while(true) {
 	    eat_ws();
+	    if (tryToEat("must_consume_scrutinee")) 
+		a.must_consume_scrut = true;
+	    else if (tryToEat("take_pointer")) 
+		a.take_pointer = true;
+	    else 
+		break;
 	}
 
 	a.s = readBindingConst();

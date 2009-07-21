@@ -5,6 +5,7 @@ public class Init extends Command {
     public Var v1, v2;
     Ownership T1, T2, T3; // T1 and T2 are guaranteed to have status RESOURCE.
     boolean must_consume_scrut;
+    boolean take_pointer;
     String delim, code;
 
     public Init() {
@@ -20,6 +21,8 @@ public class Init extends Command {
 	w.print("Init ");
 	if (must_consume_scrut)
 	    w.print("must_consume_scrutinee ");
+	if (take_pointer)
+	    w.print("take_pointer ");
 	w.print(s.toString(ctxt)+"(");
 	w.print(T1.toString(ctxt));
 	w.print(" ");

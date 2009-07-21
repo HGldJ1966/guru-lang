@@ -128,6 +128,7 @@ public class EtaExpand {
     // 7. replace type applications with their heads.
     //
     public Expr expand(Expr e) {
+
 	// pull in all resource types
 
 	Iterator it = src.getResourceTypes().iterator();

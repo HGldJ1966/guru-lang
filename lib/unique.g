@@ -8,7 +8,7 @@ ResourceType unique with
   }
 END.
 
-Init must_consume_scrutinee ginit_unique_unique(#unique x)(#unique y).#unique <<END
+Init must_consume_scrutinee take_pointer ginit_unique_unique(#unique x)(#unique y).#unique <<END
   #define ginit_unique_unique(A,x,y) y
 END.
 

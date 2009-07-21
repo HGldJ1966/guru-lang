@@ -37,6 +37,7 @@ public class Include extends Command {
 	Collection dtps2 = ctxt.getDatatypes2();
 
 	ctxt.cw.println("void release(int tp, void *x) {");
+	ctxt.cw.println("if (x == 0) return;");
 	ctxt.cw.println("switch (tp) {");
 	Iterator it = dtps1.iterator();
 	while (it.hasNext()) {
