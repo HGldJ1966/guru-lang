@@ -1,3 +1,4 @@
+Include "minus.g".
 Include "bv.g".
 
 Define wordlen := (mult2 (mult2 (S (S (S (S (S (S (S (S Z)))))))))).
@@ -133,3 +134,63 @@ Define trusted word0_set_bit_pow2
       { (to_nat (word_set_bit i word0)) = (pow2 (to_nat i)) } :=
   truei.
 
+Define primitive word_shift: Fun(x:word)(w:word). word := 
+  fun(x:word)(w:word). 
+   abbrev P = cong <bv *> join wordlen (S (minus wordlen (S Z))) in
+     cast (bv_shift (to_nat wordlen x)
+            (minus wordlen (S Z)) cast w by P) by symm P <<END
+#define gword_shift(x,w) ((w) >> (x))
+END.
+
+Define word_div2 := (word_shift word1).
+
+Define trusted word_div2_tot : 
+  Forall(x:word).Exists(y:word).{(word_div2 x) = y} := truei.
+
+Total word_div2 word_div2_tot.
+
+Define word_minus: Fun(x y:word). word :=
+  fun(x y:word). x.
+
+Define trusted word_minus_tot :
+  Forall(x y:word).Exists(z:word).{(word_minus x y) = z} := truei.
+
+Total word_minus word_minus_tot.
+
+Define word_plus: Fun(x y:word). word :=
+  fun(x y:word). x.
+
+Define trusted word_plus_tot :
+  Forall(x y:word).Exists(z:word).{(word_plus x y) = z} := truei.
+
+Total word_plus word_plus_tot.
+
+Define primitive ltword : Fun(#untracked w1 w2:word).bool :=
+  fun(#untracked w1 w2:word).(lt (to_nat wordlen w1) (to_nat wordlen w2)) <<END
+  #define gltword(w1, w2) (w1 < w2)
+END.
+
+Define primitive leword : Fun(#untracked w1 w2:word).bool :=
+  fun(#untracked w1 w2:word).(le (word_to_nat w1) (word_to_nat w2)) <<END
+  #define gleword(w1, w2) (w1 <= w2)
+END.
+
+Define trusted word_div2_shrink :
+  Forall(x:word).{(lt (to_nat (word_div2 x)) (to_nat x)) = tt} 
+  := truei.
+
+Define trusted word_plus_shrink :
+  Forall(x y y':word)
+        (u:{(lt (to_nat y) (to_nat y')) = tt}).
+  {(lt (to_nat (word_plus x y)) (to_nat (word_plus x y'))) = tt}
+  := truei.
+
+Define trusted word_plus_minus_shrink :
+  Forall(x y:word).
+  {(le (to_nat (word_plus x (word_minus y x))) (to_nat y)) = tt} 
+  := truei.
+
+Define trusted word_minus_shrink :
+  Forall(x:word).
+  {(lt (to_nat (word_minus x word1)) (to_nat x)) = tt}
+  := truei.

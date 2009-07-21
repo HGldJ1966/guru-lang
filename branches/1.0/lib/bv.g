@@ -4,6 +4,8 @@ Include "pow.g".
 Include "vec.g".
 
 Define bv := <vec bool>.
+Define bv_head := (vec_head bool).
+Define bv_tail := (vec_tail bool).
 Define bvn := (vecn bool).
 Define bvc := (vecc bool).
 Define bv_reverse := (vec_reverse bool). 
@@ -304,7 +306,7 @@ Define to_bv_nat : Forall(l:nat)(v:<bv l>).
                                            terminates (to_nat l' cv') 
                                            by to_nat_tot]
                            trans [v_IH l' cv']
-	 		   nv'_eq
+                           nv'_eq
                    trans join match (mk_to_bv_t rv) with
                               mk_to_bv_t v => 
                                 (mk_to_bv_t (bvc (mod2 (S n)) v))
@@ -700,4 +702,13 @@ Define to_nat_eq
 Define trusted to_nat_neq1 : Forall(l:nat)(v1:<bv l>)(v2:<bv l>)
                                    (u:{(eqbv v1 v2) = ff}).
                                {(eqnat (to_nat v1) (to_nat v2)) = ff} := truei.
+
+Define bv_shift: Fun(x:nat)(spec n:nat)(l:<bv (S n)>). <bv (S n)> :=
+  fun bv_shift(x:nat)(spec n:nat)(l:<bv (S n)>): <bv (S n)>.
+  match x with
+    Z => l
+  | S x' => (bv_shift x' n cast (bv_append n (S Z) (bv_tail n l) (bvc Z ff bvn)) by
+                                cong <bv *> trans [plusS n Z] %is there an easier way?
+                                                  cong (S *) [plusZ n])
+  end.
 

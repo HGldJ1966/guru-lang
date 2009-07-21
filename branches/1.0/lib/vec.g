@@ -224,27 +224,34 @@ Define vec_update :=
          cong <vec A *> symm inj <vec ** *> l_Eq
       end.
 
-Define head : Fun(A:type)(spec n:nat)(l:<vec A (S n)>). A :=
+Define vec_head : Fun(A:type)(spec n:nat)(l:<vec A (S n)>). A :=
   fun(A:type)(spec n:nat)(l:<vec A (S n)>).
     match l by x1 x2 return A with
       vecn A' => abort A
     | vecc A' n' x' l' => cast x' by symm inj <vec * **> x2
     end.
 
-Define head_total : Forall(A:type)(n:nat)(l:<vec A (S n)>).
-                    Exists(x:A). { (head l) = x } :=
+Define vec_head_total : Forall(A:type)(n:nat)(l:<vec A (S n)>).
+                    Exists(x:A). { (vec_head l) = x } :=
   foralli(A:type)(n:nat).
     induction(l:<vec A (S n)>) by x1 x2 IH 
-    return Exists(x:A). { (head l) = x } with
+    return Exists(x:A). { (vec_head l) = x } with
       vecn A' => contra trans inj <vec ** *> x2 
                              clash Z (S n)
-                 Exists(x:A). { (head l) = x }
+                 Exists(x:A). { (vec_head l) = x }
     | vecc A' n' x' l' => existsi cast x' by symm inj <vec * **> x2
-                          { (head l) = * }
-                          trans cong (head *) x1
-                                join (head (vecc x' l'))
+                          { (vec_head l) = * }
+                          trans cong (vec_head *) x1
+                                join (vec_head (vecc x' l'))
                                      x'
     end.
+
+Define vec_tail : Fun(A:type)(spec n:nat)(l:<vec A (S n)>). <vec A n> :=
+  fun(A:type)(spec n:nat)(l:<vec A (S n)>).
+    match l with
+	  vecn _ => abort <vec A n>
+	| vecc _ _ _ l' => cast l' by refl <vec A n> 
+	end.
 
 Define vec_append_assoc : Forall(A:type)(n1 : nat)(l1 : <vec A n1>)
                       (n2 n3 : nat)(l2 : <vec A n2>)(l3 : <vec A n3>).
