@@ -91,6 +91,8 @@ public class Compile extends Command {
 		    ctxt.w.flush();
 		}
 
+		Ownership ret_stat = ctxt.getTypeCtorRetStat(d);
+
 		guru.carraway.Datatype dc = new guru.carraway.Datatype();
 		dc.pos = d.pos;
 		dc.tp = cctxt.newSym(d.name, d.pos);
@@ -113,15 +115,17 @@ public class Compile extends Command {
 
 		    // the resource type
 		    dc.types[j] = D.toCarrawayType(ctxt,false);
+		    if (ret_stat != null && dc.types[j].construct == guru.carraway.Expr.SYM) 			
+			dc.types[j] = ret_stat.toCarrawayType(ctxt,c.pos);
 
 		    if (ctxt.getFlag("debug_to_carraway")) {
 			ctxt.w.println("Its resource type: "+dc.types[j].toString(cctxt)+".");
 			ctxt.w.flush();
 		    }
 
-		    if (D.construct == Expr.CONST || D.construct == Expr.TYPE_APP)
+		    if (D.construct == Expr.CONST || D.construct == Expr.TYPE_APP) 
 			dc.rttypes[j] = D.toCarrawayType(ctxt,false);
-		    else
+		    else 
 			dc.rttypes[j] = D.toCarrawayType(ctxt,true);
 
 		    if (ctxt.getFlag("debug_to_carraway")) {
@@ -393,32 +397,16 @@ public class Compile extends Command {
     }
 	
 
-    // add unowned to trans_ctxt, if it is not there already.
-    protected void pull_in_unowned_if(Context ctxt, Context trans_ctxt) {
-	Const unowned = lookup_const(ctxt,"unowned");
-	if (!trans_ctxt.isResourceType(unowned)) {
-	    trans_ctxt.addResourceType(unowned);
-	    trans_ctxt.setDropFunc(unowned,ctxt.getDropFuncDef(ctxt.getDropFunc(unowned)));
-	}
-    }
-
     protected void copy_needed_init_cmds(Context src, Context tgt) {
 	Iterator it = src.initCmds.iterator();
 	
 	while (it.hasNext()) {
 	    Init I = (Init)it.next();
-	    if (tgt.isResourceType(I.T1.e1) && tgt.isResourceType(I.T2.e1)) {
-		if (src.getFlag("debug_to_carraway")) {
-		    src.w.println("Adding Init command \""+I.s.toString(src)+"\" to list to translate.");
-		    src.w.flush();
-		}
-		tgt.initCmds.add(I);
+	    if (src.getFlag("debug_to_carraway")) {
+		src.w.println("Adding Init command \""+I.s.toString(src)+"\" to list to translate.");
+		src.w.flush();
 	    }
-	    else 
-		if (src.getFlag("debug_to_carraway")) {
-		    src.w.println("Not adding Init command \""+I.s.toString(src)+"\" to list to translate.");
-		    src.w.flush();
-		}
+	    tgt.initCmds.add(I);
 	}
     }
 
@@ -450,12 +438,6 @@ public class Compile extends Command {
 	
 	Context trans_ctxt = new Context(); 
 	trans_ctxt.copyFlags(ctxt);
-
-	// pull in unowned before everything else (which ee.expand() will pull in),
-	// because it is implicitly needed lots of places (since it is the default
-	// ownership type).
-
-	pull_in_unowned_if(ctxt,trans_ctxt);
 
 	guru.compiler.EtaExpand ee = new guru.compiler.EtaExpand(ctxt,trans_ctxt);
 	ee.expand(cmain);

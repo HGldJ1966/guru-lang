@@ -137,10 +137,11 @@ public class Match extends Expr {
 
 		if (h == null) {
 		    Expr vT = ctxt.getType(C.vars[i]);
-		    C.classifyError(ctxt, "An initialization function is missing for a variable in a match-case.\n\n"
-				    +"1. the pattern variable: "+C.vars[i].toString(ctxt)
-				    +"\n\n2. its type: "+vT.toString(ctxt)
-				    +"\n\n3. the scrutinee's type: "+scrut_t.toString(ctxt));
+		    C.classifyError(ctxt, "There is no initialization function for a pattern variable in a match-case.\n"
+				    +"Probably the resource type of the scrutinee is not what it should be."
+				    +"\n\n1. the scrutinee's resource type: "+scrut_t.toString(ctxt)
+				    +"\n\n2. the pattern variable: "+C.vars[i].toString(ctxt)
+				    +"\n\n3. its resource type: "+vT.toString(ctxt));
 		}
 
 		Expr n = new InitTerm(h,rt,x,s,C.c,rf.vars[i],C.vars[i]);

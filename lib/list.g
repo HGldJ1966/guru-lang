@@ -110,6 +110,27 @@ Define map_total : Forall(A B C: type)(cookie:C)
     trans join (map cookie fcn l1) (foldr Fcookie map_h nil l1)
           uz.
 
+Define nth : Fun(A:type)(n:nat)(l:<list A>).A :=
+  fun nth(A:type)(n:nat)(l:<list A>):A.
+    match l with
+      nil _ => abort A
+    | cons _ a l' =>
+      match n with
+        Z => a
+      | S n' => (nth A n' l')
+      end
+    end.
+
+Define set_nth : Fun(A:type)(n:nat)(l:<list A>)(b:A).<list A> :=
+  fun nth(A:type)(n:nat)(l:<list A>)(b:A):<list A>.
+    match l with
+      nil _ => abort <list A>
+    | cons _ a l' =>
+      match n with
+        Z => (cons A b l')
+      | S n' => (cons A a (nth A n' l' b))
+      end
+    end.
 
 Define filter : Fun(A:type)(f:Fun(a:A).bool)(l1:<list A>) . <list A> :=
   fun filter (A:type)(f:Fun(a:A).bool)(l1:<list A>) : <list A> .

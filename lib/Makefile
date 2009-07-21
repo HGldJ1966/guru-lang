@@ -1,3 +1,12 @@
+queue:
+	time ../bin/guru queue.g
+
+rheaplet:
+	time ../bin/guru rheaplet.g
+
+heaplet:
+	time ../bin/guru heaplet.g
+
 charray:
 	time ../bin/guru charray.g
 

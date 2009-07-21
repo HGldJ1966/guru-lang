@@ -144,6 +144,16 @@ public class Datatype extends Command {
 		    String ctor_tp = tpstr+"_"+ctors[i].toString(ctxt);
 		    ctxt.cw.println("} "+ctor_tp+";\n");
 
+		    // emit selectors for the ctor's struct
+
+		    if (R != null) {
+			for (int j = 0; j < jend; j++) {
+			    ctxt.cw.print("#define select_"+tp.name+"_"+ctors[i].name+"_"+R.vars[j].name+"(x) ");
+			    ctxt.cw.println("((("+ctor_tp+" *)x)->"+R.vars[j].toString(ctxt)+")");
+			}
+			ctxt.cw.println("");
+		    }
+
 		    String fl = "free_"+ctor_tp;
 		
 		    if (!ctxt.alloc_committed) {

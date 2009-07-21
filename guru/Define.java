@@ -102,10 +102,10 @@ public class Define extends Command {
 	   FunTerm f = (FunTerm)G;
 	   f = (FunTerm)f.coalesce(ctxt, spec);
 
-	   if (f.body.construct != Expr.TYPE_APP)
+	   if (f.body.construct != Expr.CONST && f.body.construct != Expr.TYPE_APP)
 		handleError(ctxt,
 			    "The body of a type family abbreviation is not"
-			    +" a type-level application.\n"
+			    +" a constant or a type-level application.\n"
 			    +"1. the body: "+f.body.toString(ctxt));
 	    
 	    ctxt.markTypeFamilyAbbrev(c);

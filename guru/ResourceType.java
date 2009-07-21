@@ -11,7 +11,7 @@ public class ResourceType extends Command {
 
     public void process(Context ctxt) {
 	drop.process(ctxt);
-	ctxt.addResourceType(s);
+	// we already called ctxt.addResourceType() in the parser.
 	ctxt.setDropFunc(s,drop);
     }
 

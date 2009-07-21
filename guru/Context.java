@@ -7,6 +7,7 @@ public class Context extends FlagManager {
 
     protected HashMap typeCtors;
     protected HashMap typeCtorsKind;
+    protected HashMap typeCtorsRetStat;
     protected HashMap typeCtorsTermCtors;
     protected HashSet typeFamAbbrev;
     protected HashSet preds;
@@ -48,6 +49,7 @@ public class Context extends FlagManager {
     public Context() {
 	typeCtors = new HashMap(256);
 	typeCtorsKind = new HashMap(256);
+	typeCtorsRetStat = new HashMap(256);
 	typeCtorsTermCtors = new HashMap(256);
 	typeFamAbbrev = new HashSet(256);
 	preds = new HashSet(256);
@@ -172,6 +174,17 @@ public class Context extends FlagManager {
 	typeCtorsKind.put(c, kind);
 	typeCtorsTermCtors.put(c, new ArrayList());
 	typeCtorsVec.add(c);
+    }
+
+    /* set the return ownership status for all term ctors of this type
+       ctor.  The purpose of this is to keep track of return status
+       for 0-ary ctors. */
+    public void setTypeCtorRetStat(Const d, Ownership ret_stat) {
+	typeCtorsRetStat.put(d,ret_stat);
+    }
+
+    public Ownership getTypeCtorRetStat(Const d) {
+	return (Ownership)typeCtorsRetStat.get(d);
     }
 
     // record that a given type ctor is opaque (no matching allowed on it)
