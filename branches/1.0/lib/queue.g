@@ -70,20 +70,21 @@ Define enqueue : Fun(A:type)(#unique q:<queue A>)(a:A).#unique <queue A> :=
   fun(A:type)(#unique q:<queue A>)(a:A) : #unique <queue A>.
   match q with
     queue_data _ I h hd tl => 
-    do (dec <option <alias I>> tl)
        match hd with
          nothing _ => 
-         match (rheaplet_in <queue_cell A I> I h 
-                  (mk_queue_cell A I a (nothing <alias I>))) with
-           return_rheaplet_in _ _ h phd =>
-           (queue_data A I h (something <alias I> (inc <alias I> phd)) (something <alias I> phd))
+         do (dec <option <alias I>> tl)
+            match (rheaplet_in <queue_cell A I> I h 
+                    (mk_queue_cell A I a (nothing <alias I>))) with
+              return_rheaplet_in _ _ h phd =>
+              (queue_data A I h (something <alias I> (inc <alias I> phd)) (something <alias I> phd))
+            end
          end
        | something _ phd => 
-       
-
-abort <queue A>
-         
+           match (rheaplet_in <queue_cell A I> I h 
+                    (mk_queue_cell A I a (something <alias I> (owned_to_unowned <alias I> phd)))) with
+           return_rheaplet_in _ _ h phd =>
+             (queue_data A I h (something <alias I> (inc <alias I> phd)) tl)
+           end
        end
-    end
-  end.
+    end.
 
