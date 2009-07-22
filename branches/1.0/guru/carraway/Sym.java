@@ -54,10 +54,10 @@ public class Sym extends Expr {
 	if (s.dropping_expr != null) {
 	    ret += "\n\n";
 	    if (s.dropping_pos != null)
-		ret += s.dropping_pos.toString();
-	    else 
-		ret += s.dropping_expr.pos.toString();
-	    ret += ", dropped by:\n"+s.dropping_expr.toString(ctxt)+"\n";
+		ret += s.dropping_pos.toString()+", ";
+	    else if (s.dropping_expr.pos != null)
+		ret += s.dropping_expr.pos.toString()+", ";
+	    ret += "dropped by:\n"+s.dropping_expr.toString(ctxt)+"\n";
 	}
 	return ret;
     }

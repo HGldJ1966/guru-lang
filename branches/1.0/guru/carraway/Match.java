@@ -62,7 +62,10 @@ public class Match extends Expr {
 		w.println("");
 	    }
 	    w.println("default:\n");
-	    w.println("fprintf(stderr,\"Match failure at: "+pos.toStringNoQuotes()+"\\n\"); exit(EXIT_FAILURE);\n");
+	    if (pos == null)
+		w.println("fprintf(stderr,\"Match failure\\n\"); exit(EXIT_FAILURE);\n");
+	    else
+		w.println("fprintf(stderr,\"Match failure at: "+pos.toStringNoQuotes()+"\\n\"); exit(EXIT_FAILURE);\n");
 	    w.println("}");
 	}
     }    
