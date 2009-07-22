@@ -45,13 +45,17 @@ Define S_not_zero : Forall (n:nat).{(S n) != Z} :=
 
 Define eqnat : Fun(^ #owned n m:nat).bool :=
   fun eqnat(^ #owned n m:nat):bool.
-    match n with
-      Z => match m with
+    match $ n with
+      Z => match $ m with
              Z => tt
-           | S m' => ff
+           | S m' => do (consume_owned nat m')
+	       	     	ff
+		     end
            end
-   | S n' => match m with
-               Z => ff
+   | S n' => match $ m with
+               Z => do (consume_owned nat n')
+	       	       ff
+		    end
              | S m' => (eqnat n' m')
              end
    end.
@@ -236,13 +240,17 @@ Define Sneq_neq : Forall(a b:nat)(u:{ (S a) != (S b) }).{ a != b } :=
 
 Define lt : Fun(^ #owned a b:nat).bool :=
 	fun lt(^ #owned a b:nat) : bool.
-		match a with
-		Z => match b with
+		match $ a with
+		Z => match $ b with
 			Z => ff
-			| S b' => tt
+			| S b' => do (consume_owned nat b')
+			       	     tt
+				  end
 			end
-		| S a' => match b with
-			Z => ff
+		| S a' => match $ b with
+			Z => do (consume_owned nat a')
+			     	ff
+			     end
 			| S b' => (lt a' b')
 			end
 	end.
@@ -1158,4 +1166,4 @@ Define eqnat_implies_le := eqnat_le.
 
 Define trusted eqnat_ff_implies_lt : Forall(x y:nat)(u:{(eqnat x y) = ff})(v:{(le x y) = tt}).{(lt x y) = tt} := truei.
 
-Define nat_comp := (comparator1 nat le eqnat).
+Define nat_comp := (comparator1 nat lt eqnat).
