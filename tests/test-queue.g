@@ -18,7 +18,9 @@ Define test :=
   end.
 
 %Set "debug_to_carraway".
-%Set "debug_stages".
-Set "debug_simulate".
+Set "debug_stages".
+%Set "debug_init_terms".
+%Set "debug_eta_expand".
+%Set "debug_simulate".
 
 Compile test to "test-queue.c".

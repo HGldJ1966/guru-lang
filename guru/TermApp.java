@@ -204,7 +204,7 @@ public class TermApp extends App{
 	boolean check_spec_terminates = ctxt.getFlag("check_spec_terminates");
 	for (int i = 0;i < X.length; i++) {
 	    if (ch.owned[i].status == Ownership.SPEC) {
-		if (check_spec_terminates)
+		if (check_spec_terminates && !spec)
 		    X[i].checkTermination(ctxt);
 		specarg[i] = true;
 	    }

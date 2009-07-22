@@ -6,7 +6,7 @@ ResourceType unique_owned with
 #define gconsume_unique_owned(A,x) 
 END.
 
-Init ginit_unique_owned_unique(#unique_owned x)(#unique y).#unique_owned <<END
+Init ginit_unique_owned_unique(#unique_owned x)(#unique y).#<unique_owned x> <<END
   #define ginit_unique_owned_unique(A,x,y) y
 END.
 

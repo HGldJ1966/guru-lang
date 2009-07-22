@@ -558,7 +558,7 @@ public class Parser extends guru.ParserBase {
     {
 	Match e = new Match();
 	eat_ws();
-	e.consume_first = tryToEat("$");
+	e.consume_first = !tryToEat("$");
 	e.t = readTerm();
 	eat("with","match-term");
 	ArrayList cases = new ArrayList();

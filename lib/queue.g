@@ -29,11 +29,11 @@ Define queue_new : Fun(A:type)(#unique I:rheaplet_id).#unique <queue_new_t A> :=
 
 Define queue_is_empty : Fun(spec A:type)(^#unique_owned q:<queue A>).bool :=
   fun(spec A:type)(^#unique_owned q:<queue A>).
-    match q with
+    match $ q with
       queue_data _ I h hd tl => 
       do (consume_unique_owned <rheaplet_queue A I> h)
          (consume_owned <option <alias I>> tl)
-         match hd with
+         match $ hd with
            nothing _ => tt
          | something _ l => do (consume_owned <alias I> l) ff end
          end
@@ -42,20 +42,25 @@ Define queue_is_empty : Fun(spec A:type)(^#unique_owned q:<queue A>).bool :=
 
 Define queue_front : Fun(spec A:type)(^#unique_owned q:<queue A>)(u:{ (queue_is_empty q) = ff }).A :=
   fun(spec A:type)(^#unique_owned q:<queue A>)(u:{ (queue_is_empty q) = ff }).
-    match q with
+    match $ q with
       queue_data _ I h hd tl => 
       do (consume_owned <option <alias I>> tl)
-          match hd with
+          match $ hd with
             nothing _ => impossible 
                             trans symm u
                             trans hypjoin (queue_is_empty q) tt by hd_eq q_eq end
                                   clash tt ff
                           A
           | something _ p => 
-              match (rheaplet_get <queue_cell A I> I h p) with
-                mk_queue_cell _ _ a nextp => do (consume_owned <option <alias I>> nextp)
-                                                (owned_to_unowned A a)
-                                             end
+              match $ @ (rheaplet_get <queue_cell A I> I h p) with
+                mk_queue_cell _ _ a nextp => 
+                  do (consume_owned <option <alias I>> nextp)
+                     let ret = (owned_to_unowned A a) in
+                     do
+                       (consume_unique_owned <rheaplet_queue A I> h)
+                       ret
+                     end
+                  end
               end
           end
       end
@@ -74,6 +79,7 @@ Define enqueue : Fun(A:type)(#unique q:<queue A>)(a:A).#unique <queue A> :=
            (queue_data A I h (something <alias I> (inc <alias I> phd)) (something <alias I> phd))
          end
        | something _ phd => abort <queue A>
+         
        end
     end
   end.

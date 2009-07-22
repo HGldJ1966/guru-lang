@@ -401,6 +401,15 @@ public class EtaExpand {
 	    ret.pos = e.pos;
 	    return ret;
 	}
+	case Expr.COMPRESS: {
+	    Compress c = (Compress)e;
+	    Expr nt = expand(c.t,false,null);
+	    if (c.t == nt)
+		return e;
+	    Expr ret = new Compress(nt);
+	    ret.pos = e.pos;
+	    return ret;
+	}
 	case Expr.TERMINATES: {
 	    Terminates c = (Terminates)e;
 	    return expand(c.t,false,null);

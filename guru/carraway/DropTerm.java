@@ -53,7 +53,8 @@ public class DropTerm extends Expr {
 	Position pp = ctxt.wasDropped(r);
 	if (pp != null)
 	    simulateError(ctxt,"The scrutinee of a match is already dropped by the time a match-case ends.\n\n"
-			  +"1. it was dropped at: "+pp.toString());
+			  +"1. the scrutinee: "+var.toString(ctxt)
+			  +"\n\n2. it was dropped at: "+pp.toString());
 	Collection c = ctxt.dropRef(r,this,pos);
 
 	if (c != null && c.size() > 0) {
@@ -61,7 +62,8 @@ public class DropTerm extends Expr {
 	    String es = (consume_first ? 
 			 "The scrutinee of a match is pinned at the start of a match-case, where it is being consumed.\n\n" :
 			 "The scrutinee of a match is still pinned when it is dropped at the end of a match-case.\n\n");
-	    simulateError(ctxt,es +"1. a pinning reference: "+((Sym)it.next()).refString(ctxt));
+	    simulateError(ctxt,es +"1. the scrutinee: "+var.toString(ctxt)
+			  +"\n\n2. a pinning reference: "+((Sym)it.next()).refString(ctxt));
 	}
 
 	return ctxt.voidref;
