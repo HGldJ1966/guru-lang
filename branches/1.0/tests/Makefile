@@ -16,6 +16,11 @@ test-charray-C:
 	gcc -O0 -ggdb -w -o test-charray test-charray.c
 	valgrind ./test-charray
 
+test-warray:	test-warray.g Makefile
+	../bin/guru test-warray.g
+	gcc -O0 -ggdb -w -o test-warray test-warray.c
+	valgrind ./test-warray
+
 test-unique-owned:	test-unique-owned.g Makefile
 	../bin/guru test-unique-owned.g
 	gcc -O0 -ggdb -w -o test-unique-owned test-unique-owned.c
