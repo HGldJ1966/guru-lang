@@ -85,6 +85,9 @@ public class ReducibleApp extends App{
 	}
 
 	Expr nhead = drop_annos ? ctxt.getDefBodyNoAnnos(c) : ctxt.getDefBody(c);
+	if (nhead.construct != FUN_TERM)
+	    return nhead;
+
 	FunTerm f = (FunTerm)nhead;
 
 	if (f.vars.length > X.length) {
