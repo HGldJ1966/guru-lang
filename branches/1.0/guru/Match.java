@@ -14,17 +14,20 @@ public class Match extends CasesExpr{
     public Match(CasesExpr a, Expr T, boolean consume_first) {
 	super(MATCH, a);
 	this.T = T;
+	this.consume_first = consume_first;
     }
 
     public Match(Expr t, Var x1, Var x2, Expr T, Case[] C, boolean consume_first) {
 	super(MATCH, t, x1, x2, C);
 	this.T = T;
+	this.consume_first = consume_first;
     }
 
     public void do_print(java.io.PrintStream w, 
 			 Context ctxt) {
 	w.print("match ");
-
+	if (!consume_first)
+	    w.print("$ ");
 	do_print1(w,ctxt);
 	if (T != null) {
 	    w.print(" return ");
@@ -151,6 +154,7 @@ public class Match extends CasesExpr{
     public guru.carraway.Expr toCarraway(Context ctxt) {
 	guru.carraway.Match m = new guru.carraway.Match();
 	m.pos = pos;
+	m.consume_first = consume_first;
 	m.t = t.toCarraway(ctxt);
 	int iend = C.length;
 	guru.carraway.Case[] nC = new guru.carraway.Case[iend];

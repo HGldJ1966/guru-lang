@@ -94,6 +94,7 @@ public abstract class Expr {
     public static final int VOID = 82; // type
     public static final int VOIDI = 83; // term
     public static final int DO = 84; // term
+    public static final int COMPRESS = 85; // term
 
     public static final int LAST = 200;
 
@@ -487,6 +488,7 @@ public abstract class Expr {
 	case CONST:
 	case VOIDI:
 	case DO:
+	case COMPRESS:
 	case FUN_TERM:
 	case CAST:
 	case TERMINATES:

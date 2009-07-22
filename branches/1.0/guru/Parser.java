@@ -281,11 +281,14 @@ public class Parser extends ParserBase {
 	    case Expr.SIZE:
 		e = readSize();
 		break;
+	    case Expr.COMPRESS:
+		e = readCompress();
+		break;
 	    case Expr.LAST+STRING:
 		e = readStringExpr();
 		break;
 	    default:
-		handleError("Internal error: missing case for construct");
+		handleError("Internal error: Parser is missing case for construct");
             }
 	if (e.pos == null)
 	    e.pos = pos;
@@ -1329,7 +1332,7 @@ public class Parser extends ParserBase {
         Match e = new Match();
 
 	eat_ws();
-	e.consume_first = tryToEat("$");
+	e.consume_first = !tryToEat("$");
 
         e.t = readTerm();
         
@@ -2454,6 +2457,15 @@ public class Parser extends ParserBase {
         return e;
     }
 
+    protected Compress readCompress() throws IOException
+    {
+        Compress e = new Compress();
+
+        e.t = readTerm();
+
+        return e;
+    }
+
     protected Cutoff readCutoff() throws IOException
     {
         Cutoff e = new Cutoff();
@@ -2519,6 +2531,8 @@ public class Parser extends ParserBase {
 	    return Expr.TYPE_APP;
 	if (tryToEat("@<"))
 	    return Expr.PRED_APP;
+	if (tryToEat("@"))
+	    return Expr.COMPRESS;
 	if (tryToEat("foralli"))
 	    return Expr.FORALLI;
 	if (tryToEat("["))

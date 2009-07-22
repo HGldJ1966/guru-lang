@@ -102,7 +102,6 @@ Define primitive rheaplet_get : Fun(spec A:type)(spec I:rheaplet_id)
                                #<owned h> A :=
   fun (A:type)(spec I:rheaplet_id)(h:<rheaplet A I>)(p:<alias I>). (nth A p h) <<END
 #define grheaplet_get(h, p) select_holder_mk_holder_a(p)
-}
 END.
 
 Define primitive rheaplet_set : Fun(A:type)(spec I:rheaplet_id)
