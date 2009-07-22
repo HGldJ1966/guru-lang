@@ -78,7 +78,10 @@ Define enqueue : Fun(A:type)(#unique q:<queue A>)(a:A).#unique <queue A> :=
            return_rheaplet_in _ _ h phd =>
            (queue_data A I h (something <alias I> (inc <alias I> phd)) (something <alias I> phd))
          end
-       | something _ phd => abort <queue A>
+       | something _ phd => 
+       
+
+abort <queue A>
          
        end
     end
