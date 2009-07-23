@@ -608,6 +608,65 @@ Define x_lt_SZ_implies_Z: Forall(x:nat)(u:{(lt x (S Z)) = tt}).{x = Z} :=
 		
       end.
 
+Define x_lt_y_SxNEQy_Sx_lt_y : Forall(x y :nat)(u: {(lt x y) = tt})(v: {(eqnat (S x) y) = ff}).
+      {(lt (S x) y) = tt} :=
+	  induction(x:nat) return Forall(y:nat)(u: {(lt x y) = tt})(v: {(eqnat (S x) y) = ff}).{(lt (S x) y) = tt} with
+		Z => foralli(y:nat)(u: {(lt x y) = tt})(v: {(eqnat (S x) y) = ff}).
+			case terminates (lt (S x) y) by lt_total by ltp ltt with
+			  ff => case terminates (lt y (S x)) by lt_total by ltp2 ltt2 with
+				  ff => contra
+					abbrev w = hypjoin y (S x) by [lt_lt_impliesEq y (S x) ltp2 ltp] end in
+					trans symm hypjoin (eqnat (S x) y) tt by [eqnat_symm y (S x)] [eqEqnat y (S x) w] end
+					trans hypjoin (eqnat (S x) y) ff by v end
+					clash ff tt
+					{(lt (S x) y) = tt}
+					
+				| tt => contra
+					 trans symm u 
+					 abbrev u' = hypjoin (lt y (S Z)) tt by x_eq ltp2 end in
+					 abbrev yeq = hypjoin y Z by [x_lt_SZ_implies_Z y u' ] end in
+					 trans hypjoin (lt x y) ff by yeq x_eq end
+					clash ff tt
+					{(lt (S x) y) = tt}
+				end
+			| tt => hypjoin (lt (S x) y) tt by ltp end
+			end
+	      | S x' => foralli(y:nat)(u: {(lt x y) = tt})(v: {(eqnat (S x) y) = ff}).
+			case terminates (lt (S x) y) by lt_total by ltp ltt with
+			  ff => case terminates (lt y (S x)) by lt_total by ltp2' ltt2' with
+				   ff => contra
+					 abbrev w' = hypjoin y (S x) by [lt_lt_impliesEq y (S x) ltp2' ltp] end in
+					 trans symm hypjoin (eqnat (S x) y) tt by [eqnat_symm y (S x)] [eqEqnat y (S x) w'] end
+					 trans hypjoin (eqnat (S x) y) ff by v end
+					 clash ff tt
+					 {(lt (S x) y) = tt}
+				 | tt => case y with
+					    Z => contra
+						 trans symm u
+						 trans hypjoin (lt x y) ff by x_eq y_eq end
+						 clash ff tt
+						 {(lt (S x) y) = tt}
+					  | S y' => contra
+						   abbrev u' = symm trans hypjoin tt (lt (S x') (S y')) by x_eq y_eq u end
+						  			  [S_lt_S x' y'] in
+						abbrev arg2 = 						
+						  abbrev w =    
+						    abbrev v'' =   
+						      abbrev v' = hypjoin (eqnat (S (S x')) (S y')) ff by v x_eq y_eq end in
+							  [eqnatDef2 (S (S x')) (S y') v'] in 
+						      [Sneq_neq (S x') y' v''] in 
+						    [neqEqnat (S x') y' w] in
+						trans symm [x_IH x' y' u' arg2 ] 
+			
+						trans symm [S_lt_S (S x') y']
+						trans hypjoin (lt (S (S x')) (S y')) ff by x_eq y_eq ltp end			
+						clash ff tt
+						{(lt (S x) y) = tt}
+					  end
+				 end
+			| tt => hypjoin (lt (S x) y) tt by ltp end
+			end
+	      end.
 
 
 
