@@ -449,7 +449,7 @@ public class EtaExpand {
 	    }
 	    if (!chg)
 		return e;
-	    Expr ret = new Match(nt,m.x1,m.x2,m.T,nC,m.consume_first);
+	    Expr ret = new Match(nt,m.x1,m.x2,m.T,nC,m.consume_scrut);
 	    ret.pos = e.pos;
 	    return ret;
 	}

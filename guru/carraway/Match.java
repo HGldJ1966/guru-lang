@@ -6,7 +6,7 @@ import java.util.Iterator;
 
 public class Match extends Expr {
     public Expr t; // scrutinee
-    public boolean consume_first; // should we consume the scrut at the start or end of each case
+    public boolean consume_scrut; // should we consume the scrut automatically at the start of the case
     public Case[] C;
 
     Sym x; // var naming the scrutinee
@@ -25,15 +25,14 @@ public class Match extends Expr {
 	this.x = x;
 	this.s = s;
 	this.C = C;
-	// consume_first not used any more
 	this.pos = p;
     }
 
     public void do_print(java.io.PrintStream w, Context ctxt) {
 	if (ctxt.stage <= 2) {
 	    w.print("match ");
-	    if (!consume_first)
-		w.print("$ ");
+	    if (!consume_scrut)
+		w.print("! ");
 	    t.print(w,ctxt);
 	    if (x != null) {
 		w.print(" as ");
@@ -75,14 +74,14 @@ public class Match extends Expr {
 	if (ctxt.getFlag("debug_init_terms")) {
 	    ctxt.w.println("simpleTypeCase called for case "+C.c.toString(ctxt)+", with scrut_t = "
 			   +scrut_t.toString(ctxt)+", drop_term = "+drop_term.toString(ctxt)
-			   +", consume_first = "+(new Boolean(consume_first)).toString());
+			   +", consume_scrut = "+(new Boolean(consume_scrut)).toString());
 	    ctxt.w.flush();
 	}
 
 	/* include the drop term (to drop the scrutinee) here, if we're consuming the
 	   scrutinee first. */
 
-	if (consume_first && drop_term != null) {
+	if (consume_scrut && drop_term != null) {
 	    if (ctxt.getFlag("debug_init_terms")) {
 		ctxt.w.println("Inserting drop term for case "+C.c.toString(ctxt));
 		ctxt.w.flush();
@@ -134,10 +133,13 @@ public class Match extends Expr {
 	       body by wrapping it in one let-construct for each pattern
 	       var -- and that has to be done in reverse order. */
 
+	    //	    boolean scrut_not_consumed = ctxt.isNotConsumed(x);
 	    for (int i = 0, iend = C.vars.length; i < iend; i++) {
 		Expr vT = f.types[i].applySubst(ctxt);
 		ctxt.setType(C.vars[i], vT);
 		ctxt.setSubst(f.vars[i],C.vars[i]);
+		/*		if (scrut_not_consumed)
+		  ctxt.setNotConsumed(C.vars[i]); */
 	    }
 
 	    for (int i = C.vars.length - 1; i >= 0; i--) {
@@ -203,36 +205,6 @@ public class Match extends Expr {
 	    ret = C.body.simpleType(ctxt);
 	}
 
-	/* include the drop term here, if we're consuming the
-	   scrutinee at the end of the case. */
-
-	if (!consume_first && drop_term != null) {
-	    if (ret.construct == VOID) {
-		Do tmp = new Do();
-		tmp.pos = C.body.pos;
-		tmp.ts = new Expr[2];
-		tmp.ts[0] = C.body;
-		tmp.ts[1] = drop_term;
-		C.body = tmp;
-	    }
-	    else {
-		Let tmp1 = new Let();
-		tmp1.pos = C.body.pos;
-		tmp1.x = ctxt.newVar(C.body.pos);
-		tmp1.t1 = C.body;
-		
-		Do tmp = new Do();
-		tmp.pos = C.body.pos;
-		tmp.ts = new Expr[2];
-		tmp.ts[0] = drop_term;
-		tmp.ts[1] = tmp1.x;
-		
-		tmp1.t2 = tmp;
-		
-		C.body = tmp1;
-	    }
-	}
-
 	return ret;
     }
 
@@ -265,8 +237,7 @@ public class Match extends Expr {
 	for (int i = 0, iend = C.length; i < iend; i++) {
 	    Expr drop = null;
 	    if (!ctxt.isNotConsumed(x) && scrut_t.construct != UNTRACKED) {
-		drop = new DropTerm(ctxt.getDropFunction((Sym)scrut_t),
-				    s,x,consume_first);
+		drop = new DropTerm(ctxt.getDropFunction((Sym)scrut_t), s, x);
 		drop.pos = C[i].lastpos;
 	    }
 
