@@ -550,6 +550,57 @@ Define lt_ltff : Forall(a b:nat)(u:{ (lt a b) = tt }).{ (lt b a) = ff } :=
       end
   end.
 
+Define lt_lt_impliesEq: Forall(x y:nat)(u: {(lt x y) = ff})(v:{(lt y x) = ff}).{x = y} :=
+   induction(x:nat) return Forall(y:nat)(u: {(lt x y) = ff})(v:{(lt y x) = ff}).{x = y} with
+	     Z => induction (y:nat) return Forall(u: {(lt x y) = ff})(v:{(lt y x) = ff}).{x = y} with
+			
+		     Z => foralli(u: {(lt x y) = ff})(v:{(lt y x) = ff}).
+			    hypjoin x y by x_eq y_eq end
+		   | S y' => foralli(u: {(lt x y) = ff})(v:{(lt y x) = ff}). 
+			    contra
+			    trans symm u
+			    trans hypjoin (lt x y) tt by x_eq y_eq end
+			    clash tt ff
+			    {x = y}
+		   end
+	   | S x' => induction (y:nat) return Forall(u: {(lt x y) = ff})(v:{(lt y x) = ff}).{x = y} with
+		     Z => foralli(u: {(lt x y) = ff})(v:{(lt y x) = ff}).
+			  contra
+			  trans symm v
+			  trans hypjoin (lt y x) tt by x_eq y_eq end
+		 	  clash tt ff
+			  {x = y}
+		   | S y' => foralli(u: {(lt x y) = ff})(v:{(lt y x) = ff}). 
+			  
+			  abbrev u' = hypjoin (lt x' y') ff by u v x_eq y_eq end in
+			  abbrev v' = hypjoin (lt y' x') ff by u v x_eq y_eq end in
+			  
+			  
+			  abbrev w = hypjoin (S x') (S y') by [x_IH x' y' u' v'] end in
+			  hypjoin x y by x_eq y_eq w end
+			 			 
+			 
+		   end
+	   end.
+
+Define x_lt_SZ_implies_Z: Forall(x:nat)(u:{(lt x (S Z)) = tt}).{x = Z} :=
+   induction(x:nat) return Forall(u:{(lt x (S Z)) = tt}).{x = Z} with
+	Z => foralli(u:{(lt x (S Z)) = tt}).
+	     x_eq
+      | S x' => foralli(u:{(lt x (S Z)) = tt}).
+		contra
+		trans symm u
+		trans cong (lt * (S Z)) x_eq
+		trans hypjoin (lt (S x') (S Z)) (lt x' Z) by x_eq end
+		trans hypjoin (lt x' Z) ff by [lt_Z x'] end
+		clash ff tt
+		{x = Z}
+		
+      end.
+
+
+
+
 Define le_Z1 : Forall(x:nat)(u:{(le x Z) = tt}). { x = Z} :=
   foralli(x:nat)(u:{(le x Z) = tt}).
   case x with
@@ -1164,6 +1215,8 @@ Define eqnat_le : Forall(x y:nat)(u:{ (eqnat x y) = tt }).{ (le x y) = tt } :=
 
 Define eqnat_implies_le := eqnat_le.
 
+
 Define trusted eqnat_ff_implies_lt : Forall(x y:nat)(u:{(eqnat x y) = ff})(v:{(le x y) = tt}).{(lt x y) = tt} := truei.
 
 Define nat_comp := (comparator1 nat lt eqnat).
+
