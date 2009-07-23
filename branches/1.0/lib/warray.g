@@ -57,6 +57,7 @@ void gwarray_free(int A, int n, void *l) {
 }
 END.
 
+Define trusted oopsProof: Forall(first last n:word).{(lt (to_nat (word_plus (word_plus first (word_div2 (word_minus last first))) word1)) (to_nat n)) = tt} := truei.
 
 Define warray_binary_search
   : Fun(A:type)			%% type of the warray
@@ -89,7 +90,7 @@ Define warray_binary_search
 		 		(word_to_nat n)
 	         		[word_minus_shrink (word_plus first (word_div2 (word_minus last first)))]
 	         		midProof] in
-    match (ltword first last) with
+    match (leword first last) with
       ff => do (consume_unique_owned <warray A n> l)
       	       (dec A value)
 	       ff %not found
@@ -100,7 +101,7 @@ Define warray_binary_search
 	        midProof)
            (inspect A value)) with
       LT => (warray_binary_search A n l (word_plus (word_plus first (word_div2 (word_minus last first))) word1)
-      	     last value c midMinusOneProof v)
+      	     last value c [oopsProof first last n] v)
     | EQ => do (consume_unique_owned <warray A n> l)
                (dec A value)
                tt %found

@@ -49,7 +49,7 @@ public class ResourceType extends Command {
 	ctxt.addResourceType(s,drop.s);
 	if (first_attribute) {
 	    if (!ctxt.getFlag("output_ocaml")) {
-		ctxt.cw.println("#include <values.h>\n\n"
+		ctxt.cw.println("#include <limits.h>\n\n"
 				+"#define ctor(x) (*((int *)x) & 255)\n"
 				+"#define op(x) (*((int *)x))\n\n"
 				+"void inc(void *x) {\n"
