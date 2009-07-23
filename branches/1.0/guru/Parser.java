@@ -1332,7 +1332,7 @@ public class Parser extends ParserBase {
         Match e = new Match();
 
 	eat_ws();
-	e.consume_first = !tryToEat("$");
+	e.consume_scrut = !tryToEat("!");
 
         e.t = readTerm();
         

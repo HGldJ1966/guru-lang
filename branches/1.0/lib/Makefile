@@ -44,6 +44,9 @@ pair:
 qpair:
 	time ../bin/guru qpair.g
 
+nat:
+	time ../bin/guru nat.g
+
 list:
 	time ../bin/guru list.g
 

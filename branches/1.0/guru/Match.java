@@ -5,29 +5,29 @@ import java.io.*;
 
 public class Match extends CasesExpr{
     public Expr T;
-    public boolean consume_first;
+    public boolean consume_scrut;
     
     public Match() {
 	super(MATCH);
     }
 
-    public Match(CasesExpr a, Expr T, boolean consume_first) {
+    public Match(CasesExpr a, Expr T, boolean consume_scrut) {
 	super(MATCH, a);
 	this.T = T;
-	this.consume_first = consume_first;
+	this.consume_scrut = consume_scrut;
     }
 
-    public Match(Expr t, Var x1, Var x2, Expr T, Case[] C, boolean consume_first) {
+    public Match(Expr t, Var x1, Var x2, Expr T, Case[] C, boolean consume_scrut) {
 	super(MATCH, t, x1, x2, C);
 	this.T = T;
-	this.consume_first = consume_first;
+	this.consume_scrut = consume_scrut;
     }
 
     public void do_print(java.io.PrintStream w, 
 			 Context ctxt) {
 	w.print("match ");
-	if (!consume_first)
-	    w.print("$ ");
+	if (!consume_scrut)
+	    w.print("! ");
 	do_print1(w,ctxt);
 	if (T != null) {
 	    w.print(" return ");
@@ -51,7 +51,7 @@ public class Match extends CasesExpr{
 	Expr nT = (T == null ? null : T.subst(e,x));
 	CasesExpr nC = (CasesExpr)super.subst(e,x);
 	if (nT != T || nC != this)
-	    return new Match(nC, nT, consume_first);
+	    return new Match(nC, nT, consume_scrut);
 	return this;
     }
     
@@ -59,7 +59,7 @@ public class Match extends CasesExpr{
 	Expr nT = T;
 	CasesExpr nC = (CasesExpr)super.do_rewrite(ctxt,e,x,boundVars);
 	if (nT != T || nC != this)
-	    return new Match(nC, nT, consume_first);
+	    return new Match(nC, nT, consume_scrut);
 	return this;
     }
 
@@ -93,7 +93,7 @@ public class Match extends CasesExpr{
     public Expr dropAnnos(Context ctxt) {
 	Expr r = super.dropAnnos(ctxt);
 	if (r != this)
-	    return new Match((CasesExpr)r,T,consume_first);
+	    return new Match((CasesExpr)r,T,consume_scrut);
 	return this;
     }
 
@@ -101,7 +101,7 @@ public class Match extends CasesExpr{
     public Expr evalStep(Context ctxt) {
 	Expr e = t.evalStep(ctxt);
 	if (e != t)
-	    return new Match(e,x1,x2,T,C,consume_first);
+	    return new Match(e,x1,x2,T,C,consume_scrut);
 	if (t.construct == ABORT)
 	    return ctxt.abort;
 	
@@ -154,14 +154,14 @@ public class Match extends CasesExpr{
     public guru.carraway.Expr toCarraway(Context ctxt) {
 	guru.carraway.Match m = new guru.carraway.Match();
 	m.pos = pos;
-	m.consume_first = consume_first;
+	m.consume_scrut = consume_scrut;
 	m.t = t.toCarraway(ctxt);
 	int iend = C.length;
 	guru.carraway.Case[] nC = new guru.carraway.Case[iend];
 	for (int i = 0; i < iend; i++)
 	    nC[i] = (guru.carraway.Case)C[i].toCarraway(ctxt);
 	m.C = nC;
-	m.consume_first = consume_first;
+	m.consume_scrut = consume_scrut;
 	return m;
     }
 }
