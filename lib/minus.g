@@ -47,6 +47,8 @@ Define minus_tot : Forall(a b:nat)(u:{ (lt a b) = ff }).Exists(c:nat).{ (minus a
       end
   end.
 
+Total minus minus_tot.
+
 Define minus_tot2 : Forall(a b:nat)(u:{ (le a b) = tt }).
                       Exists(c:nat).{ (minus b a) = c } :=
   foralli(a b:nat)(u:{ (le a b) = tt }).
