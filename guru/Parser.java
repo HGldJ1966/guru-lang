@@ -209,6 +209,9 @@ public class Parser extends ParserBase {
 	    case Expr.SYMM:
 		e = readSymm();
 		break;
+            case Expr.TRANSS:
+                e = readTranss();
+                break;
 	    case Expr.TRANS:
 		e = readTrans();
 		break;
@@ -2147,9 +2150,37 @@ public class Parser extends ParserBase {
 
         e.P = toExprArray(proofs);
 
+	if (e.P.length == 0)
+	  handleError("Show-proof contains 0 proofs.");
+
         return e;
     }
     
+    protected Expr[] readProofsToEnd(String what_kind) throws IOException {
+       return null;
+    }
+
+    protected Transs readTranss() throws IOException
+    {              
+    	Transs e = new Transs();
+        
+        ArrayList proofs = new ArrayList();
+
+	while (!tryToEat("end")) {
+	    proofs.add(readProof());
+	    
+	    if (!eat_ws())
+		handleError("Unexpected end of input parsing a transs proof.");
+	}
+
+        e.P = toExprArray(proofs);
+	
+	if (e.P.length == 0)
+	  handleError("Transs-proof contains 0 proofs.");
+
+        return e;
+    }
+
     protected Do readDo() throws IOException
     {              
     	Do e = new Do();
@@ -2573,6 +2604,8 @@ public class Parser extends ParserBase {
 	    return Expr.REFL;
 	if (tryToEat("symm"))
 	    return Expr.SYMM;
+	if (tryToEat("transs"))
+	    return Expr.TRANSS;
 	if (tryToEat("trans"))
 	    return Expr.TRANS;
 	if (tryToEat("cong"))
