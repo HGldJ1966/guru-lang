@@ -1,5 +1,5 @@
-Include "minus.g".
-Include "bv.g".
+Include trusted "minus.g".
+Include trusted "bv.g".
 
 Define wordlen := (mult2 (mult2 (S (S (S (S (S (S (S (S Z)))))))))).
 
@@ -97,6 +97,26 @@ Define word_to_nat_inc2
            [condplusff terminates (pow2 wordlen) by pow_total
               terminates (word_to_nat w2) by word_to_nat_tot].
 
+%-
+Define trim_to_wordlen : Fun(l:nat)(v':<bv l>).(l':nat)(v':<bv l'>) :=
+  fun trim_to_wordlen(l:nat)(v:<bv l>) : (l':nat)(v':<bv l'>).
+  match (nat_comp l wordlen) with
+    LT => (trim_to_wordlen (plus l one) (bv_append ...
+  | EQ => (wordlen, v)
+  | GT => (trim_to_wordlen (minus l one) (bv_tail v))
+  end.
+
+Define nat_to_word : Fun(x:nat).(c:bool)(w:word) :=
+  fun(x:nat).
+    match (to_bv x) with
+      mk_to_bv_t l v => match (nat_comp l wordlen) with
+      		     	  LT => (ff, (trim_to_wordlen v))
+			| EQ => (ff, v)
+			| GT => (tt, (trim_to_wordlen v))
+			end
+    end.
+-%
+
 Define primitive word_set_bit
  : Fun(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word). word :=
    fun(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word).
@@ -149,16 +169,22 @@ Define trusted word_div2_tot :
 
 Total word_div2 word_div2_tot.
 
-Define word_minus: Fun(x y:word). word :=
-  fun(x y:word). x.
+Define primitive word_minus: Fun(x y:word). word :=
+  fun(x y:word) . x
+  <<END  
+  inline int gword_minus(int x, int y) { return x-y; }
+END.
 
 Define trusted word_minus_tot :
   Forall(x y:word).Exists(z:word).{(word_minus x y) = z} := truei.
 
 Total word_minus word_minus_tot.
 
-Define word_plus: Fun(x y:word). word :=
-  fun(x y:word). x.
+Define primitive word_plus: Fun(x y:word). word :=
+  fun(x y:word) . x
+  <<END
+  inline int gword_plus(int x, int y) { return x+y; }
+END.
 
 Define trusted word_plus_tot :
   Forall(x y:word).Exists(z:word).{(word_plus x y) = z} := truei.
@@ -174,6 +200,20 @@ Define primitive leword : Fun(#untracked w1 w2:word).bool :=
   fun(#untracked w1 w2:word).(le (word_to_nat w1) (word_to_nat w2)) <<END
   #define gleword(w1, w2) (w1 <= w2)
 END.
+
+%- not sure why this doesn't work
+Define primitive ltword2 : Fun(^ #owned w1 w2:word).bool :=
+  fun(^ #owned w1 w2:word).(lt (to_nat wordlen w1) (to_nat wordlen w2)) <<END
+  #define gltword2(w1, w2) (w1 < w2)
+END.
+
+Define primitive leword2 : Fun(^ #owned w1 w2:word).bool :=
+  fun(^ #owned w1 w2:word).(le (word_to_nat w1) (word_to_nat w2)) <<END
+  #define gleword2(w1, w2) (w1 <= w2)
+END.
+
+Define word_comp := (comparator2 word ltword2 leword2).
+-%
 
 Define trusted word_div2_shrink :
   Forall(x:word).{(lt (to_nat (word_div2 x)) (to_nat x)) = tt} 
