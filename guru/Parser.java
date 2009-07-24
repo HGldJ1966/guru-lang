@@ -2151,14 +2151,11 @@ public class Parser extends ParserBase {
         e.P = toExprArray(proofs);
 
 	if (e.P.length == 0)
-	  handleError("Show-proof contains 0 proofs.");
+	  handleError("Show-proof contains no content.");
 
         return e;
     }
     
-    protected Expr[] readProofsToEnd(String what_kind) throws IOException {
-       return null;
-    }
 
     protected Transs readTranss() throws IOException
     {              
@@ -2176,7 +2173,7 @@ public class Parser extends ParserBase {
         e.P = toExprArray(proofs);
 	
 	if (e.P.length == 0)
-	  handleError("Transs-proof contains 0 proofs.");
+	  handleError("Transs-proof contains no content.");
 
         return e;
     }
