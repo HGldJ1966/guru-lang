@@ -31,7 +31,7 @@ Define primitive warray_get
         (u:{(lt (to_nat i) (to_nat n)) = tt}). #<owned l> A := 
   fun(A:type)(spec n:word)(l:<warray A n>)(i:word)(u:{(lt (to_nat i) (to_nat n)) = tt}). 
     (vec_get A (to_nat wordlen n) l (to_nat wordlen i) u) <<END
-#define gwarray_get(l,i) (((void **)l)[i])
+inline void* gwarray_get(void **l, int i) { return l[i]; }
 END.
 
 Define primitive warray_set 
@@ -57,57 +57,69 @@ void gwarray_free(int A, int n, void *l) {
 }
 END.
 
-Define trusted oopsProof: Forall(first last n:word).{(lt (to_nat (word_plus (word_plus first (word_div2 (word_minus last first))) word1)) (to_nat n)) = tt} := truei.
-
 Define warray_binary_search
-  : Fun(A:type)			%% type of the warray
-       (spec n:word)		%% length of the warray
+  : Fun(A:type)                 %% type of the warray
+       (spec n:word)            %% length of the warray
        (^ #unique_owned l:<warray A n>) %% the warray to search
-       (first last:word)    	%% first and last index of the search
-       (value:A)		%% value to search for
-       (c:Fun(^ #owned a b:A). comp)	%% comparator function
+       (first last:word)        %% first and last index of the search
+       (value:A)                %% value to search for
+       (c:Fun(^ #owned a b:A). comp)    %% comparator function
        (u:{(lt (to_nat first) (to_nat n)) = tt})
        (v:{(lt (to_nat last) (to_nat n)) = tt})
+       (w:{(le (to_nat first) (to_nat last)) = tt})
        . bool :=
   fun warray_binary_search(A:type)(spec n:word)(^ #unique_owned l:<warray A n>)
      (first last:word)(value:A)
      (c:Fun(^ #owned a b:A). comp)
      (u:{(lt (to_nat first) (to_nat n)) = tt})
-     (v:{(lt (to_nat last) (to_nat n)) = tt}):bool.
+     (v:{(lt (to_nat last) (to_nat n)) = tt})
+     (w:{(le (to_nat first) (to_nat last)) = tt}):bool.
     let mid = (word_plus first (word_div2 (word_minus last first))) by midu in
     abbrev midP = (word_to_nat (word_plus first (word_div2 (word_minus last first)))) in
-    abbrev midProof = [lt_trans midP (word_to_nat last)	(word_to_nat n)
-	                [ltle_trans midP
-	      		  (word_to_nat (word_plus first (word_minus last first)))
-			  (word_to_nat last)
-                          [word_plus_shrink first (word_div2 (word_minus last first))
-	      	            (word_minus last first)
-		            [word_div2_shrink (word_minus last first)]]
-	                  [word_plus_minus_shrink first last]]
-	                v] in
-    abbrev midMinusOneProof = [lt_trans (word_to_nat (word_minus (word_plus first (word_div2 (word_minus last first))) word1))
-	     	 	        midP
-		 		(word_to_nat n)
-	         		[word_minus_shrink (word_plus first (word_div2 (word_minus last first)))]
-	         		midProof] in
-    match (leword first last) with
-      ff => do (consume_unique_owned <warray A n> l)
-      	       (dec A value)
-	       ff %not found
-	    end
-    | tt =>
-    match (c (warray_get A n l 
-                (word_plus first (word_div2 (word_minus last first)))
-	        midProof)
-           (inspect A value)) with
-      LT => (warray_binary_search A n l (word_plus (word_plus first (word_div2 (word_minus last first))) word1)
-      	     last value c [oopsProof first last n] v)
+    abbrev midProof = 
+    	   trans cong (lt (to_nat *) (to_nat n)) midu
+                 [lt_trans midP (word_to_nat last) (word_to_nat n)
+                           [ltle_trans midP
+                         	       (word_to_nat (word_plus first (word_minus last first)))
+                          	       (word_to_nat last)
+                          	       [word_plus_shrink first (word_div2 (word_minus last first))
+                            			  	 (word_minus last first)
+                            				 [word_div2_shrink (word_minus last first)]]
+                          	       [word_plus_minus_shrink first last]]
+                           v] in
+    abbrev midMinusOneProof = [lt_trans (word_to_nat (word_minus mid word1)) midP (word_to_nat n)
+                                	trans cong (lt (to_nat (word_minus mid word1)) (to_nat *)) symm midu 
+				      	      [word_minus_shrink mid]
+                                	trans cong (lt (to_nat *) (to_nat n)) symm midu midProof] in
+    match (c (warray_get A n l mid midProof) (inspect A value)) with
+      LT => match (leword (word_plus mid word1) last) by ltu ign with
+              ff => do (consume_unique_owned <warray A n> l)
+                       (dec A value)
+                       ff %not found
+                    end
+            | tt => 
+            abbrev ltuP = trans join (le (word_to_nat (word_plus mid word1)) (word_to_nat last)) 
+		                     (leword (word_plus mid word1) last)
+                                ltu in
+
+             (warray_binary_search A n l (word_plus mid word1)
+                     last value c [lelt_trans (word_to_nat (word_plus mid word1)) 
+		     	  	  	      (word_to_nat last) (word_to_nat n)
+                                   ltuP v]
+                     v ltuP)
+            end
     | EQ => do (consume_unique_owned <warray A n> l)
                (dec A value)
                tt %found
             end
-    | GT => (warray_binary_search A n l first
-      	     (word_minus (word_plus first (word_div2 (word_minus last first))) word1)
-	     value c u midMinusOneProof)
-    end
+    | GT => match (leword first (word_minus mid word1)) by gtu ign with
+              ff => do (consume_unique_owned <warray A n> l)
+                       (dec A value)
+                       ff %not found
+                    end
+            | tt => (warray_binary_search A n l first (word_minus mid word1)
+                     value c u midMinusOneProof 
+		     trans join (le (word_to_nat first) (word_to_nat (word_minus mid word1)))
+		     	   	(leword first (word_minus mid word1)) gtu)
+            end
     end.

@@ -18,8 +18,11 @@ test-charray-C:
 
 test-warray:	test-warray.g Makefile
 	../bin/guru test-warray.g
-	gcc -O0 -ggdb -w -o test-warray test-warray.c
+	gcc -O2 -w -o test-warray test-warray.c
 	valgrind ./test-warray
+
+test-warray2:	test-warray.hs Makefile
+	ghc -O2 -o test-warray2 --make test-warray.hs
 
 test-unique-owned:	test-unique-owned.g Makefile
 	../bin/guru test-unique-owned.g
