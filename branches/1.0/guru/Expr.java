@@ -94,7 +94,9 @@ public abstract class Expr {
     public static final int VOID = 82; // type
     public static final int VOIDI = 83; // term
     public static final int DO = 84; // term
-    public static final int COMPRESS = 85; // term
+    public static final int TRANSS = 85; //proof
+    public static final int COMPRESS = 86; // term
+
 
     public static final int LAST = 200;
 
@@ -465,6 +467,7 @@ public abstract class Expr {
 	case REFL:
 	case SYMM:
 	case TRANS:
+        case TRANSS:
 	case CONG:
 	case NCONG:
 	case INJ:

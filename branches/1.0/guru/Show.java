@@ -59,6 +59,10 @@ public class Show extends Expr{
 	    str += a1.Y1.toString(ctxt) + " =\n\n";
 	    str += show_proof(ctxt,((Trans)pf).P2,true,multiple_proofs);
 	}
+	else if (pf.construct == TRANSS) {
+             step--;
+	     return show_proof(ctxt, ((Transs)pf).toTrans(), in_trans, multiple_proofs);
+        }
 	else {
 	    Expr F = pf.classify(ctxt).dropAnnos(ctxt);
 	    if (in_trans) {
