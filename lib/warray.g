@@ -123,3 +123,52 @@ Define warray_binary_search
 		     	   	(leword first (word_minus mid word1)) gtu)
             end
     end.
+
+Define trusted word_Si_eq_i2 
+  : Forall(i i2 : word)(u: {i2 = (word_inc2 i)}).
+       {(S (to_nat i) ) = (to_nat i2)} := truei.
+
+Define warray_maxElement 
+  : Fun (A:type)(n:word)(i:word)(l:<warray A n>)
+       (max: A)(leA : Fun(x y:A).bool)
+       (u:{(lt (to_nat i) (to_nat n)) = tt})
+       . #<owned l> A :=
+  fun warray_maxElement(A:type)(n:word)(i:word)(l:<warray A n>)
+     (max: A)(leA : Fun(x y:A).bool)
+     (u:{(lt (to_nat i) (to_nat n)) = tt})
+     : #<owned l> A.
+	let current = (warray_get A n l i u) in
+		match (leA max current) by leAp leAt with
+		    ff => let inc_i = (word_inc2 i) in
+			     match (eqword inc_i n) by eqwp eqwt with
+			      ff =>
+				 abbrev h0 = hypjoin (eqbv inc_i n) ff by eqwp end in 
+				   abbrev h1 = [to_nat_neq1 wordlen inc_i n h0] in
+				 	
+				abbrev u1 = hypjoin (eqnat (S (to_nat i)) (to_nat n)) ff by 
+						h1 [word_Si_eq_i2 i inc_i inc_i_eq] end in 
+				   abbrev u2 = hypjoin (lt (S (to_nat i)) (to_nat n)) tt by			
+				     [x_lt_y_SxNEQy_Sx_lt_y (to_nat wordlen i) (to_nat wordlen n) u u1] end in 
+				    abbrev u3 = hypjoin (lt (to_nat inc_i) (to_nat n)) tt by 
+						u2 [word_Si_eq_i2 i inc_i inc_i_eq] end in
+	 				 (warray_maxElement A n inc_i l max leA u3)
+			   | tt => max
+		            end
+				
+	          | tt => let inc_i' = (word_inc2 i) in
+			   match  (eqword inc_i' n) by eqwp' eqwt' with
+			     ff => 
+				abbrev h0' = hypjoin (eqbv inc_i' n) ff by eqwp' end in
+				  abbrev h1' = [to_nat_neq1 wordlen inc_i' n h0'] in 		
+			
+	      			     abbrev v1 = hypjoin (eqnat (S (to_nat i)) (to_nat n)) ff 
+						   by h1' [word_Si_eq_i2 i inc_i' inc_i'_eq ] end in			
+				   abbrev v2 = hypjoin (lt (S (to_nat i)) (to_nat n)) tt by
+				     [x_lt_y_SxNEQy_Sx_lt_y (to_nat wordlen i) (to_nat wordlen n) u v1] end in
+				  abbrev v3 = hypjoin (lt (to_nat inc_i') (to_nat n)) tt by 
+						v2 [word_Si_eq_i2 i inc_i' inc_i'_eq] end in 
+					 (warray_maxElement A n inc_i' l current leA v3)
+			   | tt => current
+			   end
+		  end.
+

@@ -46,6 +46,10 @@ Define word_inc2 :=
         end
     end.
 
+Define trusted word_inc2_carry 
+  : Forall(w:word)(carry:bool)(u:{ (word_inc2 w) = (mk_word_inc_t w carry) }).
+          { carry = ff } := truei.
+
 Define word_inc_tot :=
   foralli(b:word).
     abbrev r = terminates (bv_inc spec wordlen b) by bv_inc_tot in
