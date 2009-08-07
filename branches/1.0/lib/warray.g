@@ -172,3 +172,32 @@ Define warray_maxElement
 			   end
 		  end.
 
+
+Define warray_isElement 
+  : Fun (A:type)(n:word)(i:word)(l:<warray A n>)
+       (key:A)(eqA : Fun(^ #owned a b: A).bool)
+       (u:{(lt (to_nat i) (to_nat n)) = tt})
+       . bool :=
+  fun warray_isElement(A:type)(n:word)(i:word)(l:<warray A n>)
+     (key:A)(eqA : Fun(^ #owned a b: A).bool)
+     (u:{(lt (to_nat i) (to_nat n)) = tt})
+     : bool.
+	let current = (warray_get A n l i u) in
+	    match (eqA current key) by eqAp eqAt with
+		ff => let inc_i = (word_inc2 i) in
+			match (eqword inc_i n) by eqwp eqwt with
+			   ff => abbrev h0 = hypjoin (eqbv inc_i n) ff by eqwp end in 
+				 abbrev h1 = [to_nat_neq1 wordlen inc_i n h0] in
+				 	
+				 abbrev u1 = hypjoin (eqnat (S (to_nat i)) (to_nat n)) ff by 
+				     h1 [word_Si_eq_i2 i inc_i inc_i_eq] end in 
+				 abbrev u2 = hypjoin (lt (S (to_nat i)) (to_nat n)) tt by			
+				     [x_lt_y_SxNEQy_Sx_lt_y (to_nat wordlen i) (to_nat wordlen n) u u1] end in 
+				 abbrev u3 = hypjoin (lt (to_nat inc_i) (to_nat n)) tt by 
+				      u2 [word_Si_eq_i2 i inc_i inc_i_eq] end in
+	 			 (warray_isElement A n inc_i l key eqA u3)
+			 | tt => ff 
+			 end
+	      | tt => tt
+	      end.
+
