@@ -1,2 +1,8 @@
 To Do List
 
+* rewriting "member" function
+Currently, member uses the "or" function and also it's not early terminating.
+Rewriting member using "foldr" was proposed. And the idea is to promote reusing lemmas for foldr. But then, it won't be early terminating either.
+If we rewrite it, I(Duckki) think we might like an early terminating one. What do you think?
+At this time, I'm afraid to change the member function, because it is being used so many places. It would be a major change.
+
