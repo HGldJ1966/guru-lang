@@ -203,6 +203,8 @@ Define or_total : Forall(x y:bool).Exists(z:bool).{(or x y) = z} :=
 		join (or tt y) tt
 	end.
 
+Total or or_total.
+
 Define not_tot :=
   induction(x:bool) by a b IH return Exists(y:bool).{(not x) = y} with
     ff => existsi tt {(not x) = *} hypjoin (not x) tt by a end
@@ -235,6 +237,8 @@ Define iff_tot : Forall(x y:bool).Exists(z:bool). {(iff x y) = z} :=
   | tt => foralli(y:bool).
           existsi y {(iff x y) = *} hypjoin (iff x y) y by ux end
   end.
+
+Total iff iff_tot.  
 
 Define not_tt : Forall(x:bool)(u:{(not x) = tt}). {x = ff} :=
   induction(x:bool) by ux ign ign

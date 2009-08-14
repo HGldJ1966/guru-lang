@@ -936,6 +936,86 @@ end
 
 l1 u].
 
+Define  list_all_total :
+  Forall(A:type)
+        (f:Fun(a:A).bool)
+        (f_tot:Forall(x:A).Exists(y:bool).{ (f x) = y })
+        (l:<list A>).
+  Exists(z:bool). { (list_all A f l) = z }
+  :=
+  foralli(A:type)
+         (f:Fun(a:A).bool)
+         (f_tot:Forall(x:A).Exists(y:bool).{ (f x) = y }).
+  induction(l:<list A>) return Exists(z:bool). { (list_all A f l) = z }
+  with
+    nil _ =>
+      existsi tt { (list_all A f l) = * }
+        hypjoin (list_all A f l) tt by l_eq end
+  | cons _ a l' =>
+      existse [f_tot a]
+      foralli(y:bool)(y_pf:{ (f a) = y }).
+      case y with
+        ff =>
+          existsi ff { (list_all A f l) = * }
+            hypjoin (list_all A f l) ff by l_eq y_pf y_eq end
+      | tt =>
+          existse [l_IH l']
+          foralli(z:bool)(z_pf:{ (list_all A f l') = z }).
+          existsi z { (list_all A f l) = * }
+            hypjoin (list_all A f l) z by l_eq y_pf y_eq z_pf end
+      end
+  end
+  .
+
+Define  list_all_cons_tt_head :
+  Forall(A:type)
+        (f:Fun(a:A).bool)
+        (f_tot:Forall(x:A).Exists(y:bool).{ (f x) = y })
+        (a:A)(l:<list A>)
+        (u:{ (list_all f (cons a l)) = tt }).
+    { (f a) = tt }
+  :=
+  foralli(A:type)
+         (f:Fun(a:A).bool)
+         (f_tot:Forall(x:A).Exists(y:bool).{ (f x) = y })
+         (a:A)(l:<list A>)
+         (u:{ (list_all f (cons a l)) = tt }).
+  existse [f_tot a]
+  foralli(z1:bool)(z1_pf:{ (f a) = z1 }).
+  case z1 with
+    ff => contra
+            trans symm u
+            trans hypjoin (list_all f (cons a l)) ff by z1_pf z1_eq end
+                  clash ff tt
+            { (f a) = tt }
+  | tt => hypjoin (f a) tt by z1_pf z1_eq end
+  end
+  .
+
+Define  list_all_cons_tt_tail :
+  Forall(A:type)
+        (f:Fun(a:A).bool)
+        (f_tot:Forall(x:A).Exists(y:bool).{ (f x) = y })
+        (a:A)(l:<list A>)
+        (u:{ (list_all f (cons a l)) = tt }).
+    { (list_all f l) = tt }
+  :=
+  foralli(A:type)
+         (f:Fun(a:A).bool)
+         (f_tot:Forall(x:A).Exists(y:bool).{ (f x) = y })
+         (a:A)(l:<list A>)
+         (u:{ (list_all f (cons a l)) = tt }).
+  existse [f_tot a]
+  foralli(z1:bool)(z1_pf:{ (f a) = z1 }).
+  case z1 with
+    ff => contra
+            trans symm u
+            trans hypjoin (list_all f (cons a l)) ff by z1_pf z1_eq end
+                  clash ff tt
+            { (list_all f l) = tt }
+  | tt => hypjoin (list_all f l) tt by z1_pf z1_eq u end
+  end
+  .
 
 Define list_any : Fun(A:type)(f:Fun(^#owned a:A).bool)(^#owned l:<list A>) . bool :=
   fun list_any (A:type)(f:Fun(^#owned a:A).bool)(^#owned l:<list A>) : bool .
