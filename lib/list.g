@@ -856,67 +856,17 @@ Define member_cons_ff_member :
   .
 
 Define list_exists : Fun(A C:type)(^#owned c:C)
+
                       (f:Fun(^#owned c:C)(^#owned a:A).bool)(^#owned l:<list A>).bool :=
+
 fun(A C:type)(^#owned c:C)(f:Fun(^#owned c:C)(^#owned a:A).bool).
+
   (foldr A bool C c fun(^#owned c:C)(^#owned a:A)(b:bool).(or (f c a) b) ff).
 
 Define list_forall : Fun(A C:type)(^#owned c:C)
                 (f:Fun(^#owned c:C)(^#owned a:A).bool)(^#owned l:<list A>).bool :=
   fun(A C:type)(^#owned c:C)(f:Fun(^#owned c:C)(^#owned a:A).bool).
     (foldr A bool C c fun(^#owned c:C)(^#owned a:A)(b:bool).(and (f c a) b) tt).
-
-
-% foldl with early termination
-%-
-fcn should return a pair of bool and B types
-  the first value of the pair decides whether to continue or not
-    if it is ff, terminates; otherwise, continues.
-  the second value is the return value of the function for (original) foldl.
--%
-Define foldl2 :
-  Fun(A B : type)
-     (fcn : Fun(x:A)(y:B).<pair bool B>)
-     (b : B)
-     (l : <list A>). B
-  :=
-  fun foldl2(A B:type)(fcn:Fun(x:A)(y:B).<pair bool B>)
-            (b:B)(l:<list A>) : B.
-    match l with
-      nil _ => b
-    | cons _ a' l' =>
-       match (fcn a' b) with
-         mkpair _ _ cont b' =>
-           match cont with
-             ff => (foldl2 A B fcn b' (nil A))  % early termination with new value
-           | tt => (foldl2 A B fcn b' l')
-           end
-       end
-    end
-  .
-
-Define list_exists2 : Fun(A:type)
-                         (f:Fun(a:A).bool)
-                         (l:<list A>).bool
-  :=
-  fun(A:type)(f:Fun(a:A).bool).
-    let f' =
-      fun(a:A)(b:bool).
-        let b' = (or (f a) b) in
-        (mkpair bool bool (not b') b')
-    in
-    (foldl2 A bool f' ff).
-
-Define list_forall2 : Fun(A:type)
-                         (f:Fun(a:A).bool)
-                         (l:<list A>).bool
-  :=
-  fun(A:type)(f:Fun(a:A).bool).
-    let f' =
-      fun(a:A)(b:bool).
-        let b' = (and (f a) b) in
-        (mkpair bool bool b' b')
-    in
-    (foldl2 A bool f' tt).
 
 
 Define fill : Fun(A:type)(^#owned a:A)(^#owned n:nat).<list A> :=
@@ -997,16 +947,6 @@ Define list_any : Fun(A:type)(f:Fun(^#owned a:A).bool)(^#owned l:<list A>) . boo
                      end
     end.
 
-% member (early terminating)
-Define member2 : Fun(A:type)
-                    (eqA:Fun(^#owned x1 x2:A).bool)
-                    (^#owned x:A)
-                    (^#owned l:<list A>).bool :=
-  fun(A:type)
-     (eqA:Fun(^#owned x1 x2:A).bool)
-     (^#owned x:A)
-     (^#owned l:<list A>).
-  (list_any A (eqA x) l).
 
 % l1 is a subset of l2
 Define list_subset : Fun(A:type)(eqA : Fun(^ #owned a b: A).bool)(l1 l2:<list A>) . bool :=
@@ -1374,6 +1314,7 @@ Define  list_subset_cons_tt_member :
 	[member_trans_lemma A a eqA eqA_total (cons A a l1) l2 u' u eqA_to_equals]
   	
 .
+
 %-
 Define trusted list_subset_cons_tt_subset :
   Forall(A:type)
@@ -1416,3 +1357,4 @@ Define trusted list_subset_tt_subset_append_front:
     { (list_subset eqA l1 (append l3 l2)) = tt }
   :=
   truei.
+-%
