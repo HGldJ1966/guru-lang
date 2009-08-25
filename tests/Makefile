@@ -1,3 +1,8 @@
+test-uwarray:	test-uwarray.g Makefile
+	../bin/guru test-uwarray.g
+	gcc -O2 -w -o test-uwarray test-uwarray.c
+	valgrind ./test-uwarray
+
 test-queue:	test-queue.g Makefile
 	../bin/guru test-queue.g
 	gcc -O0 -ggdb -w -o test-queue test-queue.c

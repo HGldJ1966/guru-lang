@@ -16,7 +16,7 @@ Define primitive warray_new
  : Fun(spec A:type)(n:word)(^ #owned a:A).#unique <warray A n> := 
   fun(A:type)(n:word)(a:A). (mkvec A a (to_nat wordlen n)) <<END
 void *gwarray_new(int n, void *a) {
-  void **h = (void **)guru_malloc(sizeof(void *)*128);
+  void **h = (void **)guru_malloc(sizeof(void *)*n);
   // fprintf(stdout,"gmk_warray(%x).\n", h);
   int c;
   for (c = 0; c < n; c++)
