@@ -13,6 +13,11 @@ Define primitive inspect : Fun(spec A:type)(!#unowned x:A).#<owned x> A
   #define ginspect(x) x
 END.
 
+Define trusted inspect_tot : Forall(A:type)(x:A).Exists(out:A).
+  {(inspect A x) = out} := truei.
+
+Total inspect inspect_tot.
+
 Define primitive inc_owned : Fun(spec A:type)(!#owned y:A).#unowned A
   := fun(A:type)(y:A).y <<END
   void *ginc_owned(void *y) {
@@ -20,6 +25,12 @@ Define primitive inc_owned : Fun(spec A:type)(!#owned y:A).#unowned A
     return y;
   }
 END.
+
+
+Define trusted inc_owned_tot : Forall(A:type)(x:A).Exists(out:A).
+  {(inc_owned A x) = out} := truei.
+
+Total inc_owned inc_owned_tot.
 
 Define primitive owned_to_unowned : Fun(spec A:type)(^#owned y:A).#unowned A
   := fun(A:type)(y:A).y <<END
