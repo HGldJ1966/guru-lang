@@ -1,5 +1,5 @@
 Include "uholder.g".
-Include "word.g".
+Include trusted "word.g".
 
 %%our boxed word type to give ownership properties
 Define boxedWord := <uholder word>.
@@ -12,8 +12,8 @@ Define trusted boxWord_tot : Forall(w:word).Exists(bw:boxedWord).{(boxWord w) = 
 
 Total boxWord boxWord_tot.
 
-Define unboxWord : Fun(bw:boxedWord) . word :=
-  fun(bw:<uholder word>).
+Define unboxWord : Fun(^ #owned bw:boxedWord) . word :=
+  fun(^ #owned bw:boxedWord).
   match bw by x1 x2 with
     mk_uholder T w => cast w by symm inj <uholder *> x2 %mean trick that is required
   end.

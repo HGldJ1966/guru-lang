@@ -1,3 +1,4 @@
+
 Include "../lib/nat.g".
 Include "../lib/warray.g".
 Include "../lib/stdio.g".
@@ -15,14 +16,19 @@ Define mysize := (word_set_bit word20 join (lt (to_nat word20) wordlen) tt word0
 Define fill_array: Fun(spec n:word)(#unique l:<warray boxedWord n>)(i:boxedWord)
   (u:{(lt (to_nat (unboxWord i)) (to_nat n)) = tt}). #unique <warray boxedWord n> :=
   fun fill_array(spec n:word)(#unique l:<warray boxedWord n>)(i:boxedWord)
-      		(u:{(lt (to_nat (unboxWord i)) (to_nat n)) = tt}) : #unique <warray boxedWord n>.
-  match (eqword (unboxWord i) word0) with
-    ff => (fill_array n (warray_set boxedWord (unboxWord i) i n l u) 
-       	  	      	(boxWord (word_minus (unboxWord i) word1))
-       	  	      [lt_trans (word_to_nat (unboxWord (boxWord (word_minus (unboxWord i) word1))))
-		      		(word_to_nat (unboxWord i))
-				(word_to_nat n)
-				[boxedWord_minus_shrink i [word_minus_shrink (unboxWord i)]] u])
+                (u:{(lt (to_nat (unboxWord i)) (to_nat n)) = tt}) : #unique <warray boxedWord n>.
+  match (eqword (unboxWord (inc boxedWord i)) word0) with
+    ff => (fill_array n (warray_set boxedWord (unboxWord (inc boxedWord i)) i n l 
+                         trans join  (lt (to_nat (unboxWord (inc boxedWord i))) (to_nat n))
+			             (lt (to_nat (unboxWord i)) (to_nat n))
+			       u)
+                        (boxWord (word_minus (unboxWord (inc boxedWord i)) word1))
+                      [lt_trans (word_to_nat (unboxWord (boxWord (word_minus (unboxWord (inc boxedWord i)) word1))))
+                                (word_to_nat (unboxWord (inc boxedWord i)))
+                                (word_to_nat n)
+                                [boxedWord_minus_shrink (inc boxedWord i) [word_minus_shrink (unboxWord (inc boxedWord i))]] 
+                                 trans join (lt (to_nat (unboxWord (inc boxedWord i))) (to_nat n)) 
+				       	    (lt (to_nat (unboxWord i)) (to_nat n)) u])
   | tt => l
   end.
 
@@ -31,23 +37,23 @@ Define test :=
   let a = (mk_uholder word word0) in
   let arr = (warray_new boxedWord mysize (inspect boxedWord a)) in
   let arr' = (fill_array mysize arr (boxWord (word_minus mysize word1))
-      	     		 [boxedWord_minus_shrink2 mysize [word_minus_shrink mysize]]) in
+                         [boxedWord_minus_shrink2 mysize [word_minus_shrink mysize]]) in
   let val = (boxWord word7) in
   let ret = (warray_binary_search boxedWord mysize 
-      	     (inspect_unique <warray boxedWord mysize> arr') 
-    	     word0 (word_minus mysize word1) val
-	     boxedWord_comp
-	     join (lt (to_nat word0) (to_nat mysize)) tt
-	     [word_minus_shrink mysize]
-	     join (le (to_nat word0) (to_nat (word_minus mysize word1))) tt) in
+             (inspect_unique <warray boxedWord mysize> arr') 
+             word0 (word_minus mysize word1) val
+             boxedWord_comp
+             join (lt (to_nat word0) (to_nat mysize)) tt
+             [word_minus_shrink mysize]
+             join (le (to_nat word0) (to_nat (word_minus mysize word1))) tt) in
   do
     (dec boxedWord a)
     (warray_free boxedWord mysize arr')
     match ret with
       ff => let s = "not found" in
-      	      (println_string stdio s)
+              (println_string stdio s)
     | tt => let s = "found" in
-      	      (println_string stdio s)
+              (println_string stdio s)
     end
   end.
 
