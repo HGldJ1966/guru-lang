@@ -34,3 +34,17 @@ Define comparator2: Fun(A:type)(lt:Fun(w1 w2:A).bool)
           end
   | tt => LT
   end.
+
+Define ucomparator: Fun(A:type)(lt:Fun(#untracked w1 w2:A).bool)
+       		    	       (le:Fun(#untracked w1 w2:A).bool)
+		       (#untracked x y:A). comp :=
+  fun(A:type)(lt:Fun(#untracked w1 w2:A).bool)
+       	     (le:Fun(#untracked w1 w2:A).bool)
+     (#untracked x y:A).
+  match (lt x y) with
+    ff => match (le x y) with
+            ff => GT
+	  | tt => EQ
+          end
+  | tt => LT
+  end.

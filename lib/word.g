@@ -11,7 +11,7 @@ END.
 Untracked word.
 
 Define primitive eqword : Fun(w1 w2:word).bool := (eqbv wordlen) <<END
-  #define eqword(w1,w2) (w1 == w2)
+  #define geqword(w1,w2) (w1 == w2)
 END.
 
 Define eqword_eq := [eqbv_eq wordlen].
@@ -196,19 +196,19 @@ Define trusted word_plus_tot :
 
 Total word_plus word_plus_tot.
 
-Define primitive ltword : Fun(w1 w2:word).bool :=
+Define primitive ltword : Fun(#untracked w1 w2:word).bool :=
   fun(w1 w2:word).
   (lt (word_to_nat w1) (word_to_nat w2))<<END
-  #define gltword(w1, w2) (w1 < w2)
+  int gltword(int w1, int w2) { return (w1 < w2); }
 END.
 
-Define primitive leword : Fun(w1 w2:word).bool :=
+Define primitive leword : Fun(#untracked w1 w2:word).bool :=
   fun(w1 w2:word).
   (le (word_to_nat w1) (word_to_nat w2)) <<END
-  #define gleword(w1, w2) (w1 <= w2)
+  int gleword(int w1, int w2) { return (w1 <= w2); }
 END.
 
-Define word_comp := (comparator2 word ltword leword).
+Define word_comp := (ucomparator word ltword leword).
 
 Define trusted word_div2_shrink :
   Forall(x:word).{(lt (to_nat (word_div2 x)) (to_nat x)) = tt} 

@@ -1,3 +1,8 @@
+test-warray:	test-warray.g Makefile
+	../bin/guru test-warray.g
+	gcc -O2 -w -o test-warray test-warray.c
+	valgrind ./test-warray
+
 test-queue:	test-queue.g Makefile
 	../bin/guru test-queue.g
 	gcc -O0 -ggdb -w -o test-queue test-queue.c
@@ -20,11 +25,6 @@ test-qcharray:	test-qcharray.g Makefile
 test-charray-C:
 	gcc -O0 -ggdb -w -o test-charray test-charray.c
 	valgrind ./test-charray
-
-test-warray:	test-warray.g Makefile
-	../bin/guru test-warray.g
-	gcc -O2 -w -o test-warray test-warray.c
-	valgrind ./test-warray
 
 test-warray2:	test-warray.hs Makefile
 	ghc -O2 -o test-warray2 --make test-warray.hs
