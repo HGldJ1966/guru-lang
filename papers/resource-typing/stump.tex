@@ -1,0 +1,181 @@
+\documentclass[9pt,natbib]{sigplanconf}
+
+%\usepackage{latex8}
+%\usepackage{times}
+\usepackage{amsmath}
+\usepackage{latexsym}
+\usepackage{amssymb}
+\usepackage{proof}
+\usepackage{url}
+
+% \usepackage{natbib}
+%  \bibpunct();A{},
+%  \let\cite=\citep
+
+\pdfpagewidth=8.5in
+\pdfpageheight=11in
+
+\newcommand{\lam}[2]{\lambda #1 . #2}
+\newcommand{\lams}[2]{\lambda^* #1 . #2}
+\newcommand{\alet}[3]{\textit{let}\ #1\ :=\ #2\ \textit{in}\ #3}
+\newcommand{\Thet}[1]{\lam{V}{\lam{L}{\lam{A}{\lam{O}{\lam{C}{\lam{S}{\lam{D}{#1}}}}}}}}
+\newcommand{\ope}[0]{\textit{open}}
+\newcommand{\swap}[0]{\textit{swap}}
+\newcommand{\vcomp}[0]{\textit{vcomp}}
+\newcommand{\nlambda}[0]{\bar{\lambda}}
+\newcommand{\nlam}[2]{\nlambda #1 . #2}
+\newcommand{\rulename}[1]{\text{\textup{\textsf{#1}}}}
+\newcommand\bs{\char '134 }  % A backslash character for \tt font
+\newcommand{\seq}[3]{#1 \vdash #2 : #3}
+\newcommand{\eval}[0]{\Downarrow}
+\newcommand{\evalj}[2]{#1\, \eval\, #2}
+\newcommand{\starstar}[0]{*\negthinspace*}
+\newcommand{\nat}[0]{\mathbb{N}}
+\newcommand{\optt}{\textsc{OpTT}}
+
+\newcommand{\rase}[1]{\ulcorner #1 \urcorner}
+\newcommand{\lowr}[1]{\llcorner #1 \lrcorner}
+
+\newcommand{\Eq}[0]{\texttt{=}}
+\newcommand{\Neq}[0]{\texttt{!=}}
+\newcommand{\Qeq}[0]{\stackrel{?}{=}}
+\newcommand{\bang}[0]{\texttt{!}}
+\newcommand{\quant}[0]{\textit{Quant}}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{definition}{Definition}
+\newtheorem{lemma}{Lemma}
+
+\newcommand{\To}{\Rightarrow}
+\newcommand{\gtrans}[2]{#1 \cdot #2}
+\newcommand{\gtransa}[2]{#1 \cdot_1 #2}
+\newcommand{\gtransb}[2]{#1 \cdot_2 #2}
+\newcommand{\gsymm}[1]{#1^{-1}}
+\newcommand{\gcong}[1]{f(#1)}
+\newcommand{\ginj}[1]{f^{-1}(#1)}
+\newcommand{\guru}[0]{\textsc{Guru}}
+
+\begin{document}
+
+\conferenceinfo{PLPV'10,} {January 19, 2010, Madrid, Spain.}
+\CopyrightYear{2010}
+\copyrightdata{\ } 
+
+\titlebanner{\ }        % These are ignored unless
+\preprintfooter{\ }   % 'preprint' option specified.
+
+
+%\newenvironment{proof}
+%               {\hspace{-1\parindent}\textbf{Proof:}}
+%               {\hfill $\square$\vspace{1\baselineskip}}
+
+\title{Resource Typing in Guru}
+
+\authorinfo{Aaron Stump}
+{CS Dept.\\ The University of Iowa, USA}
+{astump@acm.org}
+
+\authorinfo{Evan Austin}
+{CS Dept.\\ The University of Kansas, USA}
+{ecaustin@ittc.ku.edu}
+
+\authorinfo{Morgan Deters}
+{CS Dept.\\ New York University, USA}
+{mdeters@lsi.upc.edu}
+
+%\date{}
+
+\maketitle
+
+%\thispagestyle{empty}
+
+\begin{abstract}
+This paper presents a resource typing framework -- based on linear and
+ownership typing, and implemented as part of the Guru
+verified-programming language -- in which abstractions for various
+kinds of program resources can be defined.  Implemented examples
+include reference-counted data, mutable arrays, and heap-allocated
+mutable aliased data.  Each kind of resource is optionally described
+by a functional model, enabling external reasoning about programs that
+use resources.  During compilation, this functional model is replaced
+by its actual imperative implementation.  This approach enables
+efficient, type-safe programming with mutable and aliased data
+structures, with explicit deallocation (not garbage collection).
+\end{abstract}
+
+\category{D.3.2}{Programming Languages}{Applicative (functional) languages}
+\category{F.3.1}{Logics and Meanings of Programs}{Mechanical verification}
+\category{F.4.1}{Mathematical Logic}{Mechanical theorem proving}
+
+\terms
+Languages, Verification
+
+\keywords
+Dependently Typed Programming, Resource Types, Aliasing, Language-Based Verification
+
+\section{Introduction}
+
+Dependent types are of significant current interest for practical
+verified programming, as a substantial number of recent works attest.
+Dependent types hold out the promise of incrementally extending the
+verification power of traditional type systems.  With traditional
+verification methods, there often at least appears to be a significant
+shift in thinking required for programmers to apply the method.  For
+example, with traditional approaches based on Hoare Logic, one in
+general needs to annotate loops with loop invariants written in a
+separate logical language, not likely to be familiar to mainstream
+programmers.  In contrast, with dependent types, programmers can
+incrementally enrich types with which they are well familiar.  For
+example, it is a relatively small conceptual leap to go from a type
+like $\langle \texttt{list}\ A\rangle$ (for homogeneous lists) to a
+type like $\langle \texttt{list}\ A\ n\rangle$ (for homogeneous lists
+of length $n$).  Of course, the richer the properties expressed by the
+types, the more verification burden we might expect.  But still, with
+dependent types, there seems a better change of incrementally
+exploring the continuum of correctness, starting with current
+programming practice, than with traditional verification methods.
+
+But current dependent type systems are largely confined to functional
+programming languages.  Despite the great intellectual depth of the
+literature on functional programming, and enthusiastic user
+communities, adoption of functional programming is miniscule compared
+to industrial languages like C/C++ or Java.  There are, no doubt, many
+non-techical reasons for this, such as maturity of standard libraries
+(it is very difficult to compete, for example, with the massive
+standard library for Java).  But there is at least one technical issue
+which has always plagued functional programming languages, and others
+based on automatic memory management: efficiency.  Again, despite
+tremendous invention in the field, garbage collection remains costly,
+as several recent studies attest~\cite{Xian2008,hertz+05}.
+
+This paper shows how to combine the expressive power of dependent
+types with linear types to define abstractions for different kinds of
+resources, without the need for garbage collection.  This is carried
+out in the context of the Guru verified-programming language, a
+dependently typed pure functional programming language.  Resources are
+created and consumed explicitly.  The type system rules out memory
+errors such as accessing deallocated or uninitialized memory by
+ensuring that each resource is consumed exactly once.  The definition
+of a resource is flexible, so that resource consumption need not
+correspond to memory deallocation.  This flexibility is achieved
+through a \emph{resource typing framework}, in which different
+resource management schemes can be defined by a set of primitive
+types, along with operations on those types.  The definition of a
+term-level primitive consists of its type, an optional pure functional
+term which models the primitive, and (imperative) C code which the
+Guru compiler will use for the definition of the primitive.  The
+connection between this C code and the pure functional model (if
+supplied) must be trusted.  But since the number of lines of C code
+required to implement, say, heap-allocated data is very small (on the
+order of tens of lines), we maintain that this is a reasonable
+compromise between trustedness and the burden of verification.
+
+\textbf{Acknowledgements:} the U.S. NSF for support under award CCF-0841554.
+
+\bibliographystyle{plainnat}
+
+%\nocite{SH80}
+\bibliography{partiality,misc_logic,automated_reasoning,formal_methods,verification,lf,general,refinement,coop_dec_procs,cl,rewriting,theorem_provers,sat,program_analysis,software_engineering,specification,pl,stanford_group,hoas,semantic_programming,misc}
+
+
+\end{document}
