@@ -13,22 +13,15 @@ Set "use_malloc".
 Define word20 := (word_plus word8 (word_plus word8 (word_plus word2 word2))).
 Define mysize := (word_set_bit word20 join (lt (to_nat word20) wordlen) tt word0).
 
-Define fill_array: Fun(spec n:word)(#unique l:<warray boxedWord n>)(i:boxedWord)
-  (u:{(lt (to_nat (unboxWord i)) (to_nat n)) = tt}). #unique <warray boxedWord n> :=
-  fun fill_array(spec n:word)(#unique l:<warray boxedWord n>)(i:boxedWord)
-                (u:{(lt (to_nat (unboxWord i)) (to_nat n)) = tt}) : #unique <warray boxedWord n>.
-  match (eqword (unboxWord (inc boxedWord i)) word0) with
-    ff => (fill_array n (warray_set boxedWord (unboxWord (inc boxedWord i)) i n l 
-                         trans join  (lt (to_nat (unboxWord (inc boxedWord i))) (to_nat n))
-			             (lt (to_nat (unboxWord i)) (to_nat n))
-			       u)
-                        (boxWord (word_minus (unboxWord (inc boxedWord i)) word1))
-                      [lt_trans (word_to_nat (unboxWord (boxWord (word_minus (unboxWord (inc boxedWord i)) word1))))
-                                (word_to_nat (unboxWord (inc boxedWord i)))
-                                (word_to_nat n)
-                                [boxedWord_minus_shrink (inc boxedWord i) [word_minus_shrink (unboxWord (inc boxedWord i))]] 
-                                 trans join (lt (to_nat (unboxWord (inc boxedWord i))) (to_nat n)) 
-				       	    (lt (to_nat (unboxWord i)) (to_nat n)) u])
+Define fill_array: Fun(spec n:word)(#unique l:<warray boxedWord n>)(i:word)
+  (u:{(lt (to_nat i) (to_nat n)) = tt}). #unique <warray boxedWord n> :=
+  fun fill_array(spec n:word)(#unique l:<warray boxedWord n>)(i:word)
+                (u:{(lt (to_nat i) (to_nat n)) = tt}) : #unique <warray boxedWord n>.
+  match (eqword i word0) with
+    ff => (fill_array n (warray_set boxedWord i (boxWord i) n l u) (word_minus i word1)
+               [lt_trans (word_to_nat (word_minus i word1))
+                         (word_to_nat i) (word_to_nat n)
+                   [word_minus_shrink i] u])
   | tt => l
   end.
 
@@ -36,8 +29,8 @@ Define fill_array: Fun(spec n:word)(#unique l:<warray boxedWord n>)(i:boxedWord)
 Define test :=
   let a = (mk_uholder word word0) in
   let arr = (warray_new boxedWord mysize (inspect boxedWord a)) in
-  let arr' = (fill_array mysize arr (boxWord (word_minus mysize word1))
-                         [boxedWord_minus_shrink2 mysize [word_minus_shrink mysize]]) in
+  let arr' = (fill_array mysize arr (word_minus mysize word1)
+                 [word_minus_shrink mysize]) in
   let val = (boxWord word7) in
   let ret = (warray_binary_search boxedWord mysize 
              (inspect_unique <warray boxedWord mysize> arr') 
