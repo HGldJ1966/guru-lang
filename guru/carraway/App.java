@@ -43,9 +43,22 @@ public class App extends Expr {
 
     public void do_print(java.io.PrintStream w, Context ctxt) {
 	if (head == ctxt.returnf) {
-	    w.print("return ");
-	    args[0].print(w,ctxt);
-	    w.println(";");
+	    if (args[0].construct == APP && ((App)args[0]).head == ctxt.printing_rec_fun) {
+		// this is a tail recursive call
+		Expr[] rec_args = ((App)args[0]).args;
+		for (int i = 0, iend = rec_args.length; i < iend; i++) {
+		    ctxt.rec_vars[i].print(w,ctxt);
+		    w.print(" = ");
+		    rec_args[i].print(w,ctxt);
+		    w.println(";");
+		}
+		w.println("goto start_"+ctxt.printing_rec_fun.toString(ctxt)+";");
+	    }
+	    else {
+		w.print("return ");
+		args[0].print(w,ctxt);
+		w.println(";");
+	    }
 	}
 	else if (ctxt.stage >= 2) {
 	    head.print(w,ctxt);

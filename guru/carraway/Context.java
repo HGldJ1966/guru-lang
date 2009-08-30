@@ -43,6 +43,9 @@ public class Context extends guru.FlagManager {
     Sym returnf;
     Sym zerof;    
 
+    protected Sym printing_rec_fun; // null if not currently printing a recursive function.
+    protected Sym[] rec_vars; // if printing_rec_fun is non-null, this gives its input variables
+
     protected HashMap name_tbl;
 
     protected Vector global_inits;
