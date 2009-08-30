@@ -32,10 +32,15 @@ public class FunTerm extends FunBase {
 	    f.print(w,ctxt);
 	    super.do_print(w,ctxt);
 	    w.println(" {");
+	    w.println(" start_"+f.toString(ctxt)+": {");
+	    ctxt.printing_rec_fun = f;
+	    ctxt.rec_vars = vars;
 	    body.print(w,ctxt);
+	    ctxt.printing_rec_fun = null;
+	    ctxt.rec_vars = null;
 	    if (body.construct != DO && body.construct != MATCH)
 		w.println(";");
-	    w.println("}\n");
+	    w.println(" }\n}\n");
 	}   
     }    
 
@@ -44,14 +49,14 @@ public class FunTerm extends FunBase {
 
 	FunType F = new FunType();
 	int iend = vars.length;
+	F.consumps = consumps;
 	F.vars = new Sym[iend];
 	F.types = new Expr[iend];
-	F.consumps = consumps;
 
 	for (int i = 0; i < iend; i++) {
 	    F.types[i] = types[i].applySubst(ctxt);
-	    F.vars[i] = ctxt.newSym(vars[i].output_name);
-	    ctxt.setSubst(vars[i],F.vars[i]);
+	    F.vars[i] = ctxt.newSym(vars[i].name);
+	    ctxt.setSubst(vars[i],F.vars[i]); 
 	}
 
 	F.rettype = rettype.applySubst(ctxt);
