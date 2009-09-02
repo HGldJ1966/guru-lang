@@ -72,3 +72,23 @@ Define println_string : Fun(#unique x:stdio_t)(s:string).#unique stdio_t :=
   fun(#unique x:stdio_t)(s:string):#unique stdio_t.
     let x' = (print_string x s) in
     (print_char x' Cnl).
+
+Inductive read_until_char_t : type :=
+  return_read_until_char : Fun(s:string)(eof:bool)(#unique stdio:stdio_t).#unique read_until_char_t.
+
+% read until we reach character c, and then stop, reading also that occurrence of c iff eat_char is true.
+% We also stop if we reach the end of file.
+Define read_until_char : Fun(#unique stdio:stdio_t)(c:char)(u:{ (eqchar c Cc0) = ff })
+                            (eat_char:bool).#unique read_until_char_t :=
+  fun r(#unique stdio:stdio_t)(c:char)(u:{ (eqchar c Cc0) = ff})(eat_char:bool):#unique read_until_char_t.
+    let d = (cur_char stdio) in
+    match (eqchar d c) with
+      ff => match (eqchar d Cc0) with
+              ff => match (r (next_char stdio) c u eat_char) with
+                      return_read_until_char s eof stdio => (return_read_until_char (stringc d s) eof stdio)
+                    end
+            | tt => % end of file
+              (return_read_until_char (inc string stringn) tt stdio)
+            end
+    | tt => (return_read_until_char (inc string stringn) ff match eat_char with ff => stdio | tt => (next_char stdio) end)
+    end.

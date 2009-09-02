@@ -426,29 +426,23 @@ public class Context extends guru.FlagManager {
 	return new String(buf);
     }
 
-    protected String unique(String name) {
+    protected String unique(String name, boolean global) {
 	//	System.out.print(name+" uniquifies to ");
+	if (global)
+	    return name;
 	Integer I = (Integer)name_tbl.get(name);
-	if (I == null) {
-	    // haven't added this name before
-	    
-	    name_tbl.put(name,new Integer(1));
-	}
-	else {
-	    String suffix;
-	    int i = I.intValue();
-	    if (i == 0)
-		// this means we already made this unique
-		return name;
-	    do {
-		suffix = "_"+(new Integer(i++)).toString();
-	    }		
-	    while (name_tbl.containsKey(name+suffix));
-
-	    name_tbl.put(name,new Integer(i));
-	    name = name+suffix;
-	    name_tbl.put(name,new Integer(0));
-	}
+	if (I == null) 
+	    I = new Integer(1);
+	String suffix;
+	int i = I.intValue();
+	do {
+	    suffix = "_"+(new Integer(i++)).toString();
+	}		
+	while (name_tbl.containsKey(name+suffix));
+	
+	name_tbl.put(name,new Integer(i));
+	name = name+suffix;
+	name_tbl.put(name,new Integer(1)); // to mark the updated name as used
 	
 	//	System.out.println(name);
 
@@ -456,8 +450,8 @@ public class Context extends guru.FlagManager {
     }
 
     // for symbols from the input.
-    public Sym newSym(String n, Position p) {
-	String un = unique(name(n));
+    public Sym newSym(String n, Position p, boolean global) {
+	String un = unique(name(n),global);
 
 	if (getFlag("debug_symbols")) {
 	    w.println("Carraway context: creating symbol \""+n+"\", with output name \""+un+"\".");
@@ -469,8 +463,8 @@ public class Context extends guru.FlagManager {
 	return r;
     }	
 
-    public Sym newSym(String n) {
-	return newSym(n,null);
+    public Sym newSym(String n, boolean global) {
+	return newSym(n,null,global);
     }
 
     public Sym newInternal(String n) {
@@ -479,7 +473,7 @@ public class Context extends guru.FlagManager {
     }
 
     public Sym newVar(Position p) {
-	return newSym("carraway_tmp",p);
+	return newSym("carraway_tmp",p,false);
     }
 
 
@@ -634,7 +628,7 @@ public class Context extends guru.FlagManager {
     }
 
     protected Sym new_ref(Position p) {
-	return newSym("reference",p);
+	return newSym("reference",p,false);
     }
 
     /* create a new reference and add it to the refs data structure(s).

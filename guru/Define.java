@@ -215,7 +215,7 @@ public class Define extends Command {
 
 	guru.carraway.Context cctxt = ctxt.carraway_ctxt;
 
-	P.s = cctxt.newSym(c.name,c.pos);
+	P.s = cctxt.newSym(c.name,c.pos,true);
 	P.T = A.toCarrawayType(ctxt,false);
 	P.delim = delim;
 	P.code = code;

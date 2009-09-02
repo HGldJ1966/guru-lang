@@ -165,7 +165,7 @@ public class Let extends Expr{
 	guru.carraway.Let l = new guru.carraway.Let();
 	l.pos = pos;
 	guru.carraway.Context cctxt = ctxt.carraway_ctxt;
-	l.x = cctxt.newSym(x1.name,x1.pos);
+	l.x = cctxt.newSym(x1.name,x1.pos, false);
 	l.t1 = t1.toCarraway(ctxt);
 	cctxt.pushVar(l.x);
 	l.t2 = t2.toCarraway(ctxt);

@@ -55,7 +55,7 @@ public class FunTerm extends FunBase {
 
 	for (int i = 0; i < iend; i++) {
 	    F.types[i] = types[i].applySubst(ctxt);
-	    F.vars[i] = ctxt.newSym(vars[i].name);
+	    F.vars[i] = ctxt.newSym(vars[i].name,false);
 	    ctxt.setSubst(vars[i],F.vars[i]); 
 	}
 

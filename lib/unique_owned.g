@@ -18,8 +18,13 @@ Init ginit_unique_owned_unowned(#unique_owned x)(#unowned y).#<owned x> <<END
   #define ginit_unique_owned_unowned(A,x,y) y
 END.
 
-Define primitive inspect_unique : Fun(A:type)(!#unique a:A).#<unique_owned a> A :=
+Define primitive inspect_unique : Fun(spec A:type)(!#unique a:A).#<unique_owned a> A :=
+  fun(spec A:type)(a:A).a <<END
+#define ginspect_unique(a) a
+END.
+
+Define primitive clone_unique_owned : Fun(spec A:type)(!#unique_owned a:A).#<unique_owned a> A :=
   fun(A:type)(a:A).a <<END
-#define ginspect_unique(A,a) a
+#define gclone_unique_owned(a) a
 END.
 

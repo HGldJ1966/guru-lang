@@ -457,7 +457,7 @@ public class Case extends Expr{
 	int iend = x.length;
 	guru.carraway.Sym[] nvars = new guru.carraway.Sym[iend];
 	for (int i = 0; i < iend; i++) {
-	    nvars[i] = ctxt.carraway_ctxt.newSym(x[i].name,x[i].pos);
+	    nvars[i] = ctxt.carraway_ctxt.newSym(x[i].name,x[i].pos,false);
 	    ctxt.carraway_ctxt.pushVar(nvars[i]);
 	}
 	C.vars = nvars;

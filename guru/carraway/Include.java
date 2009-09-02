@@ -36,8 +36,26 @@ public class Include extends Command {
 	Collection dtps1 = ctxt.getDatatypes1();
 	Collection dtps2 = ctxt.getDatatypes2();
 
+	ctxt.cw.println("void **release_worklist = 0;");
+	ctxt.cw.println("");
 	ctxt.cw.println("void release(int tp, void *x) {");
-	ctxt.cw.println("if (x == 0) return;");
+	ctxt.cw.println("int worklist_initially_empty = (release_worklist == 0);\n"+
+			"void **node;\n"+
+			"if (x == 0) return;\n"+
+			"\n"+
+			"node = guru_malloc(2*sizeof(void *));\n"+
+			"node[0] = x;\n"+
+			"node[1] = release_worklist;\n"+
+			"\n"+
+			"if (!worklist_initially_empty)\n"+
+			"  // we are in a surrounding call\n"+
+			"  return;\n"+
+			"\n"+
+			"while (release_worklist) {\n"+
+			"  node = release_worklist;\n"+
+			"  release_worklist = node[1];\n"+
+			"  x = node[0];\n");
+
 	ctxt.cw.println("switch (tp) {");
 	Iterator it = dtps1.iterator();
 	while (it.hasNext()) {
@@ -50,6 +68,7 @@ public class Include extends Command {
 	    String tpstr = tp.toString(ctxt);
 	    ctxt.cw.println("  case "+tpstr+": delete_"+tpstr+"(x); break;");
 	}
+	ctxt.cw.println("}");
 	ctxt.cw.println("}");
 	ctxt.cw.println("}\n");
 

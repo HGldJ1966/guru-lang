@@ -225,7 +225,7 @@ public class CasesExpr extends Expr {
 	    if (iend > 0)
 		handleError(ctxt, "Could not compute the "
 			    +"return type for a match, since no cases\n"
-			    +"were checked.");
+			    +"were checked.  Check that the pattern's term constructors are from\nthe same type as the scrutinee.");
 	    handleError(ctxt, "No return type is stated for a match term,"
 			+ " but the match has no cases, so no return type\n"
 			+ "could be computed.\n");

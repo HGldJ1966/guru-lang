@@ -132,6 +132,49 @@ Define set_nth : Fun(A:type)(n:nat)(l:<list A>)(b:A).<list A> :=
       end
     end.
 
+Define set_nth_other : Forall(A:type)(l:<list A>)(n m:nat)(b:A)
+                             (u:{ n != m }).
+                        { (nth n (set_nth m l b)) = (nth n l) } :=
+  foralli(A:type).
+  induction(l:<list A>) 
+  return Forall(n m:nat)(b:A)
+               (u:{ n != m }).
+          { (nth n (set_nth m l b)) = (nth n l) } with
+    nil _ =>
+    foralli(n m:nat)(b:A)(u:{ n != m }).
+      hypjoin (nth n (set_nth m l b)) (nth n l) by l_eq end
+  | cons _ a l' =>
+    foralli(n m:nat)(b:A)(u:{ n != m }). 
+      case m with
+        Z =>     
+          case n with
+            Z => contra trans m_eq
+                              trans symm n_eq u
+                   { (nth n (set_nth m l b)) = (nth n l) }
+          | S n' => 
+              hypjoin (nth n (set_nth m l b)) (nth n l)
+                by l_eq m_eq n_eq end
+          end
+      | S m' => 
+          case n with
+            Z => hypjoin (nth n (set_nth m l b)) (nth n l)
+                   by l_eq m_eq n_eq end
+          | S n' => 
+            hypjoin (nth n (set_nth m l b)) (nth n l)
+              by l_eq m_eq n_eq 
+                 [l_IH l' n' m' b 
+                    diseqi foralli(u1:{n' = m'}).
+                           contra
+                             transs cong (S *) u1
+                                    symm m_eq
+                                    symm trans symm n_eq u 
+                             end
+                           False]
+              end
+          end
+      end
+  end.
+
 Define filter : Fun(A:type)(f:Fun(a:A).bool)(l1:<list A>) . <list A> :=
   fun filter (A:type)(f:Fun(a:A).bool)(l1:<list A>) : <list A> .
      match l1 with

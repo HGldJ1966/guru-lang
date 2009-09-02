@@ -56,7 +56,7 @@ public class Parser extends guru.ParserBase {
 
     protected ResourceType readResourceType() throws IOException {
 	ResourceType a = new ResourceType();
-	a.s = readIdentifier(true);
+	a.s = readIdentifier(true, true);
 	
 	ctxt.declareConst(a.s);
 
@@ -68,7 +68,7 @@ public class Parser extends guru.ParserBase {
 
     protected Primitive readPrimitive() throws IOException {
 	Primitive a = new Primitive();
-	a.s = readIdentifier(true);
+	a.s = readIdentifier(true, true);
 	eat(":","Primitive");
 	a.T = readType();
 	eat("<<","Primitive");
@@ -94,7 +94,7 @@ public class Parser extends guru.ParserBase {
 
     protected Global readGlobal() throws IOException {
 	Global a = new Global();
-	a.c = readIdentifier(true);
+	a.c = readIdentifier(true, true);
 	eat(":=", "Global");
 	a.t = readTerm();
 	eat(".","Global");
@@ -103,7 +103,7 @@ public class Parser extends guru.ParserBase {
 
     protected Datatype readDatatype() throws IOException {
 	Datatype c = new Datatype();
-	c.tp = readIdentifier(true);
+	c.tp = readIdentifier(true, true);
 	ctxt.declareConst(c.tp); // for benefit of run-time types
 	eat_ws();
 
@@ -123,7 +123,7 @@ public class Parser extends guru.ParserBase {
 		    first = false;
 		else
 		    eat("|","Datatype");
-		ctors.add(readIdentifier(true));
+		ctors.add(readIdentifier(true, true));
 		eat(":","Datatype");
 		
 		types.add(readCtorType());
@@ -204,7 +204,7 @@ public class Parser extends guru.ParserBase {
     }
     */
 
-    protected Sym readIdentifier (boolean binding_occurrence) 
+    protected Sym readIdentifier(boolean binding_occurrence, boolean global) 
 	throws IOException
     {
         Position pos = getPos();
@@ -221,20 +221,20 @@ public class Parser extends guru.ParserBase {
 	    handleError(pos, "Undeclared symbol \""+name+"\"");
 	}
 
-	v = ctxt.newSym(name,pos);
+	v = ctxt.newSym(name, pos, global);
 	return v;
     }
 
     protected Expr readPin() throws IOException 
     {
 	Pin p = new Pin();
-	p.s = readIdentifier(false);
+	p.s = readIdentifier(false,false);
 	ArrayList a = new ArrayList();
 	while(true) {
 	    eat_ws();
 	    if (tryToEat(">"))
 		break;
-	    a.add(readIdentifier(false));
+	    a.add(readIdentifier(false,false));
 	}
 	int iend = a.size();
 
@@ -261,7 +261,7 @@ public class Parser extends guru.ParserBase {
 	switch(construct)
             {
 	    case Expr.SYM: 
-		T = readIdentifier(false);
+		T = readIdentifier(false,false);
 		R = T;
 		break;
 	    case Expr.UNTRACKED: 
@@ -291,7 +291,7 @@ public class Parser extends guru.ParserBase {
 	switch(construct)
             {
 	    case Expr.SYM:
-		e = readIdentifier(false);
+		e = readIdentifier(false,false);
 		break;
 	    case Expr.PIN:
 		e = readPin();
@@ -323,7 +323,7 @@ public class Parser extends guru.ParserBase {
 	switch(construct)
             {
 	    case Expr.SYM:
-		e = readIdentifier(false);
+		e = readIdentifier(false,false);
 		break;
 	    case Expr.CAST:
 		e = readCast();
@@ -389,7 +389,7 @@ public class Parser extends guru.ParserBase {
 
     protected App readApp() throws IOException {
 	App a = new App();
-	a.head = readIdentifier(false);
+	a.head = readIdentifier(false,false);
 	ArrayList args = new ArrayList();
 
 	while(true) {
@@ -407,7 +407,7 @@ public class Parser extends guru.ParserBase {
 
     protected Let readLet() throws IOException {
 	Let c = new Let();
-	c.x = readIdentifier(true);
+	c.x = readIdentifier(true,false);
 	ctxt.pushVar(c.x);
 	eat("=","let-term");
 	c.t1 = readTerm();
@@ -439,7 +439,7 @@ public class Parser extends guru.ParserBase {
 		    consumps.add(new Integer(FunBase.CONSUMED_RET_OK));
 	    }   
 	    
-	    Sym s = readIdentifier(true);
+	    Sym s = readIdentifier(true,false);
 	    ctxt.pushVar(s);
 	    vars.add(s);
 	    
@@ -451,7 +451,7 @@ public class Parser extends guru.ParserBase {
 	    if (ctortype) {
 		if (T.need_datatype_for_ctor_arg_resource_type()) {
 		    eat("&",where);
-		    rttypes.add(readIdentifier(false));
+		    rttypes.add(readIdentifier(false,false));
 		}
 		else 
 		    rttypes.add(new Untracked());
@@ -500,7 +500,7 @@ public class Parser extends guru.ParserBase {
 
 	readInputs(vars,types,rttypes,consumps,"Fun-type",true);
 
-        e1.rettype = e2.rettype = readIdentifier(false);
+        e1.rettype = e2.rettype = readIdentifier(false,false);
 
 	int iend = vars.size();
 
@@ -525,7 +525,7 @@ public class Parser extends guru.ParserBase {
     {
 	Case e = new Case();
 	Position p = getPos();
-	e.c = readIdentifier(false);
+	e.c = readIdentifier(false,false);
 	if (!ctxt.isCtor(e.c))
 	    handleError("The head of a pattern in a match-case is not a constructor.\n\n"
 			+"1. the head: "+e.c.toString(ctxt));
@@ -534,7 +534,7 @@ public class Parser extends guru.ParserBase {
 	    eat_ws();
 	    if (tryToEat("=>"))
 		break;
-	    Sym v = readIdentifier(true);
+	    Sym v = readIdentifier(true,false);
 	    vars.add(v);
 	    ctxt.pushVar(v);
 	}
@@ -596,7 +596,7 @@ public class Parser extends guru.ParserBase {
 
 	e.t = new FunTerm();
 	e.t.pos = getPos();
-	e.t.f = readIdentifier(true);
+	e.t.f = readIdentifier(true,true);
 	ctxt.declareFunction(e.t.f);
 	readInputs(vars,types,null,consumps,"Function",false);
 
