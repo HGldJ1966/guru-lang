@@ -135,7 +135,7 @@ public class FunType extends FunAbstraction {
 	for (int i = 0; i < iend; i++) {
 	    if (owned[i].status == Ownership.SPEC)
 		continue;
-	    guru.carraway.Sym v = cctxt.newSym(vars[i].name,vars[i].pos);
+	    guru.carraway.Sym v = cctxt.newSym(vars[i].name,vars[i].pos, false);
 	    vl.add(v);
 	    cctxt.pushVar(v);
 	    Expr tp = types[i].defExpandTop(ctxt,false,false);

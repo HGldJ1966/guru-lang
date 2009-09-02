@@ -18,7 +18,7 @@ public class Datatype extends Command {
 	F.types = new Expr[1];
 	F.consumps = new int[1];
 	
-	F.vars[0] = ctxt.newSym("r");
+	F.vars[0] = ctxt.newSym("r",false);
 	
 	F.types[0] = tp;
 	

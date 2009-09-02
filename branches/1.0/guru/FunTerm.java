@@ -296,7 +296,7 @@ public class FunTerm extends FunAbstraction {
 	F.pos = pos;
 
 	guru.carraway.Context cctxt = ctxt.carraway_ctxt;
-	F.f = cctxt.newSym(r.name,r.pos);
+	F.f = cctxt.newSym(r.name,r.pos, true);
 	cctxt.declareFunction(F.f);
 
 	int iend = vars.length;
@@ -310,7 +310,7 @@ public class FunTerm extends FunAbstraction {
 		ntypes[i] = new guru.carraway.Untracked();
 	    else
 		ntypes[i] = owned[i].toCarrawayType(ctxt,vars[i].pos);
-	    nvars[i] = cctxt.newSym(vars[i].name,vars[i].pos);
+	    nvars[i] = cctxt.newSym(vars[i].name,vars[i].pos,false);
 	    cctxt.pushVar(nvars[i]);
 	    nconsumps[i] = consumps[i];
 	}

@@ -97,21 +97,40 @@ END.
 % to create a new alias, use inc (unowned.g)
 % to drop an alias, use dec (unowned.g)
 
-Define primitive rheaplet_get : Fun(spec A:type)(spec I:rheaplet_id)
-                                   (!#unique_owned h:<rheaplet A I>)(^#owned p:<alias I>).
+Define primitive rheaplet_get : Fun(spec A:type)(spec I:rheaplet_id)(^#owned p:<alias I>)
+                                   (!#unique_owned h:<rheaplet A I>).
                                #<owned h> A :=
-  fun (A:type)(spec I:rheaplet_id)(h:<rheaplet A I>)(p:<alias I>). (nth A p h) <<END
-#define grheaplet_get(h, p) select_holder_mk_holder_a(p)
+  fun (A:type)(spec I:rheaplet_id)(p:<alias I>)(h:<rheaplet A I>). (nth A p h) <<END
+#define grheaplet_get(p, h) select_holder_mk_holder_a(p)
 END.
 
-Define primitive rheaplet_set : Fun(A:type)(spec I:rheaplet_id)
-                                   (#unique h:<rheaplet A I>)(^#owned p:<alias I>)(a:A).
+Define primitive rheaplet_set : Fun(A:type)(spec I:rheaplet_id)(^#owned p:<alias I>)
+                                   (#unique h:<rheaplet A I>)(a:A).
                                #unique <rheaplet A I> :=
-  fun (A:type)(spec I:rheaplet_id)(h:<rheaplet A I>)(p:<alias I>)(a:A). (set_nth A p h a) <<END
-int grheaplet_get(int A, int h, void *p, void *a) {
+  fun (A:type)(spec I:rheaplet_id)(p:<alias I>)(h:<rheaplet A I>)(a:A). (set_nth A p h a) <<END
+int grheaplet_set(int A, void *p, int h, void *a) {
     gdec(A,select_holder_mk_holder_a(p));
     select_holder_mk_holder_a(p) = a;
     return 1;
 }
 END.
 
+Define rheaplet_get_set : Forall(A:type)(I:rheaplet_id)(h:<rheaplet A I>)
+                                (p1 p2:<alias I>)(a:A)(u:{ p1 != p2 }).
+                            { (rheaplet_get p1 (rheaplet_set p2 h a)) = (rheaplet_get p1 h) } :=
+  foralli(A:type)(I:rheaplet_id)(h:<rheaplet A I>)
+         (p1 p2:<alias I>)(a:A)(u:{ p1 != p2 }).
+    transs join (rheaplet_get p1 (rheaplet_set p2 h a)) (nth p1 (set_nth p2 h a)) 
+           [set_nth_other A h p1 p2 a u]
+           join (nth p1 h) (rheaplet_get p1 h)
+    end.
+
+% copy value stored at p1 to p2.
+Define rheaplet_cp : Fun(A:type)(spec I:rheaplet_id)(^#owned p1 p2:<alias I>)
+                        (#unique h:<rheaplet A I>)(a:A).
+                     #unique <rheaplet A I> :=
+  fun(A:type)(spec I:rheaplet_id)(^#owned p1 p2:<alias I>)
+     (#unique h:<rheaplet A I>)(a:A).
+    let val = (rheaplet_get A I p1 (inspect <rheaplet A I> h)) in
+      (rheaplet_set A I p2 h (owned_to_unowned A val)).
+      

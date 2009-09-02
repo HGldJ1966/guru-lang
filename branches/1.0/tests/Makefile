@@ -1,12 +1,12 @@
+test-queue:	test-queue.g ../lib/queue.g Makefile
+	../bin/guru test-queue.g
+	gcc -O0 -ggdb -w -o test-queue test-queue.c
+	time cat war-and-peace.txt | ./test-queue || echo "problem"
+
 test-warray:	test-warray.g Makefile
 	../bin/guru test-warray.g
 	gcc -O2 -w -o test-warray test-warray.c
 	valgrind ./test-warray
-
-test-queue:	test-queue.g Makefile
-	../bin/guru test-queue.g
-	gcc -O0 -ggdb -w -o test-queue test-queue.c
-	valgrind ./test-queue
 
 test-uwarray:	test-uwarray.g Makefile
 	../bin/guru test-uwarray.g

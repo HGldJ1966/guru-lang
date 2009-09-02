@@ -48,7 +48,7 @@ public class Compile extends Command {
 
 	    guru.carraway.ResourceType R = new guru.carraway.ResourceType();
 	    R.pos = c.pos;
-	    R.s = cctxt.newSym(c.name,c.pos);
+	    R.s = cctxt.newSym(c.name,c.pos,true);
 	    cctxt.declareConst(R.s);
 	
 	    Define drop = ctxt.getDropFuncDef(ctxt.getDropFunc(c));
@@ -95,7 +95,7 @@ public class Compile extends Command {
 
 		guru.carraway.Datatype dc = new guru.carraway.Datatype();
 		dc.pos = d.pos;
-		dc.tp = cctxt.newSym(d.name, d.pos);
+		dc.tp = cctxt.newSym(d.name, d.pos, true);
 		cctxt.declareConst(dc.tp); // for benefit of translation of ctors' types
 		int num_ctors = ctors.size();
 		dc.ctors = new guru.carraway.Sym[num_ctors];
@@ -106,7 +106,7 @@ public class Compile extends Command {
 		while (it2.hasNext()) {
 		    Const c = (Const)it2.next();
 		    Expr D = ctxt.getClassifier(c);
-		    dc.ctors[j] = cctxt.newSym(c.name,c.pos);
+		    dc.ctors[j] = cctxt.newSym(c.name,c.pos,true);
 		    cctxt.declareConst(dc.ctors[j]);
 		    if (ctxt.getFlag("debug_to_carraway")) {
 			ctxt.w.println("Translating term constructor \""+c.toString(ctxt)+"\"(");
@@ -162,7 +162,7 @@ public class Compile extends Command {
 
 		    guru.carraway.Primitive p = new guru.carraway.Primitive();
 		    p.pos = c.pos;
-		    guru.carraway.Sym cc = cctxt.newSym(c.name,c.pos);
+		    guru.carraway.Sym cc = cctxt.newSym(c.name,c.pos,true);
 
 		    if (c.isTypeOrKind(ctxt)) {
 			// primitive types are translated as Datatype commands
@@ -177,7 +177,7 @@ public class Compile extends Command {
 			cctxt.declareConst(cc);
 
 			// build the delete primitive
-			p.s = cctxt.newSym("delete_"+cc.name, c.pos);
+			p.s = cctxt.newSym("delete_"+cc.name, c.pos,true);
 			p.T = dc.buildDeleteType(cctxt);
 			p.delim = ctxt.getDefDelim(c);
 			p.code = ctxt.getDefCode(c);
@@ -232,7 +232,7 @@ public class Compile extends Command {
 		    if (c.isTypeOrKind(ctxt)) {
 			guru.carraway.TypeDef td = new guru.carraway.TypeDef();
 			td.pos = c.pos;
-			td.c = cctxt.newSym(c.name,c.pos);
+			td.c = cctxt.newSym(c.name,c.pos,true);
 			cctxt.declareConst(td.c);
 			td.T = body.toCarrawayType(ctxt,true);
 			cmds.add(td);
@@ -258,7 +258,7 @@ public class Compile extends Command {
 
 		    guru.carraway.Global g = new guru.carraway.Global();
 		    g.pos = c.pos;
-		    g.c = cctxt.newSym(c.name,c.pos);
+		    g.c = cctxt.newSym(c.name,c.pos,true);
 		    cctxt.declareConst(g.c);
 		    g.t = body.toCarraway(ctxt);
 		    cmds.add(g);
@@ -339,7 +339,7 @@ public class Compile extends Command {
 	    C.pos = I.pos;
 	    C.init = new guru.carraway.Primitive();
 	    C.init.pos = I.pos;
-	    C.init.s = cctxt.newSym(I.s.name, I.s.pos);
+	    C.init.s = cctxt.newSym(I.s.name, I.s.pos,true);
 	    cctxt.declareConst(C.init.s);
 	    C.init.T = new guru.carraway.FunType();
 	    guru.carraway.FunType F = new guru.carraway.FunType();
@@ -352,8 +352,8 @@ public class Compile extends Command {
 	    F.consumps = new int[3];
 
 	    F.vars[0] = cctxt.newVar(I.v1.pos);
-	    F.vars[1] = cctxt.newSym(I.v1.name, I.v1.pos);
-	    F.vars[2] = cctxt.newSym(I.v2.name, I.v2.pos);
+	    F.vars[1] = cctxt.newSym(I.v1.name, I.v1.pos, false);
+	    F.vars[2] = cctxt.newSym(I.v2.name, I.v2.pos, false);
 
 	    cctxt.pushVar(F.vars[1]);
 	    cctxt.pushVar(F.vars[2]);

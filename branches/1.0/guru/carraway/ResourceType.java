@@ -17,8 +17,8 @@ public class ResourceType extends Command {
 	F.types = new Expr[2];
 	F.consumps = new int[2];
 	
-	F.vars[0] = ctxt.newSym("A");
-	F.vars[1] = ctxt.newSym("r");
+	F.vars[0] = ctxt.newSym("A",false);
+	F.vars[1] = ctxt.newSym("r",false);
 	
 	F.types[0] = new Type();
 	F.types[1] = s;
