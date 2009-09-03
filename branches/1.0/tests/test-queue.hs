@@ -1,20 +1,29 @@
 module Main where
+import Control.Concurrent
 import Data.Queue
+
 
 get_words = do
               s <- getContents
               return (words s)
 
-enqueue_all [] q = q
-enqueue_all (w:l) q = enqueue_all l (enqueue q w)
+
+enqueue_all (w:[]) q = enqueue q w
+enqueue_all (w:l) q = do
+  enqueue q w
+  enqueue_all l q
+
 
 main :: IO ()
 main = do 
           w <- get_words
-          q <- enqueue_all w newFifo
+          q <- (newFifo::IO (MVar String))
+          enqueue q (head w)
+          --enqueue q (head (tail w))
           r <- (dequeue q) 
-          x <- (case r of
-                  Just(s) -> s)
-          (putStrLn x)
+          myPrint r
+    where 
+      myPrint (Just x) = putStrLn x
+      myPrint Nothing = putStrLn "oops"
 
 
