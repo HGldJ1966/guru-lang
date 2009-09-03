@@ -19,6 +19,19 @@ Define enqueue_all : Fun(#unique stdio:stdio_t)(#unique q:<queue string>).#uniqu
          end
      end.
 
+% this dequeues everything and prints the last entry (or prev if none)
+Define dequeue_all : Fun(#unique q:<queue string>)(prev:string)(#unique stdio:stdio_t).#unique stdio_t :=
+  fun r(#unique q:<queue string>)(prev:string)(#unique stdio:stdio_t) : #unique stdio_t.
+    match (queue_is_empty string (inspect_unique <queue string> q)) by u ign with
+      ff => do (dec string prev)
+               let prev = (queue_front string (inspect_unique <queue string> q) u) in
+                 (r (dequeue string q hypjoin (queue_is_empty string q) ff by u end) prev stdio)
+            end
+    | tt => do (consume_unique <queue string> q)
+               (print_string stdio prev) 
+            end
+    end.
+
 Define test := 
   let ign = (init_rheaplets unit) in
   match (queue_new string rheaplet_id0) with
@@ -26,12 +39,7 @@ Define test :=
     match (enqueue_all stdio q) with
     return_enqueue_all stdio q =>
       do (consume_unique rheaplet_id nextI)
-         (consume_unique stdio_t 
-            match (queue_is_empty string (inspect_unique <queue string> q)) by u ign with
-              ff => (print_string stdio (queue_front string (inspect_unique <queue string> q) u)) 
-            | tt => (print_string stdio "empty")
-            end)
-         (consume_unique <queue string> q)
+         (consume_unique stdio_t (dequeue_all q "<empty>" stdio))
       end
     end
   end.
