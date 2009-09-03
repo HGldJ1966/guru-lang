@@ -3,6 +3,9 @@ test-queue:	test-queue.g ../lib/queue.g Makefile
 	gcc -O0 -ggdb -w -o test-queue test-queue.c
 	time cat war-and-peace.txt | ./test-queue || echo "problem"
 
+test-queue2:	test-queue.hs Makefile
+	ghc -O2 -o test-queue2 --make test-queue.hs
+
 test-warray:	test-warray.g Makefile
 	../bin/guru test-warray.g
 	gcc -O2 -w -o test-warray test-warray.c
