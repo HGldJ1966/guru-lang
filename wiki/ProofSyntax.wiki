@@ -1,0 +1,29 @@
+#summary a list of proof rules and their usage
+
+= Summary of Proof Syntax =
+
+|| *join* _term_ _term_ ||
+|| *clash* _term_ _term_ ||
+
+|| *foralli* { _param_ }+ *.* _proof_ ||
+|| *`[`* _name-of-lemma_ { _argument_ }`*` *`]`* ||
+
+|| *contra* _proof_ _formula_ || the _proof_ should prove a contradiction ||
+
+|| *case* _term_ *with* _pattern_ *=>* _proof_ { | _pattern_ *=>* _proof_ }`*` *end* ||
+|| *induction* { _param_ }+ *return* _formula_ *with* _pattern_ *=>* _proof_ { | _pattern_ *=>* _proof_ }`*` *end* ||
+
+|| *existsi* _value_ _formula`*`_ _proof_ || the _proof_ should prove _formula`*`_`[`_value_`]` ||
+|| *existse* _proof1_ _proof2_ || _proof1_ should prove a formula like `Exists(x:nat).F`, and _proof2_ should prove a formula like `Forall(x:nat)(u:F).F2`. ||
+
+|| *hypjoin* _term_ _term_ *by* { _proof_ }`*` *end* ||
+
+
+
+= More Information about the Rules =
+
+== contra ==
+
+|| *contra* _proof_ _formula_ || the _proof_ should prove a contradiction ||
+
+A contradiction here is an equality of the two different value, which cannot be proved to be equal. For example, `tt = ff`, `(S Z) = (S (S Z))`. *contra* rules is usually used in *case* proofs.
