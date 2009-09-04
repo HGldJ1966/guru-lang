@@ -8,6 +8,8 @@ public class Datatype extends Command {
 
     public Primitive del;
 
+    public int FREE_LIST_MAX = 10;
+
     public Datatype() {
 	super(DATATYPE);
     }
@@ -156,46 +158,39 @@ public class Datatype extends Command {
 
 		    String fl = "free_"+ctor_tp;
 		
-		    if (!ctxt.alloc_committed) {
-			ctxt.alloc_committed = true;
-			if (!ctxt.getFlag("use_malloc")) {
-			    ctxt.cw.println("char *carraway_mem_start = 0;\n"+
-					    "char *carraway_mem_end = 0;\n"+
-					    "inline char *carraway_alloc(int numchars) {\n"+
-					    "  char *ret;\n"+
-					    "  if (carraway_mem_end - carraway_mem_start < numchars)  \n"+
-					    "    brk((carraway_mem_end = carraway_mem_end + 16384)); \n"+
-					    "  ret = carraway_mem_start; \n"+
-					    "  carraway_mem_start += numchars; \n"+
-					    "  return ret; \n"+
-					    "}");
-			}
-			else {
-			    ctxt.cw.println("#define carraway_malloc(x) malloc(x)");
-			    ctxt.cw.println("#define carraway_free(x) free(x)");
-			}
-			ctxt.cw.println("#define guru_malloc(x) carraway_malloc(x)");
-			ctxt.cw.println("#define guru_free(x) carraway_free(x)");
-		    }
+		    ctxt.cw.println("#define carraway_malloc(x) malloc(x)");
+		    ctxt.cw.println("#define carraway_free(x) free(x)");
+		    ctxt.cw.println("#define guru_malloc(x) carraway_malloc(x)");
+		    ctxt.cw.println("#define guru_free(x) carraway_free(x)");
 		    
-		    if (!ctxt.getFlag("use_malloc")) {
-			
-			// emit the free list and delete function
-
-			ctxt.cw.println("void *"+fl+" = (void *)0;\n");
-			ctxt.cw.println("void delete_"+ctor_tp+"(void *_x) {");
-			ctxt.cw.println("  void **x = (void **)_x;");
-			ctxt.cw.println("  x[0] = "+fl+";");
-			ctxt.cw.println("  "+fl+" = x;");
-			ctxt.cw.println("}\n");
-		    }
-
-		    // emit the clear() function
+		    // emit prototype for the clear() function
 		    
-		    if (R == null) 
+		    if (R == null)
 			// nothing to clear for 0-ary ctor
 			ctxt.cw.println("#define clear_"+ctor_tp+"(x) \n");
-		    else {
+		    else 
+			ctxt.cw.println("void clear_"+ctor_tp+"(void *_x);");
+			
+		    // emit the free list and delete function
+
+		    ctxt.cw.println("int "+fl+"_len = 0;");
+		    ctxt.cw.println("void *"+fl+" = (void *)0;\n");
+		    ctxt.cw.println("void delete_"+ctor_tp+"(void *_x) {");
+		    ctxt.cw.println("  if ("+fl+"_len > "+FREE_LIST_MAX+") {");
+		    ctxt.cw.println("    clear_"+ctor_tp+"(_x);");
+		    ctxt.cw.println("    carraway_free(_x);");
+		    ctxt.cw.println("  }");
+		    ctxt.cw.println("  else {");
+		    ctxt.cw.println("    void **x = (void **)_x;");
+		    ctxt.cw.println("    x[0] = "+fl+";");
+		    ctxt.cw.println("    "+fl+" = x;");
+		    ctxt.cw.println("    "+fl+"_len++;");
+		    ctxt.cw.println("  }");
+		    ctxt.cw.println("}\n");
+		    
+		    // emit the clear function
+
+		    if (R != null)  {
 			ctxt.cw.println("void clear_"+ctor_tp+"(void *_x) {");
 			ctxt.cw.println("  "+ctor_tp+" *x = ("+ctor_tp+" *)_x;");
 			for (int j = 0; j < jend; j++) {
@@ -230,17 +225,14 @@ public class Datatype extends Command {
 		    ctxt.cw.println(") {");
 		    ctxt.cw.println("  "+ctor_tp+" *x;");
 		    String bstr = "sizeof(void *)*"+(new Integer(jend+1)).toString();
-		    if (ctxt.getFlag("use_malloc")) 
-			ctxt.cw.println("  x = ("+ctor_tp+" *)malloc("+bstr+");");
-		    else {
-			ctxt.cw.println("  if ("+fl+") {");
-			ctxt.cw.println("    x = ("+ctor_tp+" *)"+fl+";");
-			ctxt.cw.println("    "+fl+" = ((void **)x)[0];");
-			ctxt.cw.println("    clear_"+ctor_tp+"(x);");
-			ctxt.cw.println("  }");
-			ctxt.cw.println("  else");
-			ctxt.cw.println("    x = ("+ctor_tp+" *)carraway_alloc("+bstr+");");
-		    }
+		    ctxt.cw.println("  if ("+fl+") {");
+		    ctxt.cw.println("    x = ("+ctor_tp+" *)"+fl+";");
+		    ctxt.cw.println("    "+fl+" = ((void **)x)[0];");
+		    ctxt.cw.println("    "+fl+"_len--;");
+		    ctxt.cw.println("    clear_"+ctor_tp+"(x);");
+		    ctxt.cw.println("  }");
+		    ctxt.cw.println("  else");
+		    ctxt.cw.println("    x = ("+ctor_tp+" *)carraway_malloc("+bstr+");");
 
 		    ctxt.cw.println("  x->opval = 256 + op_"+ctors[i].toString(ctxt)+";");
 		    if (R != null) 
@@ -260,12 +252,7 @@ public class Datatype extends Command {
 		for (int i = 0; i < num_ctors; i++) {
 		    String ctr = ctors[i].toString(ctxt);
 		    ctxt.cw.println("  case op_"+ctr+": ");
-		    if (ctxt.getFlag("use_malloc")) {
-			ctxt.cw.println("    clear_"+tpstr+"_"+ctr+"(x);");
-			ctxt.cw.println("    free(x);");
-		    }
-		    else
-			ctxt.cw.println("    delete_"+tpstr+"_"+ctr+"(x);");
+		    ctxt.cw.println("    delete_"+tpstr+"_"+ctr+"(x);");
 		    ctxt.cw.println("    break;\n");
 		}
 		ctxt.cw.println("}");
