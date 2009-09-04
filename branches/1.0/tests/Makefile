@@ -6,10 +6,21 @@ test-queue:	test-queue.g ../lib/queue.g Makefile
 test-queue2:	test-queue.hs Makefile
 	ghc -O2 -o test-queue2 --make test-queue.hs
 
-test-warray:	test-warray.g Makefile
+test-warray1a:	test-warray.g Makefile
 	../bin/guru test-warray.g
-	gcc -O2 -w -o test-warray test-warray.c
-	valgrind ./test-warray
+	gcc -O2 -w -o test-warray1a test-warray.c
+	valgrind ./test-warray1a
+
+test-warray2a:	test-warray2.g Makefile
+	../bin/guru test-warray2.g
+	gcc -O2 -w -o test-warray2a test-warray2.c
+	valgrind ./test-warray2a
+
+test-warray1b:   test-warray.hs Makefile
+	ghc -O2 -o test-warray1b --make test-warray.hs
+
+test-warray2b:	test-warray2.hs Makefile
+	ghc -O2 -o test-warray2b --make test-warray2.hs
 
 test-uwarray:	test-uwarray.g Makefile
 	../bin/guru test-uwarray.g
@@ -28,9 +39,6 @@ test-qcharray:	test-qcharray.g Makefile
 test-charray-C:
 	gcc -O0 -ggdb -w -o test-charray test-charray.c
 	valgrind ./test-charray
-
-test-warray2:	test-warray.hs Makefile
-	ghc -O2 -o test-warray2 --make test-warray.hs
 
 test-unique-owned:	test-unique-owned.g Makefile
 	../bin/guru test-unique-owned.g

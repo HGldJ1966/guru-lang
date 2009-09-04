@@ -25,23 +25,22 @@ Define fill_array: Fun(spec n:word)(#unique l:<warray boxedWord n>)(i:word)
   | tt => l
   end.
 
-Define search : Fun(!#unique l:<warray boxedWord mysize>)(i:word)(b:bool). bool
-  := fun search(!#unique l:<warray boxedWord mysize>)(i:word)(b:bool) : bool.
-  let ret = (warray_binary_search boxedWord mysize (inspect_unique <warray boxedWord mysize> l) word0 (word_minus mysize word1) (boxWord i)
-              boxedWord_comp join (lt (to_nat word0) (to_nat mysize)) tt
-    		   	          [word_minus_shrink mysize]
-			          join (le (to_nat word0) (to_nat (word_minus mysize word1))) tt) in
-  match (eqword i word0) with
-    ff => (search l (word_minus i word1) (and ret b))
-  | tt => (and ret b)
-  end.
+
+Define word19 := (word_plus word8 (word_plus word8 (word_plus word1 word2))).
 
 Define test :=
   let a = (mk_uholder word word0) in
   let arr = (warray_new boxedWord mysize (inspect boxedWord a)) in
   let arr' = (fill_array mysize arr (word_minus mysize word1)
                  [word_minus_shrink mysize]) in
-  let ret = (search arr' mysize tt) in
+  let val = (boxWord word19) in
+  let ret = (warray_binary_search boxedWord mysize 
+             (inspect_unique <warray boxedWord mysize> arr') 
+             word0 (word_minus mysize word1) val
+             boxedWord_comp
+             join (lt (to_nat word0) (to_nat mysize)) tt
+             [word_minus_shrink mysize]
+             join (le (to_nat word0) (to_nat (word_minus mysize word1))) tt) in
   do
     (dec boxedWord a)
     (warray_free boxedWord mysize arr')
@@ -53,4 +52,4 @@ Define test :=
     end
   end.
 
-Compile test to "test-warray.c".
+Compile test to "test-warray2.c".
