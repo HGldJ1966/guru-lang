@@ -13,8 +13,25 @@ Qd:	test-queue.c
 	gcc -O0 -ggdb -w -o test-queue-debug test-queue.c
 	time cat war-and-peace.txt | ./test-queue-debug || echo "problem"
 
+test-queue1:	test-queue1.c
+	gcc -O2 -w -o test-queue1 test-queue1.c
+	time cat war-and-peace.txt | ./test-queue1 || echo "problem"
+
+test-queue1.c:	test-queue1.g Makefile
+	../bin/guru test-queue1.g
+
+Q1p:	test-queue1.c
+	gcc -O0 -ggdb -p -w -o test-queue1-gprof test-queue1.c
+	time cat war-and-peace.txt | ./test-queue1-gprof || echo "problem"
+
+Q1d:	test-queue1.c
+	gcc -O0 -ggdb -w -o test-queue1-debug test-queue1.c
+
 test-queuec:	test-queuec.ml Makefile
 	ocamlopt test-queuec.ml -o test-queuec
+
+test-queuec1:	test-queuec1.ml Makefile
+	ocamlopt test-queuec1.ml -o test-queuec1
 
 test-queue2:	test-queue2.hs Makefile
 	ghc -O2 -o test-queue2 --make test-queue2.hs
@@ -34,6 +51,9 @@ test-warray1b:   test-warray.hs Makefile
 
 test-warray2b:	test-warray2.hs Makefile
 	ghc -O2 -o test-warray2b --make test-warray2.hs
+
+cinv_example: cinv_example.g
+	../bin/guru cinv_example.g
 
 test-uwarray:	test-uwarray.g Makefile
 	../bin/guru test-uwarray.g

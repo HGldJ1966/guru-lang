@@ -20,7 +20,7 @@ Total inspect inspect_tot.
 
 Define primitive inc_owned : Fun(spec A:type)(!#owned y:A).#unowned A
   := fun(A:type)(y:A).y <<END
-  void *ginc_owned(void *y) {
+  inline void *ginc_owned(void *y) {
     inc(y);
     return y;
   }
@@ -34,7 +34,7 @@ Total inc_owned inc_owned_tot.
 
 Define primitive owned_to_unowned : Fun(spec A:type)(^#owned y:A).#unowned A
   := fun(A:type)(y:A).y <<END
-  void *gowned_to_unowned(void *y) {
+  inline void *gowned_to_unowned(void *y) {
     inc(y);
     return y;
   }

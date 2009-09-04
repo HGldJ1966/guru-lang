@@ -2,7 +2,7 @@ ResourceType unowned with
   Define primitive consume_unowned : Fun(A:type)(^ #unowned r:A).void 
   := fun(A:type)(r:A).voidi <<END
 
-  void *ginc(void *y) {
+  inline void *ginc(void *y) {
     inc(y);
     // fprintf(stdout,"ginc(%x) = %d\n", y, op(y) >> 8);
     return y;
@@ -10,7 +10,8 @@ ResourceType unowned with
 
   #define gdec(A,y) gconsume_unowned(A,y)
 
-  void gconsume_unowned(int A, void *r) {
+  inline void gconsume_unowned(int A, void *r) {
+    if (r == 0) return;
     dec(r);
     // fprintf(stdout,"gdec(%x) = %d\n", r, op(r) >> 8);
     if (op(r) < 256)
@@ -19,7 +20,7 @@ ResourceType unowned with
 END.
 
 Init ginit_unowned_unowned(#unowned x)(#unowned y).#unowned <<END
-  void *ginit_unowned_unowned(int A,void *x,void *y) {
+  inline void *ginit_unowned_unowned(int A,void *x,void *y) {
     ginc(y);
     return y;
   }

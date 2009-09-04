@@ -3,10 +3,10 @@ Include "../lib/stdio.g".
 Include "../lib/string.g".
 
 Inductive enqueue_all_t : type :=
-  return_enqueue_all : Fun(#unique stdio:stdio_t)(#unique q:<queue string>).#unique enqueue_all_t.
+  return_enqueue_all : Fun(#unique_point stdio:stdio_t)(#unique q:<queue string>).#unique enqueue_all_t.
 
-Define enqueue_all : Fun(#unique stdio:stdio_t)(#unique q:<queue string>).#unique enqueue_all_t :=
-  fun enqueue_all(#unique stdio:stdio_t)(#unique q:<queue string>):#unique enqueue_all_t.
+Define enqueue_all : Fun(#unique_point stdio:stdio_t)(#unique q:<queue string>).#unique enqueue_all_t :=
+  fun enqueue_all(#unique_point stdio:stdio_t)(#unique q:<queue string>):#unique enqueue_all_t.
      match (read_until_char stdio Csp join (eqchar Csp Cc0) ff tt %- eat the newline -%) with
        return_read_until_char s eof stdio =>
        let q = match (inc string s) with
@@ -20,8 +20,8 @@ Define enqueue_all : Fun(#unique stdio:stdio_t)(#unique q:<queue string>).#uniqu
      end.
 
 % this dequeues everything and prints the last entry (or prev if none)
-Define dequeue_all : Fun(#unique q:<queue string>)(prev:string)(#unique stdio:stdio_t).#unique stdio_t :=
-  fun r(#unique q:<queue string>)(prev:string)(#unique stdio:stdio_t) : #unique stdio_t.
+Define dequeue_all : Fun(#unique q:<queue string>)(prev:string)(#unique_point stdio:stdio_t).#unique_point stdio_t :=
+  fun r(#unique q:<queue string>)(prev:string)(#unique_point stdio:stdio_t) : #unique_point stdio_t.
     match (queue_is_empty string (inspect_unique <queue string> q)) by u ign with
       ff => do (dec string prev)
                let prev = (queue_front string (inspect_unique <queue string> q) u) in
@@ -39,7 +39,7 @@ Define test :=
     match (enqueue_all stdio q) with
     return_enqueue_all stdio q =>
       do (consume_unique rheaplet_id nextI)
-         (consume_unique stdio_t (dequeue_all q "<empty>" stdio))
+         (consume_unique_point stdio_t (dequeue_all q "<empty>" stdio))
       end
     end
   end.
