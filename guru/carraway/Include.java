@@ -39,10 +39,11 @@ public class Include extends Command {
 	ctxt.cw.println("void **release_worklist = 0;");
 	ctxt.cw.println("");
 	ctxt.cw.println("void release(int tp, void *x) {");
-	ctxt.cw.println("int worklist_initially_empty = (release_worklist == 0);\n"+
+	ctxt.cw.println("int worklist_initially_empty;\n"+
 			"void **node;\n"+
 			"if (x == 0) return;\n"+
 			"\n"+
+			"worklist_initially_empty = (release_worklist == 0);\n"+
 			"node = guru_malloc(2*sizeof(void *));\n"+
 			"node[0] = x;\n"+
 			"node[1] = release_worklist;\n"+

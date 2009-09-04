@@ -3,7 +3,7 @@ Include "unique.g".
 ResourceType unique_owned with
   Define primitive consume_unique_owned : Fun(A:type)(^#unique_owned x:A).void
   := fun(A:type)(x:A).voidi <<END
-#define gconsume_unique_owned(A,x) 
+inline void gconsume_unique_owned(int A, int x) { }
 END.
 
 Init ginit_unique_owned_unique(#unique_owned x)(#unique y).#<unique_owned x> <<END
