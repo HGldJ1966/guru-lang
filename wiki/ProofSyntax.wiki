@@ -22,8 +22,14 @@
 
 = More Information about the Rules =
 
+== clash ==
+
+|| *clash* _term_ _term_ ||
+
+*clash* proves the disequality of two different values of the same type, which cannot be proved to be equal. For example, `tt != ff`, `(S Z) != (S (S Z))`. With inductive data types, you cannot construct the same value in multiple ways.
+
 == contra ==
 
 || *contra* _proof_ _formula_ || the _proof_ should prove a contradiction ||
 
-A contradiction here is an equality of the two different value, which cannot be proved to be equal. For example, `tt = ff`, `(S Z) = (S (S Z))`. *contra* rules is usually used in *case* proofs.
+A contradiction here is an disequality of the same term. *contra* rules is usually used in *case* proofs. A proof of disequality often involves a *clash* proof.
