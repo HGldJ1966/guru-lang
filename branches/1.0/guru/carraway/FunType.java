@@ -61,7 +61,7 @@ public class FunType extends FunBase {
     }
 
     public Expr flattenType(Context ctxt) {
-	Sym n = ctxt.newSym("funtp",pos,true);
+	Sym n = ctxt.newSym("funtp",pos,false);
 	ctxt.declareConst(n);
 
 	// build flattened FunType F

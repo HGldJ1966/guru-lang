@@ -51,7 +51,6 @@ public class Context extends guru.FlagManager {
     protected Vector global_inits;
     public int stage;
     public int type_num;
-    public boolean alloc_committed;
 
     protected Vector new_typedefs;
 
@@ -95,8 +94,6 @@ public class Context extends guru.FlagManager {
 
 	stage = 0;
 	type_num = 1; // we assume elsewhere that this is 1
-
-	alloc_committed = false;
 
 	new_typedefs = new Vector();
     }

@@ -1,15 +1,28 @@
-test-queue:	test-queue.g ../lib/queue.g Makefile
-	../bin/guru test-queue.g
-	gcc -O0 -ggdb -w -o test-queue test-queue.c
+test-queue:	test-queue.c
+	gcc -O2 -w -o test-queue test-queue.c
 	time cat war-and-peace.txt | ./test-queue || echo "problem"
 
-test-queue2:	test-queue.hs Makefile
-	ghc -O2 -o test-queue2 --make test-queue.hs
+test-queue.c:	test-queue.g ../lib/queue.g Makefile
+	../bin/guru test-queue.g
+
+Qp:	test-queue.c
+	gcc -O0 -ggdb -p -w -o test-queue-gprof test-queue.c
+	time cat war-and-peace.txt | ./test-queue-gprof || echo "problem"
+
+Qd:	test-queue.c
+	gcc -O0 -ggdb -w -o test-queue-debug test-queue.c
+	time cat war-and-peace.txt | ./test-queue-debug || echo "problem"
+
+test-queuec:	test-queuec.ml Makefile
+	ocamlopt test-queuec.ml -o test-queuec
+
+test-queue2:	test-queue2.hs Makefile
+	ghc -O2 -o test-queue2 --make test-queue2.hs
 
 test-warray1a:	test-warray.g Makefile
 	../bin/guru test-warray.g
 	gcc -O2 -w -o test-warray1a test-warray.c
-	valgrind ./test-warray1a
+	./test-warray1a
 
 test-warray2a:	test-warray2.g Makefile
 	../bin/guru test-warray2.g

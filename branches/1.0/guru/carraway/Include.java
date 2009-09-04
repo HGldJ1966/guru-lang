@@ -46,6 +46,7 @@ public class Include extends Command {
 			"node = guru_malloc(2*sizeof(void *));\n"+
 			"node[0] = x;\n"+
 			"node[1] = release_worklist;\n"+
+			"release_worklist = node;\n"+
 			"\n"+
 			"if (!worklist_initially_empty)\n"+
 			"  // we are in a surrounding call\n"+
@@ -54,7 +55,8 @@ public class Include extends Command {
 			"while (release_worklist) {\n"+
 			"  node = release_worklist;\n"+
 			"  release_worklist = node[1];\n"+
-			"  x = node[0];\n");
+			"  x = node[0];\n"+
+			"  carraway_free(node);\n");
 
 	ctxt.cw.println("switch (tp) {");
 	Iterator it = dtps1.iterator();
@@ -77,8 +79,6 @@ public class Include extends Command {
 	Collection inits = ctxt.getGlobalInits();
 	it = inits.iterator();
 	ctxt.cw.println("int main(int argc, char **argv) {");
-	if (!ctxt.getFlag("use_malloc"))
-	    ctxt.cw.println("carraway_mem_start = carraway_mem_end = (char *)sbrk(0);");
 
 	while(it.hasNext()) {
 	    String init_func = (String)it.next();
