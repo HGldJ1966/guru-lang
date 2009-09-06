@@ -1,8 +1,6 @@
 %Set "show_includes".
 
 Include "plus.g".
-Include "unit.g".
-Include "pair.g". % for foldl'
 
 Inductive list : Fun(A:type).type :=
   nil : Fun(A:type).<list A>
@@ -1010,20 +1008,20 @@ Define  list_all_total :
   end
   .
 
-Define  list_all_cons_tt_head :
+Define list_all_cons_tt_head :
   Forall(A:type)
         (f:Fun(a:A).bool)
-        (f_tot:Forall(x:A).Exists(y:bool).{ (f x) = y })
         (a:A)(l:<list A>)
         (u:{ (list_all f (cons a l)) = tt }).
     { (f a) = tt }
   :=
   foralli(A:type)
          (f:Fun(a:A).bool)
-         (f_tot:Forall(x:A).Exists(y:bool).{ (f x) = y })
          (a:A)(l:<list A>)
          (u:{ (list_all f (cons a l)) = tt }).
-  existse [f_tot a]
+  abbrev p1 = eval (list_all f (cons a l)) in
+  abbrev p2 = cinv (f a) trans symm p1 u in
+  existse p2
   foralli(z1:bool)(z1_pf:{ (f a) = z1 }).
   case z1 with
     ff => contra
@@ -1038,17 +1036,17 @@ Define  list_all_cons_tt_head :
 Define  list_all_cons_tt_tail :
   Forall(A:type)
         (f:Fun(a:A).bool)
-        (f_tot:Forall(x:A).Exists(y:bool).{ (f x) = y })
         (a:A)(l:<list A>)
         (u:{ (list_all f (cons a l)) = tt }).
     { (list_all f l) = tt }
   :=
   foralli(A:type)
          (f:Fun(a:A).bool)
-         (f_tot:Forall(x:A).Exists(y:bool).{ (f x) = y })
          (a:A)(l:<list A>)
          (u:{ (list_all f (cons a l)) = tt }).
-  existse [f_tot a]
+  abbrev p1 = eval (list_all f (cons a l)) in
+  abbrev p2 = cinv (f a) trans symm p1 u in
+  existse p2
   foralli(z1:bool)(z1_pf:{ (f a) = z1 }).
   case z1 with
     ff => contra
@@ -1416,40 +1414,67 @@ Define list_seteq_trans: Forall(A:type)(eqA: Fun(a b: A).bool)
 		end.
 		
 
-
-
 Define  list_subset_cons_tt_member :
   Forall(A:type)
         (eqA:Fun(a b: A).bool)
-        (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
         (a:A)(l1 l2:<list A>)
-        (u:{ (list_subset eqA (cons a l1) l2) = tt })
-	(v:Forall(a:A).{(eqA a a) = tt})
-	(eqA_to_equals: Forall(a b:A)(k:{(eqA a b) = tt}).{ a = b}).
-        { (member a l2 eqA) = tt } :=
+        (u:{ (list_subset eqA (cons a l1) l2) = tt }).
+    { (member a l2 eqA) = tt }
+  :=
+  foralli(A:type)
+         (eqA:Fun(a b: A).bool)
+         (a:A)(l1 l2:<list A>)
+         (u:{ (list_subset eqA (cons a l1) l2) = tt }).
+  abbrev f = fun(x:A).(member A x l2 eqA) in
+  abbrev f_a = eval (list_subset eqA (cons a l1) l2) in
+  abbrev f_a_tot = cinv (f a) trans symm f_a u in
+  existse f_a_tot
+  foralli(z:bool)(z_pf:{ (f a) = z }).
+  case z with
+    ff => 
+      contra
+        abbrev p1 = hypjoin (list_subset eqA (cons a l1) l2) ff
+                      by z_pf z_eq end in
+        trans symm u
+        trans p1
+              clash ff tt
+        { (member a l2 eqA) = tt }
+  | tt =>
+      hypjoin (member a l2 eqA) tt by z_pf z_eq end
+  end
+  .
 
-  	    foralli(A:type)(eqA:Fun(a b: A).bool)(eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
-        	   (a:A)(l1 l2:<list A>)(u:{ (list_subset eqA (cons a l1) l2) = tt })
-		   (v:Forall(a:A).{(eqA a a) = tt})
-		   (eqA_to_equals: Forall(a b:A)(k:{(eqA a b) = tt}).{ a = b}).
-	
-	abbrev u' = hypjoin (member A a (cons a l1) eqA) tt by [v a] end in
-	[member_trans_lemma A a eqA eqA_total (cons A a l1) l2 u' u eqA_to_equals]
-  	
-.
-
-%-
-Define trusted list_subset_cons_tt_subset :
+Define list_subset_cons_tt_head :
   Forall(A:type)
         (eqA:Fun(a b: A).bool)
-        %maybe (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
-        (a:A)(l1 l2:clause)
+        (a:A)(l1 l2:<list A>)
+        (u:{ (list_subset eqA (cons a l1) l2) = tt }).
+    { (list_subset eqA (cons a nil) l2) = tt }
+  :=
+  foralli(A:type)
+         (eqA:Fun(a b: A).bool)
+         (a:A)(l1 l2:<list A>)
+         (u:{ (list_subset eqA (cons a l1) l2) = tt }).
+  abbrev p1 = [list_subset_cons_tt_member A eqA a l1 l2 u] in
+  hypjoin (list_subset eqA (cons a nil) l2) tt by p1 u end
+  .
+
+Define list_subset_cons_tt_tail :
+  Forall(A:type)
+        (eqA:Fun(a b: A).bool)
+        (a:A)(l1 l2:<list A>)
         (u:{ (list_subset eqA (cons a l1) l2) = tt }).
     { (list_subset eqA l1 l2) = tt }
   :=
-  truei.
+  foralli(A:type)
+         (eqA:Fun(a b: A).bool)
+         (a:A)(l1 l2:<list A>)
+         (u:{ (list_subset eqA (cons a l1) l2) = tt }).
+  abbrev p1 = [list_subset_cons_tt_member A eqA a l1 l2 u] in
+  hypjoin (list_subset eqA l1 l2) tt by u p1 end
+  .
 
-
+%-
 % may require the lemmas above
 Define trusted list_subset_tt_subset_append:
   Forall(A:type)
