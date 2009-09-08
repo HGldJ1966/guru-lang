@@ -44,7 +44,7 @@ test-warray1a:	test-warray.g Makefile
 test-warray2a:	test-warray2.g Makefile
 	../bin/guru test-warray2.g
 	gcc -O2 -w -o test-warray2a test-warray2.c
-	valgrind ./test-warray2a
+	./test-warray2a
 
 test-warray1b:   test-warray.hs Makefile
 	ghc -O2 -o test-warray1b --make test-warray.hs

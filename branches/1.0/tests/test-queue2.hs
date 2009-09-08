@@ -15,6 +15,7 @@ enqueue_all (w:l) q = enqueue_all l (q |> w)
 main :: IO ()
 main = do
   w <- get_words
-  putStrLn (index (enqueue_all w q) 0)
+  putStrLn (let x = (enqueue_all w q) in
+             (index x ((Data.Sequence.length x) - 1)))
   where
     q = empty::Seq String
