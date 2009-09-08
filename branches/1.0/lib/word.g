@@ -122,6 +122,15 @@ Define nat_to_word : Fun(x:nat).(c:bool)(w:word) :=
     end.
 -%
 
+Define primitive word_read_bit
+ : Fun(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word). bool :=
+   fun(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word).
+    (vec_get bool wordlen w (to_nat wordlen i) u) <<END
+inline int gword_read_bit(int i, int w) {
+    return  ((1 << i) & w);
+}
+END.
+
 Define primitive word_set_bit
  : Fun(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word). word :=
    fun(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word).
@@ -147,6 +156,8 @@ END.
 Define word1 := (word_inc2 word0).
 Define word2 := (word_inc2 word1).
 Define word3 := (word_inc2 word2).
+Define word4 := (word_inc2 word3).
+Define word5 := (word_inc2 word4).
 Define word8 := (word_set_bit word3 join (lt (to_nat word3) wordlen) tt word0).
 
 Define word7 :=
@@ -229,3 +240,17 @@ Define trusted word_minus_shrink :
   Forall(x:word).
   {(lt (to_nat (word_minus x word1)) (to_nat x)) = tt}
   := truei.
+
+
+Define word_clear_read :
+  Forall(w:word)
+        (i:word)
+        (u:{ (lt (to_nat i) wordlen) = tt }).
+    { (word_read_bit i u (word_clear_bit i u w)) = ff }
+  :=
+  foralli(w:word)(i:word)
+         (u:{ (lt (to_nat i) wordlen) = tt }).
+  hypjoin (word_read_bit i u (word_clear_bit i u w))
+          ff
+          by [vec_update_get bool wordlen w (to_nat wordlen i) ff u] end
+  .
