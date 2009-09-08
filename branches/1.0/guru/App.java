@@ -38,6 +38,13 @@ public class App extends Expr{
 	return n;
     }
 
+    public int hashCode_h(Context ctxt) {
+	int h = head.hashCode_h(ctxt);
+	for (int i = 0, iend = X.length; i < iend; i++)
+	    h += X[i].hashCode_h(ctxt);
+	return h;
+    }
+
     public int numOcc(Expr e) {
 	return head.numOcc(e) + numOccInArgs(e);
     }

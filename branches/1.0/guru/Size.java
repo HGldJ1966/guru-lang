@@ -50,6 +50,10 @@ public class Size extends Expr {
 	return this;
     }
 
+    public int hashCode_h(Context ctxt) {
+	return t.hashCode_h(ctxt) + 11;
+    }
+
     public boolean defEqNoAnno(Context ctxt, Expr ee, boolean spec) {
 	ee = ee.defExpandTop(ctxt,true,spec);
 	if (ee.construct != construct) {

@@ -22,6 +22,10 @@ public class Abort extends Expr{
 	return this;
     }
 
+    public int hashCode_h(Context ctxt) {
+	return 17;
+    }
+
     public void do_print(java.io.PrintStream w, 
 		      Context ctxt) {
 	w.print("abort ");

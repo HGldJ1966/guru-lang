@@ -43,7 +43,10 @@ public class HypJoin extends Expr{
     		
     		public int hashCode()
     		{
-    			return e1.toString(ctxt).hashCode() + e2.toString(ctxt).hashCode();
+		    return e1.hashCode(ctxt) + e2.hashCode(ctxt);
+
+		    // very slow this way:
+		    //return e1.toString(ctxt).hashCode() + e2.toString(ctxt).hashCode();
     		}
     		public boolean equals(Object objEntry)
     		{

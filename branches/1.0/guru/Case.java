@@ -24,6 +24,13 @@ public class Case extends Expr{
 	this.impossible = impossible;
     }
 
+    public int hashCode_h(Context ctxt) {
+	int h = c.hashCode_h(ctxt);
+	for (int i = 0, iend = x.length; i < iend; i++)
+	    ctxt.setVarHashCode(x[i]);
+	return h+body.hashCode_h(ctxt);
+    }
+
     public void print_pattern_var_types_if(java.io.PrintStream w, 
 					   Context ctxt) {
 	if (ctxt.getFlag("print_pattern_var_types")) {
