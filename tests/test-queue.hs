@@ -17,9 +17,8 @@ enqueue_all (w:l) q = do
 main :: IO ()
 main = do 
           w <- get_words
-          q <- (newFifo::IO (MVar String))
-          enqueue q (head w)
-          --enqueue q (head (tail w))
+          q <- (newFifo::IO (TChan String))
+          enqueue_all w q
           r <- (dequeue q) 
           myPrint r
     where 
