@@ -24,6 +24,14 @@ public class Parser extends guru.ParserBase {
        this.ctxt = ctxt;
     }
 
+    static public Case[] toCaseArray(ArrayList a) {
+	int iend = a.size();
+	Case[] v = new Case[iend];
+	for (int i = 0; i < iend; i++)
+	    v[i] = (Case)a.get(i);
+	return v;
+    }
+
     public Command readCommand() throws IOException
     {
 	if (!eat_ws())

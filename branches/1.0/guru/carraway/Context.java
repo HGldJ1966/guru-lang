@@ -272,12 +272,12 @@ public class Context extends guru.FlagManager {
     }
 
     // return opaque datatypes
-    public Collection getDatatypes1() {
+    public Collection getOpaqueDatatypes() {
 	return dels.keySet();
     }
 
     // return datatypes with ctors
-    public Collection getDatatypes2() {
+    public Collection getInductiveDatatypes() {
 	return tpctors.keySet();
     }
 

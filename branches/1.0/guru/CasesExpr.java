@@ -194,6 +194,8 @@ public class CasesExpr extends Expr {
 
 	    Expr tp = C[i].body.classify(ctxt,approx,spec);
 
+	    C[i].impossible = C[i].impossible || (C[i].body.construct == IMPOSSIBLE);
+
 	    if (retT == null) {
 		int freevars = 0;
 		for (int j = 0, jend = C[i].x.length; j < jend; j++) {

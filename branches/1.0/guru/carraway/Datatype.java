@@ -117,7 +117,7 @@ public class Datatype extends Command {
 			ctxt.cw.println("#define clear_"+tpstr+"_"+ctr+"(x) \n");
 		    }
 		
-		    ctxt.cw.println("#define delete_"+tpstr+"(x) \n"); 
+		    ctxt.cw.println("#define delete_"+tpstr+"(x,clear) \n"); 
 		    ctxt.cw.flush();
 		    return;
 		}
@@ -157,12 +157,8 @@ public class Datatype extends Command {
 		    }
 
 		    String fl = "free_"+ctor_tp;
+		    String cfl = "clear_free_"+ctor_tp;
 		
-		    ctxt.cw.println("#define carraway_malloc(x) malloc(x)");
-		    ctxt.cw.println("#define carraway_free(x) free(x)");
-		    ctxt.cw.println("#define guru_malloc(x) carraway_malloc(x)");
-		    ctxt.cw.println("#define guru_free(x) carraway_free(x)");
-		    
 		    // emit prototype for the clear() function
 		    
 		    if (R == null)
@@ -175,16 +171,30 @@ public class Datatype extends Command {
 
 		    ctxt.cw.println("int "+fl+"_len = 0;");
 		    ctxt.cw.println("void *"+fl+" = (void *)0;\n");
-		    ctxt.cw.println("void delete_"+ctor_tp+"(void *_x) {");
-		    ctxt.cw.println("  if ("+fl+"_len > "+FREE_LIST_MAX+") {");
-		    ctxt.cw.println("    clear_"+ctor_tp+"(_x);");
-		    ctxt.cw.println("    carraway_free(_x);");
+		    ctxt.cw.println("int "+cfl+"_len = 0;");
+		    ctxt.cw.println("void *"+cfl+" = (void *)0;\n");
+		    ctxt.cw.println("void delete_"+ctor_tp+"(void *_x, int clear) {");
+                    ctxt.cw.println("  if (clear) {");
+		    ctxt.cw.println("    if ("+cfl+"_len > "+FREE_LIST_MAX+") {");
+		    ctxt.cw.println("      clear_"+ctor_tp+"(_x);");
+		    ctxt.cw.println("      carraway_free(_x);");
+		    ctxt.cw.println("    }");
+		    ctxt.cw.println("    else {");
+		    ctxt.cw.println("      void **x = (void **)_x;");
+		    ctxt.cw.println("      x[0] = "+cfl+";");
+		    ctxt.cw.println("      "+cfl+" = x;");
+		    ctxt.cw.println("      "+cfl+"_len++;");
+		    ctxt.cw.println("    }");
 		    ctxt.cw.println("  }");
 		    ctxt.cw.println("  else {");
-		    ctxt.cw.println("    void **x = (void **)_x;");
-		    ctxt.cw.println("    x[0] = "+fl+";");
-		    ctxt.cw.println("    "+fl+" = x;");
-		    ctxt.cw.println("    "+fl+"_len++;");
+		    ctxt.cw.println("    if ("+fl+"_len > "+FREE_LIST_MAX+") ");
+		    ctxt.cw.println("      carraway_free(_x);");
+		    ctxt.cw.println("    else {");
+		    ctxt.cw.println("      void **x = (void **)_x;");
+		    ctxt.cw.println("      x[0] = "+fl+";");
+		    ctxt.cw.println("      "+fl+" = x;");
+		    ctxt.cw.println("      "+fl+"_len++;");
+		    ctxt.cw.println("    }");
 		    ctxt.cw.println("  }");
 		    ctxt.cw.println("}\n");
 		    
@@ -229,6 +239,11 @@ public class Datatype extends Command {
 		    ctxt.cw.println("    x = ("+ctor_tp+" *)"+fl+";");
 		    ctxt.cw.println("    "+fl+" = ((void **)x)[0];");
 		    ctxt.cw.println("    "+fl+"_len--;");
+		    ctxt.cw.println("  }");
+		    ctxt.cw.println("  else if ("+cfl+") {");
+		    ctxt.cw.println("    x = ("+ctor_tp+" *)"+cfl+";");
+		    ctxt.cw.println("    "+cfl+" = ((void **)x)[0];");
+		    ctxt.cw.println("    "+cfl+"_len--;");
 		    ctxt.cw.println("    clear_"+ctor_tp+"(x);");
 		    ctxt.cw.println("  }");
 		    ctxt.cw.println("  else");
@@ -247,12 +262,12 @@ public class Datatype extends Command {
 
 		// now emit the delete function for the datatype
 
-		ctxt.cw.println("void delete_"+tpstr+"(void *x) {");
+		ctxt.cw.println("void delete_"+tpstr+"(void *x, int clear) {");
 		ctxt.cw.println("  switch ctor(x) {");
 		for (int i = 0; i < num_ctors; i++) {
 		    String ctr = ctors[i].toString(ctxt);
 		    ctxt.cw.println("  case op_"+ctr+": ");
-		    ctxt.cw.println("    delete_"+tpstr+"_"+ctr+"(x);");
+		    ctxt.cw.println("    delete_"+tpstr+"_"+ctr+"(x,clear);");
 		    ctxt.cw.println("    break;\n");
 		}
 		ctxt.cw.println("}");

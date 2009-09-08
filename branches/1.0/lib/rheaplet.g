@@ -1,3 +1,7 @@
+% rheaplet.g
+%
+% "reference-counted heaplets"
+%
 % A rheaplet models a portion of heap-allocated memory using run-time 
 % reference counting of aliases.
 %
@@ -18,6 +22,7 @@
 % -- use the other functions below to create aliased cells, and read and write them.
 
 Include trusted "list.g".
+Include "unit.g".
 Include "holder.g".
 Include "unique_owned.g".
 
@@ -68,7 +73,7 @@ END.
 
 Define primitive type_family_abbrev alias := fun(I:rheaplet_id).nat <<END
 void gdelete_alias(void *x) {
-     release(gholder,x); // this will decrement the refcount for the data pointed to.
+     release(gholder,x,1); // this will decrement the refcount for the data pointed to.
 }
 END.
 
@@ -115,16 +120,6 @@ int grheaplet_set(int A, void *p, int h, void *a) {
 }
 END.
 
-Define rheaplet_get_set : Forall(A:type)(I:rheaplet_id)(h:<rheaplet A I>)
-                                (p1 p2:<alias I>)(a:A)(u:{ p1 != p2 }).
-                            { (rheaplet_get p1 (rheaplet_set p2 h a)) = (rheaplet_get p1 h) } :=
-  foralli(A:type)(I:rheaplet_id)(h:<rheaplet A I>)
-         (p1 p2:<alias I>)(a:A)(u:{ p1 != p2 }).
-    transs join (rheaplet_get p1 (rheaplet_set p2 h a)) (nth p1 (set_nth p2 h a)) 
-           [set_nth_other A h p1 p2 a u]
-           join (nth p1 h) (rheaplet_get p1 h)
-    end.
-
 % copy value stored at p1 to p2.
 Define rheaplet_cp : Fun(A:type)(spec I:rheaplet_id)(^#owned p1 p2:<alias I>)
                         (#unique h:<rheaplet A I>)(a:A).
@@ -134,3 +129,6 @@ Define rheaplet_cp : Fun(A:type)(spec I:rheaplet_id)(^#owned p1 p2:<alias I>)
     let val = (rheaplet_get A I p1 (inspect <rheaplet A I> h)) in
       (rheaplet_set A I p2 h (owned_to_unowned A val)).
       
+  
+
+% see rheaplet_thms for theorems about the rheaplet operations.

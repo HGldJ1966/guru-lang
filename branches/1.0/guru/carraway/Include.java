@@ -11,6 +11,8 @@ public class Include extends Command {
     protected IncludeHelper h;
     public boolean the_cmd_line_file;
     
+    public static int MAX_RELEASE_CALL_DEPTH = 1024;
+
     public Include(String filename, boolean the_cmd_line_file) {
 	super(INCLUDE);
 	h = new IncludeHelper(filename);
@@ -24,7 +26,12 @@ public class Include extends Command {
     }
 
     public static void start_emit(Context ctxt) {
-	ctxt.cw.println("void release(int tp, void *x);\n");
+	ctxt.cw.println("void release(int tp, void *x, int clear);\n");
+	ctxt.cw.println("#define carraway_malloc(x) malloc(x)");
+	ctxt.cw.println("#define carraway_free(x) free(x)");
+	ctxt.cw.println("#define guru_malloc(x) carraway_malloc(x)");
+	ctxt.cw.println("#define guru_free(x) carraway_free(x)");
+	
 	ctxt.cw.flush();
     }
 
@@ -33,46 +40,53 @@ public class Include extends Command {
 
 	ctxt.stage = 3;
 	
-	Collection dtps1 = ctxt.getDatatypes1();
-	Collection dtps2 = ctxt.getDatatypes2();
+	Collection opaque_dtps = ctxt.getOpaqueDatatypes();
+	Collection ind_dtps = ctxt.getInductiveDatatypes();
 
 	ctxt.cw.println("void **release_worklist = 0;");
+	ctxt.cw.println("int release_call_depth = 0;");
 	ctxt.cw.println("");
-	ctxt.cw.println("void release(int tp, void *x) {");
+	ctxt.cw.println("void release(int tp, void *x, int clear) {");
 	ctxt.cw.println("int worklist_initially_empty;\n"+
 			"void **node;\n"+
-			"if (x == 0) return;\n"+
-			"\n"+
-			"worklist_initially_empty = (release_worklist == 0);\n"+
-			"node = guru_malloc(2*sizeof(void *));\n"+
-			"node[0] = x;\n"+
-			"node[1] = release_worklist;\n"+
-			"release_worklist = node;\n"+
-			"\n"+
-			"if (!worklist_initially_empty)\n"+
-			"  // we are in a surrounding call\n"+
+			"if (release_call_depth > "+MAX_RELEASE_CALL_DEPTH+") {\n"+
+			"  // we must queue this release request\n"+
+			"  node = guru_malloc(4*sizeof(void *));\n"+
+			"  node[0] = tp;\n"+
+			"  node[1] = clear;\n"+
+			"  node[2] = x;\n"+
+			"  node[3] = release_worklist;\n"+
+			"  release_worklist = node;\n"+
 			"  return;\n"+
+			"}\n"+
 			"\n"+
-			"while (release_worklist) {\n"+
-			"  node = release_worklist;\n"+
-			"  release_worklist = node[1];\n"+
-			"  x = node[0];\n"+
-			"  carraway_free(node);\n");
-
+			"release_call_depth++;\n"+
+			"do {\n");
 	ctxt.cw.println("switch (tp) {");
-	Iterator it = dtps1.iterator();
+	Iterator it = opaque_dtps.iterator();
 	while (it.hasNext()) {
 	    Sym tp = (Sym)it.next();
 	    ctxt.cw.println("  case "+tp.toString(ctxt)+": "+ctxt.getDeleteFunction(tp).toString(ctxt)+"(x); break;");
 	}
-	it = dtps2.iterator();
+	it = ind_dtps.iterator();
 	while (it.hasNext()) {
 	    Sym tp = (Sym)it.next();
 	    String tpstr = tp.toString(ctxt);
-	    ctxt.cw.println("  case "+tpstr+": delete_"+tpstr+"(x); break;");
+	    ctxt.cw.println("  case "+tpstr+": delete_"+tpstr+"(x,clear); break;");
 	}
 	ctxt.cw.println("}");
-	ctxt.cw.println("}");
+	ctxt.cw.println("if (release_worklist) {\n"+
+			"  node = release_worklist;\n"+
+			"  tp = node[0];\n"+
+			"  clear = node[1];\n"+
+			"  x = node[2];\n"+
+			"  release_worklist = node[3];\n"+
+			"  carraway_free(node);\n"+
+			"}\n"+
+			"else\n"+
+			"  break;\n /* out of while loop */\n"+
+			"} while (1);");
+	ctxt.cw.println("release_call_depth--;");
 	ctxt.cw.println("}\n");
 
 	// write main() to call all the inits.

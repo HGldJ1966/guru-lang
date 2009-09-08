@@ -15,7 +15,7 @@ ResourceType unowned with
     dec(r);
     // fprintf(stdout,"gdec(%x) = %d\n", r, op(r) >> 8);
     if (op(r) < 256)
-      release(A,r);
+      release(A,r,1);
   }
 END.
 

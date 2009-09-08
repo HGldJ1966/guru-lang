@@ -50,22 +50,39 @@ public class Match extends Expr {
 	    w.print(" end");
 	}
 	else {
-	    if (untracked_scrut)
-		w.print("switch ((int)");
-	    else
-		w.print("switch ctor(");
-	    t.print(w,ctxt);
-	    w.println(") {\n");
-	    for(int i = 0, iend = C.length; i < iend; i++) {
-		C[i].print(w,ctxt);
-		w.println("");
+	    if (C.length == 0) {
+		w.println("/* case with no branches (each one is impossible) */");
 	    }
-	    w.println("default:\n");
-	    if (pos == null)
-		w.println("fprintf(stderr,\"Match failure\\n\"); exit(EXIT_FAILURE);\n");
-	    else
-		w.println("fprintf(stderr,\"Match failure at: "+pos.toStringNoQuotes()+"\\n\"); exit(EXIT_FAILURE);\n");
-	    w.println("}");
+	    else if (C.length == 1) {
+		String s = "/* match with exactly one case: "+C[0].c.toString(ctxt)+" */";
+
+		w.println("{"+s);
+		C[0].body.print(w,ctxt);
+		w.print(";\n");
+		w.println("} "+s);
+
+	    }
+	    else {
+
+		// more than one case
+
+		if (untracked_scrut)
+		    w.print("switch ((int)");
+		else
+		    w.print("switch ctor(");
+		t.print(w,ctxt);
+		w.println(") {\n");
+		for(int i = 0, iend = C.length; i < iend; i++) {
+		    C[i].print(w,ctxt);
+		    w.println("");
+		}
+		w.println("default:\n");
+		if (pos == null)
+		    w.println("fprintf(stderr,\"Match failure\\n\"); exit(EXIT_FAILURE);\n");
+		else
+		    w.println("fprintf(stderr,\"Match failure at: "+pos.toStringNoQuotes()+"\\n\"); exit(EXIT_FAILURE);\n");
+		w.println("}");
+	    }
 	}
     }    
 

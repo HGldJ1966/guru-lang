@@ -1,5 +1,11 @@
+queue2:
+	time ../bin/guru queue2.g
+
 queue:
 	time ../bin/guru queue.g
+
+rheaplet_thms:
+	time ../bin/guru rheaplet_thms.g
 
 rheaplet:
 	time ../bin/guru rheaplet.g
