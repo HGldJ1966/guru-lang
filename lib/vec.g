@@ -573,3 +573,41 @@ Define vec_list_vec:
                           trans cong (vecc a *) [V_IH n' V']
                                 symm V_eq
 end.
+
+Define vec_update_get :
+  Forall(A:type)(n:nat)(l:<vec A n>)
+        (m:nat)(a:A)
+        (u:{ (lt m n) = tt }).
+    { (vec_get (vec_update l m u a) m u) = a }
+  :=
+  foralli(A:type).
+  induction(n:nat)(l:<vec A n>) return 
+    Forall(m:nat)(a:A)
+          (u:{ (lt m n) = tt }).
+      { (vec_get (vec_update l m u a) m u) = a }
+  with
+    vecn _ =>
+      foralli(m:nat)(a:A)
+             (u:{ (lt m n) = tt }).
+      abbrev n_Z = inj <vec ** *> l_Eq in
+      abbrev p = hypjoin (lt m n) ff by n_Z [lt_Z m] end in
+      contra trans symm u
+             trans p
+                   clash ff tt
+             { (vec_get (vec_update l m u a) m u) = a }
+  | vecc _ n' a' l' =>
+      foralli(m:nat)(a:A)
+             (u:{ (lt m n) = tt }).
+      case m with
+        Z => hypjoin (vec_get (vec_update l m u a) m u) a by m_eq l_eq end
+      | S m' =>
+          abbrev n'_pf = inj <vec ** *> l_Eq in
+          abbrev p1 = hypjoin (lt (S m') (S n')) tt by m_eq u n'_pf end in
+          abbrev u' = hypjoin (lt m' n') tt by [S_lt_S m' n'] p1 end in
+          
+          hypjoin (vec_get (vec_update l m u a) m u)
+                  a
+                  by l_eq m_eq [l_IH n' l' m' a u'] end
+      end
+  end
+  .
