@@ -41,7 +41,7 @@ Define test :=
   let arr = (warray_new boxedWord mysize (inspect boxedWord a)) in
   let arr' = (fill_array mysize arr (word_minus mysize word1)
                  [word_minus_shrink mysize]) in
-  let ret = (search arr' mysize tt) in
+  let ret = (search arr' (word_minus mysize word1) tt) in
   do
     (dec boxedWord a)
     (warray_free boxedWord mysize arr')
