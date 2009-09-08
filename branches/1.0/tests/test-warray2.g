@@ -27,13 +27,14 @@ Define fill_array: Fun(spec n:word)(#unique l:<warray boxedWord n>)(i:word)
 
 
 Define word19 := (word_plus word8 (word_plus word8 (word_plus word1 word2))).
+Define myVal := (word_set_bit word19 join (lt (to_nat word19) wordlen) tt word0).
 
 Define test :=
   let a = (mk_uholder word word0) in
   let arr = (warray_new boxedWord mysize (inspect boxedWord a)) in
   let arr' = (fill_array mysize arr (word_minus mysize word1)
                  [word_minus_shrink mysize]) in
-  let val = (boxWord word19) in
+  let val = (boxWord myVal) in
   let ret = (warray_binary_search boxedWord mysize 
              (inspect_unique <warray boxedWord mysize> arr') 
              word0 (word_minus mysize word1) val
