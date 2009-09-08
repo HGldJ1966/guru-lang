@@ -19,6 +19,10 @@ public class Voidi extends Expr{
 	return this;
     }
     
+    public int hashCode_h(Context ctxt) {
+	return 29;
+    }
+
     public Expr classify(Context ctxt, int approx, boolean spec) {
 	return ctxt.voidt;
     }

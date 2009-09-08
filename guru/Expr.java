@@ -150,6 +150,18 @@ public abstract class Expr {
 	return s.toString();
     }
 
+    // intended only for unannotated terms -- others may fail.
+    public final int hashCode(Context ctxt) {
+	ctxt.next_var_hash_code = 0;
+	return hashCode_h(ctxt);
+    }
+
+    public int hashCode_h(Context ctxt) {
+	handleError(ctxt,"Internal error: hashCode() function not implemented for"
+		    +" construct "+(new Integer(construct)).toString()+".");
+	return 0;
+    }
+
     // count free occurrences of e.
     abstract public int numOcc(Expr e);
 

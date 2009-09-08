@@ -46,6 +46,9 @@ public class Context extends FlagManager {
 
     public Expr noteq1, noteq2;
 
+    public int next_var_hash_code;
+    public HashMap var_hash_codes;
+
     public Context() {
 	typeCtors = new HashMap(256);
 	typeCtorsKind = new HashMap(256);
@@ -90,6 +93,9 @@ public class Context extends FlagManager {
 	
 	eval = true;
 
+	next_var_hash_code = 0;
+	var_hash_codes = new HashMap();
+
 	initCmds = new Vector();
 	carraway_ctxt = null;
     }
@@ -102,6 +108,17 @@ public class Context extends FlagManager {
     public void resetNotDefEq() {
 	this.noteq1 = null;
 	this.noteq2 = null;
+    }
+
+    public int varHashCode(Var x) {
+	if (var_hash_codes.containsKey(x))
+	    return ((Integer)var_hash_codes.get(x)).intValue();
+	else
+	    return x.hashCode();
+    }
+
+    public void setVarHashCode(Var x) {
+	var_hash_codes.put(x,new Integer(next_var_hash_code++));
     }
 
     public boolean isTrusted(Const c) {

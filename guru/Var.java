@@ -20,6 +20,10 @@ public class Var extends Expr{
 	    print_pos_comment_long(w);
     }
 
+    public int hashCode_h(Context ctxt) {
+	return ctxt.varHashCode(this);
+    }
+
     public void do_print(java.io.PrintStream w, Context ctxt) {
 	if (!ctxt.getFlag("no_expand_vars") && ctxt.isMacroDefined(this))
 	    ctxt.getDefBody(this).print(w,ctxt);

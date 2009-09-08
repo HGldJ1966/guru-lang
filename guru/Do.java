@@ -15,6 +15,13 @@ public class Do extends Expr {
 	this.t = t;
     }
 
+    public int hashCode_h(Context ctxt) {
+	int h = t.hashCode_h(ctxt);
+	for (int i = 0, iend = ts.length; i < iend; i++)
+	    h += ts[i].hashCode_h(ctxt);
+	return h;
+    }
+
     public void do_print(java.io.PrintStream w, 
 		      Context ctxt) {
 	w.print("do ");

@@ -22,6 +22,10 @@ public class Const extends Expr implements Comparable {
 	return (this == e) ? 1 : 0;
     }
 
+    public int hashCode_h(Context ctxt) {
+	return name.hashCode();
+    }
+
     public Expr subst(Expr e, Expr x) {
 	return this;
     }

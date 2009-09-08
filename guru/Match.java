@@ -36,6 +36,13 @@ public class Match extends CasesExpr{
 	do_print2(w,ctxt);
     }
 
+    public int hashCode_h(Context ctxt) {
+	int h = t.hashCode_h(ctxt);
+	for (int i = 0, iend = C.length; i < iend; i++) 
+	    h += C[i].hashCode_h(ctxt);
+	return h;
+    }
+
     public int numOccInCases(Expr e) {
 	return super.numOcc(e);
     }

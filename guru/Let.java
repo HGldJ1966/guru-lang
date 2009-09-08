@@ -25,6 +25,10 @@ public class Let extends Expr{
 	this.t2 = t2;
     }
     
+    public int hashCode_h(Context ctxt) {
+	return t1.hashCode_h(ctxt) + t2.hashCode_h(ctxt);
+    }
+
     public void do_print(java.io.PrintStream w, Context ctxt) 
     {
 	w.print("let ");

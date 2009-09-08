@@ -32,6 +32,13 @@ public class FunTerm extends FunAbstraction {
 	this.T = T;
     }
 
+    public int hashCode_h(Context ctxt) {
+	ctxt.setVarHashCode(r);
+	for (int i = 0, iend = vars.length; i < iend; i++)
+	    ctxt.setVarHashCode(vars[i]);
+	return body.hashCode_h(ctxt);
+    }
+
     public boolean defEqNoAnno(Context ctxt, Expr ee, boolean spec) {
 	Expr orig_ee = ee;
 	ee = ee.defExpandTop(ctxt,true,spec);
