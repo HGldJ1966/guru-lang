@@ -157,10 +157,12 @@ public class Match extends CasesExpr{
 	m.consume_scrut = consume_scrut;
 	m.t = t.toCarraway(ctxt);
 	int iend = C.length;
-	guru.carraway.Case[] nC = new guru.carraway.Case[iend];
+	ArrayList a = new ArrayList();
 	for (int i = 0; i < iend; i++)
-	    nC[i] = (guru.carraway.Case)C[i].toCarraway(ctxt);
-	m.C = nC;
+	    if (!C[i].impossible)
+		a.add((guru.carraway.Case)C[i].toCarraway(ctxt));
+	
+	m.C = guru.carraway.Parser.toCaseArray(a);
 	m.consume_scrut = consume_scrut;
 	return m;
     }

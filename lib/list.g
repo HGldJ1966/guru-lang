@@ -1,6 +1,6 @@
 %Set "show_includes".
 
-Include "plus.g".
+Include trusted "plus.g".
 
 Inductive list : Fun(A:type).type :=
   nil : Fun(A:type).<list A>
@@ -120,13 +120,13 @@ Define nth : Fun(A:type)(n:nat)(l:<list A>).A :=
     end.
 
 Define set_nth : Fun(A:type)(n:nat)(l:<list A>)(b:A).<list A> :=
-  fun nth(A:type)(n:nat)(l:<list A>)(b:A):<list A>.
+  fun set_nth(A:type)(n:nat)(l:<list A>)(b:A):<list A>.
     match l with
       nil _ => abort <list A>
     | cons _ a l' =>
       match n with
         Z => (cons A b l')
-      | S n' => (cons A a (nth A n' l' b))
+      | S n' => (cons A a (set_nth A n' l' b))
       end
     end.
 
@@ -539,6 +539,37 @@ Define eq_length_append
           u4
   end.
 
+Define set_nth_length : Forall(A:type)(n:nat)(l:<list A>)(a:A)
+                              (u:{(lt n (length l)) = tt }).
+                         { (length (set_nth n l a)) = (length l) } :=
+  foralli(A:type)(n:nat)(l:<list A>)(a:A)
+         (u:{(lt n (length l)) = tt }).
+   [induction(l:<list A>) return Forall(n:nat)(u:{(lt n (length l)) = tt }).
+                                   { (length (set_nth n l a)) = (length l) } with
+      nil _ =>
+      foralli(n:nat)(u:{(lt n (length l)) = tt }). 
+        contra
+          transs symm [lt_Z n]
+                 cong (lt n *) hypjoin Z (length l) by l_eq end
+                 u
+                 clash tt ff
+           end
+        { (length (set_nth n l a)) = (length l) } 
+    | cons _ b l' => 
+      foralli(n:nat)(u:{(lt n (length l)) = tt }). 
+        case n with
+          Z => 
+          hypjoin (length (set_nth n l a)) (length l) 
+          by l_eq n_eq end
+        | S n' => 
+          hypjoin (length (set_nth n l a)) (length l) 
+            by l_eq n_eq [l_IH l' n' hypjoin (lt n' (length l')) tt 
+                                       by u n_eq l_eq end] 
+            end
+        end
+    end l n u].
+
+
 Define eqlist : Fun(A:type)(eqA:Fun(^#owned x1 x2:A).bool)
                    (^#owned l1 l2:<list A>)
                    .bool :=
@@ -945,8 +976,10 @@ Define list_all : Fun(A:type)(f:Fun(a:A).bool)(l:<list A>) . bool :=
                      end
     end.
 
-Define list_all_append:  Forall(A:type)(f:Fun(a:A).bool)(ftot : Forall(a:A).Exists(b:bool). {(f a) = b})
-(l1 l2:<list A>)(u:{(list_all f l1) = tt}).{(list_all f (append l1 l2)) = (list_all f l2)} :=
+Define list_all_append :
+  Forall(A:type)(f:Fun(a:A).bool)(ftot : Forall(a:A).Exists(b:bool). {(f a) = b})
+        (l1 l2:<list A>)(u:{(list_all f l1) = tt}).
+   {(list_all f (append l1 l2)) = (list_all f l2)} :=
 foralli(A:type)(f:Fun(a:A).bool)(ftot: Forall(a:A).Exists(b:bool).{(f a) = b})(l1 l2:<list A>)(u:{(list_all f l1) = tt}).
 [
 induction (l1:<list A>) return 
@@ -1057,6 +1090,76 @@ Define  list_all_cons_tt_tail :
   | tt => hypjoin (list_all f l) tt by z1_pf z1_eq u end
   end
   .
+
+Define list_all_set_nth :
+  Forall(A:type)(n:nat)(l:<list A>)(a:A)
+        (f:Fun(a:A).bool)
+        (u1 : { (lt n (length l)) = tt })
+        (u2 : { (list_all f l) = tt })
+        (u3 : { (f a) = tt }).
+   { (list_all f (set_nth n l a)) = tt } :=
+  foralli(A:type)(n:nat)(l:<list A>)(a:A)
+         (f:Fun(a:A).bool)
+         (u1 : { (lt n (length l)) = tt })
+         (u2 : { (list_all f l) = tt })
+         (u3 : { (f a) = tt }).
+  [induction(l:<list A>) return Forall(n:nat)(u1 : { (lt n (length l)) = tt })
+                                      (u2 : { (list_all f l) = tt }).
+                                  { (list_all f (set_nth n l a)) = tt } with
+     nil _ => foralli(n:nat)(u1 : { (lt n (length l)) = tt })
+                     (u2 : { (list_all f l) = tt }).
+              contra
+                transs symm [lt_Z n]
+                       cong (lt n *) hypjoin Z (length l) by l_eq end
+                       u1
+                       clash tt ff
+                end
+              { (list_all f (set_nth n l a)) = tt } 
+   | cons _ b l' => 
+     foralli(n:nat)(u1 : { (lt n (length l)) = tt })
+            (u2 : { (list_all f l) = tt }).
+       abbrev P = trans symm cong (list_all f *) l_eq u2 in
+       case n with
+         Z =>
+           hypjoin (list_all f (set_nth n l a)) tt 
+           by n_eq l_eq u3 
+              [list_all_cons_tt_tail A f b l' P]
+           end
+      | S n' => 
+           hypjoin (list_all f (set_nth n l a)) tt 
+           by n_eq l_eq u3 
+              [list_all_cons_tt_head A f b l' P]
+              [l_IH l' n' hypjoin (lt n' (length l')) tt 
+                            by u1 n_eq l_eq end
+                [list_all_cons_tt_tail A f b l' P]]
+           end
+      end
+   end l n u1 u2].
+
+Define list_all_implies :
+  Forall(A:type)
+        (f1 f2:Fun(a:A).bool)
+        (fimp : Forall(a:A)(u:{(f1 a) = tt}). { (f2 a) = tt })
+        (l:<list A>)
+        (u : {(list_all f1 l) = tt }).
+  {(list_all f2 l) = tt } :=
+  foralli(A:type)
+         (f1 f2:Fun(a:A).bool)
+         (fimp : Forall(a:A)(u:{(f1 a) = tt}). { (f2 a) = tt }).
+    induction(l:<list A>) 
+      return Forall(u : {(list_all f1 l) = tt }). {(list_all f2 l) = tt } with
+      nil _ => foralli(u : {(list_all f1 l) = tt }).
+                 hypjoin (list_all f2 l) tt by l_eq end
+    | cons _ a l' =>
+      foralli(u : {(list_all f1 l) = tt }).
+        abbrev P = trans symm cong (list_all f1 *) l_eq u in
+          hypjoin (list_all f2 l) tt
+            by l_eq 
+               [fimp a [list_all_cons_tt_head A f1 a l' P]]
+               [l_IH l' [list_all_cons_tt_tail A f1 a l' P]]
+            end
+    end. 
+
 
 Define list_any : Fun(A:type)(f:Fun(^#owned a:A).bool)(^#owned l:<list A>) . bool :=
   fun list_any (A:type)(f:Fun(^#owned a:A).bool)(^#owned l:<list A>) : bool .

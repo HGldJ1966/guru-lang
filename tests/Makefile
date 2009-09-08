@@ -1,21 +1,21 @@
 test-queue:	test-queue.c
 	gcc -O2 -w -o test-queue test-queue.c
-	time cat war-and-peace.txt | ./test-queue || echo "problem"
+	time ./test-queue < war-and-peace.txt || echo "problem"
 
 test-queue.c:	test-queue.g ../lib/queue.g Makefile
 	../bin/guru test-queue.g
 
 Qp:	test-queue.c
 	gcc -O0 -ggdb -p -w -o test-queue-gprof test-queue.c
-	time cat war-and-peace.txt | ./test-queue-gprof || echo "problem"
+	time ./test-queue-gprof < war-and-peace.txt || echo "problem"
 
 Qd:	test-queue.c
 	gcc -O0 -ggdb -w -o test-queue-debug test-queue.c
-	time cat war-and-peace.txt | ./test-queue-debug || echo "problem"
+	time ./test-queue-debug < war-and-peace.txt || echo "problem"
 
 test-queue1:	test-queue1.c
 	gcc -O2 -w -o test-queue1 test-queue1.c
-	time cat war-and-peace.txt | ./test-queue1 || echo "problem"
+	time ./test-queue1 < war-and-peace.txt || echo "problem"
 
 test-queue1.c:	test-queue1.g Makefile
 	../bin/guru test-queue1.g
