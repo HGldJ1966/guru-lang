@@ -2521,137 +2521,147 @@ public class Parser extends ParserBase {
         e.P = readProof();
         return e;
     }
-    
+	
+	protected static DiscriminationTree	keywordTree;
+	
+	static {
+		keywordTree = new DiscriminationTree();
+		keywordTree.add( "**", Expr.STARSTAR );
+		keywordTree.add( "*", Expr.STAR );
+		keywordTree.add( "do", Expr.DO );
+		keywordTree.add( "fun", Expr.FUN_TERM );
+		keywordTree.add( "cast", Expr.CAST );
+		keywordTree.add( "terminates", Expr.TERMINATES );
+		keywordTree.add( "(", Expr.TERM_APP );
+		keywordTree.add( "abort", Expr.ABORT );
+		keywordTree.add( "let", Expr.LET );
+		keywordTree.add( "abbrev", Expr.ABBREV );
+		keywordTree.add( "eabbrev", Expr.EABBREV );
+		keywordTree.add( "match", Expr.MATCH );
+		keywordTree.add( "Fun", Expr.FUN_TYPE );
+		keywordTree.add( "type", Expr.TYPE );
+		keywordTree.add( "<", Expr.TYPE_APP );
+		keywordTree.add( "@<", Expr.PRED_APP );
+		keywordTree.add( "@", Expr.COMPRESS );	// prefix!
+		keywordTree.add( "foralli", Expr.FORALLI );
+		keywordTree.add( "[", Expr.PROOF_APP );
+		keywordTree.add( "case", Expr.CASE_PROOF );
+		keywordTree.add( "!", Expr.BANG );
+		keywordTree.add( "existsi", Expr.EXISTSI );
+		keywordTree.add( "andi", Expr.ANDI );
+		keywordTree.add( "existse_term", Expr.EXISTSE_TERM );
+		keywordTree.add( "existse", Expr.EXISTSE );
+		keywordTree.add( "truei", Expr.TRUEI );
+		keywordTree.add( "diseqi", Expr.DISEQI );
+		keywordTree.add( "True", Expr.TRUE );
+		keywordTree.add( "False", Expr.FALSE );
+		keywordTree.add( "voidi", Expr.VOIDI );
+		keywordTree.add( "void", Expr.VOID );
+		keywordTree.add( "join", Expr.JOIN );
+		keywordTree.add( "evalto", Expr.EVALTO );
+		keywordTree.add( "eval", Expr.EVAL );
+		keywordTree.add( "hypjoin", Expr.HYPJOIN );
+		keywordTree.add( "refl", Expr.REFL );
+		keywordTree.add( "symm", Expr.SYMM );
+		keywordTree.add( "transs", Expr.TRANSS );
+		keywordTree.add( "trans", Expr.TRANS );
+		keywordTree.add( "cong", Expr.CONG );
+		keywordTree.add( "ncong", Expr.NCONG );
+		keywordTree.add( "inj", Expr.INJ );
+		keywordTree.add( "clash", Expr.CLASH );
+		keywordTree.add( "aclash", Expr.ACLASH );
+		keywordTree.add( "cinv", Expr.INV );
+		keywordTree.add( "subst", Expr.SUBST );
+		keywordTree.add( "show", Expr.SHOW );
+		keywordTree.add( "contra", Expr.CONTRA );
+		keywordTree.add( "induction", Expr.INDUCTION );
+		keywordTree.add( "Forall", Expr.FORALL );
+		keywordTree.add( "Exists", Expr.EXISTS );
+		keywordTree.add( "{", Expr.ATOM );
+		keywordTree.add( "cutoff", Expr.CUTOFF );
+		keywordTree.add( "cind", Expr.CIND );
+		keywordTree.add( "impossible", Expr.IMPOSSIBLE );
+		keywordTree.add( "size", Expr.SIZE );
+		keywordTree.add( "\"", Expr.LAST + STRING );
+		
+		keywordTree.add( ")", Expr.INVALID );
+		keywordTree.add( "]", Expr.INVALID );
+		keywordTree.add( ">", Expr.INVALID );
+		keywordTree.add( ".", Expr.INVALID );
+		keywordTree.add( "=", Expr.INVALID );
+		keywordTree.add( "|", Expr.INVALID );
+	}
+
+	static char[]	keywordBuf = new char[100];	// WARNING: assuming maximum length of keyword
+
+	protected int tryToEatKeyword()  throws IOException
+	{
+		char[]	buf = keywordBuf;
+		int		cur = 0;
+		int		final_end = -1;	// end position of the longest keyword
+		Integer	keyword_val = null;	// value for the longest keyword
+		
+		DiscriminationTree.Iterator	it = keywordTree.begin();
+		for( ; ; )
+		{
+			int c = getc();
+			//System.out.println( "keyword getc: " + String.valueOf((char)c) );
+			if( c < 0 )
+				break;
+			buf[cur++] = (char)c;
+			
+			it.next( c );
+			if( !it.isValid() )
+				break;
+			if( it.isFinal() ) {	// wait for the longest keyword
+				//System.out.println( "keyword matched" );
+				final_end = cur;
+				keyword_val = it.value;
+			}
+		}
+		
+		// see if not starting with a valid keyword
+		if( final_end == -1 )
+		{
+			// rollback all
+			for( int j=cur-1; j>=0; j-- )
+				ungetc( buf[j] );
+			return -1;
+		}
+		
+		// see if a legal id character is following a non-punctuation-keyword
+		if( Character.isLetter(buf[0])	// not a punctuator
+		 && cur != final_end	// there is a character after keyword
+		 && !Character.isWhitespace(buf[final_end])
+		 && LegalIdChar(buf[final_end])	// which is a legal id character
+		  ) {
+			// rollback all
+			for( int j=cur-1; j>=0; j-- )
+				ungetc( buf[j] );
+			return -1;
+		}
+		// now, we got a keyword
+		
+		// but, some puctuation keyword is not allowed here.
+		if( keyword_val.intValue() == Expr.INVALID )
+			handleError("Unexpected punctuation." );
+			
+		// rollback tail
+		for( int j=cur-1; j>=final_end; j-- )
+			ungetc( buf[j] );
+
+		return keyword_val.intValue();
+	}
+
     protected int eatKeyword() throws IOException
     {
         if (!eat_ws())
 	    return Expr.INVALID;
-        
-	if (tryToEat("**"))
-	    return Expr.STARSTAR;
-	if (tryToEat("*"))
-	    return Expr.STAR;
-	if (tryToEat("do"))
-	    return Expr.DO;
-	if (tryToEat("fun"))
-	    return Expr.FUN_TERM;
-	if (tryToEat("cast"))
-	    return Expr.CAST;
-	if (tryToEat("terminates"))
-	    return Expr.TERMINATES;
-	if (tryToEat("("))
-	    return Expr.TERM_APP;
-	if (tryToEat("abort"))
-	    return Expr.ABORT;
-	if (tryToEat("let")) 
-	    return Expr.LET;
-	if (tryToEat("abbrev"))
-	    return Expr.ABBREV;
-	if (tryToEat("eabbrev"))
-	    return Expr.EABBREV;
-	if (tryToEat("match"))
-	    return Expr.MATCH;
-	if (tryToEat("Fun"))
-	    return Expr.FUN_TYPE;
-	if (tryToEat("type"))
-	    return Expr.TYPE;
-	if (tryToEat("<"))
-	    return Expr.TYPE_APP;
-	if (tryToEat("@<"))
-	    return Expr.PRED_APP;
-	if (tryToEat("@"))
-	    return Expr.COMPRESS;
-	if (tryToEat("foralli"))
-	    return Expr.FORALLI;
-	if (tryToEat("["))
-	    return Expr.PROOF_APP;
-	if (tryToEat("case"))
-	    return Expr.CASE_PROOF;
-	if (tryToEat("!"))
-	    return Expr.BANG;
-	if (tryToEat("existsi"))
-	    return Expr.EXISTSI;
-	if (tryToEat("andi"))
-	    return Expr.ANDI;
-	if (tryToEat("existse_term"))
-	    return Expr.EXISTSE_TERM;
-	if (tryToEat("existse"))
-	    return Expr.EXISTSE;
-	if (tryToEat("truei"))
-	    return Expr.TRUEI;
-	if (tryToEat("diseqi"))
-	    return Expr.DISEQI;
-	if (tryToEat("True"))
-	    return Expr.TRUE;
-	if (tryToEat("False"))
-	    return Expr.FALSE;
-	if (tryToEat("voidi"))
-	    return Expr.VOIDI;
-	if (tryToEat("void"))
-	    return Expr.VOID;
-	if (tryToEat("join"))
-	    return Expr.JOIN;
-	if (tryToEat("evalto"))
-	    return Expr.EVALTO;
-	if (tryToEat("eval"))
-	    return Expr.EVAL;
-	if (tryToEat("hypjoin"))
-	    return Expr.HYPJOIN;
-	if (tryToEat("refl"))
-	    return Expr.REFL;
-	if (tryToEat("symm"))
-	    return Expr.SYMM;
-	if (tryToEat("transs"))
-	    return Expr.TRANSS;
-	if (tryToEat("trans"))
-	    return Expr.TRANS;
-	if (tryToEat("cong"))
-	    return Expr.CONG;
-	if (tryToEat("ncong"))
-	    return Expr.NCONG;
-	if (tryToEat("inj"))
-	    return Expr.INJ;
-	if (tryToEat("clash"))
-	    return Expr.CLASH;
-	if (tryToEat("aclash"))
-	    return Expr.ACLASH;
-	if (tryToEat("cinv"))
-	    return Expr.INV;
-	if (tryToEat("subst"))
-	    return Expr.SUBST;
-	if (tryToEat("show"))
-	    return Expr.SHOW;
-	if (tryToEat("contra"))
-	    return Expr.CONTRA;
-	if (tryToEat("induction"))
-	    return Expr.INDUCTION;
-	if (tryToEat("Forall"))
-	    return Expr.FORALL;
-	if (tryToEat("Exists"))
-	    return Expr.EXISTS;
-	if (tryToEat("{"))
-	    return Expr.ATOM;
-	if (tryToEat("cutoff"))
-	    return Expr.CUTOFF;
-	if (tryToEat("cind"))
-	    return Expr.CIND;
-	if (tryToEat("impossible"))
-	    return Expr.IMPOSSIBLE;
-	if (tryToEat("size"))
-	    return Expr.SIZE;
-	if (tryToEat("\""))
-	    return Expr.LAST + STRING;
-                    
-	if (tryToEat(")") ||
-	    tryToEat("]") ||
-	    tryToEat(">") ||
-	    tryToEat(".") ||
-	    tryToEat("=") ||
-	    tryToEat("|"))
-	    handleError("Unexpected punctuation." );
 
-        return Expr.VAR;
+		int	val = tryToEatKeyword();
+		//System.out.println( "tryToEatKeyword: " + String.valueOf(val) );
+		if( val < 0 )
+			return Expr.VAR;
+		return val;
     }
-
 }
-
