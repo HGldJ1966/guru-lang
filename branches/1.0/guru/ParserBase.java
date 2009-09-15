@@ -117,16 +117,22 @@ public class ParserBase {
         return theID.toString();
     }
 
-    protected String readString() throws IOException
+
+    protected String readString(Character delimiter) throws IOException
     {
         int c;
         String s="";
         boolean escaped = false;
 	c=getc();
 
-	if ((char)c != '"')
-	    handleError("Expecting a double quotation mark (\") to start a"
+	if ((char)c != delimiter.charValue())
+	    if(delimiter.charValue() == '\"')
+	    	handleError("Expecting a double quotation mark (\") to start a"
 			+" string.");
+	    else
+	    	handleError("Expecting a single quotation mark (\') to start a"
+			+" character.");
+
         do{
 	    c=getc();
 	    if ((char)c == '\\') {
@@ -134,13 +140,18 @@ public class ParserBase {
                     escaped = true;
                 else
                     escaped = false;
-            } else if ((char)c == '"') {
+            } else if ((char)c == delimiter.charValue()) {
                 if (!escaped)
                     break;
                 escaped = false;
             } else if (c == -1) {
-                handleError("Expecting a double quotation mark (\") to end a"
-                            +" string");
+                if (delimiter.charValue() == '\"')
+                    handleError("Expecting a double quotation mark (\") to end a"
+                                +" string");
+                else
+	            handleError("Expecting a single quotation mark (\') to end a"
+			+" character.");
+
             } else {
                 escaped = false;
             }
@@ -148,9 +159,21 @@ public class ParserBase {
             s+=(char)c;
         } while(true);
         
+	if(delimiter.charValue() == '\'')
+           if ((s.length() == 2) && ((int)s.charAt(0) == 92))
+               return s;
+           else if (s.length() > 2)
+               handleError("Expecting only one alphanumeric for a character.");
 	return s;
     }
-    
+
+    //Default mething for reading strings
+    protected String readString() throws IOException
+    {
+	return readString(new Character('\"'));
+    }
+
+
     protected String read_until_newline_delim(String delim) 
 	throws IOException 
     {
