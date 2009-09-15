@@ -56,6 +56,21 @@ Define and_tot : Forall(x y:bool).Exists(z:bool). {(and x y) = z} :=
     
 Total and and_tot.
 
+Define and_symm : Forall(a b:bool). { (and a b) = (and b a) } :=
+  foralli(a b:bool).
+    case a with
+      ff =>
+        case b with
+          ff => hypjoin (and a b) (and b a) by a_eq b_eq end
+        | tt => hypjoin (and a b) (and b a) by a_eq b_eq end
+        end
+    | tt =>
+        case b with
+          ff => hypjoin (and a b) (and b a) by a_eq b_eq end
+        | tt => hypjoin (and a b) (and b a) by a_eq b_eq end
+        end
+    end.
+
 Define andtt_e1 : Forall(x y:bool)(u:{ (and x y) = tt }).{ x = tt } :=
   induction(x:bool) by xp xt IHx return Forall(y:bool)(u:{ (and x y) = tt }).{ x = tt } with
     ff =>
