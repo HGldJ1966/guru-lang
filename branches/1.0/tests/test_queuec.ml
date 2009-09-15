@@ -38,10 +38,10 @@ let rec dequeue_all q prev =
 
 (* (enqueue_all (create()));; *)
 
- (dequeue_all (enqueue_all (create())) []);; 
+(* (dequeue_all (enqueue_all (create())) []);; *)
 
 
-(* (dequeue_all (shift_all (enqueue_all (create())) (create())) []);;  *)
+ (dequeue_all (shift_all (enqueue_all (create())) (create())) []);;  
 
 (*
 let rec loop() = loop();;

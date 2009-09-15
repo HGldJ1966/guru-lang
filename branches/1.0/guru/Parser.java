@@ -683,7 +683,7 @@ public class Parser extends ParserBase {
 
     protected Expr readCharExpr() throws IOException {
 	ungetc('\'');
-	return new CharExpr(readString(new Character('\'')));
+	return null; //new CharExpr(readString(new Character('\'')));
     }
  
     protected Include readInclude() throws IOException

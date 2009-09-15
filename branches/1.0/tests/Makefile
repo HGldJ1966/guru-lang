@@ -36,6 +36,9 @@ test-queuec1:	test-queuec1.ml Makefile
 test-queue2:	test-queue2.hs Makefile
 	ghc -O2 -o test-queue2 --make test-queue2.hs
 
+test-queue3:	test-queue.hs Makefile
+	ghc -O2 -o test-queue3 --make test-queue.hs
+
 test-warray1a:	test-warray.g Makefile
 	../bin/guru test-warray.g
 	gcc -O2 -w -o test-warray1a test-warray.c

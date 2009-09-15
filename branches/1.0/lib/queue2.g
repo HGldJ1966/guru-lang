@@ -37,13 +37,15 @@ Define weaken_rheaplet_queue_inv :
          (u2:{(lt bound1 bound2) = tt}).
     [list_all_implies <queue_cell A I> 
       (queue_cell_inv A I bound1) (queue_cell_inv A I bound2)
-      foralli(c:<queue_cell A I>). 
+      foralli(c:<queue_cell A I>)(u:{(queue_cell_inv A I bound1 c) = tt}). 
         case c with
-          queue_cellc _ _ a nextp => existsi (lt nextp bound1) { (queue_cell_inv bound1 c) = * }
-                                       trans cong (queue_cell_inv bound1 *) c_eq
-                                             join (queue_cell_inv bound1 (queue_cellc a nextp)) (lt nextp bound1)
-        | queue_celln _ _ a => existi tt { (queue_cell_inv bound1 c) = *} 
-  
+          queue_cellc _ _ a nextp => hypjoin (queue_cell_inv A I bound2 c) tt
+                                     by c_eq u [lt_trans nextp bound1 bound2 
+                                                  hypjoin (lt nextp bound1) tt by c_eq u end
+                                                  u2] 
+                                     end
+        | queue_celln _ _ a => truei
+        end].
 
 Define queue_cell_has_next : Fun(A:type)(spec I:rheaplet_id)(c:<queue_cell A I>).bool :=
   fun(A:type)(spec I:rheaplet_id)(c:<queue_cell A I>):bool.
