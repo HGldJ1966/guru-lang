@@ -1577,18 +1577,87 @@ Define list_subset_cons_tt_tail :
   hypjoin (list_subset eqA l1 l2) tt by u p1 end
   .
 
-%-
-% may require the lemmas above
-Define trusted list_subset_tt_subset_append:
+Define list_subset_refl :
   Forall(A:type)
         (eqA:Fun(a b: A).bool)
-        %maybe (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+        (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+        (eqA_refl:Forall(a:A).{ (eqA a a) = tt })
+        (l:<list A>).
+    { (list_subset eqA l l) = tt }
+  :=
+  foralli(A:type)
+         (eqA:Fun(a b: A).bool)
+         (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+         (eqA_refl:Forall(a:A).{ (eqA a a) = tt }).
+  induction(l:<list A>) return { (list_subset eqA l l) = tt }
+  with
+    nil _ => hypjoin (list_subset eqA l l) tt by l_eq end
+  | cons _ a l' =>
+      abbrev f = fun(x:A).(member A x l eqA) in
+      abbrev f' = fun(x:A).(member A x l' eqA) in
+      
+      % want: f' implies f
+      abbrev p1 =
+        foralli(y:A)(u:{ (f' y) = tt}).
+        existse [eqA_total y a]
+        foralli(z:bool)(z_pf:{ (eqA y a) = z }).
+        hypjoin (f y) tt by l_eq u z_pf [or_tt z] end in
+        
+      % want: (list_all f l') = tt
+      abbrev p2 = hypjoin (list_all A f' l') tt by [l_IH l'] end in
+      abbrev p3 = [list_all_implies A f' f p1 l' p2] in
+      
+      % want: (list_all f l)
+      hypjoin (list_subset eqA l l) tt by l_eq [eqA_refl a] p3 end
+  end.
+
+Define list_subset_tt_append :
+  Forall(A:type)
+        (eqA:Fun(a b: A).bool)
+        (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
         (l1 l2 l3:<list A>)
-        (u:{ (list_subset A eqA l1 l2) = tt }).
+        (u:{ (list_subset eqA l1 l2) = tt }).
     { (list_subset eqA l1 (append l2 l3)) = tt }
   :=
-  truei.
+  foralli(A:type)
+        (eqA:Fun(a b: A).bool)
+        (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z }).
+  induction(l1:<list A>) return
+    Forall(l2 l3:<list A>)
+          (u:{ (list_subset eqA l1 l2) = tt }).
+      { (list_subset eqA l1 (append l2 l3)) = tt }
+  with
+    nil _ =>
+      foralli(l2 l3:<list A>)
+             (u:{ (list_subset eqA l1 l2) = tt }).
+      hypjoin (list_subset eqA l1 (append l2 l3)) tt by l1_eq end
+  | cons _ a l1' =>
+      foralli(l2 l3:<list A>)
+             (u:{ (list_subset eqA l1 l2) = tt }).
+      existse [appendTot A l2 l3]
+      foralli(z:<list A>)(z_pf:{(append l2 l3) = z}).
+      
+      abbrev f = fun(a:A).(member A a l2 eqA) in
+      abbrev f' = fun(a:A).(member A a z eqA) in
+      
+      % f implies f'
+      abbrev p' =
+        foralli(a:A)(u':{ (f a) = tt }).
+        abbrev p' = hypjoin (member a l2 eqA) tt by u' end in
+        hypjoin (f' a) tt by [member_tt_append A eqA eqA_total a l2 l3 p'] z_pf end in
+        
+      % want: (list_all f l1) = tt
+      abbrev p1 = hypjoin (list_all f l1) tt by u end in
+      
+      % want: (list_all f' l1) = tt
+      abbrev p2 = [list_all_implies A f f' p' l1 p1] in
+            
+      hypjoin (list_subset A eqA l1 (append l2 l3)) tt by z_pf p2 end
+  end
+  .
 
+%-
+% may require the lemmas above
 Define trusted list_subset_tt_subset_cons :
   Forall(A:type)
         (eqA:Fun(a b: A).bool)
@@ -1609,3 +1678,4 @@ Define trusted list_subset_tt_subset_append_front:
   :=
   truei.
 -%
+
