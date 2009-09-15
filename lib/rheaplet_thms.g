@@ -52,18 +52,18 @@ Define rheaplet_in_list_all :
     end.          
 
 Define rheaplet_set_list_all : 
-  Forall(A:type)(f:Fun(a:A).bool)(ftot : Forall(a:A).Exists(b:bool). {(f a) = b})
+  Forall(A:type)(f:Fun(a:A).bool)
         (I:rheaplet_id)(h:<rheaplet A I>)(a:A)(p:<alias I>)
         (u1 : { (list_all f h) = tt })
         (u2 : { (f a) = tt })
         (u3 : { (lt p (length h)) = tt }).
      { (list_all f (rheaplet_set p h a)) = tt } := 
-  foralli(A:type)(f:Fun(a:A).bool)(ftot : Forall(a:A).Exists(b:bool). {(f a) = b})
+  foralli(A:type)(f:Fun(a:A).bool)
          (I:rheaplet_id)(h:<rheaplet A I>)(a:A)(p:<alias I>)
          (u1 : { (list_all f h) = tt })
          (u2 : { (f a) = tt })
          (u3 : { (lt p (length h)) = tt }).
   trans cong (list_all f *) join (rheaplet_set p h a) (set_nth p h a)
-        [list_all_set_nth A p h a f ftot u3 u1 u2].
+        [list_all_set_nth A p h a f u3 u1 u2].
 
 
