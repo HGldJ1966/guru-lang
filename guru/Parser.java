@@ -43,6 +43,8 @@ public class Parser extends ParserBase {
 		return true;
 	    }
 	    return false;
+	case Expr.CHAR_EXPR:
+	    return true;
 	case Expr.LAST+STRING:
 	    return true;
 	}
@@ -286,6 +288,9 @@ public class Parser extends ParserBase {
 		break;
 	    case Expr.COMPRESS:
 		e = readCompress();
+		break;
+	    case Expr.CHAR_EXPR:
+		e = readCharExpr();
 		break;
 	    case Expr.LAST+STRING:
 		e = readStringExpr();
@@ -674,6 +679,11 @@ public class Parser extends ParserBase {
     protected Expr readStringExpr() throws IOException {
 	ungetc('\"');
 	return new StringExpr(readString());
+    }
+
+    protected Expr readCharExpr() throws IOException {
+	ungetc('\'');
+	return new CharExpr(readString(new Character('\'')));
     }
  
     protected Include readInclude() throws IOException
@@ -2582,6 +2592,7 @@ public class Parser extends ParserBase {
 		keywordTree.add( "cind", Expr.CIND );
 		keywordTree.add( "impossible", Expr.IMPOSSIBLE );
 		keywordTree.add( "size", Expr.SIZE );
+		keywordTree.add( "\'", Expr.CHAR_EXPR );
 		keywordTree.add( "\"", Expr.LAST + STRING );
 		
 		keywordTree.add( ")", Expr.INVALID );
@@ -2657,11 +2668,10 @@ public class Parser extends ParserBase {
     {
         if (!eat_ws())
 	    return Expr.INVALID;
-
-		int	val = tryToEatKeyword();
-		//System.out.println( "tryToEatKeyword: " + String.valueOf(val) );
-		if( val < 0 )
-			return Expr.VAR;
-		return val;
+	int	val = tryToEatKeyword();
+	//System.out.println( "tryToEatKeyword: " + String.valueOf(val) );
+	if( val < 0 )
+		return Expr.VAR;
+	return val;
     }
 }

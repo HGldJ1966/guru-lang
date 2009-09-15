@@ -97,6 +97,8 @@ public abstract class Expr {
     public static final int TRANSS = 85; //proof
     public static final int COMPRESS = 86; // term
 
+    public static final int CHAR_EXPR = 87; // term
+
 
     public static final int LAST = 200;
 
