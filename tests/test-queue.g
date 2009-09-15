@@ -7,7 +7,7 @@ Inductive enqueue_all_t : type :=
 
 Define enqueue_all : Fun(#unique_point stdio:stdio_t)(#unique q:<queue string>).#unique enqueue_all_t :=
   fun enqueue_all(#unique_point stdio:stdio_t)(#unique q:<queue string>):#unique enqueue_all_t.
-     match (read_until_char stdio Csp join (eqchar Csp Cc0) ff tt %- eat the newline -%) with
+     match (read_until_char stdio ' ' join (eqchar ' ' Cc0) ff tt %- eat the newline -%) with
        return_read_until_char s eof stdio =>
        let q = match (inc string s) with
                  unil _ => do (dec string s) q end
