@@ -12,7 +12,7 @@ test-queue-h:	test-queue-h.hs Makefile
 	ghc -O2 -o test-queue-h --make test-queue-h.hs
 
 test-warray-g:	test-warray-g.g Makefile
-	../bin/guru test-warray-g.g
+	../../../bin/guru test-warray-g.g
 	gcc -O2 -w -o test-warray-g test-warray-g.c
 	./test-warray-g
 

@@ -1,8 +1,8 @@
 
-Include "../lib/nat.g".
-Include "../lib/warray.g".
-Include "../lib/stdio.g".
-Include "../lib/boxedword.g".
+Include "../../../lib/nat.g".
+Include "../../../lib/warray.g".
+Include "../../../lib/stdio.g".
+Include "../../../lib/boxedword.g".
 
 %Set "debug_eta_expand".
 %Set "debug_to_carraway".
@@ -53,4 +53,4 @@ Define test :=
     end
   end.
 
-Compile test to "test-warray.c".
+Compile test to "test-warray-g.c".
