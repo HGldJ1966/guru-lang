@@ -545,7 +545,7 @@ Define nth_length : Forall(A:type)(l1 l2:<list A>)(a:A).
     [induction(l1:<list A>) return { (nth (length l1) (append l1 (cons a l2))) = a }
        with
        nil _ => hypjoin (nth (length l1) (append l1 (cons a l2))) a by l1_eq end
-     | cons _ b l1' => hypjoin (nth (length l1) (append l1 (cons a l2))) a by l1_eq end
+     | cons _ b l1' => hypjoin (nth (length l1) (append l1 (cons a l2))) a by l1_eq [l1_IH l1'] end
      end l1].
 
 Define set_nth_length : Forall(A:type)(n:nat)(l:<list A>)(a:A)
