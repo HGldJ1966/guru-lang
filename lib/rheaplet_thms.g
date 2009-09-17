@@ -10,11 +10,11 @@ Define rheaplet_set_get : Forall(A:type)(I:rheaplet_id)(h:<rheaplet A I>)
            join (nth p1 h) (rheaplet_get p1 h)
     end.
 
-Define trusted rheaplet_in_get : Forall(A:type)(I:rheaplet_id)(h:<rheaplet A I>)
+Define trusted rheaplet_in_get : Forall(A:type)(I:rheaplet_id)(h h':<rheaplet A I>)
                                 (p:<alias I>)(a:A)
                                 (u:{ (rheaplet_in h a) = (return_rheaplet_in h' p) }).
                             { (rheaplet_get p h') = a } :=
-  foralli(A:type)(I:rheaplet_id)(h:<rheaplet A I>)
+  foralli(A:type)(I:rheaplet_id)(h h':<rheaplet A I>)
          (p:<alias I>)(a:A)
          (u:{ (rheaplet_in h a) = (return_rheaplet_in h' p) }).
     truei.
