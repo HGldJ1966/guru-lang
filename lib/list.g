@@ -539,6 +539,15 @@ Define eq_length_append
           u4
   end.
 
+Define nth_length : Forall(A:type)(l1 l2:<list A>)(a:A).
+                      { (nth (length l1) (append l1 (cons a l2))) = a } :=
+  foralli(A:type)(l1 l2:<list A>)(a:A).
+    [induction(l1:<list A>) return { (nth (length l1) (append l1 (cons a l2))) = a }
+       with
+       nil _ => hypjoin (nth (length l1) (append l1 (cons a l2))) a by l1_eq end
+     | cons _ b l1' => hypjoin (nth (length l1) (append l1 (cons a l2))) a by l1_eq end
+     end l1].
+
 Define set_nth_length : Forall(A:type)(n:nat)(l:<list A>)(a:A)
                               (u:{(lt n (length l)) = tt }).
                          { (length (set_nth n l a)) = (length l) } :=

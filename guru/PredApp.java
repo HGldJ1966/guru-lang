@@ -51,6 +51,10 @@ public class PredApp extends ReducibleApp{
 	return ctxt.isPredicate(c); 
     }
 
+    public Expr classify(Context ctxt, int approx, boolean spec) {
+	return super.classify(ctxt,approx,true);
+    }
+
     public Expr dropAnnos(Context ctxt) {
 	App s = (App)super.dropAnnos(ctxt);
 	if (s != this)
