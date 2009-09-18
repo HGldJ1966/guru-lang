@@ -117,7 +117,7 @@ Define dequeue : Fun(spec A:type)(#unique q:<queue A>)(u:{ (queue_is_empty q) = 
                (consume_owned <queue_cell A I> cell)
                (consume_unique_owned <rheaplet_queue A I> ih) 
                (dec <alias I> qout)
-               cast (queue_datac A1 I h nextp qin) by symm q_Eq
+               cast (queue_datac A1 I h qin nextp) by symm q_Eq
             end
           | queue_celln _ _ b => 
             do (consume_owned A1 b)

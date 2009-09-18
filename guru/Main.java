@@ -30,7 +30,7 @@ public class Main {
 	if (trusted.size() > 0) {
 	    ctxt.w.print("Trusting "+(new Integer(trusted.size())).toString());
 	    if (!ctxt.getFlag("print_trusted"))
-		ctxt.w.println(" theorems.\n");
+		ctxt.w.println(" theorems total.\n");
 	    else {
 		ctxt.w.println(":\n");
 	    

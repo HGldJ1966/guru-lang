@@ -726,10 +726,17 @@ public abstract class Expr {
     }
     
 
+    // get all the constants in this Expr.
     public java.util.Set getDependences() {
         return new TreeSet();
     }
 
+    /* get all the constants in this Expr or in any Expr reachable by
+       a definition from it.
+    public java.util.Set getAllDependences(ctxt) {
+	
+    }
+    */
 
     // if dtype is true, compute the carraway datatype (aka runtime type), 
     // if dtype is false, compute the carraway resource type.

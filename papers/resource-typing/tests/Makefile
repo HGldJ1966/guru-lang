@@ -2,7 +2,6 @@ GHC=ghc-6.10.4
 
 test_queue_g:	test_queue_g.c
 	gcc -O2 -w -o test_queue_g test_queue_g.c
-	time ./test_queue_g < war-and-peace.txt || echo "problem"
 
 test_queue_g.c:	test_queue_g.g
 	../../../bin/guru test_queue_g.g

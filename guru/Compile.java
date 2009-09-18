@@ -440,6 +440,8 @@ public class Compile extends Command {
 	Context trans_ctxt = new Context(); 
 	trans_ctxt.copyFlags(ctxt);
 
+	//java.util.Collection deps = cmain.getAllDependences();
+
 	guru.compiler.EtaExpand ee = new guru.compiler.EtaExpand(ctxt,trans_ctxt);
 	ee.expand(cmain);
 
