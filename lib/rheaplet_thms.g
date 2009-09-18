@@ -10,14 +10,22 @@ Define rheaplet_set_get : Forall(A:type)(I:rheaplet_id)(h:<rheaplet A I>)
            join (nth p1 h) (rheaplet_get p1 h)
     end.
 
-Define trusted rheaplet_in_get : Forall(A:type)(I:rheaplet_id)(h h':<rheaplet A I>)
+Define rheaplet_in_get : Forall(A:type)(I:rheaplet_id)(h h':<rheaplet A I>)
                                 (p:<alias I>)(a:A)
                                 (u:{ (rheaplet_in h a) = (return_rheaplet_in h' p) }).
                             { (rheaplet_get p h') = a } :=
   foralli(A:type)(I:rheaplet_id)(h h':<rheaplet A I>)
          (p:<alias I>)(a:A)
          (u:{ (rheaplet_in h a) = (return_rheaplet_in h' p) }).
-    truei.
+      abbrev P = symm trans join (return_rheaplet_in (append h (cons a nil)) (length h))
+                                 (rheaplet_in h a) 
+                            u in
+      transs cong (rheaplet_get * h') inj (return_rheaplet_in ** *) P
+             cong (rheaplet_get (length h) *) inj (return_rheaplet_in * **) P
+             join (rheaplet_get (length h) (append h (cons a nil))) 
+                  (nth (length h) (append h (cons a nil)))
+             [nth_length A h (nil A) a] 
+      end.
 
 Define rheaplet_in_length : 
   Forall(A:type)(I:rheaplet_id)(h h':<rheaplet A I>)(a:A)(p:<alias I>)

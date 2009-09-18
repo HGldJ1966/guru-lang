@@ -1,20 +1,84 @@
-test-queue-g:	test-queue-g.c
-	gcc -O2 -w -o test-queue-g test-queue-g.c
-	time ./test-queue-g < war-and-peace.txt || echo "problem"
+GHC=ghc-6.10.4
 
-test-queue-g.c:	test-queue-g.g
-	../../../bin/guru test-queue-g.g
+test_queue_g:	test_queue_g.c
+	gcc -O2 -w -o test_queue_g test_queue_g.c
+	time ./test_queue_g < war-and-peace.txt || echo "problem"
 
-test-queue-c:	test-queue-c.ml Makefile
-	ocamlopt test-queue-c.ml -o test-queue-c
+test_queue_g.c:	test_queue_g.g
+	../../../bin/guru test_queue_g.g
 
-test-queue-h:	test-queue-h.hs Makefile
-	ghc -O2 -o test-queue-h --make test-queue-h.hs
+test_queue_c:	test_queue_c.ml 
+	ocamlopt test_queue_c.ml -o test_queue_c
 
-test-warray-g:	test-warray-g.g Makefile
-	../../../bin/guru test-warray-g.g
-	gcc -O2 -w -o test-warray-g test-warray-g.c
-	./test-warray-g
+test_queue_h:	test_queue_h.hs 
+	$(GHC) -O2 -o test_queue_h --make test_queue_h.hs
 
-test-warray-h:   test-warray-h.hs Makefile
-	ghc -O2 -o test-warray-h --make test-warray-h.hs
+test_warray_g:	test_warray_g.g 
+	../../../bin/guru test_warray_g.g
+	gcc -O2 -w -o test_warray_g test_warray_g.c
+
+test_warray_gp:	test_warray_g.g 
+	../../../bin/guru test_warray_g.g
+	gcc -O2 -w -pg -o test_warray_gp test_warray_g.c
+
+test_warray_h:   test_warray_h.hs 
+	$(GHC) -O2 -o test_warray_h --make test_warray_h.hs
+
+test_warray_c:   test_warray_c.ml 
+	ocamlopt -o test_warray_c test_warray_c.ml
+
+test_warray_cp:   test_warray_c.ml 
+	ocamlopt -o test_warray_cp -p test_warray_c.ml
+
+clean:
+	rm -f test_warray_h test_warray_c test_warray_g test_queue_h test_queue_c test_queue_g 
+	rm -f test_warray_hp test_warray_cp test_warray_gp test_queue_hp test_queue_cp test_queue_gp 
+	rm -f *.cmi *.cmx *.o *.hi
+
+test_warray: test_warray_h test_warray_g
+
+test_queue: test_queue_h test_queue_c test_queue_g 
+
+run_warray: test_warray
+	@echo "----------------------------"
+	@echo "Haskell warray"
+	@echo ""
+	time ./test_warray_h
+	time ./test_warray_h
+	time ./test_warray_h
+	@echo "----------------------------"
+	@echo "OCaml warray"
+	@echo ""
+	time ./test_warray_c
+	time ./test_warray_c
+	time ./test_warray_c
+	@echo "----------------------------"
+	@echo "Guru warray"
+	@echo ""
+	time ./test_warray_g
+	time ./test_warray_g
+	time ./test_warray_g
+	@echo "----------------------------"
+
+run_queue: test_queue
+	@echo "----------------------------"
+	@echo "Haskell queue"
+	@echo ""
+	time ./test_queue_h < war-and-peace.txt
+	time ./test_queue_h < war-and-peace.txt
+	time ./test_queue_h < war-and-peace.txt
+	@echo "----------------------------"
+	@echo "OCaml queue"
+	@echo ""
+	time ./test_queue_c < war-and-peace.txt
+	time ./test_queue_c < war-and-peace.txt
+	time ./test_queue_c < war-and-peace.txt
+	@echo "----------------------------"
+	@echo "Guru queue"
+	@echo ""
+	time ./test_queue_g < war-and-peace.txt
+	time ./test_queue_g < war-and-peace.txt
+	time ./test_queue_g < war-and-peace.txt
+	@echo "----------------------------"
+
+run:	run_warray run_queue

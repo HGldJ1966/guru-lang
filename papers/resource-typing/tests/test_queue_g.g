@@ -78,4 +78,4 @@ Set "debug_stages".
 %Set "debug_eta_expand".
 %Set "debug_simulate".
 
-Compile test1 to "test-queue-g.c".
+Compile test2 to "test_queue_g.c".
