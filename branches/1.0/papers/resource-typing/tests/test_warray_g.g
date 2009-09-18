@@ -53,4 +53,4 @@ Define test :=
     end
   end.
 
-Compile test to "test-warray-g.c".
+Compile test to "test_warray_g.c".

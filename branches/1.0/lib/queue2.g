@@ -89,7 +89,7 @@ Inductive queue : Fun(A:type).type :=
                    (inv_qin2 : {(queue_cell_has_next (rheaplet_get qin h)) = ff}).
                    #unique <queue A>
 | queue_datan : Fun(A:type)(spec I:rheaplet_id)(#unique h:<rheaplet_queue A I>)
-                   (inv:@<rheaplet_queue_inv_h A I (length <queue_cell A I> h) h>).#unique <queue A>.
+                   (inv:@<rheaplet_queue_inv A I h>).#unique <queue A>.
 
 Inductive queue_new_t : Fun(A:type).type :=
   return_queue_new : Fun(spec A:type)(#unique q:<queue A>)
@@ -214,16 +214,51 @@ Define enqueue : Fun(spec A:type)(#unique q:<queue A>)(a:A).#unique <queue A> :=
                                 hypjoin ((queue_cell_inv (length h'')) (queue_cellc x new_qin)) tt
                                   by new_qin_lt_length_h'' end
                                 qin_lt_length_h']
-                          
+                          hypjoin (queue_cell_has_next (rheaplet_get new_qin h'')) ff
+                          by h''_eq2 [rheaplet_in_get <queue_cell A I> I h h' new_qin
+                                        (queue_celln A I a) i]
+                             [rheaplet_set_get <queue_cell A I> I h' new_qin qin 
+                               (queue_cellc A I x (inc <alias I> new_qin))
+                               symm
+                               [lt_implies_neq qin new_qin
+                                 trans cong (lt qin *)
+                                        symm inj (return_rheaplet_in ** *) 
+                                               trans join (return_rheaplet_in
+                                                            (append h (cons (queue_celln a) nil)) (length h))
+                                                          (rheaplet_in h (queue_celln a))
+                                                     i 
+                                       inv_qin]]
+                          end
                       ) by symm q_Eq
                end
            end
         end
       end
-  | queue_datan A1 I h =>
-    match (rheaplet_in <queue_cell A I> I h (queue_celln A1 I a)) with
-      return_rheaplet_in _ _ h new_qout => 
-        cast (queue_datac A1 I h (inc <alias I> new_qout) new_qout) by symm q_Eq
+  | queue_datan A1 I h inv =>
+    match (rheaplet_in <queue_cell A I> I h (queue_celln A1 I a)) by i _ with
+      return_rheaplet_in _ _ h' new_qout => 
+        abbrev new_qout_lt_length_h' = [rheaplet_in_length <queue_cell A I> I h h'(queue_celln A1 I a) new_qout i] in
+        cast (queue_datac A1 I h' (inc <alias I> new_qout) new_qout
+                trans join (lt (inc <alias I> new_qout) (length h'))
+                           (lt new_qout (length h'))
+                      new_qout_lt_length_h'
+                new_qout_lt_length_h'
+                [rheaplet_in_list_all <queue_cell A I>
+                   (queue_cell_inv A I (length <queue_cell A I> h'))
+                   [queue_cell_inv_tot A I (length <queue_cell A I> h')]
+                   I h h' (queue_celln A1 I a) new_qout
+                   [weaken_rheaplet_queue_inv_h A I h 
+                      (length <queue_cell A I> h) (length <queue_cell A I> h') inv 
+                      trans cong (lt (length h) *)
+                              [rheaplet_in_length2 <queue_cell A I> I h h' 
+                                (queue_celln A1 I a) new_qout i]
+                            [lt_S (length <queue_cell A I> h)]]
+                   join ((queue_cell_inv (length h')) (queue_celln a)) tt
+                   i]
+                hypjoin (queue_cell_has_next (rheaplet_get (inc new_qout) h')) ff
+                by [rheaplet_in_get <queue_cell A I> I h h' new_qout (queue_celln A I a) i]
+                end
+             ) by symm q_Eq
     end
   end.
 
