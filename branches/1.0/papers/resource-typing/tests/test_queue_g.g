@@ -1,4 +1,4 @@
-Include "../../../lib/queue.g".
+Include "../../../lib/queue2.g".
 Include "../../../lib/stdio.g".
 Include "../../../lib/string.g".
 
@@ -78,4 +78,4 @@ Set "debug_stages".
 %Set "debug_eta_expand".
 %Set "debug_simulate".
 
-Compile test2 to "test_queue_g.c".
+Compile test1 to "test_queue_g.c".

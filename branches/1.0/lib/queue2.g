@@ -265,17 +265,32 @@ Define enqueue : Fun(spec A:type)(#unique q:<queue A>)(a:A).#unique <queue A> :=
 Define dequeue : Fun(spec A:type)(#unique q:<queue A>)(u:{ (queue_is_empty q) = ff }).#unique <queue A> :=
   fun(spec A:type)(#unique q:<queue A>)(u:{ (queue_is_empty q) = ff }):#unique <queue A>.
     match q with
-      queue_datac A1 I h qin qout => 
+      queue_datac A1 I h qin qout inv_qin inv_qout inv inv_qin2 => 
         let ih = (inspect_unique <rheaplet_queue A I> h) in
         let cell = (rheaplet_get <queue_cell A I> I (inspect <alias I> qout) ih) in
-          match ! cell with
+          match ! cell by cell_eq2 _ with
             queue_cellc _ _ b nextp =>
             let nextp = (owned_to_unowned <alias I> nextp) in
             do (consume_owned A1 b)
                (consume_owned <queue_cell A I> cell)
                (consume_unique_owned <rheaplet_queue A I> ih) 
                (dec <alias I> qout)
-               cast (queue_datac A1 I h nextp qin) by symm q_Eq
+               cast (queue_datac A1 I h qin nextp
+                       inv_qin 
+                       trans hypjoin (lt nextp (length h))
+                                     ((queue_cell_inv (length h)) cell)
+                             by cell_eq2 nextp_eq end
+                          [rheaplet_get_list_all <queue_cell A I>
+                             (queue_cell_inv A I (length <queue_cell A I> h))
+                             [queue_cell_inv_tot A I (length <queue_cell A I> h)]
+                             I ih cell (inspect <alias I> qout) 
+                             trans hypjoin (list_all (queue_cell_inv (length h)) ih) 
+                                           (list_all (queue_cell_inv (length h)) h) 
+                                   by ih_eq end
+                                 inv 
+                             symm cell_eq]
+                       inv
+                       inv_qin2) by symm q_Eq
             end
           | queue_celln _ _ b => 
             do (consume_owned A1 b)
@@ -283,10 +298,10 @@ Define dequeue : Fun(spec A:type)(#unique q:<queue A>)(u:{ (queue_is_empty q) = 
                (consume_unique_owned <rheaplet_queue A I> ih) 
                (dec <alias I> qout)
                (dec <alias I> qin)
-               cast (queue_datan A1 I h) by symm q_Eq
+               cast (queue_datan A1 I h inv) by symm q_Eq
             end
           end 
-    | queue_datan A1 I h =>
+    | queue_datan A1 I h inv =>
       impossible transs symm u
                         hypjoin (queue_is_empty q) tt by q_eq end
                         clash tt ff

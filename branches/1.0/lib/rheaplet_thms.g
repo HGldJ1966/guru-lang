@@ -106,3 +106,19 @@ Define rheaplet_set_length :
                  (set_nth p h a)
           [set_nth_length A p h a u].
   
+Define rheaplet_get_list_all :
+  Forall(A:type)(f:Fun(a:A).bool)(ftot : Forall(a:A).Exists(b:bool). {(f a) = b})
+        (I:rheaplet_id)(h:<rheaplet A I>)(a:A)(p:<alias I>)
+        (u1 : { (list_all f h) = tt })
+        (u2 : { (rheaplet_get p h) = a }).
+     { (f a) = tt } := 
+  foralli(A:type)(f:Fun(a:A).bool)(ftot : Forall(a:A).Exists(b:bool). {(f a) = b})
+         (I:rheaplet_id)(h:<rheaplet A I>)(a:A)(p:<alias I>)
+         (u1 : { (list_all f h) = tt })
+         (u2 : { (rheaplet_get p h) = a }).
+    [list_all_nth A p h a f ftot
+        trans join (nth p h) (rheaplet_get p h) 
+              u2
+        u1].
+              
+  

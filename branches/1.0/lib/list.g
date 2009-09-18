@@ -313,6 +313,51 @@ Define append_nil : Forall(A:type)(l:<list A>).{ (append l nil) = l } :=
               symm lp
     end.
 
+Define nth_append : Forall(A:type)(n:nat)(l:<list A>)(a:A)
+                          (u:{(nth n l) = a}).
+                       Exists(l1 l2:<list A>).
+                         { l = (append l1 (cons a l2)) } :=
+  foralli(A:type).
+  induction(n:nat)(l:<list A>) 
+    return Forall(a:A)
+                 (u:{(nth n l) = a}).
+           Exists(l1 l2:<list A>).
+             { l = (append l1 (cons a l2)) } with
+    nil _ => 
+      foralli(a:A)
+             (u:{(nth n l) = a}).
+        contra
+          transs symm u
+                 hypjoin (nth n l) abort ! by l_eq end
+                 aclash a
+          end
+        Exists(l1 l2:<list A>).
+             { l = (append l1 (cons a l2)) } 
+  | cons _ b l' => 
+    foralli(a:A)
+           (u:{(nth n l) = a}).
+    case n with
+      Z => 
+      existsi (nil A) 
+      Exists(l2:<list A>).
+              { l = (append * (cons a l2)) } 
+      existsi l'
+         { l = (append nil (cons a *)) } 
+         hypjoin l (append nil (cons a l'))
+         by u l_eq n_eq end
+    | S n' => 
+      existse [l_IH n' l' a hypjoin (nth n' l') a by u n_eq l_eq end]
+      foralli(l1 l2:<list A>)(u2:{ l' = (append l1 (cons a l2)) }).
+        existsi (cons A b l1)
+        Exists(l2:<list A>).
+                { l = (append * (cons a l2)) } 
+        existsi l2
+          { l = (append (cons b l1) (cons a *)) } 
+          hypjoin l (append (cons b l1) (cons a l2))
+          by u2 l_eq end
+    end
+  end.
+             
 
 Define length : Fun(A: type)(^#owned l : <list A>).nat :=
 	fun length (A: type)(^#owned l : <list A>) : nat.
@@ -1016,10 +1061,55 @@ with
                            end
                                     
 end
-
 l1 u].
 
-Define  list_all_total :
+Define list_all_append2 :
+  Forall(A:type)(f:Fun(a:A).bool)(ftot : Forall(a:A).Exists(b:bool). {(f a) = b})
+        (l1 l2:<list A>)
+        (u: {(list_all f (append l1 l2)) = tt}).
+    {(list_all f l1) = tt} :=
+  foralli(A:type)(f:Fun(a:A).bool)(ftot : Forall(a:A).Exists(b:bool). {(f a) = b}).
+  induction(l1:<list A>) 
+  return Forall(l2:<list A>)
+               (u: {(list_all f (append l1 l2)) = tt}).
+            {(list_all f l1) = tt} with
+    nil _ => 
+      foralli(l2:<list A>)
+             (u: {(list_all f (append l1 l2)) = tt}).
+        hypjoin (list_all f l1) tt by l1_eq end
+  | cons _ a l1' =>
+      foralli(l2:<list A>)
+             (u: {(list_all f (append l1 l2)) = tt}).
+      case terminates (f a) by ftot by fa _ with
+        ff => contra
+                transs symm u 
+                       hypjoin (list_all f (append l1 l2)) ff by fa l1_eq end
+                       clash ff tt
+                end
+              {(list_all f l1) = tt}
+      | tt => hypjoin (list_all f l1) tt
+              by l1_eq fa
+                 [l1_IH l1' l2
+                   hypjoin (list_all f (append l1' l2)) tt 
+                   by fa l1_eq u end]
+              end 
+      end
+  end.
+
+Define list_all_append3 :
+  Forall(A:type)(f:Fun(a:A).bool)(ftot : Forall(a:A).Exists(b:bool). {(f a) = b})
+        (l1 l2:<list A>)
+        (u: {(list_all f (append l1 l2)) = tt}).
+    {(list_all f l2) = tt} :=
+  foralli(A:type)(f:Fun(a:A).bool)(ftot : Forall(a:A).Exists(b:bool). {(f a) = b})
+         (l1 l2:<list A>)
+         (u: {(list_all f (append l1 l2)) = tt}).
+    symm 
+    trans symm u
+      [list_all_append A f ftot l1 l2 
+         [list_all_append2 A f ftot l1 l2 u]].
+
+Define list_all_total :
   Forall(A:type)
         (f:Fun(a:A).bool)
         (f_tot:Forall(x:A).Exists(y:bool).{ (f x) = y })
@@ -1144,6 +1234,23 @@ Define list_all_set_nth :
            end
       end
    end l n u1 u2].
+
+Define list_all_nth : Forall(A:type)(n:nat)(l:<list A>)(a:A)
+                            (f:Fun(a:A).bool)
+                            (ftot : Forall(a:A).Exists(b:bool). {(f a) = b})
+                            (u1:{(nth n l) = a})
+                            (u2:{(list_all f l) = tt}).
+                       { (f a) = tt } :=
+ foralli(A:type)(n:nat)(l:<list A>)(a:A)
+        (f:Fun(a:A).bool)(ftot : Forall(a:A).Exists(b:bool). {(f a) = b})
+        (u1:{(nth n l) = a})
+        (u2:{(list_all f l) = tt}).
+  existse [nth_append A n l a u1]
+  foralli(l1 l2:<list A>)(u3:{l = (append l1 (cons a l2))}).
+    [list_all_cons_tt_head A f a l2
+      [list_all_append3 A f ftot l1 (cons A a l2)
+         hypjoin (list_all f (append l1 (cons a l2))) tt
+         by u3 u2 end]].    
 
 Define list_all_implies :
   Forall(A:type)
