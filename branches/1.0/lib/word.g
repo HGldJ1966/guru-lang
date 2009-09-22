@@ -10,9 +10,13 @@ END.
 
 Untracked word.
 
-Define primitive eqword : Fun(#untracked w1 w2:word).bool := (eqbv wordlen) <<END
+%Set "print_parsed".
+
+Define primitive eqword : Fun(w1 w2:word).bool := (eqbv wordlen) <<END
   #define geqword(w1,w2) (w1 == w2)
 END.
+
+%Unset "print_parsed".
 
 Define eqword_eq := [eqbv_eq wordlen].
 Define eqword_tot := [eqbv_tot wordlen].

@@ -1877,6 +1877,9 @@ public class Parser extends ParserBase {
 
 	if (type == null) {
 	    type = readA();
+	    if (type.construct == Expr.CONST && ctxt.isUntracked((Const)type)
+	    	&& anno.status == Ownership.DEFAULT)
+	       anno = new Ownership(Ownership.UNTRACKED);
 
 	    if (!eat_ws() || !tryToEat(")"))
 		handleError("Unexpected end of input reading a variable list.");
