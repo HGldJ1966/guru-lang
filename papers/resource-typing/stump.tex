@@ -78,11 +78,6 @@
 \authorinfo{Evan Austin}
 {CS Dept.\\ The University of Kansas, USA}
 {ecaustin@ittc.ku.edu}
-
-\authorinfo{Morgan Deters}
-{CS Dept.\\ New York University, USA}
-{mdeters@lsi.upc.edu}
-
 %\date{}
 
 \maketitle
@@ -90,17 +85,20 @@
 %\thispagestyle{empty}
 
 \begin{abstract}
-This paper presents a resource typing framework -- based on linear and
-ownership typing, and implemented as part of the Guru
-verified-programming language -- in which abstractions for various
-kinds of program resources can be defined.  Implemented examples
-include reference-counted data, mutable arrays, and heap-allocated
-mutable aliased data.  Each kind of resource is optionally described
-by a functional model, enabling external reasoning about programs that
-use resources.  During compilation, this functional model is replaced
-by its actual imperative implementation.  This approach enables
+This paper presents a resource typing framework for the Guru
+verified-programming language, in which abstractions for various kinds
+of program resources can be defined.  Implemented examples include
+reference-counted data, mutable arrays, and heap-allocated mutable
+aliased data.  Each kind of resource is optionally described by a
+functional model, enabling external reasoning about programs that use
+resources.  During compilation, this functional model is replaced by
+its actual imperative implementation.  This approach enables
 efficient, type-safe programming with mutable and aliased data
-structures, with explicit deallocation (not garbage collection).
+structures, with explicit deallocation (not garbage collection).  We
+demonstrate the approach with two examples: binary search in a mutable
+array where we statically verify array bounds are respected; and
+(mutable) FIFO queues, where we statically verify that the ``in''-end
+of the queue has no next-pointer.
 \end{abstract}
 
 \category{D.3.2}{Programming Languages}{Applicative (functional) languages}
@@ -116,7 +114,8 @@ Dependently Typed Programming, Resource Types, Aliasing, Language-Based Verifica
 \section{Introduction}
 
 Dependent types are of significant current interest for practical
-verified programming, as a substantial number of recent works attest.
+verified programming, as a substantial number of recent works attest
+(e.g.,~\cite{oury+08,norell07,pasalic+07,sheard06,nanevski+05,licata+05,chenxi05}).
 Dependent types hold out the promise of incrementally extending the
 verification power of traditional type systems.  With traditional
 verification methods, there often at least appears to be a significant
@@ -146,7 +145,7 @@ standard library for Java).  But there is at least one technical issue
 which has always plagued functional programming languages, and others
 based on automatic memory management: efficiency.  Again, despite
 tremendous invention in the field, garbage collection remains costly,
-as several recent studies attest~\cite{Xian2008,hertz+05}.
+as several recent studies report~\cite{Xian2008,hertz+05}.
 
 This paper shows how to combine the expressive power of dependent
 types with linear types to define abstractions for different kinds of

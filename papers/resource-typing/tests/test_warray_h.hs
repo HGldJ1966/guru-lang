@@ -3,7 +3,6 @@ import GHC.Arr
 import Data.Word
 
 mylt a b = (a < b)
-
 myeq a b = (a == b)
 
 data MyComp = MGT | MEQ | MLT deriving (Show,Eq)
@@ -11,8 +10,8 @@ data MyComp = MGT | MEQ | MLT deriving (Show,Eq)
 comparator :: (Word32 -> Word32 -> Bool) -> 
               (Word32 -> Word32 -> Bool) ->
               Word32 -> Word32 -> MyComp
-comparator lt le a b = case (lt a b) of
-                         False -> case (le a b) of
+comparator lt eq a b = case (lt a b) of
+                         False -> case (eq a b) of
                                     False -> MGT
                                     True -> MEQ
                          True -> MLT
