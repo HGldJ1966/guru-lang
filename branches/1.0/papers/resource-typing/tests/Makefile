@@ -3,6 +3,9 @@ GHC=ghc-6.10.4
 test_queue_g:	test_queue_g.c
 	gcc -O2 -w -o test_queue_g test_queue_g.c
 
+test_queue_gd:	test_queue_g.c
+	gcc -O0 -w -ggdb -o test_queue_gd test_queue_g.c
+
 test_queue_g.c:	test_queue_g.g
 	../../../bin/guru test_queue_g.g
 
@@ -34,7 +37,7 @@ clean:
 	rm -f test_warray_hp test_warray_cp test_warray_gp test_queue_hp test_queue_cp test_queue_gp 
 	rm -f *.cmi *.cmx *.o *.hi
 
-test_warray: test_warray_h test_warray_g
+test_warray: test_warray_h test_warray_c test_warray_g
 
 test_queue: test_queue_h test_queue_c test_queue_g 
 

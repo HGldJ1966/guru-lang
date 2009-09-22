@@ -1,5 +1,18 @@
 type boxed_word_t = Boxed_word of int;;
 
+type mycomp = MGT | MEQ | MLT;;
+
+let mylt a b = (a < b);;
+let myeq a b = (a == b);;
+
+let comparator lt eq a b = 
+  match (lt a b) with
+      false -> 
+	(match (eq a b) with
+	     false -> MGT
+	   | true -> MEQ)
+    | true -> MLT;;
+
 let rec fill_array a i =
   if (i == 0) then
     a
@@ -11,29 +24,26 @@ let mysize = 1048576;;
 
 let arr = fill_array (Array.make mysize (Boxed_word 0)) (mysize-1);;
 
-let rec binsearch a l u x =
-  let mid = (l+u)/2 in
-  let (Boxed_word v) = Array.get a mid in
-    if (x == v) then true
-    else 
-      if (x < v) then
-	(if (mid >= u) then
-	   false
-	 else
-	   binsearch a l mid x)
-      else
-	(* x > v *)
-	(if (mid <= l) then
-	   false
-	 else
-	   binsearch a mid u x);;
+let rec binsearch f l arr v =
+  let mid = f + ((l-f)/2) in
+  let (Boxed_word u) = Array.get arr mid in
+    match (comparator mylt myeq u v) with
+	MLT -> (if (mid+1 <= l) then
+		  binsearch (mid+1) l arr v
+		else
+		  false)
+      | MGT -> (if (f <= (mid - 1)) then
+		  binsearch f (mid - 1) arr v
+		else
+		  false)
+      | MEQ -> true;;
 
 let rec search a i b =
-  let r = binsearch a 0 (mysize - 1) i in
+  let r = binsearch 0 (mysize - 1) a i in
     if (i == 0) then (r && b)
     else (search a (i-1) (r && b));;
 
 if (search arr (mysize - 1) true) then
-  print_string "False\n"
+  print_string "True\n"
 else
-  print_string "True\n";;
+  print_string "False\n";;
