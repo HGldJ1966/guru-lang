@@ -1,12 +1,15 @@
 %=============================================================================
-% extensional equality of functions over two isomorphic data types
+% two isomorphic data types with identical functions
 % want:
-%  theorems about f are also applicable to theorems about f'
-%  (for example, append and uappend)
+%  theorems about one type are also applicable to another isomorphic type
+%  (for example, list and ulist)
+%  You may easily prove theorems about a type using lemmas proved for 
+%  another isomorphic type.
+%  It may be desirable there is a way to automate it.
 % need:
 %  1) transform functions that are total: A -> B, B -> A
 %  2) a proof of isomorphism: A -> B -> A
-%  3) extensional equality: (f a) = (BtoA (f' (AtoB a)))
+%  3) identical functions: (f a) = (BtoA (f' (AtoB a)))
 %=============================================================================
 
 Include trusted "../lib/list.g".
