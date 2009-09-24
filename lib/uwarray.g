@@ -26,19 +26,19 @@ void *guwarray_new(int n, int a) {
 END.
 
 Define primitive uwarray_get
-   : Fun(spec A:type)(spec n:word)(! #unique_owned l:<uwarray A (word_to_nat n)>)
+   : Fun(spec A:type)(spec n:nat)(! #unique_owned l:<uwarray A n>)
         (i:word)
-        (u:{(lt (to_nat i) (to_nat n)) = tt}). #untracked A := 
-  fun(A:type)(spec n:word)(l:<uwarray A (word_to_nat n)>)(i:word)(u:{(lt (to_nat i) (to_nat n)) = tt}). 
-    (vec_get A (to_nat wordlen n) l (to_nat wordlen i) u) <<END
+        (u:{(lt (to_nat i) n) = tt}). #untracked A := 
+  fun(A:type)(spec n:nat)(l:<uwarray A n>)(i:word)(u:{(lt (to_nat i) n) = tt}). 
+    (vec_get A n l (to_nat wordlen i) u) <<END
 inline void* guwarray_get(void **l, int i) { return l[i]; }
 END.
 
 Define primitive uwarray_set 
-  : Fun(A:type)(i:word)(#untracked a:A)(spec n:word)(#unique l:<uwarray A (word_to_nat n)>)
-       (u:{(lt (to_nat i) (to_nat n)) = tt}). #unique <uwarray A (word_to_nat n)> :=
-  fun(A:type)(i:word)(a:A)(spec n:word)(l:<uwarray A (word_to_nat n)>)(u:{(lt (to_nat i) (to_nat n)) = tt}).
-   (vec_update A (to_nat wordlen n) l (to_nat wordlen i) a u) <<END
+  : Fun(A:type)(i:word)(#untracked a:A)(spec n:nat)(#unique l:<uwarray A n>)
+       (u:{(lt (to_nat i) n) = tt}). #unique <uwarray A n> :=
+  fun(A:type)(i:word)(a:A)(spec n:nat)(l:<uwarray A n>)(u:{(lt (to_nat i) n) = tt}).
+   (vec_update A n l (to_nat wordlen i) a u) <<END
 void *guwarray_set(int A, int c, void *d, void *l) {
   ((void **)l)[c] = d;
   return l;
