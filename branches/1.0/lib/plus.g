@@ -169,6 +169,22 @@ Define plus_implies_lt : Forall(a b c:nat)(u:{b != Z})(v:{(plus a b) = c }).{(lt
 		end c join c c]
 	end.
 
+Define plus_implies_lt_S :
+  Forall(a b c:nat)(v:{(plus a b) = c }).{(lt a (S c)) = tt}
+  :=
+  foralli(a b c:nat)(v:{(plus a b) = c }).
+  case b with
+    Z => 
+      abbrev p1 = hypjoin a c by v b_eq [plusZ a] end in
+      trans cong (lt * (S c)) p1
+            [lt_S c]
+  | S b' =>
+      abbrev p1 = trans b_eq
+                        clash (S b') Z in
+      abbrev p2 = [plus_implies_lt a b c p1 v] in
+      [lt_S3 a c p2]
+  end.
+
 Define plus_implies_P_eq_P : Forall(a b c : nat)(u:{b != Z})(v:{(plus a b) = c}).{(plus a (P b)) = (P c)} :=
 	foralli(a b c : nat)(u:{b != Z})(v:{(plus a b) = c}).
 	existse [P_total b u] foralli(d:nat)(d':{(P b) = d}).

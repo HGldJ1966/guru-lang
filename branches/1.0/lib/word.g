@@ -51,9 +51,9 @@ Define word_inc2 :=
         end
     end.
 
-Define trusted word_inc2_carry 
-  : Forall(w:word)(carry:bool)(u:{ (word_inc2 w) = (mk_word_inc_t w carry) }).
-          { carry = ff } := truei.
+Define trusted word_inc2_word
+  : Forall(w w2:word)(u:{ (word_inc2 w) = w2 }).
+          { (word_inc w) = (mk_word_inc_t w2 ff) } := truei.
 
 Define word_inc_tot :=
   foralli(b:word).
@@ -105,6 +105,17 @@ Define word_to_nat_inc2
      trans [word_to_nat_inc w w2 ff u]
            [condplusff terminates (pow2 wordlen) by pow_total
               terminates (word_to_nat w2) by word_to_nat_tot].
+
+Define word_to_nat_inc3
+  : Forall(w w2:word)
+          (u:{ (word_inc2 w) = w2 }).
+      { (S (word_to_nat w)) = (word_to_nat w2) }
+  :=
+  foralli(w w2:word)
+         (u:{ (word_inc2 w) = w2 }).
+  abbrev p = [word_inc2_word w w2 u] in
+  [word_to_nat_inc2 w w2 p]
+  .
 
 %-
 Define trim_to_wordlen : Fun(l:nat)(v':<bv l>).(l':nat)(v':<bv l'>) :=
