@@ -98,6 +98,23 @@ public class App extends Expr{
     	return this;
     }
 
+    /* called by apply_classifier() to check whether or not the expected type
+       is def. eq. to the actual type for an argument.  The int arg tells
+       which argument this is. */
+    protected boolean apply_classifier_types_defeq(Context ctxt, int arg,
+						   Expr expected, Expr actual, 
+						   int approx, boolean spec) {
+	return expected.defEq(ctxt,actual,approx,spec);
+    }
+
+    /* called by apply_classifier() to compute the classifier for the
+       arg'th argument, arg_e. */
+    protected Expr apply_classifier_classify_arg(Context ctxt, int arg, Expr arg_e, 
+						 int approx, boolean spec) {
+	return arg_e.classify(ctxt,approx,spec);
+
+    }
+
     // if cl is a Fun-type or Fun-kind, check that the
     // arg's classifier matches the domain classifier,
     // and return the instantiated range classifier.
@@ -140,11 +157,14 @@ public class App extends Expr{
 	    if (ctxt.getFlag("debug_classify_apps")) {
 		ctxt.w.println("(About to classify argument "+
 			       (new Integer(arg+1)).toString() + ": " +
-			       X[arg].toString(ctxt));
+			       X[arg].toString(ctxt) +
+			       " [approx = "+(new Integer(approx)).toString()
+			       +", spec = "+(new Boolean(spec)).toString()
+			       +" -- but these might be changed for this argument]");
 		ctxt.w.flush();
 	    }
 
-	    Expr xc = X[arg].classify(ctxt, approx, spec);
+	    Expr xc = apply_classifier_classify_arg(ctxt,arg,X[arg], approx, spec);
 	    
 	    if (ctxt.getFlag("debug_classify_apps")) {
 		ctxt.w.println(") Done. About to test def. eq.:"
@@ -153,7 +173,7 @@ public class App extends Expr{
 		ctxt.w.flush();
 	    }
 
-	    if (!e.types[0].defEq(ctxt, xc, approx, spec))
+	    if (!apply_classifier_types_defeq(ctxt, arg, e.types[0], xc, approx, spec))
 		err_tgt.handleError
 		    (ctxt,
 		     "In an application, the classifier of argument "
