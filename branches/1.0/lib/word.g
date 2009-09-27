@@ -51,7 +51,7 @@ Define word_inc2 :=
         end
     end.
 
-Define trusted word_inc2_word
+Define trusted word_inc2_word_inc
   : Forall(w w2:word)(u:{ (word_inc2 w) = w2 }).
           { (word_inc w) = (mk_word_inc_t w2 ff) } := truei.
 
@@ -106,14 +106,14 @@ Define word_to_nat_inc2
            [condplusff terminates (pow2 wordlen) by pow_total
               terminates (word_to_nat w2) by word_to_nat_tot].
 
-Define word_to_nat_inc3
+Define word_inc2_word_to_nat
   : Forall(w w2:word)
-          (u:{ (word_inc2 w) = w2 }).
+          (u:{ (word_inc2 w) = w2}).
       { (S (word_to_nat w)) = (word_to_nat w2) }
   :=
   foralli(w w2:word)
          (u:{ (word_inc2 w) = w2 }).
-  abbrev p = [word_inc2_word w w2 u] in
+  abbrev p = [word_inc2_word_inc w w2 u] in
   [word_to_nat_inc2 w w2 p]
   .
 
