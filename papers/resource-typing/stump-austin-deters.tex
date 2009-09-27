@@ -153,26 +153,67 @@ tremendous invention in the field, garbage collection remains costly,
 as several recent studies report~\cite{Xian2008,hertz+05}.
 
 This paper shows how to combine the expressive power of dependent
-types with linear types to define abstractions for different kinds of
-resources, without the need for garbage collection.  This is carried
-out in the context of the Guru verified-programming language, a
-dependently typed pure functional programming language.  Resources are
-created and consumed explicitly.  The type system rules out memory
-errors such as accessing deallocated or uninitialized memory by
-ensuring that each resource is consumed exactly once.  The definition
-of a resource is flexible, so that resource consumption need not
-correspond to memory deallocation.  This flexibility is achieved
-through a \emph{resource typing framework}, in which different
-resource management schemes can be defined by a set of primitive
-types, along with operations on those types.  The definition of a
-term-level primitive consists of its type, an optional pure functional
-term which models the primitive, and (imperative) C code which the
-Guru compiler will use for the definition of the primitive.  The
-connection between this C code and the pure functional model (if
+types with linear types to define imperative abstractions for
+different kinds of resources, without the need for garbage collection.
+This is carried out in the context of the Guru verified-programming
+language, a dependently typed pure functional programming language.
+Resources are created and consumed explicitly.  The type system rules
+out memory errors such as accessing deallocated or uninitialized
+memory by ensuring that each resource is consumed exactly once.  The
+definition of a resource is flexible, so that resource consumption
+need not correspond to memory deallocation.  This flexibility is
+achieved through a \emph{resource typing framework}, in which
+different resource management schemes can be defined by a set of
+primitive types, along with operations on those types.  The definition
+of a term-level primitive consists of its type, an optional pure
+functional term which models the primitive, and (imperative) C code
+which the Guru compiler will use for the definition of the primitive.
+The connection between this C code and the pure functional model (if
 supplied) must be trusted.  But since the number of lines of C code
-required to implement, say, heap-allocated data is very small (on the
-order of tens of lines), we maintain that this is a reasonable
-compromise between trustedness and the burden of verification.
+required to implement, say, mutable arrays is very small (on the order
+of tens of lines), we contend that this is a reasonable compromise
+between trustedness and the burden of verification.
+
+\section{Resource Typing Framework}
+
+In this section, we define a resource typing framework, orthogonal to
+\textsc{Guru}'s datatype typing, upon which we can build various
+imperative abstractions.  The starting point for this framework is the
+familiar idea of modeling resources using linear types.  A resource is
+considered to be an entity to which exactly one other entity refers,
+while it exists in the program.  So a resource in this sense is
+intended to be like a physical resource, such as a bicycle: at most
+one person can make use of the bicycle at a time.  This is the first
+principle of our resource typing framework: we must have exactly one
+reference to each extant resource at any point during evaluation.  To
+this we add a second principle, inspired by examples of physical
+resource, like the bicycle example.  For after all, more than one
+person can use the bicycle, if one rides on the handle bars and
+another on the seat.  Resources often consist of sub-resources (like
+the handle bars and seat of the bicycle), which may be used
+independently.  But while they are in use, the resource of which they
+are parts is not available for use as a whole.  This is our second
+principle: resources may be divided into sub-resources, but in that
+case, the whole resource cannot be used by another entity until use of
+the sub-resources is complete.  For another everyday example, consider
+a boxed set of Harry Potter books.  The boxed set is a resource, and
+the books are its sub-resources.  Different people can borrow the
+individual books, but no one can borrow the entire boxed set until all
+the books have been returned to it.
+
+
+
+\subsection{Reference-Counted Data}
+
+\subsection{Unique Data}
+
+\section{Mutable Arrays}
+
+\section{Mutable Data Structures with Aliasing}
+
+\section{Empirical Results}
+
+\section{Conclusion}
 
 \textbf{Acknowledgements:} the U.S. NSF for support under award CCF-0841554.
 

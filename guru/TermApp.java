@@ -186,6 +186,17 @@ public class TermApp extends App{
 	return ret;
     }
 
+    protected boolean apply_classifier_types_defeq(Context ctxt, int arg,
+						   Expr expected, Expr actual,
+						   int approx, boolean spec) {
+	return expected.defEq(ctxt,actual,approx,spec || specarg[arg]);
+    }
+
+    protected Expr apply_classifier_classify_arg(Context ctxt, int arg, Expr arg_e, 
+						 int approx, boolean spec) {
+	return arg_e.classify(ctxt,approx,spec || specarg[arg]);
+    }
+
     public Expr classify(Context ctxt, int approx, boolean spec) {
 	if (ctxt.getFlag("debug_classify_term_apps")) {
 	    ctxt.w.print("(Classifying ");
@@ -199,8 +210,23 @@ public class TermApp extends App{
 	    ctxt.w.println("Head is "+head.toString(ctxt)+", with classifier "+cl.toString(ctxt));
 	    ctxt.w.flush();
 	}
-	Expr ret = apply_classifier(FUN_TYPE, approx, spec, ctxt, cl, 0);
+
+	/* before we classify the arguments, we need to set the values
+	   of specarg. */
+
+	if (cl.construct != FUN_TYPE) 
+	    handleError(ctxt,"The head of a term application does not have functional type."
+			+"\n\n1. the head of the application: "+head.toString(ctxt)
+			+"\n\n2. its classifier: "+cl.toString(ctxt));
+
 	FunType ch = (FunType)((FunType)cl).coalesce(ctxt,spec);
+
+	if (ch.owned.length < X.length) 
+	    handleError(ctxt,"Too many arguments are being given in a term application."
+			+"\n\n1. the head of the application: "+head.toString(ctxt)
+			+"\n\n2. its classifier: "+cl.toString(ctxt)
+			+"\n\n3. the number of arguments: "+(new Integer(X.length)).toString());
+
 	boolean check_spec_terminates = ctxt.getFlag("check_spec_terminates");
 	for (int i = 0;i < X.length; i++) {
 	    if (ch.owned[i].status == Ownership.SPEC) {
@@ -209,6 +235,11 @@ public class TermApp extends App{
 		specarg[i] = true;
 	    }
 	}
+
+	// now we can actually type check the arguments
+
+	Expr ret = apply_classifier(FUN_TYPE, approx, spec, ctxt, cl, 0);
+
 	if (ctxt.getFlag("debug_classify_term_apps")) {
 	    ctxt.w.println(") Classifier is:");
 	    ret.print(ctxt.w,ctxt);

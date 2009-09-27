@@ -5,6 +5,9 @@ test-queue:	test-queue.c
 test-queue.c:	test-queue.g ../lib/queue.g Makefile
 	../bin/guru test-queue.g
 
+spec-test: spec-test.g
+	../bin/guru spec-test.g
+
 Qp:	test-queue.c
 	gcc -O0 -ggdb -p -w -o test-queue-gprof test-queue.c
 	time ./test-queue-gprof < war-and-peace.txt || echo "problem"
