@@ -180,6 +180,20 @@ Define word7 :=
                 (word_set_bit word1 join (lt (to_nat word1) wordlen) tt
                 (word_set_bit word0 join (lt (to_nat word0) wordlen) tt word0))).
 
+Define word0x1f := % number 31 in word
+                (word_set_bit word4 join (lt (to_nat word4) wordlen) tt
+                (word_set_bit word3 join (lt (to_nat word3) wordlen) tt
+                (word_set_bit word2 join (lt (to_nat word2) wordlen) tt
+                (word_set_bit word1 join (lt (to_nat word1) wordlen) tt
+                (word_set_bit word0 join (lt (to_nat word0) wordlen) tt word0))))).
+Define word0x20 := % number 32 in word
+                (word_set_bit word5 join (lt (to_nat word5) wordlen) tt word0).
+
+Define word_msb :=
+  fun(w:word).
+    abbrev p = join (lt (to_nat word0x1f) wordlen) tt in
+    (word_read_bit word0x1f p w).
+
 Define trusted word0_set_bit_pow2
   : Forall(i:word)(u:{(lt (to_nat i) wordlen) = tt}).
       { (to_nat (word_set_bit i word0)) = (pow2 (to_nat i)) } :=
@@ -269,3 +283,4 @@ Define word_clear_read :
           ff
           by [vec_update_get bool wordlen w (to_nat wordlen i) ff u] end
   .
+
