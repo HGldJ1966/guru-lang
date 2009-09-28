@@ -1,8 +1,0 @@
-(declare nat type)
-(declare z nat)
-(declare s (! y nat nat))
-(declare tree (! y nat type))
-(declare leaf (tree z))
-(declare node (! x nat (! l (tree x) (! r (tree x) (tree (s x))))))
-
-

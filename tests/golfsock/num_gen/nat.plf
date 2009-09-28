@@ -1,4 +1,0 @@
-(declare-type nat type)
-(declare-term Z nat)
-(declare-term S (! y nat nat))
-
