@@ -5,7 +5,7 @@ Include "unowned.g".
 ResourceType owned with 
   Define primitive consume_owned : Fun(A:type)(^#owned x:A).void
   := fun(A:type)(x:A).voidi <<END
-  #define gconsume_owned(A,x) 
+  inline void gconsume_owned(int A, void *x) { }
 END.
 
 Define primitive inspect : Fun(spec A:type)(!#unowned x:A).#<owned x> A 
