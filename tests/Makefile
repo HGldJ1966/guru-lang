@@ -52,6 +52,11 @@ test-warray2a:	test-warray2.g Makefile
 	gcc -O2 -w -o test-warray2a test-warray2.c
 	./test-warray2a
 
+test-warray-min:   test-warray-min.g
+	../bin/guru test-warray-min.g
+	gcc -O2 -w -o test-warray-min test-warray-min.c
+	./test-warray-min
+
 test-warray1b:   test-warray.hs Makefile
 	ghc -O2 -o test-warray1b --make test-warray.hs
 
