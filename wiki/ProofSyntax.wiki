@@ -1,5 +1,7 @@
 #summary a list of proof rules and their usage
 
+Duckki Oe started this page as a reference manual.  Probably we are going to put together a nice PDF reference manual later this fall (2009), but the explanations below might be useful for now.
+
 = Summary of Proof Syntax =
 
 || *join* _term_ _term_ || *join* proves the equality of the two terms by evaluating them. ||
