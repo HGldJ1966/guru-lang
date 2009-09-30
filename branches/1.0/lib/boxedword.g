@@ -30,6 +30,14 @@ Define boxedWord_comp : Fun(^ #owned bw1 bw2:boxedWord) . comp :=
 			end
   end.
 
+Define boxedWord_le : Fun(bw1 bw2:boxedWord) . bool :=
+  fun(bw1 bw2:boxedWord).
+  match bw1 with
+    mk_uholder T1 w1 => match bw2 with
+    	       	     	  mk_uholder T2 w2 => (leword w1 w2)
+			end
+  end.
+
 Define trusted boxedWord_minus_shrink : Forall(bw:boxedWord)
   (u:{(lt (to_nat (word_minus (unboxWord bw) word1)) (to_nat (unboxWord bw))) = tt}).
   {(lt (to_nat (unboxWord (boxWord (word_minus (unboxWord bw) word1)))) (to_nat (unboxWord bw))) = tt}
