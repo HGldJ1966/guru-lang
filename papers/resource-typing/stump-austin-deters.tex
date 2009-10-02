@@ -162,7 +162,7 @@ out memory errors such as accessing deallocated or uninitialized
 memory by ensuring that each resource is consumed exactly once.  The
 definition of a resource is flexible, so that resource consumption
 need not correspond to memory deallocation.  This flexibility is
-achieved through a \emph{resource typing framework}, in which
+achieved through a \textbf{resource typing framework}, in which
 different resource management schemes can be defined by a set of
 primitive types, along with operations on those types.  The definition
 of a term-level primitive consists of its type, an optional pure
@@ -176,37 +176,38 @@ between trustedness and the burden of verification.
 
 This paper is organized as follows.  We begin with an overview of
 resource typing in \textsc{Guru}, focusing on several example resource
-types.  We then consider a system of resource-typing rules, and its
-soundness with respect to a resource-manipulating operational
-semantics.  Finally we consider several example imperative
-abstractions built on top of this resource-typing framework.
+types.  We then consider several example imperative abstractions built
+using those resource types.  Finally, we give a system of
+resource-typing rules, and state its soundness with respect to a
+resource-manipulating operational semantics.  
 
 \section{Overview of \textsc{Guru}'s Resource Typing}
 
 In this section, we define a resource-typing framework, orthogonal to
 \textsc{Guru}'s datatype typing, upon which we can build various
 imperative abstractions.  The starting point for this framework is the
-familiar idea of modeling resources using linear types.  A resource is
-considered to be an entity to which exactly one other entity refers,
-while it exists in the program.  So a resource in this sense is
-intended to be like a physical resource, such as a bicycle: at most
-one person can make use of the bicycle at a time.  This is the first
-principle of our resource-typing framework: we must have exactly one
-reference to each extant resource at any point during evaluation.  To
-this we add a second principle, inspired by examples of physical
+familiar idea of modeling resources using \textbf{linear types}.  A
+resource is considered to be an entity to which exactly one other
+entity refers, while it exists in the program.  So a resource in this
+sense is intended to be like a physical resource, such as a bicycle:
+at most one person can make use of the bicycle at a time.  This is the
+first principle of our resource-typing framework: we must have exactly
+one reference to each extant resource at any point during evaluation.
+To this we add a second principle, inspired by examples of physical
 resource, like the bicycle example.  For after all, more than one
 person can use the bicycle, if one rides on the handle bars and
-another on the seat.  Resources often consist of sub-resources (like
-the handle bars and seat of the bicycle), which may be used
-independently.  But while they are in use, the resource of which they
-are parts is not available for use as a whole.  This is our second
-principle: resources may be divided into sub-resources, but in that
-case, the whole resource cannot be used by another entity until use of
-the sub-resources is complete.  For another everyday example, consider
-a boxed set of Harry Potter books.  The boxed set is a resource, and
-the books are its sub-resources.  Different people can borrow the
-individual books, but no one can borrow the entire boxed set until all
-the books have been returned to it.
+another on the seat.  Resources often consist of
+\textbf{sub-resources} (like the handle bars and seat of the bicycle),
+which may be used independently.  But while they are in use, the
+resource of which they are parts is not available for use as a whole.
+This is our second principle: resources may be divided into
+sub-resources, but in that case, the whole resource cannot be used by
+another entity until use of the sub-resources is complete.  For
+another everyday example, consider a boxed set of Harry Potter books.
+The boxed set is a resource, and the books are its sub-resources.
+Different people can borrow the individual books, but no one can
+borrow the entire boxed set until all the books have been returned to
+it.
 
 Our resource-typing framework allows us to track the sub-resource
 relationship statically.  It also enforces the linearity discipline.
@@ -216,7 +217,19 @@ optional functional model, and then C code providing its (imperative)
 implementation.  When such a primitive is declared, its resource type
 is declared axiomatically: we do not check that the functional model
 satisfies that resource type, but just take it as a given that the C
-code's behavior matches that specified by the resource type.
+code's behavior matches that specified by the resource type.  As
+stated above, the behavioral equivalence of the C code and the
+functional model is not proven, and must be trusted.  It is our
+contention that this is a reasonable tradeoff between verifiability
+and trustworthiness.
+
+A final note on \textbf{usability} of the framework: while we are
+currently programming directly in the language described below, we
+envision this serving as a core language for a surface language with
+more inference than we have here.  For example, at the moment it is
+necessary to insert calls to the various resource-managing primitives
+manually, where probably a reasonably simple inference algorithm could
+infer them automatically.  This remains to future work.
 
 \subsection{Quick introduction to \textsc{Guru}}
 
@@ -529,7 +542,16 @@ reference count.  The idea is that if such a reference $r$ is
 without fear that the referenced data object's memory will be
 reclaimed.  The reference-counted reference $x$ cannot be consumed
 until $r$ is, since $r$ is pinning $x$.  So we can use $r$ safely
-without incrementing the reference count.
+without incrementing the reference count.  This idea is the reason for
+the ``\^{\ }'' consumption annotation.  We need to know that the
+pinning reference $r$ is really gone, before it is safe to consume
+$x$.  If the pinning reference has been consumed by being returned by
+the function, possibly inside a data structure, then this sort of
+consumption is not sufficient to guarantee safety: the type system
+will have lost track of the connection between $r$ and $x$.  If, on
+the other hand, a function is known to consume $r$ and not return it,
+then this means that the reference $r$ is dead, and no longer pins
+$x$.
 
 We list some representative primitives for this resource type in
 Figure~\ref{fig:owned} (for the rest, see
@@ -551,6 +573,11 @@ decrement the reference count for $x$ when we consume it.
   such chains, in which case we use the $@\ t$ term-construct
   (Figure~\ref{fig:terms}).  If $x$ pins $y$ and $y$ pins $z$, then
   $@\ x$ pins $z$ directly.
+
+\item \textbf{\texttt{inc\_owned}}. This takes an \texttt{owned}
+  reference $y$ and creates a new \texttt{unowned} reference to the
+  same object.  This requires, of course, that the reference count
+  be incremented.
 
 \item \texttt{ginit\_owned\_unowned}. This initializes an
   \texttt{unowned} subdatum $y$ of an \texttt{owned} scrutinee $x$.
@@ -578,6 +605,14 @@ END.
 Define primitive clone_owned : Fun(spec A:type)(! #owned y:A).#<owned y> A
   := fun(A:type)(y:A).y <<END
   #define gclone_owned(y) y
+END.
+
+Define primitive inc_owned : Fun(spec A:type)(!#owned y:A).#unowned A
+  := fun(A:type)(y:A).y <<END
+  inline void *ginc_owned(void *y) {
+    inc(y);
+    return y;
+  }
 END.
 
 Init ginit_owned_unowned(#owned x)(#unowned y).#<owned x> <<END
@@ -639,13 +674,18 @@ We introduce a final resource type \texttt{unique\_owned}, which we
 use to implement readers/writers locking.  We can obtain multiple
 \texttt{unique\_owned} references $r$ from a \texttt{unique} reference
 $x$, but those references pin $x$.  Our higher-level imperative
-abstractions just insist that operations which update the object $o$
-to which $x$ refers consume $x$, producing as output a new reference
-to the (imperatively) updated $o$.  Since they consume the
+abstractions insist that operations which update the object $o$ to
+which $x$ refers consume $x$, producing as output a new reference to
+the (imperatively) updated $o$.  Since they consume the
 \texttt{unique} $x$, our resource-tracking discipline forbids there
 from being any pinning references to $x$ extant.  This ensures
 (statically) that all read-only references to $o$ are consumed, before
-the read-write reference $x$ can be used.
+the read-write reference $x$ can be used.  
+
+Note that the \texttt{Init}-function for initializing an
+\texttt{unowned} subdatum $y$ of a \texttt{unique\_owned} scrutinee
+$x$ initializes that subdatum to be of resource type \texttt{<owned
+  x>}.
 
 \begin{figure*}
 \small
@@ -682,12 +722,107 @@ END.
 \label{fig:uniqueowned}
 \end{figure*}
 
+\section{Imperative Abstractions}
+
+In this section, we consider several example imperative abstractions,
+built using the resource types described in the previous section.  In
+the case of the array abstractions, they involve a small number of
+primitive operations, with a small number of lines of C code.  For
+the FIFO queues, there are no additional lines of trusted code.
+
+\subsection{Mutable Arrays of Reference-Counted Data}
+
+We can easily define an abstraction for mutable word-indexed arrays
+storing reference-counted data, where we statically ensure that
+array-bounds are respected.  The corresponding library file is
+\texttt{warray.g}.  First, we define \texttt{<warray A n>}, where $A$
+is a type and $n$ is a \texttt{word}.  The intention is that $n$ is
+the length, as a word, of the array.  We define that
+\texttt{warray}-type as a primitive abbreviation for \texttt{<vec A
+  (to\_nat wordlen n)>}.  Primitive abbreviations like this one are
+not included in \textsc{Guru}'s definitional equality when type
+checking code that may be compiled.  This is to ensure that compiled
+code only accesses \texttt{warray}s using \texttt{warray}'s primitive
+operations, not operations (like pattern-matching) on the \texttt{vec}
+type.  In code specially marked as specificational, or in proofs,
+however, the abbreviation is included in definitional equality, since
+for reasoning purposes, we will treat \texttt{warray}s as vectors.
+
+It should also be explained that in that definition, \texttt{word} is
+the type for 32-bit machine words, which are functionally modeled as
+bitvectors of length 32, and imperatively implemented as actual
+machine words.  The \texttt{to\_nat} function converts a bitvector to
+a unary natural number, for more convenient reasoning.  Appealing to
+such functions inside of types does not cause those functions to be
+executed at run-time, or even compile-time.  Since compile-time
+evaluation is entirely under the control of the programmer, he may
+find ways to prove equalities about applications of (expensive)
+functions like \texttt{to\_nat} without actually performing long
+executions of them.
+
+Then we define four primitive operations, to allocate, deallocate,
+read to, and write from a \texttt{warray}.  Figure~\ref{fig:warrayget}
+lists the code for just one representative operation, namely the read
+operation.  The functional model of this operation is just to use
+\texttt{vec\_get} to look up the value stored at location
+\texttt{(to\_nat wordlen i)}.  The running time for this, of course,
+is exponential in the size (as a word) of $i$.  The imperative
+implementation just uses the standard C constant-time array access
+operation.  Note that the input $u$ to the primitive is required to be
+a proof that the index $i$ is less than the length $n$ of the array,
+when those words are converted to \texttt{nat}s.  By requiring this
+proof, we statically ensure array-bounds are respected whenever
+\texttt{warray\_get} is used.  The \texttt{warray\_set} primitive has
+a similar requirement.  
+
+As far as resource typing goes, we see that \texttt{warray\_get}
+requires a \texttt{unique\_owned} \texttt{warray} $l$.  So this is a
+read-only reference to the \texttt{warray}.  The function returns an
+element of datatype $A$, with resource type \texttt{<owned l>}.  We
+use a pinning \texttt{owned} resource type here instead of
+\texttt{unowned}, just to avoid incrementing the reference count for
+the returned data.  The calling context can always do that, using
+\texttt{inc\_owned}.  Of course, the array $l$ is pinned by this
+\texttt{<owned l>} reference, until the latter is consumed.  So we
+will not be able to update the array until the pinning reference has
+been consumed (possibly just by exchanging it for an \texttt{unowned}
+reference).
+
+\begin{figure}
+\small
+\begin{verbatim}
+Define primitive warray_get
+   : Fun(spec A:type)(spec n:word)
+        (! #unique_owned l:<warray A n>)
+        (i:word)
+        (u:{(lt (to_nat i) (to_nat n)) = tt}).
+        #<owned l> A := 
+  fun(A:type)(spec n:word)
+     (l:<warray A n>)(i:word)
+     (u:{(lt (to_nat i) (to_nat n)) = tt}). 
+   (vec_get A (to_nat wordlen n) l (to_nat wordlen i) u)
+<<END
+inline void* gwarray_get(void **l, int i) { return l[i]; }
+END.
+\end{verbatim}
+\caption{Definition of \texttt{warray\_get} primitive}
+\label{fig:warrayget}
+\end{figure}
+
+\subsection{Mutable Arrays of Unique Data}
+
+We now consider mutable arrays storing unique data.  Currently, we
+have implemented this imperative abstraction for character-indexed
+arrays.  Implementing it for word-indexed arrays poses no significant
+challenges, but remains to future work.  The basic idea here is to
+track statically the set of indices at which the array is currently
+unavailable for reading.  Such indices correspond either to
+uninitialized locations in the array, or to locations where the data
+has been ``checked out'' for writing.
+
+\subsection{FIFO Queues}
 
 \section{Type System}
-
-\section{Mutable Arrays}
-
-\section{FIFO Queues}
 
 \section{Empirical Results}
 
