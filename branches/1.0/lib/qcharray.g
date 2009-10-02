@@ -90,8 +90,8 @@ Define qcharray_in1 : Fun(spec A:type)(#untracked c:char)(#unique a:A)
 % read-only access
 Define primitive qcharray_read
  : Fun(spec A:type)(#untracked c:char)
-      (#unique_owned l:<qcharray A stringn>). 
-    #unique_owned A :=
+      (! #unique_owned l:<qcharray A stringn>). 
+    #<unique_owned l> A :=
   fun(spec A:type)(c:char)(l:<qcharray A stringn>).
     (vec_get A num_chars l (which_char c) [chars_bounded c]) <<END
 #define gqcharray_read(int c, void *a) a[c]

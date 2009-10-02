@@ -16,6 +16,8 @@ Define test :=
   let arr = (qcharray_new <charray nat> nat (inspect nat a) func) in
   let cookie = (mk_tholder nat) in
   do (dec nat a)
+     (consume_unique_owned <charray nat>
+         (qcharray_read <charray nat> 'a' (inspect_unique <qcharray <charray nat> stringn> arr)))
      (qcharray_free <charray nat> <tholder nat> arr (inspect <tholder nat> cookie) (charray_free2 nat))
      (dec <tholder nat> cookie)
   end.
