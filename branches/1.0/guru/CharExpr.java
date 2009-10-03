@@ -28,6 +28,14 @@ public class CharExpr extends Expr {
 	return this;
     }
     
+    public Collection getConstsUsed(Context ctxt) {
+	LinkedList l = new LinkedList();
+	l.add(_const(ctxt,"mkchar"));
+	l.add(_const(ctxt,"tt"));
+	l.add(_const(ctxt,"ff"));
+	return l;
+    }
+
     public Expr do_rewrite(Context ctxt, Expr e, Expr x, Stack boundVars) {
     	return this;
     }
@@ -49,16 +57,6 @@ public class CharExpr extends Expr {
 
     public Expr classify(Context ctxt, int approx, boolean spec) {
 	return _const(ctxt,"char");
-    }
-
-    public Collection getConstsUsed(Context ctxt) {
-	LinkedList l = new LinkedList();
-	l.add(_const(ctxt,"char"));
-	l.add(_const(ctxt,"mkchar"));
-	l.add(_const(ctxt,"tt"));
-	l.add(_const(ctxt,"ff"));
-	l.add(_const(ctxt,"inc"));
-	return l;
     }
 
     public Expr dropAnnos(Context ctxt) {

@@ -36,19 +36,19 @@ void *gqcharray_empty(int A) {
 END.
 
 Inductive qcharray_mod_t : Fun(A:type)(c:char)(s:string).type :=
-  mk_qcharray_mod : Fun(spec A:type)(#unique a:A)(spec c:char)(spec s:string)
+  mk_qcharray_mod : Fun(A:type)(#unique a:A)(spec c:char)(spec s:string)
                        (#unique l:<qcharray A (stringc c s)>).#unique <qcharray_mod_t A c s>.
 
 % check out the unique value for c, assuming c is not already checked out.
 
 Define primitive qcharray_out 
-  : Fun(spec A:type)(#untracked c:char)(spec s : string)(#unique l:<qcharray A s>)
+  : Fun(A:type)(#untracked c:char)(spec s : string)(#unique l:<qcharray A s>)
        (u : { (string_mem c s) = ff}).
     #unique <qcharray_mod_t A c s>
  := fun(A:type)(c:char)(spec s:string)(l:<qcharray A s>)(u:{(string_mem c s) = ff}).
       (mk_qcharray_mod A (vec_get A num_chars l (which_char c) [chars_bounded c]) c s l) <<END
- void *gqcharray_out(int c, void *l) {
-   return gmk_qcharray_mod(((void **)l)[c],l);
+ void *gqcharray_out(int A, int c, void *l) {
+   return gmk_qcharray_mod(A,((void **)l)[c],l);
  }
 END.
 
@@ -67,10 +67,10 @@ END.
 
 % simpler interface to qcharray_in, for when you have checked out the
 % value for just one character.
-Define qcharray_out1 : Fun(spec A:type)(#untracked c:char)
+Define qcharray_out1 : Fun(A:type)(#untracked c:char)
                           (#unique l:<qcharray A stringn>). 
                           #unique <qcharray_mod_t A c stringn> :=
-  fun(spec A:type)(#untracked c:char)(#unique l:<qcharray A stringn>).
+  fun(A:type)(#untracked c:char)(#unique l:<qcharray A stringn>).
     (qcharray_out A c stringn l join (string_mem c stringn) ff).
 
 % simpler interface to qcharray_in, for when you have checked out the
@@ -94,7 +94,7 @@ Define primitive qcharray_read
     #<unique_owned l> A :=
   fun(spec A:type)(c:char)(l:<qcharray A stringn>).
     (vec_get A num_chars l (which_char c) [chars_bounded c]) <<END
-#define gqcharray_read(int c, void *a) a[c]
+inline void *gqcharray_read(int c, void **a) { return a[c]; }
 END.
 
 Define primitive qcharray_free
