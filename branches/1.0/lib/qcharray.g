@@ -70,7 +70,8 @@ END.
 Define qcharray_out1 : Fun(A:type)(#untracked c:char)
                           (#unique l:<qcharray A stringn>). 
                           #unique <qcharray_mod_t A c stringn> :=
-  fun(A:type)(#untracked c:char)(#unique l:<qcharray A stringn>).
+  fun(A:type)(#untracked c:char)(#unique l:<qcharray A stringn>)
+    : #unique <qcharray_mod_t A c stringn>.
     (qcharray_out A c stringn l join (string_mem c stringn) ff).
 
 % simpler interface to qcharray_in, for when you have checked out the
@@ -79,7 +80,7 @@ Define qcharray_in1 : Fun(spec A:type)(#untracked c:char)(#unique a:A)
                          (#unique l:<qcharray A (stringc c stringn)>). 
                        #unique <qcharray A stringn> :=
   fun(spec A:type)(#untracked c:char)(#unique a:A)
-     (#unique l:<qcharray A (stringc c stringn)>).
+     (#unique l:<qcharray A (stringc c stringn)>): #unique <qcharray A stringn>.
      cast
      (qcharray_in A c a stringn stringn
         cast l
