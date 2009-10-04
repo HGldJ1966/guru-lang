@@ -177,9 +177,22 @@ between trustedness and the burden of verification.
 This paper is organized as follows.  We begin with an overview of
 resource typing in \textsc{Guru}, focusing on several example resource
 types.  We then consider several example imperative abstractions built
-using those resource types.  Finally, we give a system of
-resource-typing rules, and state its soundness with respect to a
-resource-manipulating operational semantics.  
+using those resource types.  These include abstractions for mutable
+arrays, and an example of an abstraction using aliasing, namely FIFO
+queues.  We give a system of resource-typing rules, and state its
+soundness with respect to a resource-manipulating operational
+semantics.  Finally, we give some empirical results comparing our
+approach to memory management with that based on garbage collection in
+\textsc{OCaml} and \textsc{Haskell} on some benchmark programs.
+
+A brief note on source code for the examples discussed below: the
+reader may find the sources for all the examples in this paper in the
+Google Code repository for \textsc{Guru}, at \url{www.guru-lang.org}.
+Most are in \textsc{Guru}'s standard library, \texttt{guru-lang/lib/}.  A few
+are in a special directory along with the source of this paper:
+\[
+\texttt{guru-lang/papers/resource-typing/tests/}
+\]
 
 \section{Overview of \textsc{Guru}'s Resource Typing}
 
@@ -232,6 +245,7 @@ manually, where probably a reasonably simple inference algorithm could
 infer them automatically.  This remains to future work.
 
 \subsection{Quick introduction to \textsc{Guru}}
+\label{sec:guru}
 
 In order to move quickly to concrete examples, we survey first the
 syntax and informal semantics of terms and types in \textsc{Guru},
@@ -250,6 +264,7 @@ t & ::= x\ ||\\
 \ & \ &    (t\ X)\ || \\ 
 \ & \ &         \texttt{cast}\ t\ \texttt{by}\ P  \ ||\\
 \ & \ &  \texttt{abort}\ T\ ||\\ 
+\ & \ &  \texttt{impossible}\ P\ T\ ||\\ 
 \ & \ &  \texttt{let}\ x\ \Eq\ t\ \texttt{by}\ y\ \texttt{in}\ t' \ ||\ 
 \\ 
 \ & \ &  \texttt{match}\, !?\ t\ \texttt{by}\ x\ y \ \texttt{with}\\
@@ -287,7 +302,10 @@ except for the ownership annotations $o$, with their accompanying
 recursive functions introduced with \texttt{fun}, which lists inputs
 and their types first, then a ``:'', then the output type, then a
 ``.'', and then the body of the function.  We support finite failure
-via \texttt{abort}.  We have explicit casts to change the type of a
+via \texttt{abort}.  Operationally, \texttt{impossible} terms behave
+like \texttt{abort}, but come with a proof that that point in the code
+can never be reached (because the assumptions in scope at that point
+are contradictory).  We have explicit casts to change the type of a
 term $t$ using an equation between types proved by a proof $P$.  We
 also have \texttt{let}- and \texttt{match}-terms.  Right after the
 \texttt{match} keyword, we may optionally have $!$, which means that
@@ -398,6 +416,7 @@ help build higher-level imperative abstractions, described later
 in the paper.
 
 \subsection{Reference-Counted Data}
+\label{sec:unowned}
 
 The most commonly used resource type in \textsc{Guru} is
 \#\texttt{unowned}.  This is the resource type for reference-counted
@@ -722,13 +741,13 @@ END.
 \label{fig:uniqueowned}
 \end{figure*}
 
-\section{Imperative Abstractions}
+\section{Array Abstractions}
 
-In this section, we consider several example imperative abstractions,
-built using the resource types described in the previous section.  In
-the case of the array abstractions, they involve a small number of
-primitive operations, with a small number of lines of C code.  For
-the FIFO queues, there are no additional lines of trusted code.
+In this section, we consider two different abstractions of mutable
+arrays, built using the resource types described in the previous
+section.  These array abstractions include a small number of primitive
+operations, with a very small number of additional lines of C code to
+trust (20 for \texttt{warray}, 27 for \texttt{qcharray}).  
 
 \subsection{Mutable Arrays of Reference-Counted Data}
 
@@ -813,22 +832,477 @@ END.
 
 We now consider mutable arrays storing unique data.  Currently, we
 have implemented this imperative abstraction for character-indexed
-arrays.  Implementing it for word-indexed arrays poses no significant
-challenges, but remains to future work.  The basic idea here is to
-track statically the set of indices at which the array is currently
-unavailable for reading.  Such indices correspond either to
-uninitialized locations in the array, or to locations where the data
-has been ``checked out'' for writing.
+arrays, \texttt{qcharray}.  Implementing it for word-indexed arrays
+poses no significant challenges, but remains to future work.  The
+basic idea here is to track statically the set of indices at which the
+array is currently unavailable for reading.  Such indices correspond
+either to uninitialized locations in the array, or to locations where
+the data has been ``checked out'' for writing.  The set of such
+indices is tracked as a \texttt{string}, included as an additional
+parameter to the \texttt{qcharray} type. Checking out the element at
+index $c$ from a \texttt{qcharray} (i.e., reading from the array)
+requires a proof that $c$ is not in the list of indices which are
+already checked out.  Similarly, checking in an element at index $c$
+from a \texttt{qcharray} (i.e., writing to the array) requires that
+the list of checked-out elements contains $c$.  We just list the types
+of the primitives for \texttt{qcharray}, in Figure~\ref{fig:qcharray}.
+The functional models and the C code are very similar to those for the
+\texttt{warray} type, so we omit them.  To discuss just a couple of
+those types: the type for \texttt{qcharray\_empty} says that it
+returns a \texttt{qcharray} where all the indices are checked out
+(since they are all uninitialized); and \texttt{qcharray\_out} returns
+a pair, as an element of the \texttt{qcharray\_mod\_t} type listed in
+the figure, of the element that has been checked out, and the
+\texttt{qcharray}.  The type of the \texttt{qcharray} has been
+modified so that it now includes the index $c$ for the checked-out
+element.
 
-\subsection{FIFO Queues}
+\begin{figure}
+\small
+\begin{verbatim}
+qcharray_empty 
+: Fun(A:type).#unique <qcharray A all_chars>
+
+Inductive qcharray_mod_t
+   : Fun(A:type)(c:char)(s:string).type :=
+ mk_qcharray_mod : 
+   Fun(A:type)(#unique a:A)
+      (spec c:char)(spec s:string)
+      (#unique l:<qcharray A (stringc c s)>).
+    #unique <qcharray_mod_t A c s>.
+
+qcharray_out 
+: Fun(A:type)(#untracked c:char)(spec s : string)
+     (#unique l:<qcharray A s>)
+     (u : { (string_mem c s) = ff}).
+   #unique <qcharray_mod_t A c s>
+
+
+qcharray_in
+: Fun(spec A:type)(#untracked c:char)
+     (#unique a:A)(spec s1 s2:string)
+     (#unique l:<qcharray A (string_app s1 (stringc c s2))>). 
+   #unique <qcharray A (string_app s1 s2)>
+
+qcharray_read
+: Fun(spec A:type)(#untracked c:char)
+     (! #unique_owned l:<qcharray A stringn>). 
+   #<unique_owned l> A 
+
+qcharray_free
+   : Fun(spec A C:type)(^ #unique l:<qcharray A stringn>)
+        (^#owned cookie:C)
+        (delA : Fun(^#owned cookie:C)(^#unique a:A).void).
+      void 
+\end{verbatim}
+\label{fig:qcharray}
+\caption{Types for \texttt{qcharray} primitives}
+\end{figure}
+
+\section{Abstractions Using Aliasing}
+
+In this section, we consider how to implement imperative abstractions
+which rely on aliasing of heap-allocated data structures.  We first
+discuss the \texttt{rheaplet} abstraction, which provides a functional
+model of a portion of the heap, and then see how to use it to implement
+FIFO queues.  We give first a simple unverified implementation of FIFO
+queues, and then a verified version.  In the course of implementing the
+verified version, we uncovered a bug in the unverified version, which
+was not revealed by the benchmark testcase (used for the empirical
+evaluation below).
+
+\subsection{Modeling the aliased heap with \texttt{rheaplet}s}
+
+To implement an aliased data structure, it is necessary to find a way
+to model of the non-local communication which arises when a structure
+is updated via one reference, and then read via another reference.  It
+is an intriguing challenge to do this in a way that does not involve
+explicit reference to the heap -- a challenge we have not yet
+succeeded in meeting.  So we rely here on a functional model of a
+portion of the heap, which we call a \texttt{rheaplet}.  The
+``-\texttt{let}'' is to indicate that this is just a portion of the
+heap, not its entirety; and the ``\texttt{r}-'' is because we use
+run-time reference counting of the number of aliases to each cell, to
+manage memory.  This approach statically guarantees memory safety:
+uninitialized or deleted memory will never be read or written.  It
+should be acknowledged from the beginning, however, that this approach
+can leak memory if cycles are formed in the reference graph.  We have
+several things to say about that issue, in Section~\ref{sec:future}
+below.  
+
+The \texttt{rheaplet} abstraction is based on a type family
+\texttt{<rheaplet A I>}, for heaplet storing aliased data of type $A$.
+The $I$ is a \texttt{rheaplet\_id}, which we use to prevent
+(statically) aliases associated with one heaplet from being used to
+access another.  The type of aliases is then \texttt{<alias I>}, for
+aliases into the heaplet with heaplet id $I$.  In the functional
+model, a heaplet is a list of elements of type $A$, and an alias is a
+unary natural number giving a position into that list.  In the
+imperative implementation, \texttt{rheaplet}s and
+\texttt{rheaplet\_id}s are just dummy scalar values (retained during
+compilation because we currently do not support specificational data
+of resource type other than the default, and so these cannot be
+declared specificational).  The imperative implementation of aliases
+is explained next.
+
+There are three \texttt{rheaplet} primitives.  The first
+(``\texttt{rheaplet\_in}'') is for adding some data to the
+\texttt{rheaplet}.  In the functional model, the data is added by
+appending it to the list which functionally models the heaplet.  In
+the imperative implementation, adding data to a heaplet allocates a
+3-word cell in memory, with one word each for a reference count for
+the number of outstanding aliases, the type (represented as an
+integer, as mentioned above) of the data, and the pointer to the data.
+The imperative implementation of aliases is just as references to this
+3-word cell.  This means that aliases can be managed using the usual
+primitives for reference-counted data (Section~\ref{sec:unowned}
+above).  The level of indirection added by the 3-word cell means that
+we can change the object to which the aliases refer, by changing the
+pointer (the last word) in the cell.  This indirection imposes an
+additional cost in memory and running time, and so it is particularly
+important to evaluate it empirically, as we do below.  The
+\texttt{rheaplet\_in} function returns the updated heaplet, and the
+new alias.
+
+Finally, the types for the primitives for reading and writing via an
+alias are given in Figure~\ref{fig:rheaplet}.  They are similar in
+spirit to the types for reading and writing mutable arrays above.  The
+main point to note is the use of the \texttt{rheaplet\_id} $I$ to
+connect an alias with its \texttt{rheaplet}.  Even though we may
+deallocate a cell in the imperative implementation (if the number of
+outstanding aliases to that cell falls to zero), in the functional
+model we never remove an element from the list which model the
+heaplet.  So aliases are always valid indices into the list of their
+associated heaplet.
+
+\begin{figure}
+\small
+\begin{verbatim}
+rheaplet_get
+: Fun(spec A:type)(spec I:rheaplet_id)(^#owned p:<alias I>)
+     (!#unique_owned h:<rheaplet A I>).
+   #<owned h> A
+
+rheaplet_set
+: Fun(A:type)(spec I:rheaplet_id)(^#owned p:<alias I>)
+     (#unique h:<rheaplet A I>)(a:A).
+   #unique <rheaplet A I>
+\end{verbatim}
+\caption{The types of the primitives for reading and writing an \texttt{rheaplet} via an alias}
+\label{fig:rheaplet}
+\end{figure}
+
+\subsection{Unverified FIFO Queues}
+
+Using the \texttt{rheaplet} primitives, we have implemented an
+unverified FIFO queue abstraction.  The source code for this may be
+found as \texttt{queue.g} in the tests subdirectory for this paper
+(see the Introduction).  A queue consists of a singly-linked list from
+the \texttt{qout}-end, where data is dequeued, to the \texttt{qin}
+end, where it is enqueued.  Each cell of the queue is allocated in a
+heaplet associated with the queue.  This is because the last such cell
+has two aliases (all the others have one), which ends up forcing all
+cells to be heaplet-allocated.  Figure~\ref{fig:queue} lists the
+datatype definitions for queues (omitting a simple definition for
+queue cells), and then the types for the operations on queues.  Note
+that these operations are not primitives.  They are built using the
+above abstractions, and require no additional untrusted C code.  Note
+also that since this data structure does not form cycles in the heap,
+our reference-counting approach for \texttt{rheaplet}s is sufficient
+to reclaim all unreachable memory.
+
+We just consider a few points about the typings in the figure.  Both
+empty (\texttt{queue\_datan}) and non-empty (\texttt{queue\_datac})
+queues have a unique reference to a \texttt{rheaplet} of queue cells.
+Additionally, non-empty queues have references to \texttt{qout} and
+\texttt{qin}.  Allocating a new queue with \texttt{queue\_new} creates
+a new heaplet, thus requiring the current \texttt{rheaplet\_id} as
+input and producing the next \texttt{rheaplet\_id} as additional
+output (passed back in an instance of the \texttt{queue\_new\_t}
+type).  The \texttt{queue\_front} and \texttt{dequeue} functions
+require a proof that the queue is non-empty.  These proofs allow us to
+show (via \texttt{impossible}-terms, mentioned in
+Section~\ref{sec:guru} above) that several situations cannot arise.
+There is only one place where the queue code uses \texttt{abort}, in
+response to violation of an unverified invariant that the
+\texttt{qin}-cell has no next pointer.  We will eliminate this
+\texttt{abort} in the next section.  The total number of lines of
+code, with comments, is 138.  Of these, only 6 are proofs, used in the
+\texttt{impossible}-terms just mentioned.
+
+\begin{figure}
+\small
+\begin{verbatim}
+Define type_family_abbrev
+  rheaplet_queue := 
+fun(A:type)(I:rheaplet_id).
+ <rheaplet <queue_cell A I> I>.
+
+Inductive queue : Fun(A:type).type :=
+ queue_datac
+  : Fun(A:type)(spec I:rheaplet_id)
+       (#unique h:<rheaplet_queue A I>)
+       (qin qout : <alias I>).
+     #unique <queue A>
+| queue_datan
+   : Fun(A:type)(spec I:rheaplet_id)
+        (#unique h:<rheaplet_queue A I>).
+      #unique <queue A>.
+
+Inductive queue_new_t : Fun(A:type).type :=
+ return_queue_new
+  : Fun(spec A:type)(#unique q:<queue A>)
+       (#unique nextI:rheaplet_id).
+     #unique <queue_new_t A>.
+
+queue_new
+ : Fun(A:type)(#unique I:rheaplet_id).
+    #unique <queue_new_t A>
+
+queue_is_empty
+ : Fun(spec A:type)
+      (^#unique_owned q:<queue A>).bool
+
+queue_front
+ : Fun(spec A:type)
+      (^#unique_owned q:<queue A>)
+      (u:{ (queue_is_empty q) = ff }).
+    A 
+ 
+enqueue
+ : Fun(spec A:type)
+      (#unique q:<queue A>)(a:A).
+    #unique <queue A> 
+
+dequeue
+ : Fun(spec A:type)
+      (#unique q:<queue A>)
+      (u:{ (queue_is_empty q) = ff }).
+    #unique <queue A>
+\end{verbatim}
+\caption{Types for the unverified queue abstraction}
+\label{fig:queue}
+\end{figure}
+
+\subsection{Verified FIFO Queues}
+
+In order to verify that the \texttt{qin}-cell of a queue has no next
+pointer, we must reason explicitly about the heap.  This was not
+required just to implement the queue data structure as above.  In
+particular, it is necessary to reason explicitly about the equality
+and disequality of aliases.  This imposes a significant burden of
+proof, which future work must lighten in order for this method to be
+practical; more is said about this in Section~\ref{sec:future} below.
+Nevertheless, the current approach provides an adequate foundation for
+more automated methods of verifying such properties.
+
+Figure~\ref{fig:queue2} shows the invariants needed to verify that the
+\texttt{qin}-cell of the queue has no next pointer, expressed as
+additional proof arguments required by the constructors for the
+verified queue type.  The full source code for the verified queue may
+be found as \texttt{queue2.g} in the tests directory for this paper
+(see the Introduction).  The new invariants for non-empty queues are
+the following:
+
+\begin{itemize}
+\item \textbf{\texttt{inv\_qin}.}  This expresses that \texttt{qin} is
+a valid index into the heaplet \texttt{h}; \texttt{inv\_qout} is similar.
+\item \textbf{\texttt{inv}.} This expresses that all the next pointers
+  in the queue cells stored in the heaplet \texttt{h} are valid
+  indices into \texttt{h}.  Note that the \texttt{@<...>} construct is
+  \textsc{Guru} notation for application of a defined predicate symbol
+  (whose definition here we omit).
+\item \textbf{\texttt{inv\_qin2}.} This expresses our desired
+  invariant, that the \texttt{qin} cell has no next pointer.
+\end{itemize}
+
+\noindent Some discussion of these invariants is warranted.  First,
+the reader might well wonder why we are introducing these explicit
+statements that aliases being valid indices into the heaplet.  After
+all, we maintain the relationship between aliases and heaplets
+statically, using the shared \texttt{rheaplet\_id}.  The issue is that
+while we have designed our static typing to ensure that aliases from
+one heaplet cannot be used to access another, nothing in our formal
+system allows us to conclude from this a principle like:
+
+{\small
+\begin{verbatim}
+Forall(A:type)(I:rheaplet_id)
+      (a:<alias I>)(r:<rheaplet A I>).
+  { (lt a (length r)) = tt }
+\end{verbatim}
+}
+
+\noindent Indeed, this principle is unfortunately false: aliases
+created later need not be valid indices into earlier versions of
+heaplet with heaplet id $I$.  The problem is due at least in part to
+the fact that our logic is intuitionistic (\textsc{Guru}'s design
+would also allow classical logic), while the state involved must be
+reasoned about linearly.  How to recover something like this principle
+is not yet clear, though see the discussion below
+(Section~\ref{sec:future}).
+
+The verified versions of the queue functions of Figure~\ref{fig:queue}
+above have the same types as given there.  The difference is that now
+whenever the constructors for the \texttt{queue} type used to
+(re)construct a queue, we must supply proofs of our four invariant
+properties.  These proofs are built manually, with modest aid from
+\textsc{Guru}'s lone but reasonably powerful tactic, called
+\texttt{hypjoin}.  This tactic automatically proves terms equal (under
+some reasonable conditions about termination) iff they are joinable in
+the operational semantics modulo ground equations specified (by giving
+proofs for them) by the user.  (See co-authored by Petcher for details
+on this tactic~\cite{petcher09,petcher08}.)  Despite this tactic, the
+proofs are mostly manual, swelling the original 138 lines for the
+unverified queue to 310, not counting general lemmas from the standard
+library and particular lemmas about heaplet operations, such as, for
+example, this lemma expressing that the operation of adding an element
+to the heaplet is successful (reading the updated heaplet $h'$ using
+the new alias $p$ returns the added element $a$):
+
+{\small
+\begin{verbatim}
+rheaplet_in_get
+: Forall(A:type)(I:rheaplet_id)(h h':<rheaplet A I>)
+     (p:<alias I>)(a:A)
+     (u:{(rheaplet_in h a) = (return_rheaplet_in h' p)}).
+   { (rheaplet_get p h') = a }
+\end{verbatim}
+}
+  
+As noted above, in the course of proving these invariants for the
+verified queue, we uncovered a bug in the original unverified queue.
+This bug is rather insidious, because it is not uncovered by our
+benchmark testcase (see Section~\ref{sec:emp} below).  This benchmark
+enqueues space-delimited strings read from standard input, and then
+dequeues them all, printing the last string dequeued.  The bug was
+that the unverified code was inadvertently swapping \texttt{qin} and
+\texttt{qout} in the \texttt{dequeue} operation.  On our benchmark,
+the effect was to dequeue the first element (at \texttt{qout}), and
+then the last element (at the new \texttt{qout}, which is the previous
+\texttt{qin}).  Since there is no next pointer from that erroneous
+\texttt{qout}, it appears as though \texttt{dequeue} has removed the
+last element.  All memory is correctly freed, thanks to our linear
+typing (and confirmed by \texttt{valgrind}).  The error was detected,
+of course, because when the invariant that \texttt{qin} has no
+next-pointer cannot be proved when we swap \texttt{qin} and
+\texttt{qout}.
+
+\begin{figure*}
+\begin{verbatim}
+Inductive queue : Fun(A:type).type :=
+  queue_datac : Fun(A:type)(spec I:rheaplet_id)(#unique h:<rheaplet_queue A I>)
+                   (qin qout : <alias I>)
+                   (inv_qin : {(lt qin (length h)) = tt})
+                   (inv_qout : {(lt qout (length h)) = tt})
+                   (inv : @<rheaplet_queue_inv A I h>)
+                   (inv_qin2 : {(queue_cell_has_next (rheaplet_get qin h)) = ff}).
+                   #unique <queue A>
+| queue_datan : Fun(A:type)(spec I:rheaplet_id)(#unique h:<rheaplet_queue A I>)
+                   (inv:@<rheaplet_queue_inv A I h>).#unique <queue A>.
+\end{verbatim}
+\label{fig:queue2}
+\caption{The main datatype, with invariants, for the verified queue abstraction}
+\end{figure*}
 
 \section{Type System}
 
 \section{Empirical Results}
+\label{sec:emp}
+
+\section{Discussion}
+\label{sec:future}
+
+There are several points arising in this study that deserve further discussion:
+
+\ 
+
+\textbf{The status of memory leaks.} Our \texttt{rheaplet} abstraction
+does not guarantee absence of memory leaks, and indeed, cyclic
+structures can be leaked.  We will attempt to persuade the reader that
+this should not be viewed as too great a shortcoming, for the
+following reasons.  First, our verification methodology is based on
+the idea of judicious application of verification to try to improve
+software quality.  Memory leaks are certainly software flaws, but
+statically ensuring that they do not exist would appear to be rather
+costly.  Indeed, this is why dynamic methods such as garbage
+collection are so widely used in modern language implementations: they
+ensure that memory is not leaked, with no additional verification
+cost.  Of course, there is a performance cost, which we are trying to
+avoid.  One could imagine punting and adding garbage-collected regions
+as additional resource types.  Our \texttt{rheaplet} data structure
+already compromises performance somewhat in order to reduce the burden
+of static verification.
+
+If static verification of the absence of memory leaks is required for
+an application, then the approach we would advocate is to use a
+version of heaplets where the number of outstanding aliases is
+statically tracked in the heaplet's type.  Verifying that the number
+of aliases is zero when the heaplet is consumed would require
+significant verification effort in general, since one would need to
+maintain invariants expressing the aliasing structure of the heaplet
+sufficiently to be able to show statically that all aliases have been
+consumed.  For cyclic structures, it might be necessary to disassemble
+carefully the structure, in a reverse manner to that of its
+construction.  This choreography is likely to be too intricate for
+the verification budget of many applications.
+
+A final note on memory leaks is that to the best of our knowledge,
+there is are no general methods for statically verifying the absence
+of live leaks.  And of course, the absence of leaks of unreachable
+memory is simply an approximation to the truly desired property, which
+is that memory which will no longer be used will be reclaimed.  This
+property might be impossible to determine, if the future execution of
+the program depends on external inputs; but we could imagine it could
+be ascertained in at least some cases.  But a general theory for this
+appears to be lacking from the literature.
+
+\textbf{On automating proofs.} Our current burden of proof for our
+example using aliased heap-allocated data is roughly similar to that
+of the 2008 version of the Ynot system.  In the 2009 version, however,
+the Ynot authors report greatly decreasing the burden of manual proof
+through clever use of automated tactics (in the \textsc{Coq} proof
+assistant).  We also agree that automation must be applied to help
+reduce the manual effort for proofs about the heap.  But the
+methodology for automation we are pursuing in \textsc{Guru} differs
+greatly from that of \textsc{Coq}.  The \texttt{hypjoin} tactic
+mentioned above is sound, but also complete (under modest conditions
+about termination of the functional terms involved): if two terms are
+joinable modulo the given ground equations (without case splitting or
+induction), then \texttt{hypjoin} will determine that they are.  It is
+our hypothesis that usability of powerful tactics is greatly increased
+by increased predictability.  Heuristic methods, or methods which are
+not guaranteed to solve provable goals falling into a class of
+problems with a simple and principled delineation, seem to us likely
+to increase fragility of proofs and difficulties for users
+(particularly less proficient ones).  It remains to be seen what
+tactics fitting such a description can be devised for reasoning about
+the heap, or more generally.  Certainly one path is to try to extend
+methods like \texttt{hypjoin} to the non-ground case, but we view
+this as likely to be quite a challenging technical problem.
+
+\textbf{The provable connection between aliases and heaplets.} Above
+we were forced to reason in more detail than we would like about the
+fact that aliases associated statically (via their
+\texttt{rheaplet\_id}) with a heaplet are actually valid indices into
+that heaplet (considered as a list).  It might be possible to reduce
+this burden of proof by adding some more direct language support for
+heaplets.  For example, whenever we obtain a new alias, we could
+automatically be provided inside source terms, via a new assumption
+variable, with a proof that the alias is a valid index.  This would
+not be easy, actually, with just the current language support (just
+have the primitive additionally return this proof).  More interesting
+would be a feature to add proofs automatically -- again, in terms via
+new assumption variables -- that valid indices remain valid under all
+the heaplet operations (recalling that in the functional model, we
+never remove a value from a heaplet).  This would greatly reduce the
+burden of proof for the verified queue example, which is mostly
+concerned with proving that aliases are valid heap indices.
 
 \section{Conclusion}
 
-\textbf{Acknowledgements:} the U.S. NSF for support under award CCF-0841554.
+\textbf{Acknowledgements:} the U.S. NSF for support under award
+CCF-0841554.
 
 \bibliographystyle{plainnat}
 
