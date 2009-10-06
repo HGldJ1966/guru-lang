@@ -76,7 +76,7 @@
 {astump@acm.org}
 
 \authorinfo{Evan Austin}
-{CS Dept.\\ The University of Kansas, USA}
+{EECS Dept.\\ The University of Kansas, USA}
 {ecaustin@ittc.ku.edu}
 %\date{}
 
@@ -758,6 +758,7 @@ operations, with a very small number of additional lines of C code to
 trust (20 for \texttt{warray}, 27 for \texttt{qcharray}).  
 
 \subsection{Mutable Arrays of Reference-Counted Data}
+\label{sec:arrays}
 
 We can easily define an abstraction for mutable word-indexed arrays
 storing reference-counted data, where we statically ensure that
@@ -1096,6 +1097,7 @@ dequeue
 \end{figure}
 
 \subsection{Verified FIFO Queues}
+\label{sec:queues}
 
 In order to verify that the \texttt{qin}-cell of a queue has no next
 pointer, we must reason explicitly about the heap.  This was not
@@ -1219,6 +1221,83 @@ Inductive queue : Fun(A:type).type :=
 \section{Empirical Results}
 \label{sec:emp}
 
+The goal of the following tests is to compare the performance of verified data structures implemented in Guru with analogous data structures implemented in two of the leading functional programming languages currently in use, Haskell and OCaml.  Comparisons were also made to Haskell and OCaml versions with garbage collection minimized.  This was achieved by picking a large enough value for allocation and heap sizes so that collection was not necessary.  The data structures in question are the ones previously discussed in this paper: mutable arrays discussed in Section \ref{sec:arrays} and FIFO queues discussed in Section \ref{sec:queues}.  The specifications of the test system are described in Figure \ref{teststats}.
+
+
+\begin{figure}
+\texttt{Processor: } 2.2 GHz Intel Core 2 Duo \\
+\texttt{Memory: } 4 GB 667 MHz DDR2 SDRAM \\
+\texttt{OS: } Mac OS X Version 10.5.8 \\
+\texttt{Compilers: } GHC 6.10.4; OCamlOpt 3.11.1 
+\caption{Specifications of the test system.}
+\label{teststats}
+\end{figure}
+
+\subsection{Mutable Array Test}
+
+The first test performed involved a verified binary search algorithm using word indexed mutable arrays.  The search algorithm itself is based on a vanilla implementation that would be included in any introductory computer science course.  What made its implementation in Guru unique is that it was derived from the \texttt{warray\_get} primitive method mentioned earlier in this paper.  Recall that this method requires a proof that the index of the array that is to be accessed is less than the length of the array.  Therefore, for binary search to succeed, we must derive a proof that the middle point to search is less than the length of the array.  This proof is derived in a somewhat trivial manner given three other proofs:  that the first index of the search space is less than the length of the array, that the last index of the search space is less than the length of the array, and that the first index of the search space is less than or equal to the last index of the search space.  This gives our binary search function the type shown in Figure \ref{bs}.  Also of particular note is the use of a generic comparator function, allowing the algorithm to work over all types of word indexed arrays.  Supplying this comparator function to the search function is similar to defining and utilizing an instance of the \texttt{Ord} type class for a data type in Haskell.
+
+\begin{figure*}
+\begin{verbatim}
+Define warray_binary_search
+  : Fun(A:type)                                   %% type of the warray elements
+       (spec n:word)                              %% length of the warray
+       (^ #unique_owned l:<warray A n>)           %% the warray to search
+       (first last:word)                          %% first and last index of the search
+       (value:A)                                  %% value to search for
+       (c:Fun(^ #owned a b:A). comp)              %% comparator function
+       (u:{(lt (to_nat first) (to_nat n)) = tt})  %% proofs
+       (v:{(lt (to_nat last) (to_nat n)) = tt})
+       (w:{(le (to_nat first) (to_nat last)) = tt})
+       . bool                                     %% return type
+\end{verbatim}
+\caption{The type of the binary search algorithm for word indexed arrays.}
+\label{bs}
+\end{figure*}
+
+To test the performance of the mutable array an ordered array of size $2^{20}$ was created and then each possible index was searched for.  The total time to complete both of these tasks was recorded.  The results of the test are shown in Figure \ref{warraystats}.  The Guru implementation was able to stay competitive with the other implementations, even beating the original Haskell implementation.  In the cases of Haskell and OCaml both, minimizing garbage collection led to a performance increase.
+
+\begin{figure}
+\begin{tabular}{| l | l |}
+\hline
+\multicolumn{2}{|c|}{Mutable Array Test} \\
+\hline
+Language & Avg Real Time \\
+\hline
+Guru & 1.20 s \\
+Haskell & 1.66 s\\
+Haskell (No GC) & 0.74 s \\
+OCaml & 0.99 s \\
+OCaml (No GC) & 0.89 s \\
+\hline
+\end{tabular}
+\caption{Average real time performance of word indexed array test.}
+\label{warraystats}
+\end{figure}
+
+\subsection{FIFO Queue Test}
+
+The second test involved the methods of the FIFO queue described earlier in the paper.  To begin with, two new FIFO queues were created.  Then the contents of \textit{War and Peace} were enqueued to the first queue word by word.  The first queue is then dequeued one element at a time, enqueueing the item into the second queue.  Once the second queue is full the contents are again dequeued and the last element is printed to the console.  The results of this test are shown in Figure \ref{queuestats}.
+
+\begin{figure}
+\begin{tabular}{| l | l |}
+\hline
+\multicolumn{2}{|c|}{Queue Test} \\
+\hline
+Language & Avg Real Time \\
+\hline
+Guru & 0.69 s \\
+Haskell & 1.20 s \\
+Haskell (No GC) & 1.08 s \\
+OCaml & 0.61 s \\
+OCaml (No GC) & 0.28 s \\
+\hline
+\end{tabular}
+\caption{Average real time performance of queue test.}
+\label{queuestats}
+\end{figure}
+
+%%TODO explain results; clean up wording; clean up formatting;
 \section{Discussion}
 \label{sec:future}
 
