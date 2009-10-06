@@ -94,16 +94,11 @@ This paper presents a resource typing framework for the Guru
 verified-programming language, in which abstractions for various kinds
 of program resources can be defined.  Implemented examples include
 reference-counted data, mutable arrays, and heap-allocated mutable
-aliased data.  Each kind of resource is optionally described by a
-functional model, enabling external reasoning about programs that use
-resources.  During compilation, this functional model is replaced by
-its actual imperative implementation.  This approach enables
-efficient, type-safe programming with mutable and aliased data
-structures, with explicit deallocation (not garbage collection).  We
-demonstrate the approach with two examples: binary search in a mutable
-array where we statically verify array bounds are respected; and
-(mutable) FIFO queues, where we statically verify that the ``in''-end
-of the queue has no next-pointer.
+aliased data.  The approach enables efficient, type-safe programming
+with mutable and aliased data structures, with explicit deallocation
+(not garbage collection).  We evaluate performance of the approach
+with two verified benchmarks, one involving mutable arrays, and
+another involving FIFO queues.
 \end{abstract}
 
 \category{D.3.2}{Programming Languages}{Applicative (functional) languages}
@@ -123,18 +118,20 @@ verified programming, as a substantial number of recent works attest
 (e.g.,~\cite{oury+08,norell07,pasalic+07,sheard06,nanevski+08,licata+05,chenxi05}).
 Dependent types hold out the promise of incrementally extending the
 verification power of traditional type systems.  With traditional
-verification methods, there often at least appears to be a significant
-shift in thinking required for programmers to apply the method.  For
-example, with traditional approaches based on Hoare Logic, one in
-general needs to annotate loops with loop invariants written in a
-separate logical language, not likely to be familiar to mainstream
-programmers.  In contrast, with dependent types, programmers can
-incrementally enrich types with which they are well familiar.  For
-example, it is a relatively small conceptual leap to go from a type
-like $\langle \texttt{list}\ A\rangle$ (for homogeneous lists) to a
-type like $\langle \texttt{list}\ A\ n\rangle$ (for homogeneous lists
-of length $n$).  Of course, the richer the properties expressed by the
-types, the more verification burden we might expect.  But still, with
+verification methods, there is a significant shift in thinking
+required for programmers to apply the method.
+%For
+%example, with traditional approaches based on Hoare Logic, one in
+%general needs to annotate loops with loop invariants written in a
+%separate logical language, not likely to be familiar to mainstream
+%programmers.  
+In contrast, with dependent types, programmers can incrementally
+enrich types with which they are well familiar.  For example, it is a
+relatively small conceptual leap to go from a type like $\langle
+\texttt{list}\ A\rangle$ (for homogeneous lists) to a type like
+$\langle \texttt{list}\ A\ n\rangle$ (for homogeneous lists of length
+$n$).  Of course, the richer the properties expressed by the types,
+the more verification burden we might expect.  But still, with
 dependent types, there seems a better change of incrementally
 exploring the continuum of correctness, starting with current
 programming practice, than with traditional verification methods.
@@ -178,23 +175,22 @@ code required to implement, say, mutable arrays is very small (on the
 order of tens of lines), we contend that this is a reasonable
 compromise between trustedness and the burden of verification.
 
-This paper is organized as follows.  We begin with an overview of
-resource typing in \textsc{Guru}, focusing on several example resource
-types.  We then consider several example imperative abstractions built
-using those resource types.  These include abstractions for mutable
-arrays, and an example of an abstraction using aliasing, namely FIFO
-queues.  We give a system of resource-typing rules, and state its
-soundness with respect to a resource-manipulating semantics.  Finally,
-we give some empirical results comparing our approach to memory
-management with that based on garbage collection in \textsc{OCaml} and
-\textsc{Haskell} on some benchmark programs.
+We begin with an overview of resource typing in \textsc{Guru},
+focusing on several example resource types.  We then consider several
+example imperative abstractions built using those resource types.
+These include abstractions for mutable arrays, and an example of an
+abstraction using aliasing, namely FIFO queues.  We give a system of
+resource-typing rules, and state its soundness with respect to a
+resource-manipulating semantics.  Finally, we give some empirical
+results comparing our approach to memory management with that based on
+garbage collection in \textsc{OCaml} and \textsc{Haskell} on some
+benchmark programs.
 
-A brief note on source code for the examples discussed below: the
-reader may find the sources for all the examples in this paper in the
-Google Code repository for \textsc{Guru}, at \url{www.guru-lang.org}.
-Most are in \textsc{Guru}'s standard library, \texttt{guru-lang/lib/}.
-A few (noted below) are in a special directory along with the source
-of this paper:
+The reader may find the sources for all the examples in this paper in
+the Google Code repository for \textsc{Guru}, at
+\url{www.guru-lang.org}.  Most are in \textsc{Guru}'s standard
+library, \texttt{guru-lang/lib/}.  A few (noted below) are in a
+special directory along with the source of this paper:
 \[
 \texttt{guru-lang/papers/resource-typing/tests/}
 \]
@@ -203,34 +199,34 @@ of this paper:
 
 In this section, we define a resource-typing framework, orthogonal to
 \textsc{Guru}'s datatype typing, upon which we can build various
-imperative abstractions.  The starting point for this framework is the
-familiar idea of modeling resources using \textbf{linear types}.  A
-resource is considered to be an entity to which exactly one other
-entity refers, while it exists in the program.  So a resource in this
-sense is intended to be like a physical resource, such as a bicycle:
-at most one person can make use of the bicycle at a time.  This is the
-first principle of our resource-typing framework: we must have exactly
-one reference to each extant resource at any point during evaluation.
-To this we add a second principle, inspired by examples of physical
-resource, like the bicycle example.  For after all, more than one
-person can use the bicycle, if one rides on the handle bars and
-another on the seat.  Resources often consist of
-\textbf{sub-resources} (like the handle bars and seat of the bicycle),
-which may be used independently.  But while they are in use, the
-resource of which they are parts is not available for use as a whole.
-This is our second principle: resources may be divided into
-sub-resources, but in that case, the whole resource cannot be used by
-another entity until use of the sub-resources is complete.  For
-another everyday example, consider a boxed set of Harry Potter books.
-The boxed set is a resource, and the books are its sub-resources.
-Different people can borrow the individual books, but no one can
-borrow the entire boxed set until all the books have been returned to
-it.
+imperative abstractions.  We start with the familiar idea of modeling
+resources using \textbf{linear types}.  A resource is considered to be
+an entity to which exactly one other entity refers, while it exists in
+the program.  So a resource in this sense is intended to be like a
+physical resource, such as a bicycle: at most one person can make use
+of the bicycle at a time.  This is the first principle of our
+resource-typing framework: we must have exactly one reference to each
+extant resource at any point during evaluation.  To this we add a
+second principle, inspired by examples of physical resource, like the
+bicycle example.  For after all, more than one person can use the
+bicycle, if one rides on the handle bars and another on the seat.
+Resources often consist of \textbf{sub-resources} (like the handle
+bars and seat of the bicycle), which may be used independently.  But
+while they are in use, the resource of which they are parts is not
+available for use as a whole.  This is our second principle: resources
+may be divided into sub-resources, but in that case, the whole
+resource cannot be used by another entity until use of the
+sub-resources is complete.  
+%For another everyday example, consider a
+%boxed set of Harry Potter books.  The boxed set is a resource, and the
+%books are its sub-resources.  Different people can borrow the
+%individual books, but no one can borrow the entire boxed set until all
+%the books have been returned to it.
 
-Our resource-typing framework allows us to track the sub-resource
-relationship statically.  It also enforces the linearity discipline.
-The framework allows different resource types to be declared, together
-with primitive operations on them.  Primitives are declared with an
+Our framework allows us to track the sub-resource relationship
+statically.  It also enforces the linearity discipline.  The framework
+allows different resource types to be declared, together with
+primitive operations on them.  Primitives are declared with an
 optional functional model, and then C code providing its (imperative)
 implementation.  When such a primitive is declared, its resource type
 is declared axiomatically: we do not check that the functional model
@@ -244,10 +240,7 @@ and trustworthiness.
 A final note on \textbf{usability} of the framework: while we are
 currently programming directly in the language described below, we
 envision this serving as a core language for a surface language with
-more inference than we have here.  For example, at the moment it is
-necessary to insert calls to the various resource-managing primitives
-manually, where probably a reasonably simple inference algorithm could
-infer them automatically.  This remains to future work.
+more inference than we have here (see the Conclusion).
 
 \subsection{Quick introduction to \textsc{Guru}}
 \label{sec:guru}
@@ -270,6 +263,7 @@ t & ::= x\ ||\\
 \ & \ &         \texttt{cast}\ t\ \texttt{by}\ P  \ ||\\
 \ & \ &  \texttt{abort}\ T\ ||\\ 
 \ & \ &  \texttt{impossible}\ P\ T\ ||\\ 
+\ & \ &  \texttt{do}\ t_1\ \ldots\ t_n\ \texttt{end}\ ||\\ 
 \ & \ &  \texttt{let}\ x\ \Eq\ t\ \texttt{by}\ y\ \texttt{in}\ t' \ ||\ 
 \\ 
 \ & \ &  \texttt{match}\, \underline{!}\ t\ \texttt{by}\ x\ y \ \texttt{with}\\
@@ -295,7 +289,7 @@ Y & ::= & t\ ||\ T
 o & ::= & \#\texttt{untracked}\ ||\ \texttt{spec}\ ||\ \#\texttt{r}\ ||\ \#\langle r\ x\rangle
 \\
 \\
-i & ::= & \textnormal{\^{\ }}\ ||\ !\ 
+i & ::= & \textnormal{\^{\ }}\ ||\ !\ ||\ 1
 \end{array}
 \]
 \caption{\label{fig:terms} Terms ($t$) and types ($T$); underlined occurrences are optional}
@@ -310,23 +304,25 @@ and their types first, then a ``:'', then the output type, then a
 via \texttt{abort}.  Operationally, \texttt{impossible} terms behave
 like \texttt{abort}, but come with a proof that that point in the code
 can never be reached (because the assumptions in scope at that point
-are contradictory).  We have explicit casts to change the type of a
-term $t$ using an equation between types proved by a proof $P$.  We
-also have \texttt{let}- and \texttt{match}-terms.  Right after the
-\texttt{match} keyword, we may optionally have $!$, which means that
-the scrutinee will not be consumed by the match.  The default is that
-the scrutinee will be consumed.  These \texttt{let}- and
-\texttt{match}-terms bind additional assumption variables after the
-\texttt{by} keyword, which provide information in the rest of those
-terms about the computation that must have led there.  For example, in
-\texttt{let}-terms, the assumption variable has classifier $\{ x = t
-\}$, following the \texttt{let}-definition of $x$ to $t$.  This is
-useful informationa in the body of the \texttt{let}, since it tells us
-that $t$ has terminated, and that $x$ is provably equal to its value.
-The \texttt{existse\_term} is a rarely used construct for elimination
-of a proved existential formula, inside a term.  The final term
-construct $@\ t$ is for compressing chains of ownership, discussed
-further below.
+are contradictory).  The \texttt{do-end} construct is just a prefix
+notation for sequencing of terms.  It is not the monadic \texttt{do}
+familiar from \textsc{Haskell}.  We have explicit casts to change the
+type of a term $t$ using an equation between types proved by a proof
+$P$.  We also have \texttt{let}- and \texttt{match}-terms.  Right
+after the \texttt{match} keyword, we may optionally have $!$, which
+means that the scrutinee will not be consumed by the match.  The
+default is that the scrutinee will be consumed.  These \texttt{let}-
+and \texttt{match}-terms bind additional assumption variables after
+the \texttt{by} keyword, which provide information in the rest of
+those terms about the computation that must have led there.  For
+example, in \texttt{let}-terms, the assumption variable has classifier
+$\{ x = t \}$, following the \texttt{let}-definition of $x$ to $t$.
+This is useful informationa in the body of the \texttt{let}, since it
+tells us that $t$ has terminated, and that $x$ is provably equal to
+its value.  The \texttt{existse\_term} is a rarely used construct for
+elimination of a proved existential formula, inside a term.  The final
+term construct $@\ t$ is for compressing chains of ownership,
+discussed further below.
 
 A few words are warranted on the Operational Type Theory (OpTT) upon
 which \textsc{Guru} is based.  Provable equality between terms in
@@ -402,7 +398,7 @@ function.  The additional annotations $i$ mean:
 
 \begin{itemize}
 
-\item \textbf{\^{\ }}: consume but do not return.  This annotation
+\item \textbf{\^{\ }}: consume (exactly once) but do not return.  This annotation
   means that the input is to be consumed by the function, but not
   returned, neither directly, nor in another data structure.
 
@@ -410,6 +406,11 @@ function.  The additional annotations $i$ mean:
   input will not be consumed at all by the function.  This is
   primarily used when defining primitive operations for resource
   types.
+
+\item \textbf{1}: consume, where returning counts as consuming.  This
+  annotation is not implemented in \textsc{Guru}, since leaving off
+  the consumption annotation already has this meaning.  $1$ is included
+  just for uniformity below.
 
 \end{itemize}
 
@@ -912,37 +913,34 @@ qcharray_free
 \section{Abstractions Using Aliasing}
 
 In this section, we consider how to implement imperative abstractions
-which rely on aliasing of heap-allocated data structures.  We first
-discuss the \texttt{rheaplet} abstraction, which provides a functional
-model of a portion of the heap, and then see how to use it to implement
-FIFO queues.  We give first a simple unverified implementation of FIFO
-queues, and then a verified version.  In the course of implementing the
-verified version, we uncovered a bug in the unverified version, which
-was not revealed by the benchmark testcase (used for the empirical
-evaluation below).
+with aliased heap-allocated data.  We first discuss the
+\texttt{rheaplet} abstraction, which provides a functional model of a
+portion of the heap, and then see how to use it to implement FIFO
+queues.  We give first a simple unverified implementation of FIFO
+queues, and then a verified version.  In the course of implementing
+the verified version, we uncovered a bug in the unverified version,
+which was not revealed by the benchmark testcase (used for the
+empirical evaluation below).
 
 \subsection{Modeling the aliased heap with \texttt{rheaplet}s}
 
 To implement an aliased data structure, it is necessary to find a way
 to model of the non-local communication which arises when a structure
-is updated via one reference, and then read via another reference.  It
-is an intriguing challenge to do this in a way that does not involve
-explicit reference to the heap -- a challenge we have not at this time
-succeeded in meeting.  So we rely here on a functional model of a
-portion of the heap, which we call a \texttt{rheaplet}.  The
-``-\texttt{let}'' is to indicate that this is just a portion of the
-heap, not its entirety; and the ``\texttt{r}-'' is because we use
-run-time reference counting of the number of aliases to each cell, to
-manage memory.  This approach statically guarantees memory safety:
-uninitialized or deleted memory will never be read or written.  It
-should be acknowledged from the beginning, however, that this approach
-can leak memory if cycles are formed in the reference graph.  We have
-several things to say about that issue, in Section~\ref{sec:future}
-below.
+is updated via one reference, and then read via another reference.  We
+rely here on a functional model of a portion of the heap, which we
+call a \texttt{rheaplet}.  The ``-\texttt{let}'' is to indicate that
+this is just a portion of the heap, not its entirety; and the
+``\texttt{r}-'' is because we use run-time reference counting of the
+number of aliases to each cell, to manage memory.  This approach
+statically guarantees that uninitialized or deleted memory will never
+be read or written.  It should be acknowledged from the beginning,
+however, that this approach can leak memory if cycles are formed in
+the reference graph.  We have several things to say about that issue,
+in Section~\ref{sec:future} below.
 
 The \texttt{rheaplet} abstraction is based on a type family
-\texttt{<rheaplet A I>}, for heaplet storing aliased data of type $A$.
-The $I$ is a \texttt{rheaplet\_id}, which we use to prevent
+\texttt{<rheaplet A I>}, for heaplets storing aliased data of type
+$A$.  The $I$ is a \texttt{rheaplet\_id}, which we use to prevent
 (statically) aliases associated with one heaplet from being used to
 access another.  The type of aliases is then \texttt{<alias I>}, for
 aliases into the heaplet with heaplet id $I$.  In the functional
@@ -1004,24 +1002,23 @@ rheaplet_set
 
 \subsection{Unverified FIFO Queues}
 
-Using the \texttt{rheaplet} primitives, we have implemented a FIFO
-queue abstraction, for which the only statically enforced properties
-are type- and memory-safety.  The source code for this may be found as
-\texttt{queue.g} in the tests subdirectory for this paper (see the
-Introduction).  A queue consists of a singly-linked list from the
-\texttt{qout}-end, where data is dequeued, to the \texttt{qin} end,
-where it is enqueued.  Each cell of the queue is allocated in a
-heaplet associated with the queue.  This is because the last such cell
-has two aliases (all the others have one), which ends up forcing all
-cells to be heaplet-allocated.  Figure~\ref{fig:queue} lists the
-datatype definition for queues (omitting a simple definition for queue
-cells), and then the types for the operations on queues.  Note that
-these operations are not primitives.  They are built using the above
-abstractions, and require no additional untrusted C code.  Note also
-that since this data structure does not form cycles in the heap, our
-reference-counting approach for \texttt{rheaplet}s is sufficient to
-reclaim all unreachable memory (though this is not statically
-verified).
+Using the \texttt{rheaplet} primitives, we have implemented a
+statically memory-safe FIFO queue abstraction.  The source code for
+this may be found as \texttt{queue.g} in the tests subdirectory for
+this paper (see the Introduction).  A queue consists of a
+singly-linked list from the \texttt{qout}-end, where data is dequeued,
+to the \texttt{qin} end, where it is enqueued.  Each cell of the queue
+is allocated in a heaplet associated with the queue.  This is because
+the last such cell has two aliases (all the others have one), which
+ends up forcing all cells to be heaplet-allocated.
+Figure~\ref{fig:queue} lists the datatype definition for queues
+(omitting a simple definition for queue cells), and then the types for
+the operations on queues.  Note that these operations are not
+primitives.  They are built using the above abstractions, and require
+no additional untrusted C code.  Note also that since this data
+structure does not form cycles in the heap, our reference-counting
+approach for \texttt{rheaplet}s is sufficient to reclaim all
+unreachable memory (though this is not statically verified).
 
 We just consider a few points about the typings in the figure.  Both
 empty (\texttt{queue\_datan}) and non-empty (\texttt{queue\_datac})
@@ -1218,10 +1215,230 @@ Inductive queue : Fun(A:type).type :=
 
 \section{Type System}
 
+In this section we give a formal definition of our resource-tracking
+static analysis as an abstract operational semantics, and sketch the
+proof of soundness with respect to an operational semantics operating
+on a tree-shaped reference graph, which is sufficient for our
+functional-modeling approach.  In more detail, we define a tree-based
+evaluation relation $\Delta; t \Downarrow_k t'; \Delta'$, where $t$
+and $t'$ are terms; $\Delta, \Delta'$ are functions from variables $x$
+to values of the form $(c\ x_1\ \ldots\ c_n)$, with $c$ an arity-$n$
+term constructor; and $k$ a natural number.  If $\Delta(x) =
+(c\ \bar{x})$, this mean variable $x$ is instantiated with that term,
+where the variables $\bar{x}$ may have their own instantiations in
+$\Delta$ (similarly for $\Delta'$).  Furthermore, $k$ is a natural
+number used as a timer; it is a technical device to allow us to
+distinguish diverging and finitely failing computations (for which we
+derive a $\perp$ judgment in the limit) from ones which fail due to
+resource errors (for which we do not).  Next, we define an abstract,
+modular evaluation relation $\Theta; t \Downarrow x; \Theta'$, where
+$\Theta, \Theta'$ are functions from variables $x$ to a consumption
+annotation $i$ (see Figure~\ref{fig:terms}) or a list of variables
+pinned by $x$.  Finally, we sketch a proof of soundness of the
+abstract relation for the tree-based one.
+
+\subsection{Assumptions on the terms}
+
+We assume that all program terms presented to this analysis have
+already been datatype checked.  Also, we assume that calls to
+initialization functions have been inserted as follows.  (Our
+implementation inserts these calls during resource-type checking,
+where we just check simple typing with respect to the resource types
+like \texttt{unique}.)  Suppose we have an \texttt{Init}-command
+beginning like this:
+
+\begin{verbatim}
+Init ginit_r_rr(#r scrut)(#rr subdat).#rrr
+\end{verbatim}
+
+\noindent Suppose further we have a \texttt{match}-case with a
+scrutinee of resource type \texttt{r}, and a pattern $c\ \bar{x}$,
+where $y\equiv x_i$ is of resource type \texttt{rr}.  Also, assume the
+scrutinee is syntactically a variable $x$ (we perform a simple compiler
+transformation to ensure this, before resource tracking begins).  Then
+the body of the case will begin with nested \texttt{let}-bindings,
+including one of the form
+
+\begin{verbatim}
+let y = ginit_r_rr(x,y) in
+\end{verbatim}
+
+\noindent We further assign the \texttt{ginit\_r\_rr} function this
+resource type, which omits the datatype annotations (like
+\texttt{<list A>} or similar) and shows only the resource-type (like
+\texttt{unowned} or \texttt{unique}) and consumption annotations:
+
+\begin{verbatim}
+Fun(! rr scrut)(^ r subdat).rrr
+\end{verbatim}
+
+\noindent Also, we assume that uses of \texttt{match} without the
+optional $!$ indication (see Figure~\ref{fig:terms}) have been
+translated to uses which do include this annotation, and where the
+body of each case contains, right after the prefix of
+\texttt{let}-bindings just discussed, a call to the appropriate
+\texttt{consume}-function for \texttt{r} (the scrutinee's resource
+type), on the scrutinee.  This desugars \texttt{match}, which does
+consume the scrutinee, right after initialization of subdata, into
+\texttt{match!}, which does not.  
+
+We assume the (singly recursive) terms have already been
+defunctionalized into global first-order recursive equations of the forms
+$(f\ \bar{x}) = t$.  Term constructors we denote with $c$, and
+primitives with $p$.
+
+Finally, we assume that proofs (including assumption variables) as
+well as data marked specificational have already been dropped.  Also,
+$@\ t$ has been turned into just $t$, and we do not treat
+\texttt{existse\_term}- and \texttt{do}-terms (both easily handled),
+for space reasons.
+
+\subsection{Tree-based operational semantics}
+
+Figure~\ref{fig:opsemt} gives the tree-based operational semantics for
+terms.  The first rule is for expiration of the timer.  In this case,
+the form of the judgement has $\perp$ on the right hand side of the
+$\Downarrow$, indicating timeout with the given timer.  We take these
+$\perp$-judgments to propagate strictly for all rules (that is, if a
+premise is provable with such a judgment, then the rule also concludes
+with $\perp$) -- but we do not formalize this machinery.  The second
+rule is for evaluation of variables, the third for evaluation of
+constructor applications, and the fourth for evaluation of function
+applications.  The next two rules, for applications of primitives $p$,
+consume resources by modifying the map $\Delta$ according to $p$'s
+type.  This is done using a meta-theoretic function application
+$U(\Delta,\bar{x},\bar{i})$, defined below.  We write $p::\bar{i}$ in
+the rule to indicate that the consumption annotations $\bar{i}$ are
+the ones stated in $p$'s type for its arguments.  We also write $S
+\setminus x$, where $S$ is a function and $x$ an element, to mean $S -
+\{ (x,S(x)\}$.  If the meta-theoretic function application is not
+defined, we interpret this to mean the premise is not provable.
+
+\begin{eqnarray*}
+U(\Delta,x,\bar{x},1,\bar{i}) & = & U(\Delta\setminus x ,\bar{x},\bar{i})\textnormal{, if }x\in\textit{dom}(\Delta)\\
+U(\Delta,x,\bar{x},!,\bar{i}) & = & U(\Delta ,\bar{x},\bar{i}) \\
+U(\Delta,x,\bar{x},\textnormal{\^{\ }},\bar{i}) & = & U(\Delta\setminus x ,\bar{x},\bar{i})\textnormal{, if }x\in\textit{dom}(\Delta)\\
+U(\Delta,\cdot,\cdot) & = & \Delta
+\end{eqnarray*}
+
+\noindent For simplicity, we assume that if a primitive $p$ lacks a
+functional model, then its return type is an instance of a primitively
+defined type.  In that case, the second rule for applications of
+primitives just returns a new variable, bound to an uninterpreted
+entity $\cdot$ in the heap.  Earlier stages of type-checking rule out
+pattern-matching on elements of primitively defined types.  Note that
+in the \texttt{match}-rule we use a more compact meta-theoretic
+notation for \texttt{match}-terms.
+
+\begin{figure}
+\[
+\begin{array}{c}
+\infer{\Delta; t\Downarrow_0 \perp}{\ } \\ \\
+
+\infer{\Delta; x\Downarrow_{k+1} x; \Delta}{x\in\textit{dom}\Delta} \\ \\
+
+\infer{\Delta_1; (c\ t_1\ldots t_n)\Downarrow_{k+1} (c\ \bar{r});\Delta_{n+1}}
+      {\begin{array}{l}
+       \forall i. (\Delta_i; t_i \Downarrow_{k} r_i; \Delta_{i+1}) 
+       \end{array}} \\ \\
+
+\infer{\Delta_1; (f\ t_1\ldots t_n)\Downarrow_{k+1} r;\Delta'}
+      {\begin{array}{l}
+       \forall i. (\Delta_i; t_i \Downarrow_{k} r_i; \Delta_{i+1}) \\
+       (f\ \bar{x}) = t \\
+       \Delta_{n+1}; [\bar{r}/\bar{x}]t \Downarrow_k r; \Delta'
+       \end{array}} \\ \\
+
+\infer{\Delta_1; (p\ t_1\ldots t_n)\Downarrow_{k+1} r;\Delta_{n+1}}
+      {\begin{array}{l}
+       \forall i. (\Delta_i; t_i \Downarrow_k r_i; \Delta_{i+1}) \\
+       (p\ \bar{x}) = t \\ 
+       p::\bar{i} \\
+       U(\Delta_{n+1},\bar{x},\bar{i}); [\bar{r}/\bar{x}]t \Downarrow_k r; \Delta'
+       \end{array}} \\ \\
+
+\infer{\Delta_1; (p\ t_1\ldots t_n)\Downarrow_{k+1} r;\{(r,\cdot)\}\cup U(\Delta_{n+1},\bar{x},\bar{i})}
+      {\begin{array}{l}
+       \forall i. (\Delta_i; t_i \Downarrow_k r_i; \Delta_{i+1}) \\
+       \textnormal{no functional model for }p\\ 
+       p::\bar{i} \\
+       r\not\in\textit{dom}(\Delta)
+       \end{array}} \\ \\
+
+\infer{\Delta; \texttt{match}\ t\ \texttt{with}\ i.(c_i\ \bar{x}_i \texttt{=>} t_i) \Downarrow_{k+1} r;\Delta'}
+      {\begin{array}{l}
+       \Delta; t \Downarrow_k (c\ \bar{r}); \Delta''
+       \Delta''; [\bar{r}/\bar{x}]t_i \Downarrow_k r; \Delta'
+       \end{array}} \\ \\
+
+\infer{\Delta; \texttt{let}\ x\ =\ t\ \texttt{in}\ t')) \Downarrow_{k+1} r'';\Delta''}
+      {\begin{array}{l}
+       \Delta; t \Downarrow_{k} r; \Delta' \\
+       \Delta'; [r/x]t' \Downarrow_k r''; \Delta''
+       \end{array}} \\ \\
+
+\infer{\Delta; \texttt{abort} \Downarrow_k \perp}{\ } \\ \\
+
+\end{array}
+\]
+\caption{Tree-based operational semantics}
+\label{fig:opsemt}
+\end{figure}
+
+\subsection{Resource-tracking analysis}
+
+\begin{figure}
+\[
+\begin{array}{c}
+\infer{\Theta; x\Downarrow x; \Theta}{x\in\textit{dom}\Theta} \\ \\
+
+\infer{\Theta_1; (c\ t_1\ldots t_n)\Downarrow_{k+1} r;\{(r,1)\}\cup U(\Theta_{n+1},\bar{r},\bar{i})}
+      {\begin{array}{l}
+       \forall i. (\Theta_i; t_i \Downarrow_{k} r_i; \Theta_{i+1}) \\
+       c::\bar{i} \\
+       r\not\in\textit{dom}(\Theta)
+       \end{array}} \\ \\
+
+\infer{\Theta_1; (g\ t_1\ldots t_n)\Downarrow_{k+1} r;\Theta'}
+      {\begin{array}{l}
+       \forall i. (\Theta_i; t_i \Downarrow_{k} r_i; \Theta_{i+1}) \\
+       (f\ \bar{x}) = t \\
+       \Theta_{n+1}; [\bar{r}/\bar{x}]t \Downarrow_k r; \Theta'
+       \end{array}} \\ \\
+
+\infer{\Theta; \texttt{match}\ t\ \texttt{with}\ i.(c_i\ \bar{x}_i \texttt{=>} t_i) \Downarrow_{k+1} r;\Theta'}
+      {\begin{array}{l}
+       \Theta; t \Downarrow_k (c\ \bar{r}); \Theta''
+       \Theta''; [\bar{r}/\bar{x}]t_i \Downarrow_k r; \Theta'
+       \end{array}} \\ \\
+
+\infer{\Theta; \texttt{let}\ x\ =\ t\ \texttt{in}\ t')) \Downarrow_{k+1} r'';\Theta''}
+      {\begin{array}{l}
+       \Theta; t \Downarrow_{k} r; \Theta' \\
+       \Theta'; [r/x]t' \Downarrow_k r''; \Theta''
+       \end{array}} \\ \\
+
+\infer{\Theta; \texttt{abort} \Downarrow_k \perp}{\ } \\ \\
+
+\end{array}
+\]
+\caption{Resource-tracking abstract operational semantics}
+\label{fig:opsemt}
+\end{figure}
+
+
 \section{Empirical Results}
 \label{sec:emp}
 
-The goal of the following tests is to compare the performance of verified data structures implemented in Guru with analogous data structures implemented in two of the leading functional programming languages currently in use, Haskell and OCaml.  Comparisons were also made to Haskell and OCaml versions with garbage collection minimized.  This was achieved by picking a large enough value for allocation and heap sizes so that collection was not necessary.  The data structures in question are the ones previously discussed in this paper: mutable arrays discussed in Section \ref{sec:arrays} and FIFO queues discussed in Section \ref{sec:queues}.  The specifications of the test system are described in Figure \ref{teststats}.
+The goal of the following tests is to compare the performance of
+mutable arrays and FIFO queues implemented in \textsc{Guru} with
+analogous data structures implemented in two of the leading functional
+programming languages currently in use, \textsc{Haskell} and
+\textsc{OCaml}.  Comparisons are also made to \textsc{Haskell} and
+\textsc{OCaml} versions with garbage collection minimized by picking
+large enough values for heap sizes so that collection is not
+necessary.  The specifications of the test system are described in
+Figure \ref{teststats}.
 
 
 \begin{figure}
@@ -1235,7 +1452,25 @@ The goal of the following tests is to compare the performance of verified data s
 
 \subsection{Mutable Array Test}
 
-The first test performed involved a verified binary search algorithm using word indexed mutable arrays.  The search algorithm itself is based on a vanilla implementation that would be included in any introductory computer science course.  What made its implementation in Guru unique is that it was derived from the \texttt{warray\_get} primitive method mentioned earlier in this paper.  Recall that this method requires a proof that the index of the array that is to be accessed is less than the length of the array.  Therefore, for binary search to succeed, we must derive a proof that the middle point to search is less than the length of the array.  This proof is derived in a somewhat trivial manner given three other proofs:  that the first index of the search space is less than the length of the array, that the last index of the search space is less than the length of the array, and that the first index of the search space is less than or equal to the last index of the search space.  This gives our binary search function the type shown in Figure \ref{bs}.  Also of particular note is the use of a generic comparator function, allowing the algorithm to work over all types of word indexed arrays.  Supplying this comparator function to the search function is similar to defining and utilizing an instance of the \texttt{Ord} type class for a data type in Haskell.
+The first test uses a verified version of a textbook binary search
+algorithm using word-indexed mutable arrays.  What makes the
+implementation in \textsc{Guru} unique is that it uses the
+\texttt{warray\_get} primitive method mentioned earlier in this paper.
+Recall that this method requires a proof that the index of the array
+that is to be accessed is less than the length of the array.
+Therefore, for binary search to succeed, we must derive a proof that
+the middle point to search is less than the length of the array.  This
+proof is derived relatively easily given three other proofs: that the
+first index of the search space is less than the length of the array,
+that the last index of the search space is less than the length of the
+array, and that the first index of the search space is less than or
+equal to the last index of the search space.  This gives our binary
+search function the type shown in Figure \ref{bs}.  Also of note is
+the use of a generic comparator function, allowing the algorithm to
+work over all types of word-indexed arrays.  Supplying this comparator
+function to the search function is similar to defining and utilizing
+an instance of the \texttt{Ord} type class for a data type in
+\textsc{Haskell}.
 
 \begin{figure*}
 \begin{verbatim}
@@ -1251,48 +1486,70 @@ Define warray_binary_search
        (w:{(le (to_nat first) (to_nat last)) = tt})
        . bool                                     %% return type
 \end{verbatim}
-\caption{The type of the binary search algorithm for word indexed arrays.}
+\caption{The type of the binary search algorithm for word-indexed arrays.}
 \label{bs}
 \end{figure*}
 
-To test the performance of the mutable array an ordered array of size $2^{20}$ was created and then each possible index was searched for.  The total time to complete both of these tasks was recorded.  The results of the test are shown in Figure \ref{warraystats}.  The Guru implementation was able to stay competitive with the other implementations, even beating the original Haskell implementation.  In the cases of Haskell and OCaml both, minimizing garbage collection led to a performance increase.
+To test the performance of binary search, an ordered array of size
+$2^{20}$ is created and then each possible index is searched for.  The
+total time to complete both of these tasks is shown in Figure
+\ref{warraystats}.  The \textsc{Guru} implementation is competitive
+with the other implementations, even beating the original \textsc{Haskell}
+implementation.  In the cases of \textsc{Haskell} and \textsc{OCaml} both, minimizing
+garbage collection leads to a significant performance increase.
 
 \begin{figure}
+\begin{center}
 \begin{tabular}{| l | l |}
 \hline
 \multicolumn{2}{|c|}{Mutable Array Test} \\
 \hline
 Language & Avg Real Time \\
 \hline
-Guru & 1.20 s \\
-Haskell & 1.66 s\\
-Haskell (No GC) & 0.74 s \\
-OCaml & 0.99 s \\
-OCaml (No GC) & 0.89 s \\
+\textsc{Guru} & 1.20 s \\
+\textsc{Haskell} & 1.66 s\\
+\textsc{Haskell} (No GC) & 0.74 s \\
+\textsc{OCaml} & 0.99 s \\
+\textsc{OCaml} (No GC) & 0.89 s \\
 \hline
 \end{tabular}
-\caption{Average real time performance of word indexed array test.}
+\end{center}
+\caption{Average real time performance of word-indexed array test.}
 \label{warraystats}
 \end{figure}
 
 \subsection{FIFO Queue Test}
 
-The second test involved the methods of the FIFO queue described earlier in the paper.  To begin with, two new FIFO queues were created.  Then the contents of \textit{War and Peace} were enqueued to the first queue word by word.  The first queue is then dequeued one element at a time, enqueueing the item into the second queue.  Once the second queue is full the contents are again dequeued and the last element is printed to the console.  The results of this test are shown in Figure \ref{queuestats}.
+The second test involves the methods of the FIFO queue described
+earlier in the paper.  To begin with, two new FIFO queues are created.
+Then the contents of \textit{War and Peace} are enqueued to the first
+queue word by word.  The first queue is then dequeued one element at a
+time, enqueueing the item into the second queue.  Once the second
+queue is full the contents are again dequeued and the last element is
+printed to the console.  The results of this test are shown in Figure
+\ref{queuestats}.  The verified and unverified queues have
+indistinguishable performance (so we show just the results for the
+verified queue).  We conjecture that branch prediction in the CPU
+masks the difference between the two implementations (the verified one
+does not need to do a run-time check to detect the situation which is
+proved to be impossible).
 
 \begin{figure}
+\begin{center}
 \begin{tabular}{| l | l |}
 \hline
 \multicolumn{2}{|c|}{Queue Test} \\
 \hline
 Language & Avg Real Time \\
 \hline
-Guru & 0.69 s \\
-Haskell & 1.20 s \\
-Haskell (No GC) & 1.08 s \\
-OCaml & 0.61 s \\
-OCaml (No GC) & 0.28 s \\
+\textsc{Guru} & 0.69 s \\
+\textsc{Haskell} & 1.20 s \\
+\textsc{Haskell} (No GC) & 1.08 s \\
+\textsc{OCaml} & 0.61 s \\
+\textsc{OCaml} (No GC) & 0.28 s \\
 \hline
 \end{tabular}
+\end{center}
 \caption{Average real time performance of queue test.}
 \label{queuestats}
 \end{figure}

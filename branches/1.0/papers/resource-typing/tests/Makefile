@@ -33,7 +33,7 @@ test_warray_cp:   test_warray_c.ml
 	ocamlopt -o test_warray_cp -p test_warray_c.ml
 
 clean:
-	rm -f test_warray_h test_warray_c test_warray_g test_queue_h test_queue_c test_queue_g 
+	rm -f test_warray_h test_warray_c test_warray_g test_queue_h test_queue_c test_queue_g test_warray_g.c test_queue_g.c
 	rm -f test_warray_hp test_warray_cp test_warray_gp test_queue_hp test_queue_cp test_queue_gp 
 	rm -f *.cmi *.cmx *.o *.hi
 
