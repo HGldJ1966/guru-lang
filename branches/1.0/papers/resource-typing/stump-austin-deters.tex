@@ -1215,34 +1215,24 @@ Inductive queue : Fun(A:type).type :=
 
 \section{Type System}
 
-In this section we give a formal definition of our resource-tracking
-static analysis as an abstract operational semantics, and sketch the
-proof of soundness with respect to an operational semantics operating
-on a tree-shaped reference graph, which is sufficient for our
-functional-modeling approach.  In more detail, we define a tree-based
-evaluation relation $\Delta; t \Downarrow_k t'; \Delta'$, where $t$
-and $t'$ are terms; $\Delta, \Delta'$ are functions from variables $x$
-to values of the form $(c\ x_1\ \ldots\ c_n)$, with $c$ an arity-$n$
-term constructor; and $k$ a natural number.  If $\Delta(x) =
-(c\ \bar{x})$, this mean variable $x$ is instantiated with that term,
-where the variables $\bar{x}$ may have their own instantiations in
-$\Delta$ (similarly for $\Delta'$).  Furthermore, $k$ is a natural
-number used as a timer; it is a technical device to allow us to
-distinguish diverging and finitely failing computations (for which we
-derive a $\perp$ judgment in the limit) from ones which fail due to
-resource errors (for which we do not).  Next, we define an abstract,
-modular evaluation relation $\Theta; t \Downarrow x; \Theta'$, where
-$\Theta, \Theta'$ are functions from variables $x$ to a consumption
-annotation $i$ (see Figure~\ref{fig:terms}) or a list of variables
-pinned by $x$.  Finally, we sketch a proof of soundness of the
-abstract relation for the tree-based one.
+In this section we give a formal definition of the resource-tracking
+static analysis implemented in \textsc{Guru} as an abstract
+operational semantics, and sketch the proof of soundness with respect
+to an operational semantics operating on certain (finite) reference graphs.
+The reference graphs are in the form of what we call \emph{shallowly
+  augmented forests}: they are forests, except that nodes may have
+multiple predecessors in the graph, but then at most one of those
+predecessors can itself have a predecessor. This is sufficient for our
+functional-modeling approach, since it captures the idea that data are
+all tree-structured, except that there may be some additional
+references to the nodes (corresponding to predecessors that have no
+predecessor).
 
 \subsection{Assumptions on the terms}
 
-We assume that all program terms presented to this analysis have
-already been datatype checked.  Also, we assume that calls to
-initialization functions have been inserted as follows.  (Our
-implementation inserts these calls during resource-type checking,
+We assume that terms have already passed the datatype checker, and
+that calls to initialization functions have been inserted as follows.
+(Our implementation inserts these calls during resource-type checking,
 where we just check simple typing with respect to the resource types
 like \texttt{unique}.)  Suppose we have an \texttt{Init}-command
 beginning like this:
@@ -1283,59 +1273,93 @@ consume the scrutinee, right after initialization of subdata, into
 \texttt{match!}, which does not.  
 
 We assume the (singly recursive) terms have already been
-defunctionalized into global first-order recursive equations of the forms
-$(f\ \bar{x}) = t$.  Term constructors we denote with $c$, and
-primitives with $p$.
-
-Finally, we assume that proofs (including assumption variables) as
-well as data marked specificational have already been dropped.  Also,
-$@\ t$ has been turned into just $t$, and we do not treat
+defunctionalized into global first-order recursive equations of the
+forms $(f\ \bar{x}) = t$.  Term constructors we denote with $c$, and
+primitives with $p$. Finally, we assume that proofs (including
+assumption variables) as well as data marked specificational have
+already been dropped, after datatype checking.  Also, we do not treat
 \texttt{existse\_term}- and \texttt{do}-terms (both easily handled),
 for space reasons.
 
-\subsection{Tree-based operational semantics}
+\subsection{Graph-based operational semantics}
 
-Figure~\ref{fig:opsemt} gives the tree-based operational semantics for
-terms.  The first rule is for expiration of the timer.  In this case,
-the form of the judgement has $\perp$ on the right hand side of the
-$\Downarrow$, indicating timeout with the given timer.  We take these
-$\perp$-judgments to propagate strictly for all rules (that is, if a
-premise is provable with such a judgment, then the rule also concludes
-with $\perp$) -- but we do not formalize this machinery.  The second
-rule is for evaluation of variables, the third for evaluation of
-constructor applications, and the fourth for evaluation of function
-applications.  The next two rules, for applications of primitives $p$,
-consume resources by modifying the map $\Delta$ according to $p$'s
-type.  This is done using a meta-theoretic function application
-$U(\Delta,\bar{x},\bar{i})$, defined below.  We write $p::\bar{i}$ in
-the rule to indicate that the consumption annotations $\bar{i}$ are
-the ones stated in $p$'s type for its arguments.  We also write $S
-\setminus x$, where $S$ is a function and $x$ an element, to mean $S -
-\{ (x,S(x)\}$.  If the meta-theoretic function application is not
-defined, we interpret this to mean the premise is not provable.
+We define a graph-based evaluation relation $\Delta; t \Downarrow_k
+t'; \Delta'$, where $t$ and $t'$ are terms; $\Delta, \Delta'$ are
+functions from variables $x$ to values of the form
+$(c\ x_1\ \ldots\ c_n)$, with $c$ an arity-$n$ term constructor; and
+$k$ a natural number.  If $\Delta(x) = (c\ \bar{x})$, this means
+variable $x$ is instantiated with that term, where the variables
+$\bar{x}$ may have their own instantiations in $\Delta$ (similarly for
+$\Delta'$).  Furthermore, $k$ is a natural number used as a timer; it
+is a technical device to allow us to distinguish diverging and
+finitely failing computations (for which we derive a $\perp$ judgment
+in the limit) from ones which fail due to resource errors (for which
+there is no derivation possible at all using the rules).  
 
+Figure~\ref{fig:opsemt} gives the rules.  The first is for expiration
+of the timer.  In this case, the form of the judgment has $\perp$ on
+the right hand side of the $\Downarrow$, indicating timeout with the
+given timer.  We take these $\perp$-judgments to propagate strictly
+for all rules (that is, if a premise is provable with such a judgment,
+then the rule also concludes with $\perp$) -- but we leave this
+machinery unformalized.  The second rule is for evaluation of
+variables, the third for evaluation of constructor applications (we
+consider uses of 0-ary constructors as degenerate applications), and
+the fourth for evaluation of function applications.  The next two
+rules, for applications of primitives $p$, consume resources by
+modifying the map $\Delta$ according to $p$'s type.  This is done
+using a meta-theoretic function application
+$U(\Delta,\bar{x},\bar{i})$, defined in Figure~\ref{fig:consume}.  We
+write $p::\bar{i}$ in the rule to indicate that the consumption
+annotations $\bar{i}$ are the ones stated in $p$'s type for its
+arguments.  We also inductively define a function ``$-$'' on $\Delta$
+and an $x\in\textit{dom}(\Delta)$ for removing subgraphs from the
+graph defined $\Delta$:
+\[
+\begin{array}{ll}
+\infer{S_0 - x = (\bigcap_i S_i) \setminus \{(x,(c\ \bar{x}))\} }
+      {S_0(x) = (c\ \bar{x}) & \forall i.(S_0 - x_i = S_i)} &
+\infer{S - x = S}
+      {x\not\in\textit{dom}(S)}
+\end{array}
+\]
+\noindent Note that if an inference contains an undefined application
+of a meta-theoretic function, we interpret this to mean the inference
+is not allowed.
+
+\begin{figure}
 \begin{eqnarray*}
-U(\Delta,x,\bar{x},1,\bar{i}) & = & U(\Delta\setminus x ,\bar{x},\bar{i})\textnormal{, if }x\in\textit{dom}(\Delta)\\
+U(\Delta,x,\bar{x},1,\bar{i}) & = & U(\Delta - x ,\bar{x},\bar{i})\textnormal{, if }x\in\textit{dom}(\Delta)\\
 U(\Delta,x,\bar{x},!,\bar{i}) & = & U(\Delta ,\bar{x},\bar{i}) \\
-U(\Delta,x,\bar{x},\textnormal{\^{\ }},\bar{i}) & = & U(\Delta\setminus x ,\bar{x},\bar{i})\textnormal{, if }x\in\textit{dom}(\Delta)\\
+U(\Delta,x,\bar{x},\textnormal{\^{\ }},\bar{i}) & = & U(\Delta - x ,\bar{x},\bar{i})\textnormal{, if }x\in\textit{dom}(\Delta)\\
 U(\Delta,\cdot,\cdot) & = & \Delta
 \end{eqnarray*}
+\caption{Meta-theoretic function for consuming $\Delta$ resources}
+\label{fig:consume}
+\end{figure}
 
-\noindent For simplicity, we assume that if a primitive $p$ lacks a
-functional model, then its return type is an instance of a primitively
-defined type.  In that case, the second rule for applications of
-primitives just returns a new variable, bound to an uninterpreted
-entity $\cdot$ in the heap.  Earlier stages of type-checking rule out
-pattern-matching on elements of primitively defined types.  Note that
-in the \texttt{match}-rule we use a more compact meta-theoretic
-notation for \texttt{match}-terms.
+ For simplicity, we assume that if a primitive $p$ lacks a functional
+ model, then its return type is an instance of a primitively defined
+ type.  In that case, the second rule for applications of primitives
+ just returns a new variable, bound to an uninterpreted entity
+ ``$\cdot$'' in the heap.  Earlier stages of type-checking rule out
+ pattern-matching on elements of primitively defined types.  Note that
+ in the \texttt{match}-rules we use a more compact meta-theoretic
+ notation for \texttt{match}-terms.  Furthermore, we include a second
+ \texttt{match}-rule for the datatype-incorrect case.  In practice
+ this situation is ruled out by datatype type-checking, but there is
+ no need to depend on that here.  Finally, if for all $k$, $\Delta;
+ t\Downarrow_k\ \perp$, then we write $\Delta; t\Downarrow\ \perp$, and
+ say that $t$ diverges. This relation is not recursively enumerable,
+ but that is not problematic since it is used only in the formulation
+ of soundness of our resource-tracking analysis.
 
 \begin{figure}
 \[
 \begin{array}{c}
-\infer{\Delta; t\Downarrow_0 \perp}{\ } \\ \\
+\infer{\Delta; t\Downarrow_0\ \perp}{\ } \\ \\
 
-\infer{\Delta; x\Downarrow_{k+1} x; \Delta}{x\in\textit{dom}\Delta} \\ \\
+\infer{\Delta; x\Downarrow_{k+1} x; \Delta}{x\in\textit{dom}(\Delta)} \\ \\
 
 \infer{\Delta_1; (c\ t_1\ldots t_n)\Downarrow_{k+1} (c\ \bar{r});\Delta_{n+1}}
       {\begin{array}{l}
@@ -1365,10 +1389,16 @@ notation for \texttt{match}-terms.
        r\not\in\textit{dom}(\Delta)
        \end{array}} \\ \\
 
-\infer{\Delta; \texttt{match}\ t\ \texttt{with}\ i.(c_i\ \bar{x}_i \texttt{=>} t_i) \Downarrow_{k+1} r;\Delta'}
+\infer{\Delta; \texttt{match}\ t\ \texttt{with}\ j.(c_j\ \bar{x}_j \texttt{=>} t_j) \Downarrow_{k+1} r;\Delta'}
       {\begin{array}{l}
-       \Delta; t \Downarrow_k (c\ \bar{r}); \Delta''
-       \Delta''; [\bar{r}/\bar{x}]t_i \Downarrow_k r; \Delta'
+       \Delta; t \Downarrow_k (c_j\ \bar{r}); \Delta''
+       \Delta''; [\bar{r}/\bar{x}]t_j \Downarrow_k r; \Delta'
+       \end{array}} \\ \\
+
+\infer{\Delta; \texttt{match}\ t\ \texttt{with}\ j.(c_j\ \bar{x}_j \texttt{=>} t_j) \Downarrow_{k+1}\ \perp}
+      {\begin{array}{l}
+       \Delta; t \Downarrow_k (d\ \bar{r}); \Delta''
+       d\not\in\{c_1,\ldots,c_n\}
        \end{array}} \\ \\
 
 \infer{\Delta; \texttt{let}\ x\ =\ t\ \texttt{in}\ t')) \Downarrow_{k+1} r'';\Delta''}
@@ -1377,55 +1407,146 @@ notation for \texttt{match}-terms.
        \Delta'; [r/x]t' \Downarrow_k r''; \Delta''
        \end{array}} \\ \\
 
-\infer{\Delta; \texttt{abort} \Downarrow_k \perp}{\ } \\ \\
+\infer{\Delta; \texttt{abort} \Downarrow_k\ \perp}{\ } \\ \\
+
+\infer{\Delta; @\ t \Downarrow_{k+1} r; \Delta'}
+      {\Delta; t\Downarrow_k r; \Delta'}
 
 \end{array}
 \]
-\caption{Tree-based operational semantics}
+\caption{Graph-based operational semantics}
 \label{fig:opsemt}
 \end{figure}
 
 \subsection{Resource-tracking analysis}
 
+Next, we define an abstract, modular evaluation relation $\Theta; t
+\Downarrow x; \Theta'$, where $\Theta, \Theta'$ are functions from
+variables $x$ to a consumption annotation $i$ (see
+Figure~\ref{fig:terms}) or an expression $\langle y \rangle$, where
+$y$ is a variable pinned by $x$.  The rules are given in
+Figure~\ref{fig:opsema}, using a meta-theoretic function $V$ similar
+to $U$ above, and defined in Figure~\ref{fig:consumea}. The rules of
+Figure~\ref{fig:opsema} are syntax-directed and all decrease the size
+of the term from conclusion to premises.  Hence, in a standard way,
+they determine a terminating algorithm.  The first two rules are for
+variables and constructor applications, while in the third, $g$ is for
+a regular function symbol or a primitive function symbol: the two
+cases are handled the same way here, based on their resource type.  We
+treat \texttt{abort}, similarly here as above, with a judgment form
+ending in $\perp$, which is propagated via straightforward omitted
+rules.
+
+The rules are modular, in the sense that they rely on types for all
+the regularly defined functions they call.  These types (given in the
+original source code) are confirmed using the following rule:
+\[
+\infer{f::\bar{i}}
+      {\begin{array}{l}
+       (f\ \bar{x}) = t\\
+       \textnormal{Assuming }f::\bar{i}\textnormal{, we have: }\{ (x_1,i_1), \ldots, (x_n,i_n)\}; t \Downarrow r; \{(r,1)\}
+       \end{array}}
+\]    
+
+The definition of the $V$ function is the heart of the
+resource-tracking analysis.  It insists that pinning references cannot
+be consumed by being returned; that is, the corresponding consumption
+annotation must be \textnormal{\^{\ }}.  It also insists that
+references cannot be consumed until all their pinning references are.
+
+Some simplifying design choices have been made in this algorithm.  For
+example, the rule for constructor applications disallows arguments
+marked with \textnormal{\^{\ }} (meaning to be consumed but not
+returned).  This is overly conservative: we could just as well
+propagate \textnormal{\^{\ }} from arguments to the variable $r$
+introduced in the conclusion for the entire constructor application.
+Also, branches in \texttt{match}-cases must have the same effect on
+$\Theta$, and may not return pinning references.  These restrictions
+could be relaxed.  Also, we have not formalized consuming resource
+named in (global) definitions, although our implementation supports
+this.
+
 \begin{figure}
 \[
 \begin{array}{c}
-\infer{\Theta; x\Downarrow x; \Theta}{x\in\textit{dom}\Theta} \\ \\
+\infer{\Theta; x\Downarrow x; \Theta}{x\in\textit{dom}(\Theta)} \\ \\
 
-\infer{\Theta_1; (c\ t_1\ldots t_n)\Downarrow_{k+1} r;\{(r,1)\}\cup U(\Theta_{n+1},\bar{r},\bar{i})}
+\infer{\Theta_1; (c\ t_1\ldots t_n)\Downarrow r;\{(r,1)\}\cup V(\Theta_{n+1},\bar{r},\bar{i})}
       {\begin{array}{l}
-       \forall i. (\Theta_i; t_i \Downarrow_{k} r_i; \Theta_{i+1}) \\
+       \forall j. (\Theta_j; t_j \Downarrow r_j; \Theta_{j+1}) \\
        c::\bar{i} \\
+       \textnormal{\^{\ }}\not\in \{ \bar{i} \} \\
        r\not\in\textit{dom}(\Theta)
        \end{array}} \\ \\
 
-\infer{\Theta_1; (g\ t_1\ldots t_n)\Downarrow_{k+1} r;\Theta'}
+\infer{\Theta_1; (g\ t_1\ldots t_n)\Downarrow r; \{(r,1)\}\cup V(\Theta_{n+1},\bar{r},\bar{i})}
       {\begin{array}{l}
-       \forall i. (\Theta_i; t_i \Downarrow_{k} r_i; \Theta_{i+1}) \\
-       (f\ \bar{x}) = t \\
-       \Theta_{n+1}; [\bar{r}/\bar{x}]t \Downarrow_k r; \Theta'
+       \forall j. (\Theta_j; t_j \Downarrow r_j; \Theta_{j+1}) \\
+       g::\bar{i}
        \end{array}} \\ \\
 
-\infer{\Theta; \texttt{match}\ t\ \texttt{with}\ i.(c_i\ \bar{x}_i \texttt{=>} t_i) \Downarrow_{k+1} r;\Theta'}
+\infer{\Theta; \texttt{match}\ x\ \texttt{with}\ j.(c_j\ \bar{x}_j \texttt{=>} t_j) \Downarrow r;\{(r,i)\}\cup\Theta'}
       {\begin{array}{l}
-       \Theta; t \Downarrow_k (c\ \bar{r}); \Theta''
-       \Theta''; [\bar{r}/\bar{x}]t_i \Downarrow_k r; \Theta'
+       \forall j.(\Theta, \bar{x}_j; t_j \Downarrow r_j; \{(r_j,i)\}\cup \Theta')
        \end{array}} \\ \\
 
-\infer{\Theta; \texttt{let}\ x\ =\ t\ \texttt{in}\ t')) \Downarrow_{k+1} r'';\Theta''}
+\infer{\Theta; \texttt{let}\ x\ =\ t\ \texttt{in}\ t')) \Downarrow r'';\Theta''}
       {\begin{array}{l}
-       \Theta; t \Downarrow_{k} r; \Theta' \\
-       \Theta'; [r/x]t' \Downarrow_k r''; \Theta''
+       \Theta; t \Downarrow r; \Theta' \\
+       \Theta'; [r/x]t' \Downarrow r''; \Theta''
        \end{array}} \\ \\
 
-\infer{\Theta; \texttt{abort} \Downarrow_k \perp}{\ } \\ \\
+\infer{\Theta; \texttt{abort} \Downarrow\ \perp}{\ } \\ \\
+
+\infer{\Theta; @\ t \Downarrow r ; \{(r,\langle z\rangle)\}\cup \Theta' }
+      {\begin{array}{l}
+       \Theta; t \Downarrow r; \{(r,\langle y\rangle)\}\cup\Theta' \\
+       (y,\langle z\rangle)\in \Theta'
+       \end{array}}
 
 \end{array}
 \]
 \caption{Resource-tracking abstract operational semantics}
-\label{fig:opsemt}
+\label{fig:opsema}
 \end{figure}
 
+\begin{figure}
+\begin{eqnarray*}
+V(\Theta,x,\bar{x},1,\bar{i}) & = & V(\Theta - x ,\bar{x},\bar{i})\textnormal{, if }
+\begin{array}{l}
+1.\  x\in\textit{dom}(\Theta) \\ 
+2.\  \forall y. \Theta(x) \neq \langle y \rangle \\ 
+3.\  \forall (y,\langle z \rangle)\in\Theta,\ z\neq x \\
+\end{array} \\
+V(\Theta,x,\bar{x},!,\bar{i}) & = & V(\Theta ,\bar{x},\bar{i}) \\
+V(\Theta,x,\bar{x},\textnormal{\^{\ }},\bar{i}) & = & V(\Theta - x ,\bar{x},\bar{i})\textnormal{, if }x\in\textit{dom}(\Theta)\\
+V(\Theta,\cdot,\cdot) & = & \Theta
+\end{eqnarray*}
+\caption{Meta-theoretic function for consuming $\Theta$ resources}
+\label{fig:consumea}
+\end{figure}
+
+\noindent Let us define $\Delta^*(t)$ for shallowly augmented forests
+$\Delta$ to be the term which is just like $t$ except that we replace
+each $x\in\textit{dom}(\Delta)$ with $\Delta^*(\Delta(x))$.  The fact
+that $\Delta$ is a shallowly augmented forest ensures well-foundedness
+of this definition.  Also, let us write $\Delta::\Theta$ to indicate
+that:
+\begin{enumerate}
+\item $\textit{dom}(\Theta)\subset\textit{dom}(\Delta)$, and
+\item $\forall (x,\langle y \rangle)\in\Theta:$
+\begin{enumerate}
+\item $y\in\textit{dom}(\Theta)$, and
+\item $\Delta^*(x)\textnormal{ is a subterm of }\Delta^*(y)$ (with both defined).
+\end{enumerate}
+\end{enumerate}
+
+\begin{theorem}[Type Soundness]
+If $\Theta; t \Downarrow r; \Theta'$, then for all shallowly augmented
+forests $\Delta::\Theta$, either $\Delta; \Delta^*(t) \Downarrow\ 
+\perp$, or else $\Delta; \Delta^*(t)\Downarrow_k t'; \Delta'$ for some
+$k$, $t'$, and $\Delta'$ with $\Delta'::\Theta'$.
+\end{theorem}
 
 \section{Empirical Results}
 \label{sec:emp}
