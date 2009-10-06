@@ -28,7 +28,7 @@ Define primitive cur_char : Fun(! #unique_point x:stdio_t). #untracked char :=
 
   inline int gcur_char(void *s) {
      if (curc == 0) {
-	int tmp = fgetc(stdin);
+	int tmp = fgetc_unlocked(stdin);
 	curc = (tmp == -1 ? 0 : tmp);
      }
      return curc;
