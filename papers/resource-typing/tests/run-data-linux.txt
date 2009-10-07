@@ -1,0 +1,195 @@
+----------------------------
+Haskell warray
+
+time ./test_warray_h
+True
+1.14user 0.01system 0:01.16elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+11247minor)pagefaults 0swaps
+time ./test_warray_h
+True
+1.13user 0.01system 0:01.16elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+11247minor)pagefaults 0swaps
+time ./test_warray_h
+True
+1.13user 0.01system 0:01.16elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+11247minor)pagefaults 0swaps
+----------------------------
+OCaml warray
+
+time ./test_warray_c
+True
+0.60user 0.00system 0:00.61elapsed 98%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+3386minor)pagefaults 0swaps
+time ./test_warray_c
+True
+0.60user 0.00system 0:00.61elapsed 98%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+3385minor)pagefaults 0swaps
+time ./test_warray_c
+True
+0.60user 0.00system 0:00.61elapsed 98%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+3386minor)pagefaults 0swaps
+----------------------------
+Guru warray
+
+time ./test_warray_g
+True
+0.57user 0.00system 0:00.58elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+5226minor)pagefaults 0swaps
+time ./test_warray_g
+True
+0.57user 0.00system 0:00.58elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+5226minor)pagefaults 0swaps
+time ./test_warray_g
+True
+0.58user 0.00system 0:00.59elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+5226minor)pagefaults 0swaps
+----------------------------
+----------------------------
+Haskell queue
+
+time ./test_queue_h < war-and-peace.txt
+eBooks.
+
+real	0m1.323s
+user	0m1.133s
+sys	0m0.065s
+time ./test_queue_h < war-and-peace.txt
+eBooks.
+
+real	0m1.319s
+user	0m1.137s
+sys	0m0.073s
+time ./test_queue_h < war-and-peace.txt
+eBooks.
+
+real	0m1.320s
+user	0m1.142s
+sys	0m0.058s
+----------------------------
+OCaml queue
+
+time ./test_queue_c < war-and-peace.txt
+eBooks.
+
+
+real	0m0.597s
+user	0m0.316s
+sys	0m0.033s
+time ./test_queue_c < war-and-peace.txt
+eBooks.
+
+
+real	0m0.624s
+user	0m0.335s
+sys	0m0.041s
+time ./test_queue_c < war-and-peace.txt
+eBooks.
+
+
+real	0m0.607s
+user	0m0.317s
+sys	0m0.047s
+----------------------------
+Guru queue
+
+time ./test_queue_g < war-and-peace.txt
+eBooks.
+
+real	0m0.585s
+user	0m0.310s
+sys	0m0.016s
+time ./test_queue_g < war-and-peace.txt
+eBooks.
+
+real	0m0.575s
+user	0m0.288s
+sys	0m0.034s
+time ./test_queue_g < war-and-peace.txt
+eBooks.
+
+real	0m0.625s
+user	0m0.323s
+sys	0m0.031s
+----------------------------
+-----------------------------
+Haskell warray no GC
+
+time ./test_warray_h +RTS -A500m -H500m -smyout.txt -RTS
+True
+0.44user 0.02system 0:00.47elapsed 98%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+18653minor)pagefaults 0swaps
+time ./test_warray_h +RTS -A500m -H500m -smyout.txt -RTS
+True
+0.44user 0.02system 0:00.47elapsed 98%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+18653minor)pagefaults 0swaps
+time ./test_warray_h +RTS -A500m -H500m -smyout.txt -RTS
+True
+0.44user 0.02system 0:00.48elapsed 98%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+18653minor)pagefaults 0swaps
+-----------------------------
+Haskell queue no GC
+
+time ./test_queue_h +RTS -A500m -H500m -smyout.txt -RTS < war-and-peace.txt
+eBooks.
+
+real	0m0.593s
+user	0m0.305s
+sys	0m0.157s
+time ./test_queue_h +RTS -A500m -H500m -smyout.txt -RTS < war-and-peace.txt
+eBooks.
+
+real	0m0.588s
+user	0m0.312s
+sys	0m0.151s
+time ./test_queue_h +RTS -A500m -H500m -smyout.txt -RTS < war-and-peace.txt
+eBooks.
+
+real	0m0.589s
+user	0m0.329s
+sys	0m0.129s
+-----------------------------
+OCaml warray no GC
+
+export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_warray_c
+True
+
+real	0m0.615s
+user	0m0.604s
+sys	0m0.004s
+export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_warray_c
+True
+
+real	0m0.626s
+user	0m0.614s
+sys	0m0.005s
+export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_warray_c
+True
+
+real	0m0.618s
+user	0m0.607s
+sys	0m0.004s
+----------------------------
+OCaml queue no GC
+
+export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_queue_c < war-and-peace.txt
+eBooks.
+
+
+real	0m0.627s
+user	0m0.340s
+sys	0m0.035s
+export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_queue_c < war-and-peace.txt
+eBooks.
+
+
+real	0m0.608s
+user	0m0.336s
+sys	0m0.037s
+export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_queue_c < war-and-peace.txt
+eBooks.
+
+
+real	0m0.622s
+user	0m0.339s
+sys	0m0.054s
+----------------------------

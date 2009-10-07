@@ -100,19 +100,17 @@ run_extra:	test_warray test_queue
 	@echo "-----------------------------"
 	@echo "OCaml warray no GC"
 	@echo ""
-	setenv OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'
-	time ./test_warray_c
-	time ./test_warray_c
-	time ./test_warray_c
+	export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_warray_c
+	export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_warray_c
+	export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_warray_c
 	@echo "----------------------------"
 	@echo "OCaml queue no GC"
 	@echo ""
-	time ./test_queue_c < war-and-peace.txt
-	time ./test_queue_c < war-and-peace.txt
-	time ./test_queue_c < war-and-peace.txt
+	export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_queue_c < war-and-peace.txt
+	export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_queue_c < war-and-peace.txt
+	export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_queue_c < war-and-peace.txt
 	@echo "----------------------------"
-	setenv OCAMLRUNPARAM ''
-	
+
 run:	run_warray run_queue
 run2:	run run_extra
 
