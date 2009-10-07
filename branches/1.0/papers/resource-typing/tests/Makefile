@@ -100,15 +100,15 @@ run_extra:	test_warray test_queue
 	@echo "-----------------------------"
 	@echo "OCaml warray no GC"
 	@echo ""
-	export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_warray_c
-	export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_warray_c
-	export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_warray_c
+	bash -c "export OCAMLRUNPARAM='s=500M,h=500M,v=0x1ff'; time ./test_warray_c"
+	bash -c "export OCAMLRUNPARAM='s=500M,h=500M,v=0x1ff'; time ./test_warray_c"
+	bash -c "export OCAMLRUNPARAM='s=500M,h=500M,v=0x1ff'; time ./test_warray_c"
 	@echo "----------------------------"
 	@echo "OCaml queue no GC"
 	@echo ""
-	export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_queue_c < war-and-peace.txt
-	export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_queue_c < war-and-peace.txt
-	export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_queue_c < war-and-peace.txt
+	bash -c "export OCAMLRUNPARAM='s=500M,h=500M,v=0x1ff'; time ./test_queue_c < war-and-peace.txt"
+	bash -c "export OCAMLRUNPARAM='s=500M,h=500M,v=0x1ff'; time ./test_queue_c < war-and-peace.txt"
+	bash -c "export OCAMLRUNPARAM='s=500M,h=500M,v=0x1ff'; time ./test_queue_c < war-and-peace.txt"
 	@echo "----------------------------"
 
 run:	run_warray run_queue
