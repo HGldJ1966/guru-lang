@@ -1,10 +1,11 @@
 GHC=ghc-6.10.4
+#GCC=/usr/mygcc/bin/gcc
 
 test_queue_g:	test_queue_g.c
-	gcc -O2 -w -o test_queue_g test_queue_g.c
+	$(GCC) -O2 -w -o test_queue_g test_queue_g.c
 
 test_queue_gd:	test_queue_g.c
-	gcc -O0 -w -ggdb -o test_queue_gd test_queue_g.c
+	$(GCC) -O0 -w -ggdb -o test_queue_gd test_queue_g.c
 
 test_queue_g.c:	test_queue_g.g
 	../../../bin/guru test_queue_g.g
@@ -17,11 +18,11 @@ test_queue_h:	test_queue_h.hs
 
 test_warray_g:	test_warray_g.g 
 	../../../bin/guru test_warray_g.g
-	gcc -O2 -w -o test_warray_g test_warray_g.c
+	$(GCC) -O2 -w -o test_warray_g test_warray_g.c
 
 test_warray_gp:	test_warray_g.g 
 	../../../bin/guru test_warray_g.g
-	gcc -O2 -w -pg -o test_warray_gp test_warray_g.c
+	$(GCC) -O2 -w -pg -o test_warray_gp test_warray_g.c
 
 test_warray_h:   test_warray_h.hs 
 	$(GHC) -O2 -o test_warray_h --make test_warray_h.hs
@@ -83,4 +84,35 @@ run_queue: test_queue
 	time ./test_queue_g < war-and-peace.txt
 	@echo "----------------------------"
 
+run_extra:	test_warray test_queue
+	@echo "-----------------------------"
+	@echo "Haskell warray no GC"
+	@echo ""
+	time ./test_warray_h +RTS -A500m -H500m -smyout.txt -RTS
+	time ./test_warray_h +RTS -A500m -H500m -smyout.txt -RTS
+	time ./test_warray_h +RTS -A500m -H500m -smyout.txt -RTS
+	@echo "-----------------------------"
+	@echo "Haskell queue no GC"
+	@echo ""
+	time ./test_queue_h +RTS -A500m -H500m -smyout.txt -RTS < war-and-peace.txt
+	time ./test_queue_h +RTS -A500m -H500m -smyout.txt -RTS < war-and-peace.txt
+	time ./test_queue_h +RTS -A500m -H500m -smyout.txt -RTS < war-and-peace.txt
+	@echo "-----------------------------"
+	@echo "OCaml warray no GC"
+	@echo ""
+	setenv OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'
+	time ./test_warray_c
+	time ./test_warray_c
+	time ./test_warray_c
+	@echo "----------------------------"
+	@echo "OCaml queue no GC"
+	@echo ""
+	time ./test_queue_c < war-and-peace.txt
+	time ./test_queue_c < war-and-peace.txt
+	time ./test_queue_c < war-and-peace.txt
+	@echo "----------------------------"
+	setenv OCAMLRUNPARAM ''
+	
 run:	run_warray run_queue
+run2:	run run_extra
+
