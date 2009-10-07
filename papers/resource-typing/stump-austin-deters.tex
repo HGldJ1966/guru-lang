@@ -80,11 +80,6 @@
 {ecaustin@ittc.ku.edu}
 %\date{}
 
-\authorinfo{Morgan Deters}
-{CS Dept.\\ New York University, USA}
-{mdeters@cs.nyu.edu}
-%\date{}
-
 \maketitle
 
 %\thispagestyle{empty}
@@ -190,10 +185,7 @@ The reader may find the sources for all the examples in this paper in
 the Google Code repository for \textsc{Guru}, at
 \url{www.guru-lang.org}.  Most are in \textsc{Guru}'s standard
 library, \texttt{guru-lang/lib/}.  A few (noted below) are in a
-special directory along with the source of this paper:
-\[
-\texttt{guru-lang/papers/resource-typing/tests/}
-\]
+special directory along with the source of this paper: \texttt{guru-lang/papers/resource-typing/tests/}.
 
 \section{Overview of \textsc{Guru}'s Resource Typing}
 
@@ -255,7 +247,7 @@ we write $\underline{o}$ to mean an optional occurrence of $o$.
 \begin{figure}
 \[
 \begin{array}{lll}
-t & ::= x\ ||\\
+t & ::= & x\ || \\
 \ & \ &   c\ ||\\ 
 \ & \ &    \texttt{fun}\ x(\underline{i_1}\ \underline{o_1}\ x_1\,:\,A_1)\cdots(\underline{i_n}\ \underline{o_n}\ x_n\,:\, A_n)\\
 \ & \ & \ \ \ \ \ \ \  : \underline{o}\ T .\ t\ ||\\
@@ -280,7 +272,7 @@ A & ::= & T\ ||\ \texttt{type}\ ||\ F
 \\
 \\
 T & ::= & x\ ||\ d\ ||\ \bang\ ||\ 
-     \texttt{Fun}(i?\ o?\ x\,:\,A) . o?\ T\ ||\ \langle T\ Y\rangle 
+     \texttt{Fun}(\underline{i}\ \underline{o}\ x\,:\,A) . \underline{o}\ T\ ||\ \langle T\ Y\rangle 
 \\
 \\
 Y & ::= & t\ ||\ T
@@ -568,7 +560,7 @@ without fear that the referenced data object's memory will be
 reclaimed.  The reference-counted reference $x$ cannot be consumed
 until $r$ is, since $r$ is pinning $x$.  So we can use $r$ safely
 without incrementing the reference count.  This idea is the reason for
-the ``\^{\ }'' consumption annotation.  We need to know that the
+the \^{\ } consumption annotation.  We need to know that the
 pinning reference $r$ is really gone, before it is safe to consume
 $x$.  If the pinning reference has been consumed by being returned by
 the function, possibly inside a data structure, then this sort of
@@ -708,47 +700,12 @@ the (imperatively) updated $o$.  Since they consume the
 \texttt{unique} $x$, our resource-tracking discipline forbids there
 from being any pinning references to $x$ extant.  This ensures
 (statically) that all read-only references to $o$ are consumed, before
-the read-write reference $x$ can be used.  
-
-Note that the \texttt{Init}-function for initializing an
-\texttt{unowned} subdatum $y$ of a \texttt{unique\_owned} scrutinee
-$x$ initializes that subdatum to be of resource type \texttt{<owned
-  x>}.
-
-\begin{figure*}
-\small
-\begin{verbatim}
-ResourceType unique_owned with
-  Define primitive consume_unique_owned : Fun(A:type)(^#unique_owned x:A).void
-  := fun(A:type)(x:A).voidi <<END
-inline void gconsume_unique_owned(int A, int x) { }
-END.
-
-Init ginit_unique_owned_unique(#unique_owned x)(#unique y).#<unique_owned x> <<END
-  #define ginit_unique_owned_unique(A,x,y) y
-END.
-
-Init ginit_unique_owned_owned(#unique_owned x)(#owned y).#owned <<END
-  #define ginit_unique_owned_owned(A,x,y) y
-END.
-
-Init ginit_unique_owned_unowned(#unique_owned x)(#unowned y).#<owned x> <<END
-  #define ginit_unique_owned_unowned(A,x,y) y
-END.
-
-Define primitive inspect_unique : Fun(spec A:type)(!#unique a:A).#<unique_owned a> A :=
-  fun(spec A:type)(a:A).a <<END
-#define ginspect_unique(a) a
-END.
-
-Define primitive clone_unique_owned : Fun(spec A:type)(!#unique_owned a:A).#<unique_owned a> A :=
-  fun(A:type)(a:A).a <<END
-#define gclone_unique_owned(a) a
-END.
-\end{verbatim}
-\caption{The \texttt{unique\_owned} resource type (selected primitives)}
-\label{fig:uniqueowned}
-\end{figure*}
+the read-write reference $x$ can be used.  The \texttt{Init}-function
+for initializing an \texttt{unowned} subdatum $y$ of a
+\texttt{unique\_owned} scrutinee $x$ initializes that subdatum to be
+of resource type \texttt{<owned x>}, thus propagating the
+``\texttt{owned}'' quality.  The listing is omitted for space
+reasons, but see \texttt{lib/unique\_owned.g}.
 
 \section{Array Abstractions}
 
@@ -855,18 +812,16 @@ list of characters), included as an additional parameter to the
 $c$ is not in the list of indices which are already checked out.
 Similarly, checking in an element at index $c$ from a
 \texttt{qcharray} (i.e., writing to the array) requires that the list
-of checked-out elements contains $c$.  We just list the types of the
-primitives for \texttt{qcharray}, in Figure~\ref{fig:qcharray}.  The
-functional models and the C code are very similar to those for the
-\texttt{warray} type, so we omit them.  To discuss just a couple of
-those types: the type for \texttt{qcharray\_empty} says that it
-returns a \texttt{qcharray} where all the indices are checked out
-(since they are all uninitialized); and \texttt{qcharray\_out} returns
-a pair, as an element of the \texttt{qcharray\_mod\_t} type listed in
-the figure, of the element that has been checked out, and the
-\texttt{qcharray}.  The type of the \texttt{qcharray} has been
-modified so that it now includes the index $c$ for the checked-out
-element.
+of checked-out elements contains $c$.  We list the types of selected
+primitives for \texttt{qcharray} in Figure~\ref{fig:qcharray}.  To
+discuss just a couple of those: the type for \texttt{qcharray\_empty}
+says that it returns a \texttt{qcharray} where all the indices are
+checked out (since they are all uninitialized); and
+\texttt{qcharray\_out} returns a pair, as an element of the
+\texttt{qcharray\_mod\_t} type listed in the figure, of the element
+that has been checked out, and the \texttt{qcharray}.  The type of the
+\texttt{qcharray} has been modified so that it now includes the index
+$c$ for the checked-out element.
 
 \begin{figure}
 \small
@@ -888,26 +843,14 @@ qcharray_out
      (u : { (string_mem c s) = ff}).
    #unique <qcharray_mod_t A c s>
 
-
 qcharray_in
 : Fun(spec A:type)(#untracked c:char)
      (#unique a:A)(spec s1 s2:string)
      (#unique l:<qcharray A (string_app s1 (stringc c s2))>). 
    #unique <qcharray A (string_app s1 s2)>
-
-qcharray_read
-: Fun(spec A:type)(#untracked c:char)
-     (! #unique_owned l:<qcharray A stringn>). 
-   #<unique_owned l> A 
-
-qcharray_free
-   : Fun(spec A C:type)(^ #unique l:<qcharray A stringn>)
-        (^#owned cookie:C)
-        (delA : Fun(^#owned cookie:C)(^#unique a:A).void).
-      void 
 \end{verbatim}
 \label{fig:qcharray}
-\caption{Types for \texttt{qcharray} primitives}
+\caption{Types for selected \texttt{qcharray} primitives}
 \end{figure}
 
 \section{Abstractions Using Aliasing}
@@ -1024,20 +967,17 @@ We just consider a few points about the typings in the figure.  Both
 empty (\texttt{queue\_datan}) and non-empty (\texttt{queue\_datac})
 queues have a unique reference to a \texttt{rheaplet} of queue cells.
 Additionally, non-empty queues have references to \texttt{qout} and
-\texttt{qin}.  Allocating a new queue with \texttt{queue\_new} creates
-a new heaplet, thus requiring the current \texttt{rheaplet\_id} as
-input and producing the next \texttt{rheaplet\_id} as additional
-output (passed back in an instance of the \texttt{queue\_new\_t}
-type).  The \texttt{queue\_front} and \texttt{dequeue} functions
-require a proof that the queue is non-empty.  These proofs allow us to
-show (via \texttt{impossible}-terms, mentioned in
-Section~\ref{sec:guru} above) that several situations cannot arise.
-There is only one place where the queue code uses \texttt{abort}, in
-response to violation of an unverified invariant that the
-\texttt{qin}-cell has no next pointer.  We will eliminate this
-\texttt{abort} in the next section.  The total number of lines of
-code, with comments, is 138.  Of these, only 6 are proofs, used in the
-\texttt{impossible}-terms just mentioned.
+\texttt{qin}.  Allocating a new queue with \texttt{queue\_new} (not
+shown) creates a new heaplet.  The \texttt{queue\_front} and
+\texttt{dequeue} functions require a proof that the queue is
+non-empty.  These proofs allow us to show (via
+\texttt{impossible}-terms, mentioned in Section~\ref{sec:guru} above)
+that several situations cannot arise.  There is only one place where
+the queue code uses \texttt{abort}, in response to violation of an
+unverified invariant that the \texttt{qin}-cell has no next pointer.
+We will eliminate this \texttt{abort} in the next section.  The total
+number of lines of code, with comments, is 138.  Of these, only 6 are
+proofs, used in the \texttt{impossible}-terms just mentioned.
 
 \begin{figure}
 \small
@@ -1058,16 +998,6 @@ Inductive queue : Fun(A:type).type :=
         (#unique h:<rheaplet_queue A I>).
       #unique <queue A>.
 
-Inductive queue_new_t : Fun(A:type).type :=
- return_queue_new
-  : Fun(spec A:type)(#unique q:<queue A>)
-       (#unique nextI:rheaplet_id).
-     #unique <queue_new_t A>.
-
-queue_new
- : Fun(A:type)(#unique I:rheaplet_id).
-    #unique <queue_new_t A>
-
 queue_is_empty
  : Fun(spec A:type)
       (^#unique_owned q:<queue A>).bool
@@ -1075,8 +1005,7 @@ queue_is_empty
 queue_front
  : Fun(spec A:type)
       (^#unique_owned q:<queue A>)
-      (u:{ (queue_is_empty q) = ff }).
-    A 
+      (u:{ (queue_is_empty q) = ff }). A 
  
 enqueue
  : Fun(spec A:type)
@@ -1178,55 +1107,61 @@ rheaplet_in_get
 \end{verbatim}
 }
   
-As noted above, in the course of proving these invariants for the
-verified queue, we uncovered a bug in the original unverified queue.
-This bug is rather insidious, because it is not uncovered by our
-benchmark testcase.  This benchmark enqueues space-delimited strings
-read from standard input, and then dequeues them all, printing the
-last string dequeued.  The bug was that the unverified code was
-inadvertently swapping \texttt{qin} and \texttt{qout} in the
-\texttt{dequeue} operation.  On our benchmark, the effect was to
-dequeue the first element (at \texttt{qout}), and then the last
-element (at the new \texttt{qout}, which is the previous
-\texttt{qin}).  Since there is no next pointer from that erroneous
-\texttt{qout}, it appears to \texttt{dequeue} as though it has removed
-the last element.  All memory is correctly freed, thanks to our linear
-typing (and confirmed by \texttt{valgrind}).  The error was detected
-during proof of this intensionally quite different property, because
-the invariant that \texttt{qin} has no next-pointer cannot be proved
-when we swap \texttt{qin} and \texttt{qout}.
+As noted above, while proving these invariants for the verified queue
+we uncovered a bug in the unverified queue.  The bug is rather
+insidious, because it is not uncovered by our benchmark testcase.
+This benchmark enqueues space-delimited strings read from standard
+input, and then dequeues them all, printing the last string dequeued.
+The bug was that the unverified code was inadvertently swapping
+\texttt{qin} and \texttt{qout} in the \texttt{dequeue} operation.  On
+our benchmark, the effect was to dequeue the first element (at
+\texttt{qout}), and then the last element (at the new \texttt{qout},
+which is the previous \texttt{qin}).  Since there is no next pointer
+from that erroneous \texttt{qout}, it appears to \texttt{dequeue} as
+though it has removed the last element.  All memory is correctly
+freed, thanks to our linear typing (and confirmed by
+\texttt{valgrind}).  The error was detected during proof of this
+intensionally quite different property, because the assertion that
+\texttt{qin} has no next-pointer cannot be proved when we swap
+\texttt{qin} and \texttt{qout}.
 
-\begin{figure*}
+\begin{figure}
 \begin{verbatim}
 Inductive queue : Fun(A:type).type :=
-  queue_datac : Fun(A:type)(spec I:rheaplet_id)(#unique h:<rheaplet_queue A I>)
-                   (qin qout : <alias I>)
-                   (inv_qin : {(lt qin (length h)) = tt})
-                   (inv_qout : {(lt qout (length h)) = tt})
-                   (inv : @<rheaplet_queue_inv A I h>)
-                   (inv_qin2 : {(queue_cell_has_next (rheaplet_get qin h)) = ff}).
-                   #unique <queue A>
-| queue_datan : Fun(A:type)(spec I:rheaplet_id)(#unique h:<rheaplet_queue A I>)
-                   (inv:@<rheaplet_queue_inv A I h>).#unique <queue A>.
+ queue_datac
+ : Fun(A:type)(spec I:rheaplet_id)
+      (#unique h:<rheaplet_queue A I>)
+      (qin qout : <alias I>)
+      (inv_qin : {(lt qin (length h)) = tt})
+      (inv_qout : {(lt qout (length h)) = tt})
+      (inv : @<rheaplet_queue_inv A I h>)
+      (inv_qin2 : {(queue_cell_has_next
+                     (rheaplet_get qin h)) = ff}).
+    #unique <queue A>
+| queue_datan
+  : Fun(A:type)(spec I:rheaplet_id)
+       (#unique h:<rheaplet_queue A I>)
+       (inv:@<rheaplet_queue_inv A I h>).
+     #unique <queue A>.
 \end{verbatim}
 \label{fig:queue2}
 \caption{The main datatype, with invariants, for the verified queue abstraction}
-\end{figure*}
+\end{figure}
 
 \section{Type System}
 
-In this section we give a formal definition of the resource-tracking
-static analysis implemented in \textsc{Guru} as an abstract
-operational semantics, and sketch the proof of soundness with respect
-to an operational semantics operating on certain (finite) reference graphs.
-The reference graphs are in the form of what we call \emph{shallowly
+We now give a formal definition of the resource-tracking static
+analysis implemented in \textsc{Guru} as an abstract operational
+semantics.  We formulate soundness with respect to an operational
+semantics operating on certain (finite) reference graphs.  The
+reference graphs are in the form of what we call \emph{shallowly
   augmented forests}: they are forests, except that nodes may have
 multiple predecessors in the graph, but then at most one of those
 predecessors can itself have a predecessor. This is sufficient for our
 functional-modeling approach, since it captures the idea that data are
 all tree-structured, except that there may be some additional
 references to the nodes (corresponding to predecessors that have no
-predecessor).
+predecessor).  
 
 \subsection{Assumptions on the terms}
 
@@ -1283,18 +1218,18 @@ for space reasons.
 
 \subsection{Graph-based operational semantics}
 
-We define a graph-based evaluation relation $\Delta; t \Downarrow_k
-t'; \Delta'$, where $t$ and $t'$ are terms; $\Delta, \Delta'$ are
-functions from variables $x$ to values of the form
-$(c\ x_1\ \ldots\ c_n)$, with $c$ an arity-$n$ term constructor; and
-$k$ a natural number.  If $\Delta(x) = (c\ \bar{x})$, this means
+We define a graph-based evaluation relation $\Delta; t \Downarrow_k r;
+\Delta'$, where $t$ is a term; $r$ (here and below) is a variable;
+$\Delta, \Delta'$ are functions from variables $x$ to values of the
+form $(c\ x_1\ \ldots\ c_n)$, with $c$ an arity-$n$ term constructor;
+and $k$ a natural number.  If $\Delta(x) = (c\ \bar{x})$, this means
 variable $x$ is instantiated with that term, where the variables
 $\bar{x}$ may have their own instantiations in $\Delta$ (similarly for
 $\Delta'$).  Furthermore, $k$ is a natural number used as a timer; it
 is a technical device to allow us to distinguish diverging and
 finitely failing computations (for which we derive a $\perp$ judgment
 in the limit) from ones which fail due to resource errors (for which
-there is no derivation possible at all using the rules).  
+there is no derivation possible at all using the rules).
 
 Figure~\ref{fig:opsemt} gives the rules.  The first is for expiration
 of the timer.  In this case, the form of the judgment has $\perp$ on
@@ -1307,14 +1242,18 @@ variables, the third for evaluation of constructor applications (we
 consider uses of 0-ary constructors as degenerate applications), and
 the fourth for evaluation of function applications.  The next two
 rules, for applications of primitives $p$, consume resources by
-modifying the map $\Delta$ according to $p$'s type.  This is done
-using a meta-theoretic function application
-$U(\Delta,\bar{x},\bar{i})$, defined in Figure~\ref{fig:consume}.  We
-write $p::\bar{i}$ in the rule to indicate that the consumption
-annotations $\bar{i}$ are the ones stated in $p$'s type for its
-arguments.  We also inductively define a function ``$-$'' on $\Delta$
-and an $x\in\textit{dom}(\Delta)$ for removing subgraphs from the
-graph defined $\Delta$:
+modifying the map $\Delta$ according to $p$'s type, and return values
+using a functional model unconstrained by that type.  In particular,
+this is where we might add an additional shallow reference into a tree.
+
+Consuming resources when a primitive is applied is done using a
+meta-theoretic function application $U(\Delta,\bar{x},\bar{i})$,
+defined in Figure~\ref{fig:consume}.  We write $p::\bar{i}$ in the
+rule to indicate that the consumption annotations $\bar{i}$ are the
+ones stated in $p$'s type for its arguments.  We also inductively
+define a function ``$-$'' on $\Delta$ and an
+$x\in\textit{dom}(\Delta)$ for removing subgraphs from the graph
+defined $\Delta$:
 \[
 \begin{array}{ll}
 \infer{S_0 - x = (\bigcap_i S_i) \setminus \{(x,(c\ \bar{x}))\} }
@@ -1325,7 +1264,7 @@ graph defined $\Delta$:
 \]
 \noindent Note that if an inference contains an undefined application
 of a meta-theoretic function, we interpret this to mean the inference
-is not allowed.
+is not allowed.  
 
 \begin{figure}
 \begin{eqnarray*}
@@ -1343,16 +1282,15 @@ U(\Delta,\cdot,\cdot) & = & \Delta
  type.  In that case, the second rule for applications of primitives
  just returns a new variable, bound to an uninterpreted entity
  ``$\cdot$'' in the heap.  Earlier stages of type-checking rule out
- pattern-matching on elements of primitively defined types.  Note that
- in the \texttt{match}-rules we use a more compact meta-theoretic
- notation for \texttt{match}-terms.  Furthermore, we include a second
- \texttt{match}-rule for the datatype-incorrect case.  In practice
- this situation is ruled out by datatype type-checking, but there is
- no need to depend on that here.  Finally, if for all $k$, $\Delta;
- t\Downarrow_k\ \perp$, then we write $\Delta; t\Downarrow\ \perp$, and
- say that $t$ diverges. This relation is not recursively enumerable,
- but that is not problematic since it is used only in the formulation
- of soundness of our resource-tracking analysis.
+ pattern-matching on elements of primitively defined types, but it is
+ more convenient not to rely on that here (so we include the second
+ \texttt{match}-rule).  Note that in the \texttt{match}-rules we use a
+ more compact meta-theoretic notation for \texttt{match}-terms.
+ Finally, if for all $k$, $\Delta; t\Downarrow_k\ \perp$, then we
+ write $\Delta; t\Downarrow\ \perp$, and say that $t$ diverges. This
+ relation is not recursively enumerable, but that is not problematic
+ since it is used only in the formulation of soundness of our
+ resource-tracking analysis.
 
 \begin{figure}
 \[
@@ -1361,9 +1299,10 @@ U(\Delta,\cdot,\cdot) & = & \Delta
 
 \infer{\Delta; x\Downarrow_{k+1} x; \Delta}{x\in\textit{dom}(\Delta)} \\ \\
 
-\infer{\Delta_1; (c\ t_1\ldots t_n)\Downarrow_{k+1} (c\ \bar{r});\Delta_{n+1}}
+\infer{\Delta_1; (c\ t_1\ldots t_n)\Downarrow_{k+1} r; \{(r,(c\ \bar{r}))\}\cup\Delta_{n+1}}
       {\begin{array}{l}
-       \forall i. (\Delta_i; t_i \Downarrow_{k} r_i; \Delta_{i+1}) 
+       \forall i. (\Delta_i; t_i \Downarrow_{k} r_i; \Delta_{i+1}) \\
+       r\not\in\textit{dom}(\Delta_{n+1})
        \end{array}} \\ \\
 
 \infer{\Delta_1; (f\ t_1\ldots t_n)\Downarrow_{k+1} r;\Delta'}
@@ -1373,7 +1312,7 @@ U(\Delta,\cdot,\cdot) & = & \Delta
        \Delta_{n+1}; [\bar{r}/\bar{x}]t \Downarrow_k r; \Delta'
        \end{array}} \\ \\
 
-\infer{\Delta_1; (p\ t_1\ldots t_n)\Downarrow_{k+1} r;\Delta_{n+1}}
+\infer{\Delta_1; (p\ t_1\ldots t_n)\Downarrow_{k+1} r;\Delta'}
       {\begin{array}{l}
        \forall i. (\Delta_i; t_i \Downarrow_k r_i; \Delta_{i+1}) \\
        (p\ \bar{x}) = t \\ 
@@ -1391,17 +1330,17 @@ U(\Delta,\cdot,\cdot) & = & \Delta
 
 \infer{\Delta; \texttt{match}\ t\ \texttt{with}\ j.(c_j\ \bar{x}_j \texttt{=>} t_j) \Downarrow_{k+1} r;\Delta'}
       {\begin{array}{l}
-       \Delta; t \Downarrow_k (c_j\ \bar{r}); \Delta''
+       \Delta; t \Downarrow_k (c_j\ \bar{r}); \Delta'' \\
        \Delta''; [\bar{r}/\bar{x}]t_j \Downarrow_k r; \Delta'
        \end{array}} \\ \\
 
 \infer{\Delta; \texttt{match}\ t\ \texttt{with}\ j.(c_j\ \bar{x}_j \texttt{=>} t_j) \Downarrow_{k+1}\ \perp}
       {\begin{array}{l}
-       \Delta; t \Downarrow_k (d\ \bar{r}); \Delta''
+       \Delta; t \Downarrow_k (d\ \bar{r}); \Delta'' \\
        d\not\in\{c_1,\ldots,c_n\}
        \end{array}} \\ \\
 
-\infer{\Delta; \texttt{let}\ x\ =\ t\ \texttt{in}\ t')) \Downarrow_{k+1} r'';\Delta''}
+\infer{\Delta; \texttt{let}\ x\ =\ t\ \texttt{in}\ t' \Downarrow_{k+1} r'';\Delta''}
       {\begin{array}{l}
        \Delta; t \Downarrow_{k} r; \Delta' \\
        \Delta'; [r/x]t' \Downarrow_k r''; \Delta''
@@ -1451,20 +1390,17 @@ original source code) are confirmed using the following rule:
 The definition of the $V$ function is the heart of the
 resource-tracking analysis.  It insists that pinning references cannot
 be consumed by being returned; that is, the corresponding consumption
-annotation must be \textnormal{\^{\ }}.  It also insists that
+annotation must be \^{\ }.  It also insists that
 references cannot be consumed until all their pinning references are.
 
 Some simplifying design choices have been made in this algorithm.  For
 example, the rule for constructor applications disallows arguments
-marked with \textnormal{\^{\ }} (meaning to be consumed but not
-returned).  This is overly conservative: we could just as well
-propagate \textnormal{\^{\ }} from arguments to the variable $r$
-introduced in the conclusion for the entire constructor application.
-Also, branches in \texttt{match}-cases must have the same effect on
-$\Theta$, and may not return pinning references.  These restrictions
-could be relaxed.  Also, we have not formalized consuming resource
-named in (global) definitions, although our implementation supports
-this.
+marked with \^{\ } (meaning to be consumed but not
+returned).  Also, branches in \texttt{match}-cases must have the same
+effect on $\Theta$, and may not return pinning references.  These
+restrictions could perhaps be relaxed.  Also, we have not formalized
+consuming resource named in (global) definitions, although our
+implementation supports this.
 
 \begin{figure}
 \[
@@ -1482,15 +1418,17 @@ this.
 \infer{\Theta_1; (g\ t_1\ldots t_n)\Downarrow r; \{(r,1)\}\cup V(\Theta_{n+1},\bar{r},\bar{i})}
       {\begin{array}{l}
        \forall j. (\Theta_j; t_j \Downarrow r_j; \Theta_{j+1}) \\
-       g::\bar{i}
+       g::\bar{i} \\
+       r\not\in\textit{dom}(\Theta)
        \end{array}} \\ \\
 
 \infer{\Theta; \texttt{match}\ x\ \texttt{with}\ j.(c_j\ \bar{x}_j \texttt{=>} t_j) \Downarrow r;\{(r,i)\}\cup\Theta'}
       {\begin{array}{l}
-       \forall j.(\Theta, \bar{x}_j; t_j \Downarrow r_j; \{(r_j,i)\}\cup \Theta')
+       \forall j.(\Theta, \bar{x}_j; t_j \Downarrow r_j; \{(r_j,i)\}\cup \Theta')\\
+       r\not\in\textit{dom}(\Theta')
        \end{array}} \\ \\
 
-\infer{\Theta; \texttt{let}\ x\ =\ t\ \texttt{in}\ t')) \Downarrow r'';\Theta''}
+\infer{\Theta; \texttt{let}\ x\ =\ t\ \texttt{in}\ t' \Downarrow r'';\Theta''}
       {\begin{array}{l}
        \Theta; t \Downarrow r; \Theta' \\
        \Theta'; [r/x]t' \Downarrow r''; \Theta''
@@ -1526,27 +1464,51 @@ V(\Theta,\cdot,\cdot) & = & \Theta
 \label{fig:consumea}
 \end{figure}
 
-\noindent Let us define $\Delta^*(t)$ for shallowly augmented forests
+ Let us define $\Delta^*(t)$ for shallowly augmented forests
 $\Delta$ to be the term which is just like $t$ except that we replace
 each $x\in\textit{dom}(\Delta)$ with $\Delta^*(\Delta(x))$.  The fact
 that $\Delta$ is a shallowly augmented forest ensures well-foundedness
-of this definition.  Also, let us write $\Delta::\Theta$ to indicate
+of this definition.  If for every $x\in\textit{dom}(\Delta)$ we have
+that $\Delta^*(x)$ is ground (no free variables), then we will call
+$\Delta$ ground.  Also, let us write $\sigma::\Theta\to\Delta$ to indicate
 that:
 \begin{enumerate}
-\item $\textit{dom}(\Theta)\subset\textit{dom}(\Delta)$, and
-\item $\forall (x,\langle y \rangle)\in\Theta:$
+\item $\sigma$ is an injective function from $\textit{dom}(\Theta)$ to $\textit{dom}(\Delta)$, and
+\item $\forall (x,\langle y \rangle)\in\Theta$:
 \begin{enumerate}
 \item $y\in\textit{dom}(\Theta)$, and
-\item $\Delta^*(x)\textnormal{ is a subterm of }\Delta^*(y)$ (with both defined).
+\item $\Delta^*(\sigma(x))\textnormal{ is a subterm of }\Delta^*(\sigma(y))$ (with both defined).
 \end{enumerate}
 \end{enumerate}
 
 \begin{theorem}[Type Soundness]
-If $\Theta; t \Downarrow r; \Theta'$, then for all shallowly augmented
-forests $\Delta::\Theta$, either $\Delta; \Delta^*(t) \Downarrow\ 
-\perp$, or else $\Delta; \Delta^*(t)\Downarrow_k t'; \Delta'$ for some
-$k$, $t'$, and $\Delta'$ with $\Delta'::\Theta'$.
+If $\Theta; t \Downarrow r; \Theta'$, then for all ground shallowly
+augmented forests $\Delta$ and $\sigma::\Theta\to\Delta$, the
+following are both true.
+\begin{enumerate}
+\item Either $\Delta; \Delta^*(t) \Downarrow\ \perp$, or else $\Delta;
+  \Delta^*(t)\Downarrow_k r'; \Delta'$ for some $k$, $r'$, $\sigma'$, and
+  $\Delta'$ with:
+\begin{enumerate}
+\item $\sigma'::\Theta'\to\Delta'$, and
+\item $\sigma'(r) = r'$,
+%\item $\sigma'|_{\textit{dom}(\sigma)} = \sigma$.
+\end{enumerate}
+\item If $(x,\textnormal{\^{\ }})\in\Theta$, then for all
+  $y\in\textit{dom}(\Delta)$, $\Delta'^*(\sigma'(x))$ is a
+  subterm of $\Delta'^*(y)$ only if it (already) is of $\Delta^*(z)$,
+  for some $z\in\textit{dom}(\Delta)$ where $\Delta^*(y)$ is a subterm
+  of $\Delta^*(z)$.
+\end{enumerate}
 \end{theorem}
+
+\noindent The first condition states that resources are consumed from
+$\Delta$ in a way consistent with $\Theta$ (as mediated by $\sigma$).
+The second states that evaluation using $\Delta$ cannot cause a
+reference marked with \^{\ } (``consume but do not return'') to be
+embedded in a value in $\Delta'$, unless it was already so embedded in
+$\Delta$.  Writing out in detail the induction on the structure of the
+assumed typing derivation remains to future work.
 
 \section{Empirical Results}
 \label{sec:emp}
@@ -1558,15 +1520,16 @@ programming languages currently in use, \textsc{Haskell} and
 \textsc{OCaml}.  Comparisons are also made to \textsc{Haskell} and
 \textsc{OCaml} versions with garbage collection minimized by picking
 large enough values for heap sizes so that collection is not
-necessary.  The specifications of the test system are described in
+necessary (see the Makefile in the \texttt{tests} directory mentioned
+in the Introduction).  The specifications of the test system are described in
 Figure \ref{teststats}.
 
 
 \begin{figure}
-\texttt{Processor: } 2.2 GHz Intel Core 2 Duo \\
-\texttt{Memory: } 4 GB 667 MHz DDR2 SDRAM \\
-\texttt{OS: } Mac OS X Version 10.5.8 \\
-\texttt{Compilers: } GHC 6.10.4; OCamlOpt 3.11.1 
+\texttt{Processor: } 2.67 GHz Intel Xeon W3520 \\
+\texttt{Memory: } 8 GB \\
+\texttt{OS: } Linux version 2.6.18-164.2.1.el5\\
+\texttt{Compilers: } GHC 6.10.4; OCamlOpt 3.11.1; Gnu GCC 4.3.3
 \caption{Specifications of the test system.}
 \label{teststats}
 \end{figure}
@@ -1593,31 +1556,34 @@ function to the search function is similar to defining and utilizing
 an instance of the \texttt{Ord} type class for a data type in
 \textsc{Haskell}.
 
-\begin{figure*}
+\begin{figure}
 \begin{verbatim}
 Define warray_binary_search
-  : Fun(A:type)                                   %% type of the warray elements
-       (spec n:word)                              %% length of the warray
-       (^ #unique_owned l:<warray A n>)           %% the warray to search
-       (first last:word)                          %% first and last index of the search
-       (value:A)                                  %% value to search for
-       (c:Fun(^ #owned a b:A). comp)              %% comparator function
-       (u:{(lt (to_nat first) (to_nat n)) = tt})  %% proofs
+  : Fun(A:type)                                   
+       (spec n:word)                              
+       (^ #unique_owned l:<warray A n>)           
+       (first last:word)                          
+       (value:A)                                  
+       (c:Fun(^ #owned a b:A). comp)              
+       (u:{(lt (to_nat first) (to_nat n)) = tt})  
        (v:{(lt (to_nat last) (to_nat n)) = tt})
        (w:{(le (to_nat first) (to_nat last)) = tt})
-       . bool                                     %% return type
+       . bool                                     
 \end{verbatim}
 \caption{The type of the binary search algorithm for word-indexed arrays.}
 \label{bs}
-\end{figure*}
+\end{figure}
 
 To test the performance of binary search, an ordered array of size
 $2^{20}$ is created and then each possible index is searched for.  The
-total time to complete both of these tasks is shown in Figure
-\ref{warraystats}.  The \textsc{Guru} implementation is competitive
-with the other implementations, even beating the original \textsc{Haskell}
-implementation.  In the cases of \textsc{Haskell} and \textsc{OCaml} both, minimizing
-garbage collection leads to a significant performance increase.
+total time to complete both of these tasks is shown in
+Figure~\ref{warraystats}.  The \textsc{Guru} implementation beats the
+other implementations.  The reports of others (cited in the
+Introduction) about the performance penalty of garbage collection are
+confirmed here.  In both cases, \textsc{Guru} is easily beaten by
+\textsc{OCaml} and \textsc{Haskell}, if their garbage collectors are
+turned off.  This is as one would expect, given the much greater
+maturity of their implementations.
 
 \begin{figure}
 \begin{center}
@@ -1627,11 +1593,11 @@ garbage collection leads to a significant performance increase.
 \hline
 Language & Avg Real Time \\
 \hline
-\textsc{Guru} & 1.20 s \\
-\textsc{Haskell} & 1.66 s\\
-\textsc{Haskell} (No GC) & 0.74 s \\
-\textsc{OCaml} & 0.99 s \\
-\textsc{OCaml} (No GC) & 0.89 s \\
+\textsc{Haskell} & 1.14 s\\
+\textsc{Haskell} (No GC) & 0.45 s \\
+\textsc{OCaml} & 0.60 s \\
+\textsc{OCaml} (No GC) & 0.54 s \\
+\textsc{Guru} & 0.57 s \\
 \hline
 \end{tabular}
 \end{center}
@@ -1647,10 +1613,11 @@ Then the contents of \textit{War and Peace} are enqueued to the first
 queue word by word.  The first queue is then dequeued one element at a
 time, enqueueing the item into the second queue.  Once the second
 queue is full the contents are again dequeued and the last element is
-printed to the console.  The results of this test are shown in Figure
-\ref{queuestats}.  The verified and unverified queues have
-indistinguishable performance (so we show just the results for the
-verified queue).  We conjecture that branch prediction in the CPU
+printed to the console.  The results of this test are shown in
+Figure~\ref{queuestats}.  We see similar relative performance as for
+the previous example.  Note that the verified and unverified queues
+have indistinguishable performance (so we show just the results for
+the verified queue).  We conjecture that branch prediction in the CPU
 masks the difference between the two implementations (the verified one
 does not need to do a run-time check to detect the situation which is
 proved to be impossible).
@@ -1663,11 +1630,11 @@ proved to be impossible).
 \hline
 Language & Avg Real Time \\
 \hline
-\textsc{Guru} & 0.69 s \\
-\textsc{Haskell} & 1.20 s \\
-\textsc{Haskell} (No GC) & 1.08 s \\
+\textsc{Haskell} & 1.33 s \\
+\textsc{Haskell} (No GC) & 0.60 s \\
 \textsc{OCaml} & 0.61 s \\
-\textsc{OCaml} (No GC) & 0.28 s \\
+\textsc{OCaml} (No GC) & 0.38 s \\
+\textsc{Guru} & 0.58 s \\
 \hline
 \end{tabular}
 \end{center}
@@ -1686,51 +1653,44 @@ There are several points arising in this study that deserve further discussion:
 \textbf{The status of memory leaks.} Our \texttt{rheaplet} abstraction
 does not guarantee absence of memory leaks, and indeed, cyclic
 structures can be leaked.  We will attempt to persuade the reader that
-this should not be viewed as too great a shortcoming, for the
-following reasons.  First, our verification methodology is based on
-the idea of judicious application of verification to try to improve
-software quality.  Memory leaks are certainly software flaws, but
-statically ensuring that they do not exist would appear to be rather
-costly.  Indeed, this is why dynamic methods such as garbage
-collection are so widely used in modern language implementations: they
-ensure that memory is not leaked, with no additional verification
-cost.  Of course, there is a performance cost, which we are trying to
-avoid.  One could imagine punting and adding garbage-collected regions
-as additional resource types.  Indeed, our \texttt{rheaplet} data
-structure already compromises performance somewhat in order to reduce
-the burden of static verification.
+this is not as great a shortcoming as it might seem.  First, our goal
+is to apply verification judiciously for improved software quality.
+Memory leaks are certainly software flaws, but statically ensuring
+that they do not exist appears costly.  Indeed, dynamic methods such
+as garbage collection are currently so widely for just that reason:
+they ensure that memory is not leaked, with no additional verification
+cost.  There is a performance cost, which we are trying to avoid.  One
+could imagine punting and adding garbage-collected regions as
+additional resource types.  Indeed, our \texttt{rheaplet} data
+structure already compromises performance in order to reduce the
+burden of static verification.
 
-If static verification of the absence of memory leaks is required for
-an application, then the approach we would advocate is to use a
-version of heaplets (not yet implemented) where the number of
-outstanding aliases is statically tracked in the heaplet's type.
-Verifying that the number of aliases is zero when the heaplet is
-consumed would require significant verification effort in general,
-since one would need to maintain invariants expressing the aliasing
-structure of the heaplet sufficiently to be able to show statically
-that all aliases have been consumed.  For cyclic structures, it might
-be necessary to disassemble the structure carefully on deallocation,
-in a reverse manner to its construction.  This choreography is
-likely to be too intricate for the verification budget of many
-applications.
+If static verification of the absence of memory leaks is desired, then
+the approach we would advocate is to use a version of heaplets (not
+yet implemented) where the number of outstanding aliases is statically
+tracked in the heaplet's type.  Verifying that the number of aliases
+is zero when the heaplet is consumed would require significant
+verification effort in general, since one would need to maintain
+invariants expressing the aliasing structure of the heaplet, in order
+to be able to show statically that all aliases have been consumed.
+For cyclic structures, it might be necessary to disassemble the
+structure carefully on deallocation, in a reverse manner to its
+construction.  This choreography will be too intricate for the
+verification budget of many applications.
 
 A final note on memory leaks is that to the best of our knowledge,
 there are no general methods for statically verifying the absence of
 live leaks.  And of course, the absence of leaks of unreachable memory
 is simply an approximation to the truly desired property, which is
-that memory which will no longer be used (perhaps one could go further
-and say ``usefully used'') will be reclaimed.  This property might be
-impossible to determine, if the future execution of the program
-depends on external inputs; but we could imagine it could be
-ascertained in at least some cases.  Dynamic leak-pruning methods have
-been considered (see, e.g.,~\cite{bond+09}), but a general theory for
-statically guaranteeing the absence of live leaks appears to be
-lacking from the literature.
+that memory which will no longer be used will be reclaimed.  Dynamic
+leak-pruning methods have been considered (see, e.g.,~\cite{bond+09}),
+but a general theory for statically guaranteeing the absence of live
+leaks where possible appears to be lacking from the literature.
 
 \textbf{On automating proofs.} Our current burden of proof for our
-example using aliased heap-allocated data is like that of the 2008
-version of the Ynot system, at least in being significantly heavier
-than desirable~\cite{nanevski+08}.  The 2009 version of Ynot greatly
+example using aliased heap-allocated data is similar to that of the
+2008 version of the Ynot system, at least in being heavier than
+desirable~\cite{nanevski+08}.  The 2009 version of Ynot greatly
 decreases the burden of manual proof through clever use of automated
 tactics (in the \textsc{Coq} proof assistant)~\cite{ynot09}.  We also
 agree that automation must be applied to help reduce the manual effort
@@ -1739,25 +1699,24 @@ pursuing in \textsc{Guru} differs greatly from that of \textsc{Coq},
 and of at least some of the tactics reported in~\cite{ynot09}.  The
 \texttt{hypjoin} tactic mentioned above is sound, but also complete
 (under modest conditions about termination of the functional terms
-involved): if two terms are joinable modulo the given ground equations
-(without case splitting or induction), then \texttt{hypjoin} will
-determine that they are.  It is our hypothesis that usability of
+involved): if two terms are joinable modulo the given ground
+equations, without case splitting or induction, then \texttt{hypjoin}
+will determine that they are.  It is our hypothesis that usability of
 powerful tactics is greatly increased by increased predictability.
-Heuristic methods, or methods which are not guaranteed to solve
-provable goals falling into a class of problems with a simple and
-principled delineation, seem to us likely to increase fragility of
-proofs and difficulties for users (particularly less proficient ones).
-It remains to be seen what tactics fitting such a description can be
-devised for reasoning about the heap, or more generally.  Certainly
-one path is to try to extend methods like \texttt{hypjoin} to the
-non-ground case, but we view this as likely to be quite a challenging
-technical problem.
+Heuristic methods, or methods lacking a simple independent delineation
+of the class of problems they can solve , seem likely to increase
+fragility of proofs and difficulties for users (particularly less
+proficient ones).  It remains to be seen which tactics fitting such a
+description can be devised for reasoning about the heap, or more
+generally.  Certainly one path is to try to extend methods like
+\texttt{hypjoin} to the non-ground case, but this is likely to be
+technically challenging.
 
 \textbf{The provable connection between aliases and heaplets.} The use
-of heaplets to model just a portion of the heap at a time is similar
-in spirit to the use of separating conjunction in the separation logic
-approach used by the Ynot authors~\cite{nanevski+08,reynolds02}.  It
-also distinguishes such approaches from previous work of Zhu and Xi on
+of heaplets to model just a portion of the heap is similar in spirit
+to the use of separating conjunction in the separation logic approach
+used by the Ynot authors~\cite{nanevski+08,reynolds02}.  It also
+distinguishes such approaches from previous work of Zhu and Xi on
 stateful views, where a type $t@l$ is used to express that an element
 of type $t$ occurs at address $l$, in the single implicit global
 heap~\cite{zhu+05}.  Above we were forced to reason in more detail
@@ -1765,38 +1724,33 @@ than we would like about the fact that aliases associated statically
 (via their \texttt{rheaplet\_id}) with a heaplet are actually valid
 indices into that heaplet (considered as a list).  It might be
 possible to reduce this burden of proof by adding some more direct
-language support for heaplets.  For example, whenever we obtain a new
-alias, we could automatically be provided inside source terms, via a
-new assumption variable, with a proof that the alias is a valid index.
-This would not be easy, actually, with just the current language
-support (just have the primitive additionally return this proof).
-More interesting would be a feature to add proofs automatically --
-again, in terms via new assumption variables -- that valid indices
-remain valid under all the heaplet operations (recalling that in the
-functional model, we never remove a value from a heaplet).  This would
-greatly reduce the burden of proof for the verified queue example,
-which is mostly concerned with proving that aliases are valid heap
-indices.
+language support for heaplets.  For example, we could add a feature to
+add proofs automatically inside terms -- via new assumption variables
+-- that valid indices remain valid under all the heaplet operations
+(recalling that in the functional model, we never remove a value from
+a heaplet).  This would greatly reduce the burden of proof for the
+verified queue example, which is mostly concerned with proving that
+aliases are valid heap indices.
 
 \section{Conclusion}
 
 We have seen how a resource typing framework based on two simple
 principles can support a variety of low- and higher-level imperative
 abstractions:
-
 \begin{itemize}
 \item Resources may be used by at most one party at a time.
 \item Resources may be divided into subresources, which must be
   returned before the resource as a whole is usable again.
 \end{itemize}
-
-\noindent Future work will focus on reducing the burden of annotation
-and proof in the ways discussed in the previous section, and also by
-finding ways to eliminate the need for programmers to apply resource
-primitives like \texttt{inc}, \texttt{dec}, and \texttt{inspect}
-explicitly.  A simple first approach might be to devise an algorithm
-that will automatically insert calls to these primitives, given types
-for all function input variables.  
+\noindent Future work includes completing the detailed proof of type
+soundness, using the formulation devised above. On the practical side,
+our focus will be on reducing the burden of annotation and proof in
+the ways discussed in the previous section, and also by finding ways
+to eliminate the need for programmers to apply resource primitives
+like \texttt{inc}, \texttt{dec}, and \texttt{inspect} explicitly.  A
+simple first approach might be to devise an algorithm that will
+automatically insert calls to these primitives, given types for all
+function input variables.
 
 \textbf{Acknowledgements:} the U.S. NSF for support under award
 CCF-0841554; and the growing group of students and researchers

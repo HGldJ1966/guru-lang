@@ -1,0 +1,506 @@
+% $Header: /project/cl/Root/CVS/talks/iowa08/talk.tex,v 1.3 2008/01/31 14:11:37 stump Exp $
+
+\documentclass[10pt]{beamer}
+
+\usepackage{tikz}
+\usepackage{pgflibraryarrows}
+\usepackage{pgflibraryshapes}
+\usepackage{pgfbaseimage}
+\usepackage{proof}
+\usepackage{url}
+\usepackage{code}
+
+\newcommand{\Eq}[0]{\texttt{=}}
+\newcommand{\Neq}[0]{\texttt{!=}}
+\newcommand{\Qeq}[0]{\stackrel{?}{=}}
+\newcommand{\bang}[0]{\texttt{!}}
+\newcommand{\quant}[0]{\textit{Quant}}
+
+\newcommand{\To}[0]{\Rightarrow}
+\newcommand{\rn}[1]{\textsc{#1}}
+\newcommand{\interp}[1]{[ \negthinspace [ #1 ] \negthinspace ]}
+
+\newcommand{\seq}[3]{#1 \vdash #2 : #3}
+%\newcommand{\aseq}[3]{ #2 : #3}
+\newcommand{\aseq}[3]{ #1 \vdash #3}
+%\newcommand{\aaseq}[3]{ #3}
+\newcommand{\aaseq}[3]{ #1 \vdash #3}
+\newcommand{\abseq}[3]{ #1 \vdash #3}
+
+
+\mode<presentation>
+{
+  %\usetheme{Warsaw}
+  % or ...
+
+%\usetheme{IowaCity}
+\usetheme{Edinburgh}
+%\usetheme{Savannah}
+
+%  \setbeamercovered{transparent}
+  % or whatever (possibly just delete it)
+}
+
+
+\usepackage[english]{babel}
+% or whatever
+
+\usepackage[latin1]{inputenc}
+% or whatever
+
+\usepackage{times}
+\usepackage[T1]{fontenc}
+% Or whatever. Note that the encoding and the font should match. If T1
+% does not look nice, try deleting the line with the fontenc.
+
+\title[Verifying Imperative Abstractions]
+{Dependently Typed Programming\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ with Mutable State}
+
+\author[Stump et al.]{Aaron Stump\inst{1} \and Evan Austin\inst{2}}
+
+\institute[Computational Logic Center]
+{
+\inst{1}
+  Computer Science\\
+  The University of Iowa
+\and
+\inst{2}   Computer Science\\
+The University of Kansas
+\ \\
+\ \\
+U.S. National Science Foundation CAREER grant. 
+}
+
+% If you have a file called "university-logo-filename.xxx", where xxx
+% is a graphic format that can be processed by latex or pdflatex,
+% resp., then you can add a logo as follows:
+
+% \pgfdeclareimage[height=0.5cm]{university-logo}{university-logo-filename}
+% \logo{\pgfuseimage{university-logo}}
+
+
+
+% Delete this, if you do not want the table of contents to pop up at
+% the beginning of each subsection:
+%\AtBeginSubsection[]
+%{
+%  \begin{frame}<beamer>
+%    \frametitle{Outline}
+%    \tableofcontents[currentsection,currentsubsection]
+%  \end{frame}
+%}
+
+
+% If you wish to uncover everything in a step-wise fashion, uncomment
+% the following command: 
+
+%\beamerdefaultoverlayspecification{<+->}
+
+\begin{document}
+
+\date{\ }
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\date{Dagstuhl '09}
+
+\begin{frame}[containsverbatim]
+  \frametitle{What Are Dependent Types?}
+
+\begin{itemize}
+
+\item Indexed datatypes:
+
+{\footnotesize
+\begin{verbatim}
+<list A n>           instead of     <list A>
+<balanced_tree A d>                 <tree A>
+<lam_t max_var>                     lam_t
+\end{verbatim}
+}
+
+\ 
+
+\item Dependent function types:
+
+{\footnotesize
+\begin{verbatim}
+delete : Fun(x:nat)(l:<list nat (S n)>)
+            (u:{(in x l) = tt}).
+           <list nat n>
+append : Fun(A:type)(n1 n2:nat)
+            (l1:<list A n1>)(l2:<list A n2>).
+          <list A (plus n1 n2)>
+\end{verbatim}
+}
+
+\ 
+
+\item Computing a type by recursion:
+
+{\footnotesize
+\begin{verbatim}
+printf : Fun(s:format_string).(printf_t s)  
+
+(printf_t "%d"++s) => (int -> (printf_t s))
+(printf_t "%x"++s) => (ptr -> (printf_t s))
+(printf_t []) => unit
+\end{verbatim}
+}
+
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Why Dependent Types Matter \footnote{Title of invited talk at POPL 2006 by James McKenna.}}
+
+\ 
+
+\ 
+\begin{center}
+{\Large \textcolor{red}{Incrementality}} \ \ \ \ \ \ \ \ 
+\pause
+{\Large \textcolor{red}{Intensionality}}
+\end{center}
+
+\ 
+
+\ 
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Incrementality}
+
+\begin{itemize}
+\item Adding verification usually is a big leap.
+\begin{itemize}
+\item new specification language (at least first-order logic); and
+\item new proof language(s), or
+\item unpredictable, tricky tools (``you need an expert'').
+\end{itemize}
+
+\ 
+
+\item Not a big leap with dependent types.
+\begin{itemize}
+\item From \texttt{<list A>} to \texttt{<list A n>} is easier.
+\item Add verification judiciously, ``pay as you go''.
+\end{itemize}
+
+\ 
+
+\item Goal: enable gradual increase in code quality.
+\begin{itemize}
+\item Deep verification is at one limit.
+\item Lightweight verification can improve code a lot.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Intensionality (Policies versus Properties)}
+
+\begin{itemize}
+\item Properties expressing facts about code.
+\item Policies restrict how code can be used.
+\item Stating (proving) a property from a policy may be hard.
+\item Example policies:
+\begin{itemize}
+\item Files may not be accessed after they are closed.
+\item Uninitialized array locations may not be read.
+\item Data computed from user's contact list cannot be auto-emailed. \footnote{See \textcolor{blue}{[Swamy, Chen, and Chugh 2009]}}.
+\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}[containsverbatim]
+  \frametitle{\textsc{Guru} at a High-Level}
+
+\begin{itemize}
+
+\item Pure functional language + logical theory. \footnote{See \textcolor{blue}{[Stump, Deters, Petcher, Schiller, Simpson 2009]}}.
+\begin{itemize}
+\item Includes indexed datatypes, dependent function types.
+\item Terms : Types.
+\item Proofs : Formulas.
+\end{itemize}
+
+\ 
+
+\item Inspired by Coq/CIC, but with some improvements:
+
+\begin{itemize}
+\item General recursion for terms.
+\begin{itemize}
+\item Proofs are still sound.
+\item Explicit casts instead of conversion => type equivalence still decidable.
+\end{itemize}
+
+\item Annotations dropped for type equivalence.
+\begin{itemize}
+\item Including types, specificational (``ghost'') data, and proofs.
+\item Avoids problems with equality of proofs.
+\item Like Implicit Calculus of Constructions (ICC).
+\end{itemize}
+
+\item Resource-tracking analysis \textcolor{red}{[new!]}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Functional Modeling for Imperative Abstractions}
+
+\begin{itemize}
+\item I/O, mutable arrays, cyclic structures, etc.
+\item Do not fit well into pure FP.
+\item Approach: functional modeling.
+\begin{itemize}
+\item Define a pure functional model (e.g., \texttt{<list A n>} for arrays).
+ \footnote{Cf. \textcolor{blue}{[Swierstra and Altenkirch 2007]}}
+\item Model is faithful, but slow.
+\item Use during reasoning.
+\item Replace with imperative code during compilation.
+\item Use \emph{linear} (aka \emph{unique}) types to keep in synch.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Example: Word-Indexed Mutable Arrays}
+
+\begin{itemize}
+\item Type: \texttt{<warray A N L>}.
+\begin{itemize}
+\item \texttt{A} is type of elements.
+\item \texttt{N} is length of array.
+\item \texttt{L} is list of initialized locations.
+\end{itemize}
+
+\item \texttt{(new\_array A N) : <warray A N []>}.
+
+\item Writing to index \texttt{i}: 
+\begin{itemize}
+\item requires proof: \texttt{i < N}.
+\item functional model: consume old array, produce updated one.
+\item imperative implementation: just do the assignment.
+\item array's type changes:  \texttt{<warray A N i::L>}.
+\end{itemize}
+
+\item Reading from index \texttt{i}:
+\begin{itemize}
+\item does not consume array.
+\item requires proof: $\texttt{i}\in\texttt{L}$.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Example: FIFO Queues}
+
+\begin{itemize}
+\item Mutable singly-linked list, with direct pointer to end.
+\item \textbf{Aliasing!}
+\item \textsc{Guru} approach: \emph{heaplets} (part of heap).
+
+\ 
+
+{\small
+\begin{tabular}{|l|l|l|}
+\hline
+Type & Functional Model & Imperative Implementation \\
+\hline
+\texttt{<heaplet A I>} & list of aliased values & nothing\\
+\texttt{<alias I>} & index into heaplet \texttt{I} & reference-counted pointer\\
+\hline
+\end{tabular}}
+
+\ 
+
+\ 
+
+\item Unverified queue:
+\begin{itemize}
+\item Just memory safety
+\item 138 lines total (6 lines proof).
+\end{itemize}
+
+\ 
+
+\item Verified queue:
+\begin{itemize}
+\item Prove that \texttt{qin}-node has no next-pointer.
+\item Requires reasoning about aliases.
+\item 310 lines total (178 lines proof).
+\end{itemize}
+
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Resource-Tracking and Memory Management}
+
+\begin{itemize}
+\item Memory deallocated explicitly.
+\item Resource-tracking analysis ensures safety.
+\item Different resource types available.
+\begin{itemize}
+\item \texttt{unowned}: for reference-counted data.
+\item \texttt{unique}: for mutable data structures.
+\item \texttt{<owned x>}: for \emph{pinning} references.
+
+\ 
+
+\texttt{x:unowned}
+
+\texttt{y:<owned x>}
+
+\ 
+
+Not allowed to consume \texttt{x} until \texttt{y} is consumed.
+
+\ 
+
+Can safely omit inc/dec for \texttt{y}.
+
+\ 
+
+\end{itemize}
+
+\item \textsc{Guru}: no garbage collection!
+\item ``Garbage Collection is the Achilles' Heel of Java Application Servers'' \footnote{\textcolor{blue}{[Xian, Srisa-an, Jiang 08]}}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Empirical Comparison}
+Benchmark 1: In array storing $[0,2^{20})$, do binary search for each element.
+
+\ 
+
+Benchmark 2: push all words in ``War and Peace'' through 2 queues.
+
+\ 
+
+\ 
+
+
+{\small
+\begin{tabular}{lr}
+\begin{tabular}{| l | l |}
+\hline
+\multicolumn{2}{|c|}{Mutable Array Test} \\
+\hline
+Language & Avg Real Time \\
+\hline
+\textcolor{red}{\textsc{Haskell}} & \textcolor{red}{1.14 s}\\
+\textsc{Haskell} (No GC) & 0.45 s \\
+\textcolor{red}{\textsc{OCaml}} & \textcolor{red}{0.60 s} \\
+\textsc{OCaml} (No GC) & 0.54 s \\
+\textcolor{red}{\textsc{Guru}} & \textcolor{red}{0.57 s} \\
+\hline
+\end{tabular}
+&
+\begin{tabular}{| l | l |}
+\hline
+\multicolumn{2}{|c|}{Queue Test} \\
+\hline
+Language & Avg Real Time \\
+\hline
+\textcolor{red}{\textsc{Haskell}} & \textcolor{red}{1.33 s} \\
+\textsc{Haskell} (No GC) & 0.60 s \\
+\textcolor{red}{\textsc{OCaml}} & \textcolor{red}{0.61 s} \\
+\textsc{OCaml} (No GC) & 0.38 s \\
+\textcolor{red}{\textsc{Guru}} & \textcolor{red}{0.58 s} \\
+\hline
+\end{tabular}
+\end{tabular}
+}
+\end{frame}
+
+\begin{frame}
+\frametitle{Current Projects}
+
+\begin{itemize}
+\item \texttt{versat}: verified modern SAT solver.
+\begin{itemize}
+\item Complex code, uses mutable state.
+\item Not too large.
+\item Simple spec.: learned clauses derivable by resolution from input clauses.
+\end{itemize}
+
+\ 
+
+\item \textsc{Golfsock}: verified proof checker for LFSC format.
+\begin{itemize}
+\item LFSC = (Edinburgh) Logical Framework with Side Conditions.
+\item My proposal for a meta-language for SMT proofs.
+\item Fast C++ implementation (45\% overhead for QF\_IDL, difficulty 0-3). \footnote{See \textcolor{blue}{[Oe, Stump, Reynolds 2009]}}
+\end{itemize}
+
+\ 
+
+\item Implementation in \textsc{Guru} in progress.
+
+\pause
+
+\  
+
+\item ``Eat your own dog food!''
+
+\pause
+
+\ 
+
+\item \colorbox{green}{\underline{Let's eat what we grow.}}
+
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Future Goals}
+
+\begin{itemize}
+\item More imperative abstractions:
+\begin{itemize}
+\item Statically reference-counted heaplets.
+\item Doubly-linked lists, hashmaps, etc.
+\end{itemize}
+
+\ 
+
+\item More automation:
+\begin{itemize}
+\item Currently: \texttt{hypjoin t t' by p1 ... pn end} \footnote{See \textcolor{blue}{[Petcher, Stump 2009]}.}.
+\item Extend to first-order formulas?
+\item Goal: understandable, predictable tactics (``no expert needed'').
+\end{itemize}
+
+\ 
+
+\item (For you) to learn more:
+
+\begin{itemize}
+\item Version 1.0 is close to release:
+\begin{center}
+\Large
+\textcolor{blue}{\url{www.guru-lang.org}}
+\end{center}
+
+\ 
+\item ``Verified Programming in Guru'' book.
+\end{itemize}
+
+\end{itemize}
+
+\end{frame}
+
+\end{document}
+
