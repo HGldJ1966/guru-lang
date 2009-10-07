@@ -3,27 +3,27 @@ Haskell warray
 
 time ./test_warray_h
 True
+1.14user 0.01system 0:01.15elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+11248minor)pagefaults 0swaps
+time ./test_warray_h
+True
 1.14user 0.01system 0:01.16elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k
-0inputs+0outputs (0major+11247minor)pagefaults 0swaps
+0inputs+0outputs (0major+11248minor)pagefaults 0swaps
 time ./test_warray_h
 True
-1.13user 0.01system 0:01.16elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k
-0inputs+0outputs (0major+11247minor)pagefaults 0swaps
-time ./test_warray_h
-True
-1.13user 0.01system 0:01.16elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k
-0inputs+0outputs (0major+11247minor)pagefaults 0swaps
+1.13user 0.01system 0:01.15elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+11248minor)pagefaults 0swaps
 ----------------------------
 OCaml warray
 
 time ./test_warray_c
 True
 0.60user 0.00system 0:00.61elapsed 98%CPU (0avgtext+0avgdata 0maxresident)k
-0inputs+0outputs (0major+3386minor)pagefaults 0swaps
+0inputs+0outputs (0major+3387minor)pagefaults 0swaps
 time ./test_warray_c
 True
 0.60user 0.00system 0:00.61elapsed 98%CPU (0avgtext+0avgdata 0maxresident)k
-0inputs+0outputs (0major+3385minor)pagefaults 0swaps
+0inputs+0outputs (0major+3387minor)pagefaults 0swaps
 time ./test_warray_c
 True
 0.60user 0.00system 0:00.61elapsed 98%CPU (0avgtext+0avgdata 0maxresident)k
@@ -33,16 +33,16 @@ Guru warray
 
 time ./test_warray_g
 True
-0.57user 0.00system 0:00.58elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k
+0.57user 0.00system 0:00.58elapsed 98%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+5225minor)pagefaults 0swaps
+time ./test_warray_g
+True
+0.57user 0.00system 0:00.58elapsed 98%CPU (0avgtext+0avgdata 0maxresident)k
 0inputs+0outputs (0major+5226minor)pagefaults 0swaps
 time ./test_warray_g
 True
 0.57user 0.00system 0:00.58elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k
-0inputs+0outputs (0major+5226minor)pagefaults 0swaps
-time ./test_warray_g
-True
-0.58user 0.00system 0:00.59elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k
-0inputs+0outputs (0major+5226minor)pagefaults 0swaps
+0inputs+0outputs (0major+5227minor)pagefaults 0swaps
 ----------------------------
 ----------------------------
 Haskell queue
@@ -50,21 +50,21 @@ Haskell queue
 time ./test_queue_h < war-and-peace.txt
 eBooks.
 
+real	0m1.346s
+user	0m1.134s
+sys	0m0.068s
+time ./test_queue_h < war-and-peace.txt
+eBooks.
+
 real	0m1.323s
-user	0m1.133s
-sys	0m0.065s
-time ./test_queue_h < war-and-peace.txt
-eBooks.
-
-real	0m1.319s
-user	0m1.137s
-sys	0m0.073s
-time ./test_queue_h < war-and-peace.txt
-eBooks.
-
-real	0m1.320s
-user	0m1.142s
+user	0m1.147s
 sys	0m0.058s
+time ./test_queue_h < war-and-peace.txt
+eBooks.
+
+real	0m1.316s
+user	0m1.138s
+sys	0m0.070s
 ----------------------------
 OCaml queue
 
@@ -72,124 +72,160 @@ time ./test_queue_c < war-and-peace.txt
 eBooks.
 
 
-real	0m0.597s
-user	0m0.316s
-sys	0m0.033s
+real	0m0.610s
+user	0m0.345s
+sys	0m0.034s
 time ./test_queue_c < war-and-peace.txt
 eBooks.
 
 
-real	0m0.624s
-user	0m0.335s
-sys	0m0.041s
+real	0m0.602s
+user	0m0.340s
+sys	0m0.043s
 time ./test_queue_c < war-and-peace.txt
 eBooks.
 
 
-real	0m0.607s
-user	0m0.317s
-sys	0m0.047s
+real	0m0.605s
+user	0m0.327s
+sys	0m0.042s
 ----------------------------
 Guru queue
 
 time ./test_queue_g < war-and-peace.txt
 eBooks.
 
+real	0m0.569s
+user	0m0.281s
+sys	0m0.023s
+time ./test_queue_g < war-and-peace.txt
+eBooks.
+
 real	0m0.585s
-user	0m0.310s
-sys	0m0.016s
+user	0m0.296s
+sys	0m0.036s
 time ./test_queue_g < war-and-peace.txt
 eBooks.
 
-real	0m0.575s
-user	0m0.288s
-sys	0m0.034s
-time ./test_queue_g < war-and-peace.txt
-eBooks.
-
-real	0m0.625s
-user	0m0.323s
-sys	0m0.031s
+real	0m0.570s
+user	0m0.290s
+sys	0m0.028s
 ----------------------------
 -----------------------------
 Haskell warray no GC
 
 time ./test_warray_h +RTS -A500m -H500m -smyout.txt -RTS
 True
-0.44user 0.02system 0:00.47elapsed 98%CPU (0avgtext+0avgdata 0maxresident)k
-0inputs+0outputs (0major+18653minor)pagefaults 0swaps
+0.46user 0.01system 0:00.48elapsed 98%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+18654minor)pagefaults 0swaps
 time ./test_warray_h +RTS -A500m -H500m -smyout.txt -RTS
 True
-0.44user 0.02system 0:00.47elapsed 98%CPU (0avgtext+0avgdata 0maxresident)k
-0inputs+0outputs (0major+18653minor)pagefaults 0swaps
+0.45user 0.02system 0:00.48elapsed 98%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+18655minor)pagefaults 0swaps
 time ./test_warray_h +RTS -A500m -H500m -smyout.txt -RTS
 True
-0.44user 0.02system 0:00.48elapsed 98%CPU (0avgtext+0avgdata 0maxresident)k
-0inputs+0outputs (0major+18653minor)pagefaults 0swaps
+0.45user 0.01system 0:00.48elapsed 98%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+18654minor)pagefaults 0swaps
 -----------------------------
 Haskell queue no GC
 
 time ./test_queue_h +RTS -A500m -H500m -smyout.txt -RTS < war-and-peace.txt
 eBooks.
 
-real	0m0.593s
-user	0m0.305s
-sys	0m0.157s
-time ./test_queue_h +RTS -A500m -H500m -smyout.txt -RTS < war-and-peace.txt
-eBooks.
-
-real	0m0.588s
-user	0m0.312s
-sys	0m0.151s
-time ./test_queue_h +RTS -A500m -H500m -smyout.txt -RTS < war-and-peace.txt
-eBooks.
-
 real	0m0.589s
-user	0m0.329s
-sys	0m0.129s
+user	0m0.301s
+sys	0m0.158s
+time ./test_queue_h +RTS -A500m -H500m -smyout.txt -RTS < war-and-peace.txt
+eBooks.
+
+real	0m0.595s
+user	0m0.317s
+sys	0m0.142s
+time ./test_queue_h +RTS -A500m -H500m -smyout.txt -RTS < war-and-peace.txt
+eBooks.
+
+real	0m0.623s
+user	0m0.314s
+sys	0m0.144s
 -----------------------------
 OCaml warray no GC
 
-export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_warray_c
+bash -c "export OCAMLRUNPARAM='s=500M,h=500M,v=0x1ff'; time ./test_warray_c"
+Initial minor heap size: 1048576k bytes
+Initial major heap size: 2048000k bytes
+Initial space overhead: 80%
+Initial max overhead: 500%
+Initial heap increment: 496k bytes
+Initial allocation policy: 0
 True
 
-real	0m0.615s
-user	0m0.604s
-sys	0m0.004s
-export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_warray_c
+real	0m0.559s
+user	0m0.522s
+sys	0m0.006s
+bash -c "export OCAMLRUNPARAM='s=500M,h=500M,v=0x1ff'; time ./test_warray_c"
+Initial minor heap size: 1048576k bytes
+Initial major heap size: 2048000k bytes
+Initial space overhead: 80%
+Initial max overhead: 500%
+Initial heap increment: 496k bytes
+Initial allocation policy: 0
 True
 
-real	0m0.626s
-user	0m0.614s
-sys	0m0.005s
-export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_warray_c
+real	0m0.534s
+user	0m0.520s
+sys	0m0.008s
+bash -c "export OCAMLRUNPARAM='s=500M,h=500M,v=0x1ff'; time ./test_warray_c"
+Initial minor heap size: 1048576k bytes
+Initial major heap size: 2048000k bytes
+Initial space overhead: 80%
+Initial max overhead: 500%
+Initial heap increment: 496k bytes
+Initial allocation policy: 0
 True
 
-real	0m0.618s
-user	0m0.607s
-sys	0m0.004s
+real	0m0.533s
+user	0m0.519s
+sys	0m0.008s
 ----------------------------
 OCaml queue no GC
 
-export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_queue_c < war-and-peace.txt
+bash -c "export OCAMLRUNPARAM='s=500M,h=500M,v=0x1ff'; time ./test_queue_c < war-and-peace.txt"
+Initial minor heap size: 1048576k bytes
+Initial major heap size: 2048000k bytes
+Initial space overhead: 80%
+Initial max overhead: 500%
+Initial heap increment: 496k bytes
+Initial allocation policy: 0
 eBooks.
 
 
-real	0m0.627s
-user	0m0.340s
-sys	0m0.035s
-export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_queue_c < war-and-peace.txt
+real	0m0.373s
+user	0m0.114s
+sys	0m0.029s
+bash -c "export OCAMLRUNPARAM='s=500M,h=500M,v=0x1ff'; time ./test_queue_c < war-and-peace.txt"
+Initial minor heap size: 1048576k bytes
+Initial major heap size: 2048000k bytes
+Initial space overhead: 80%
+Initial max overhead: 500%
+Initial heap increment: 496k bytes
+Initial allocation policy: 0
 eBooks.
 
 
-real	0m0.608s
-user	0m0.336s
-sys	0m0.037s
-export OCAMLRUNPARAM 's=500M,h=500M,v=0x1ff'; time ./test_queue_c < war-and-peace.txt
+real	0m0.378s
+user	0m0.121s
+sys	0m0.024s
+bash -c "export OCAMLRUNPARAM='s=500M,h=500M,v=0x1ff'; time ./test_queue_c < war-and-peace.txt"
+Initial minor heap size: 1048576k bytes
+Initial major heap size: 2048000k bytes
+Initial space overhead: 80%
+Initial max overhead: 500%
+Initial heap increment: 496k bytes
+Initial allocation policy: 0
 eBooks.
 
 
-real	0m0.622s
-user	0m0.339s
-sys	0m0.054s
+real	0m0.397s
+user	0m0.104s
+sys	0m0.033s
 ----------------------------
