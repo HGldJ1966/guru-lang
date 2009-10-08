@@ -21,9 +21,7 @@ main = do
 
   putStrLn (let x = (enqueue_all w q) in
             let y = (requeue_all (Data.Sequence.length x) x r) in
-            let z = (requeue_all (Data.Sequence.length y) y s) in
-            let aa = (requeue_all (Data.Sequence.length z) z t) in
-              (index aa 1))
+              (index y 1))
 {-
   putStrLn (let x = (enqueue_all w q) in
             (index x ((Data.Sequence.length x) - 1)))
