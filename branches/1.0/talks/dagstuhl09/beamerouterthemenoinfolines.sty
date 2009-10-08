@@ -11,13 +11,28 @@
 %\setbeamercolor*{title in head/foot}{parent=palette secondary}
 %\setbeamercolor*{date in head/foot}{parent=palette primary}
 
-%\setbeamercolor*{author in head/foot}{fg=blue,bg=white}
-%\setbeamercolor*{title in head/foot}{fg=blue,bg=white}
-%\setbeamercolor*{date in head/foot}{fg=blue,bg=white}
+\setbeamercolor*{author in head/foot}{fg=blue,bg=white}
+\setbeamercolor*{title in head/foot}{fg=blue,bg=white}
+\setbeamercolor*{date in head/foot}{fg=blue,bg=white}
 
 %\setbeamercolor*{section in head/foot}{parent=palette tertiary}
 %\setbeamercolor*{subsection in head/foot}{parent=palette primary}
 
+\defbeamertemplate*{footline}{infolines theme}
+{
+  \leavevmode%
+  \hbox{%
+  \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{author in head/foot}%
+\ 
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
+    \usebeamerfont{title in head/foot}\ 
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,right]{date in head/foot}%
+    \insertframenumber{} / \inserttotalframenumber\hspace*{2ex} 
+  \end{beamercolorbox}}%
+  \vskip0pt%
+}
 
 \defbeamertemplate*{headline}{infolines theme}
 {

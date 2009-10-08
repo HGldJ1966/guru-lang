@@ -1,8 +1,8 @@
 GHC=ghc-6.10.4
-#GCC=/usr/mygcc/bin/gcc
+GCC=gcc
 
 test_queue_g:	test_queue_g.c
-	$(GCC) -O2 -w -o test_queue_g test_queue_g.c
+	$(GCC) -O4 -w -o test_queue_g test_queue_g.c
 
 test_queue_gd:	test_queue_g.c
 	$(GCC) -O0 -w -ggdb -o test_queue_gd test_queue_g.c
@@ -14,18 +14,18 @@ test_queue_c:	test_queue_c.ml
 	ocamlopt test_queue_c.ml -o test_queue_c
 
 test_queue_h:	test_queue_h.hs 
-	$(GHC) -O2 -o test_queue_h --make test_queue_h.hs
+	$(GHC) -O4 -o test_queue_h --make test_queue_h.hs
 
 test_warray_g:	test_warray_g.g 
 	../../../bin/guru test_warray_g.g
-	$(GCC) -O2 -w -o test_warray_g test_warray_g.c
+	$(GCC) -O4 -w -o test_warray_g test_warray_g.c
 
 test_warray_gp:	test_warray_g.g 
 	../../../bin/guru test_warray_g.g
-	$(GCC) -O2 -w -pg -o test_warray_gp test_warray_g.c
+	$(GCC) -O4 -w -pg -o test_warray_gp test_warray_g.c
 
 test_warray_h:   test_warray_h.hs 
-	$(GHC) -O2 -o test_warray_h --make test_warray_h.hs
+	$(GHC) -O4 -o test_warray_h --make test_warray_h.hs
 
 test_warray_c:   test_warray_c.ml 
 	ocamlopt -o test_warray_c test_warray_c.ml
