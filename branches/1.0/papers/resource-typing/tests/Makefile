@@ -14,7 +14,7 @@ test_queue_c:	test_queue_c.ml
 	ocamlopt test_queue_c.ml -o test_queue_c
 
 test_queue_h:	test_queue_h.hs 
-	$(GHC) -O4 -o test_queue_h --make test_queue_h.hs
+	$(GHC) -O -o test_queue_h --make test_queue_h.hs
 
 test_warray_g:	test_warray_g.g 
 	../../../bin/guru test_warray_g.g
@@ -25,7 +25,7 @@ test_warray_gp:	test_warray_g.g
 	$(GCC) -O4 -w -pg -o test_warray_gp test_warray_g.c
 
 test_warray_h:   test_warray_h.hs 
-	$(GHC) -O4 -o test_warray_h --make test_warray_h.hs
+	$(GHC) -O -o test_warray_h --make test_warray_h.hs
 
 test_warray_c:   test_warray_c.ml 
 	ocamlopt -o test_warray_c test_warray_c.ml
@@ -41,6 +41,11 @@ clean:
 test_warray: test_warray_h test_warray_c test_warray_g
 
 test_queue: test_queue_h test_queue_c test_queue_g 
+
+compile: test_warray test_queue 
+
+files: 
+	@echo test_queue_h test_queue_c test_queue_g test_warray_h test_warray_c test_warray_g
 
 run_warray: test_warray
 	@echo "----------------------------"
@@ -113,4 +118,3 @@ run_extra:	test_warray test_queue
 
 run:	run_warray run_queue
 run2:	run run_extra
-
