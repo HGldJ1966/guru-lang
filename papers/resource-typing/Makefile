@@ -1,9 +1,9 @@
-stump-austin-deters.pdf: stump-austin-deters.tex Makefile
-	@rm -f stump-austin-deters.dvi
-	@rm -f stump-austin-deters.aux
-	latex stump-austin-deters
-	bibtex stump-austin-deters
-	latex stump-austin-deters
-	pdflatex stump-austin-deters
+stump-austin.pdf: stump-austin.tex Makefile
+	@rm -f stump-austin.dvi
+	@rm -f stump-austin.aux
+	latex stump-austin
+	bibtex stump-austin
+	latex stump-austin
+	pdflatex stump-austin
 
 
