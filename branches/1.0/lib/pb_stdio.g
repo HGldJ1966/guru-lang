@@ -1,63 +1,62 @@
 Include trusted "stdio.g".
 
 % define a type for "pushback stdio"
-Define pb_in_t : type := <ulist <pair char stdio_t>>.
+Inductive pb_stdio_t : type :=
+	mk_pb_stdio : Fun(s:string)(#unique_point stdio:stdio_t) . #unique pb_stdio_t.
 
-Define pb_inn := (unil <pair char stdio_t>).
-Define pb_inc := (ucons <pair char stdio_t>).
+Define pb_stdio := (mk_pb_stdio stringn stdio).
 
-Define primitive pb_in : #unique_point pb_in_t <<END
-  #define gpb_in 0
-END.
-
-Define pb_in_app : Fun(! #unique_point l : pb_in_t)(! #unique_point sin : stdio_t)(c : char) . pb_in_t :=
-	fun(! #unique_point l : pb_in_t)(! #unique_point sin : stdio_t)(c : char).
-		(ucons <pair char stdio_t> (mkpair char stdio_t c sin) l).
-
-Define pb_in_rm : Fun(! #unique_point l : pb_in_t) . pb_in_t :=
-	fun(! #unique_point l : pb_in_t).
-	match l with
-		unil _ => l
-	|	ucons _ p l' => l'
+Define pb_cur_char : Fun(! #unique pb_stdio : pb_stdio_t) . #untracked char :=
+	fun(! #unique pb_stdio : pb_stdio_t).
+	match pb_stdio with
+		mk_pb_stdio l s =>
+		match l with
+			unil _ => (cur_char s)
+		|	ucons _ a l' => a
+		end
 	end.
 
-Define pb_cur_char : Fun(! #unique_point l : pb_in_t)(! #unique_point sin : stdio_t) . #untracked char :=
-	fun(! #unique_point l : pb_in_t)(! #unique_point sin : stdio_t).
-	match l with
-		unil _ => (cur_char sin)
-	|	ucons _ p l' => let l = (pb_in_rm l) in (fst char stdio_t p)
+Define pb_skip : Fun(! #unique pb_stdio : pb_stdio_t) . #unique pb_stdio_t :=
+	fun(! #unique pb_stdio : pb_stdio_t).
+	match pb_stdio with
+		mk_pb_stdio l s =>
+		match l with
+			unil _ => pb_stdio
+		|	ucons _ a l' => (mk_pb_stdio l' s)
+		end
 	end.
 
-% like skip?
-Define pb_next_char : Fun(#unique_point l : pb_in_t) . #unique_point pb_in_t :=
-	fun(#unique_point l : pb_in_t).
-	match l with
-		unil _ => l
-	|	ucons _ p l' => l'
+Define pb_skip2 : Fun(n : nat)(! #unique pb_stdio : pb_stdio_t) . #unique pb_stdio_t :=
+	fun pb_skip2(n : nat)(! #unique pb_stdio : pb_stdio_t): #unique pb_stdio_t.
+	match n with
+		Z => pb_stdio
+	|	S n' => (pb_skip2 n' (pb_skip pb_stdio))
 	end.
 
-Define pb_pushback : Fun(! #unique_point l : pb_in_t)(! #unique_point sin : stdio_t)(c : char) . pb_in_t :=
-	fun(! #unique_point l : pb_in_t)(! #unique_point sin : stdio_t)(c : char).
-		(pb_in_app l sin c).
-
-%-
-%Another version
-
-Define pb_cur_char : Fun(l : pb_in_t)(sin : stdio_t) . <pair char pb_in_t> :=
-        fun(l : pb_in_t)(sin : stdio_t).
-        match l with
-                unil _ => (mkpair char pb_in_t (cur_char sin) l)
-        |       ucons _ p l' => (mkpair char pb_in_t (fst char stdio_t p) l')
-        end.
-
-Define pb_next_char : Fun(l : pb_in_t)(sin : stdio_t) . <pair char pb_in_t> :=
-	fun(l : pb_in_t)(sin : stdio_t).
-	match l with
-		unil _ => (mkpair char pb_in_t (cur_char (next_char sin)) l)
-	|	ucons _ p l' => (pb_cur_char l' sin)
+Define pb_reset : Fun(! #unique pb_stdio : pb_stdio_t) . #unique pb_stdio_t :=
+	fun(! #unique pb_stdio : pb_stdio_t).
+	match pb_stdio with
+		mk_pb_stdio l s =>	(mk_pb_stdio stringn s)
 	end.
 
-Define pb_pushback : Fun(c : char)(sin : stdio_t)(l : pb_in_t) . pb_in_t :=
-	fun(c : char)(sin : stdio_t)(l : pb_in_t).
-		(pb_in_app c sin l).
--%
+Define pb_next_char : Fun(! #unique pb_stdio : pb_stdio_t) . #untracked char :=
+	fun(! #unique pb_stdio : pb_stdio_t).
+	match pb_stdio with
+		mk_pb_stdio l s =>
+		match l with
+			unil _ => (pb_cur_char (mk_pb_stdio l (next_char s)))
+		|	ucons _ a l' => (pb_cur_char (mk_pb_stdio l' s))
+		end
+	end.
+
+Define pb_pushback : Fun(c : char)(! #unique pb_stdio : pb_stdio_t) . #unique pb_stdio_t :=
+	fun(c : char)(! #unique pb_stdio : pb_stdio_t).
+	match pb_stdio with
+		mk_pb_stdio l s => (mk_pb_stdio (ucons char c l) s)
+	end.
+
+Define pb_pushback2 : Fun(str : string)(! #unique pb_stdio : pb_stdio_t) . #unique pb_stdio_t :=
+	fun(str : string)(! #unique pb_stdio : pb_stdio_t).
+	match pb_stdio with
+		mk_pb_stdio l s => (mk_pb_stdio (string_app str l) s)
+	end.
