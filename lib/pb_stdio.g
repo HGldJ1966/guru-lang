@@ -2,7 +2,7 @@ Include trusted "stdio.g".
 
 % define a type for "pushback stdio"
 Inductive pb_stdio_t : type :=
-	mk_pb_stdio : Fun(s:string)(#unique_point stdio:stdio_t) . #unique pb_stdio_t.
+	mk_pb_stdio : Fun(#owned s:string)(#unique_point stdio:stdio_t) . #unique pb_stdio_t.
 
 Define pb_stdio := (mk_pb_stdio stringn stdio).
 
