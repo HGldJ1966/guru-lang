@@ -148,27 +148,29 @@ report~\cite{Xian2008,hertz+05}.
 This paper shows how to combine the expressive power of dependent
 types with linear types to define imperative abstractions for
 different kinds of resources, without the need for garbage collection.
-This is carried out in the context of the Guru verified-programming
-language, a dependently typed pure functional programming language.
-Resources are created and consumed explicitly.  The type system rules
-out memory errors such as accessing deallocated or uninitialized
-memory by ensuring that each resource is consumed exactly once.  The
-definition of a resource is flexible, so that resource consumption
-need not correspond to memory deallocation.  This flexibility is
-achieved through a \textbf{resource typing framework}, in which
-different resource management schemes can be defined by a set of
-primitive types, along with operations on those types.  The definition
-of a term-level primitive consists of its type, an optional pure
-functional term which models the primitive, and (imperative) C code
-which the Guru compiler will use for the definition of the primitive.
-The connection between this C code and the pure functional model (if
-supplied) must be trusted.  The resource typing framework -- in
-particular, its linear types -- helps ensure that the abstraction is
-used only in ways where the behaviors of the imperative implementation
-and functional model coincide.  But since the number of lines of C
-code required to implement, say, mutable arrays is very small (on the
-order of tens of lines), we contend that this is a reasonable
-compromise between trustedness and the burden of verification.
+Combined linear and dependent types are potent verification tools
+(cf.~\cite{swamy+09,zhu+05}).  This is carried out in the context of
+the Guru verified-programming language, a dependently typed pure
+functional programming language.  Resources are created and consumed
+explicitly.  The type system rules out memory errors such as accessing
+deallocated or uninitialized memory by ensuring that each resource is
+consumed exactly once.  The definition of a resource is flexible, so
+that resource consumption need not correspond to memory deallocation.
+This flexibility is achieved through a \textbf{resource typing
+  framework}, in which different resource management schemes can be
+defined by a set of primitive types, along with operations on those
+types.  The definition of a term-level primitive consists of its type,
+an optional pure functional term which models the primitive, and
+(imperative) C code which the Guru compiler will use for the
+definition of the primitive.  The connection between this C code and
+the pure functional model (if supplied) must be trusted.  The resource
+typing framework -- in particular, its linear types -- helps ensure
+that the abstraction is used only in ways where the behaviors of the
+imperative implementation and functional model coincide.  But since
+the number of lines of C code required to implement, say, mutable
+arrays is very small (on the order of tens of lines), we contend that
+this is a reasonable compromise between trustedness and the burden of
+verification.
 
 We begin with an overview of resource typing in \textsc{Guru},
 focusing on several example resource types.  We then consider several

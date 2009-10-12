@@ -1,3 +1,6 @@
+pb_stdio:
+	time ../bin/guru pb_stdio.g
+
 queue2:
 	time ../bin/guru queue2.g
 

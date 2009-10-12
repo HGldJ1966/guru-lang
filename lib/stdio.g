@@ -16,7 +16,7 @@ Define primitive stdio : #unique_point stdio_t <<END
   #define gstdio 0
 END.
 
-Define primitive cur_char : Fun(! #unique_point x:stdio_t). #untracked char := 
+Define primitive cur_char2 : Fun(^ #unique_owned_point x:stdio_t). #untracked char :=
   fun(x:stdio_t): char.
     match (fst string string x) with
       unil _ => Cc0
@@ -26,7 +26,7 @@ Define primitive cur_char : Fun(! #unique_point x:stdio_t). #untracked char :=
 
   void *curc = 0;
 
-  inline int gcur_char(void *s) {
+  inline int gcur_char2(void *s) {
      if (curc == 0) {
 	int tmp = fgetc(stdin);
 	curc = (tmp == -1 ? 0 : tmp);
@@ -35,6 +35,11 @@ Define primitive cur_char : Fun(! #unique_point x:stdio_t). #untracked char :=
   }
 
 END.
+
+Define cur_char : Fun(! #unique_point x:stdio_t). #untracked char := 
+  fun(! #unique_point x:stdio_t): #untracked char.
+    (cur_char2 (inspect_unique_point stdio_t x)).
+    
 
 Define primitive next_char := 
   fun(#unique_point x:stdio_t): #unique_point stdio_t.
