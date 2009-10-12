@@ -1,3 +1,8 @@
+test-pb_stdio:	test-pb_stdio.g Makefile
+	../bin/guru test-pb_stdio.g
+	gcc -O2 -w -o test-pb_stdio test-pb_stdio.c
+	echo "c" | ./test-pb_stdio
+
 test-queue:	test-queue.c
 	gcc -O2 -w -o test-queue test-queue.c
 	time ./test-queue < war-and-peace.txt || echo "problem"
