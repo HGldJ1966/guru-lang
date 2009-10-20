@@ -284,3 +284,9 @@ Define word_clear_read :
           by [vec_update_get bool wordlen w (to_nat wordlen i) ff u] end
   .
 
+Define primitive word_mult: Fun(x y:word). word :=
+  fun(x y:word) . x
+  <<END
+  inline int gword_mult(unsigned int x, unsigned int y) { return x * y; }
+END.
+
