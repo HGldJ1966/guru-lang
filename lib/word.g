@@ -290,3 +290,9 @@ Define primitive word_mult: Fun(x y:word). word :=
   inline int gword_mult(unsigned int x, unsigned int y) { return x * y; }
 END.
 
+Define primitive word_or: Fun(x y:word). word :=
+  fun(x y:word) . (bv_or wordlen x y)
+  <<END
+  inline int gword_or(unsigned int x, unsigned int y) { return x | y; }
+END.
+
