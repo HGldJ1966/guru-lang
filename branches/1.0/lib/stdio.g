@@ -4,7 +4,7 @@ Include trusted "char.g".
 Include "pair.g".
 Include "unit.g".
 Include trusted "string.g".
-Include "unique.g".
+Include "unique_owned.g".
 
 %Set "print_parsed".
 
