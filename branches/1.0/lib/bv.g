@@ -712,3 +712,22 @@ Define bv_shift: Fun(x:nat)(spec n:nat)(l:<bv (S n)>). <bv (S n)> :=
                                                   cong (S *) [plusZ n])
   end.
 
+Define bv_or : Fun(spec n:nat)(l1:<bv n>)(l2:<bv n>).<bv n> :=
+  fun bv_or(spec n:nat)(l1:<bv n>)(l2:<bv n>) : <bv n>.
+  match l1 with
+    vecn _ => cast (vecn bool) by symm l1_Eq
+  | vecc _ n' b1 l1' =>
+      match l2 with
+        vecn _ => abort <bv n>
+      | vecc _ n'' b2 l2' =>
+          % have: <bv n> = <bv (S n')>
+          % have: <bv n> = <bv (S n'')>
+          abbrev p1 = inj <bv *> l1_Eq in % n = (S n')
+          abbrev p2 = inj <bv *> l2_Eq in % n = (S n'')
+          abbrev p3 = inj (S *) trans symm p2 p1 in
+          let l2'' = cast l2' by cong <bv *> p3 in
+          cast (vecc bool n' (or b1 b2) (bv_or n' l1' l2'')) by
+            cong <bv *> symm p1
+      end
+  end.
+
