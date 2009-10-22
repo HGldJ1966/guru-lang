@@ -1,8 +1,8 @@
 Include "../lib/pb_stdio.g".
 
 Define test := 
-%	let pb_stdio = (pb_skip2 (S Z) pb_stdio) in
-	let pb_stdio = (pb_reset pb_stdio) in
+	let pb_stdio = (pb_skip2 (S Z) pb_stdio) in
+%	let pb_stdio = (pb_reset pb_stdio) in
 	(pb_print_char pb_stdio (pb_cur_char pb_stdio)).
 %-	let c1 = (pb_cur_char pb_stdio) in
 	let c2 = (pb_cur_char pb_stdio) in
