@@ -1247,9 +1247,15 @@ public class Parser extends ParserBase {
 		handleError("Unexpected end of input parsing a type"
 			    +" application.");
         }
-        
+
         e.X = toExprArray(xList);
         
+	if (e.X.length == 0) {
+	    String headstr = e.head.toString(ctxt);
+	    handleError("A type application is used without any arguments to the head \""
+			+headstr+"\".\n\nThe correct notation is just \""+headstr+"\", not \"<"+headstr+">\".");
+	}
+
         return e;
     }
 
