@@ -6,7 +6,7 @@ Include "stdio.g".
 Inductive pb_stdio_t : type :=
 	mk_pb_stdio : Fun(s:string)(#unique_point stdio:stdio_t) . #unique pb_stdio_t.
 
-Define pb_stdio := (mk_pb_stdio stringn stdio).
+Define pb_stdio := (mk_pb_stdio (inc string stringn) stdio).
 
 Define pb_cur_char2 : Fun(^ #unique_owned pb_stdio : pb_stdio_t) . #untracked char :=
 	fun(^ #unique_owned pb_stdio : pb_stdio_t).
@@ -74,7 +74,7 @@ Define pb_pushback :=
 	end.
 
 Define pb_pushback2 :=
-	fun(str : string)(#unique pb_stdio : pb_stdio_t) : #unique pb_stdio_t.
+	fun(^#owned str : string)(#unique pb_stdio : pb_stdio_t) : #unique pb_stdio_t.
 	match pb_stdio with
 		mk_pb_stdio l s => (mk_pb_stdio (string_app str l) s)
 	end.

@@ -151,11 +151,14 @@ public class App extends Expr {
 	Sym[] prev = new Sym[args.length];
 	for (int i = 0, iend = args.length; i < iend; i++) {
 	    Position pp = ctxt.wasDropped(rs[i]);
-	    if (pp != null) 
-		simulateError(ctxt,"A reference that was already consumed is being used later.\n\n"
-			      +"1. "+rs[i].refString(ctxt)
-			      +"\n\n2. used again by: "+toString(ctxt)
-			      +", at "+pos.toString()+"\n");
+	    if (pp != null) {
+		String s = ("A reference that was already consumed is being used later.\n\n"
+			    +"1. ");
+		s += (rs[i].refString(ctxt)
+		      +"\n\n2. used again by: "+toString(ctxt));
+		s+=", at "+pos.toString()+"\n";
+		simulateError(ctxt,s);
+	    }
 	    if ((f.consumps[i] == FunBase.CONSUMED_RET_OK || f.consumps[i] == FunBase.CONSUMED_NO_RET) 
 		&& f.types[i].consumable()) {
 		// this is a reference we are supposed to consume
