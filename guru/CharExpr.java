@@ -51,7 +51,9 @@ public class CharExpr extends Expr {
 	    args[j] = toBitExpr(ctxt, c & mask);
 	    mask = mask * 2;
 	}
-	return new TermApp(_const(ctxt,"mkchar"),args);
+	Expr ret = new TermApp(_const(ctxt,"mkchar"),args);
+	ret.pos = pos;
+	return ret;
     }
 
 

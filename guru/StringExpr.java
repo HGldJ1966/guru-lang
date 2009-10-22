@@ -43,7 +43,9 @@ public class StringExpr extends Expr {
 	    args[j] = toBitExpr(ctxt, c & mask);
 	    mask = mask * 2;
 	}
-	return new TermApp(_const(ctxt,"mkchar"),args);
+	Expr ret = new TermApp(_const(ctxt,"mkchar"),args);
+	ret.pos = pos;
+	return ret;
     }
 
 
@@ -71,6 +73,7 @@ public class StringExpr extends Expr {
 	char[] a = val.toCharArray();
 	Expr ret = new TermApp(_const(ctxt,"inc"), // _const(ctxt,"string"), 
 			       _const(ctxt,"stringn"));
+	ret.pos = pos;
 	String s = "";
 	for (int i = 0; i < a.length; i++) {
 	    if (a[i] == '\\') {
@@ -93,9 +96,11 @@ public class StringExpr extends Expr {
 	}
 
 	a = s.toCharArray();
-	for (int i = a.length - 1, iend = 0; i >= iend; i--)
+	for (int i = a.length - 1, iend = 0; i >= iend; i--) {
 	    ret = new TermApp(_const(ctxt,"stringc"),
 			      toCharExpr(ctxt,a[i]), ret);
+	    ret.pos = pos;
+	}
 	return ret;
     }
 

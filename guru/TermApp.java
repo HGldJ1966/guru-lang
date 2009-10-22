@@ -59,8 +59,11 @@ public class TermApp extends App{
 
     public Expr subst(Expr e, Expr x) {
 	App s = (App)super.subst(e,x);
-	if (s != this)
-	    return new TermApp(s, specarg);
+	if (s != this) {
+	    Expr ret = new TermApp(s, specarg);
+	    ret.pos = pos;
+	    return ret;
+	}
 	return this;
     }
     
@@ -79,13 +82,20 @@ public class TermApp extends App{
 	    nX2[i-n] = X[i];
 	    specarg2[i-n] = specarg[i];
 	}
-	return new TermApp(new TermApp(head, nX1, specarg1), nX2, specarg2);
+	TermApp ret = new TermApp(head, nX1, specarg1);
+	ret.pos = pos;
+	ret = new TermApp(ret, nX2, specarg2);
+	ret.pos = pos;
+	return ret;
     }
 
     public Expr do_rewrite(Context ctxt, Expr e, Expr x, Stack boundVars) {
 	App s = (App)super.do_rewrite(ctxt,e,x,boundVars);
-	if (s != this)
-	    return new TermApp(s, specarg);
+	if (s != this) {
+	    Expr ret = new TermApp(s, specarg);
+	    ret.pos = pos;
+	    return ret;
+	}
 	return this;
     }
 
@@ -126,7 +136,9 @@ public class TermApp extends App{
 	}
 
 	if (changed || h != head){
-	    return new TermApp(h, X3);
+	    Expr ret = new TermApp(h, X3);
+	    ret.pos = pos;
+	    return ret;
 	}
 	return this;
     }
@@ -174,9 +186,12 @@ public class TermApp extends App{
 		specarg2[i+eXlen] = specarg[i];
 	    }
 	    ret = new TermApp(e.head, X2, specarg2);
+	    ret.pos = pos;
 	}
-	else if (h != head)
+	else if (h != head) {
 	    ret = new TermApp(h, X, specarg);
+	    ret.pos = pos;
+	}
 
 	if (ctxt.getFlag("debug_spine_form")) {
 	    ret.print(ctxt.w,ctxt);
@@ -252,8 +267,11 @@ public class TermApp extends App{
 
     public Expr evalStep(Context ctxt) {
 	Expr h = head.evalStep(ctxt);
-	if (h != head)
-	    return new TermApp(h, X);
+	if (h != head) {
+	    Expr ret = new TermApp(h, X);
+	    ret.pos = pos;
+	    return ret;
+	}
 	if (h.construct == ABORT)
 	    return ctxt.abort;
 	
@@ -264,7 +282,9 @@ public class TermApp extends App{
 	    if (X2[i] != X[i]) {
 		for (int j = i+1; j < iend; j++)
 		    X2[j] = X[j];
-		return new TermApp(h, X2);
+		Expr ret = new TermApp(h, X2);
+		ret.pos = pos;
+		return ret;
 	    }
 	    else {
 		if (X[i].construct == ABORT)
@@ -292,7 +312,9 @@ public class TermApp extends App{
 	    Expr[] X3 = new Expr[iend];
 	    for (int i = 0; i < iend; i++)
 		X3[i] = X2[i+1];
-	    return new TermApp(hh, X3);
+	    Expr ret = new TermApp(hh, X3);
+	    ret.pos = pos;
+	    return ret;
 	}
 	return this;
     }
@@ -324,7 +346,9 @@ public class TermApp extends App{
 	    for (int j = 0; j <= i; j++) {
 		newX[j] = X[j];
 	    }
-	    if (e.defEqNoAnno(ctxt, new TermApp(head, newX), true))
+	    Expr tmp = new TermApp(head, newX);
+	    tmp.pos = pos;
+	    if (e.defEqNoAnno(ctxt, tmp, true))
 		return true;
 	}
 	return false;
@@ -355,9 +379,11 @@ public class TermApp extends App{
 	if (changed) {
 	    if (nX.size() == 0)
 		ret = head;
-	    else
+	    else {
 		ret = new TermApp(head, Parser.toExprArray(nX),
 				  Parser.toBooleanArray(no));
+		ret.pos = pos;
+	    }
 	}
 	
 	if (ctxt.getFlag("debug_drop_noncomp")) {

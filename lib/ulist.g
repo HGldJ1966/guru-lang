@@ -12,10 +12,16 @@ Define ufoldr : Fun(A B C: type)(^#owned cookie:C)
   fun foldr(A B C: type)(^#owned cookie:C)
            (fcn: Fun(^#owned cookie:C)(#untracked x:A)(y:B).B)
            (b:B)(^#owned l : <ulist A>):B.
-    match l with
-      unil A' => do (consume_owned C cookie) b end
-   | ucons A' a' l' => (fcn cookie a' 
-                         (foldr A B C (clone_owned C cookie) fcn b l'))
+    match ! l with
+      unil A' => do (consume_owned <ulist A> l)
+                    (consume_owned C cookie)
+                    b
+                 end
+   | ucons A' a' l' => 
+     let ret = (fcn cookie a' (foldr A B C (clone_owned C cookie) fcn b l')) in
+     do (consume_owned <ulist A> l)
+        ret
+     end
    end. 
 
 Define ufoldrTot : Forall(A B C : type)

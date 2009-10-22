@@ -79,15 +79,20 @@ public class Size extends Expr {
 	
 	if (t.construct == FUN_TERM)
 	    return _const(ctxt,"Z");
-	if (t.construct == CONST)
-	    return new TermApp(_const(ctxt,"S"), _const(ctxt,"Z"));
+	if (t.construct == CONST) {
+	    Expr ret = new TermApp(_const(ctxt,"S"), _const(ctxt,"Z"));
+	    ret.pos = pos;
+	    return ret;
+	}
 	if (t.construct == TERM_APP) {
 	    TermApp a = (TermApp)((TermApp)t).spineForm(ctxt,true,true,true);
 	    Expr ret = _const(ctxt,"Z");
 	    Expr plus = _const(ctxt,"plus");
 	    for (int i = 0, iend = a.X.length; i < iend; i++)
 		ret = new TermApp(plus,ret,new Size(a.X[i]));
-	    return new TermApp(_const(ctxt,"S"), ret);
+	    ret = new TermApp(_const(ctxt,"S"), ret);
+	    ret.pos = pos;
+	    return ret;
 	}
 
 	// this could happen if t is a stuck term
