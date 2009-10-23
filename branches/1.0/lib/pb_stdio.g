@@ -43,7 +43,7 @@ Define pb_skip :=
 	match pb_stdio with
 		mk_pb_stdio l s =>
 		match l with
-			unil _ => (mk_pb_stdio l (next_char s))
+			unil _ => (mk_pb_stdio (inc string stringn) (next_char s))
 		|	ucons _ a l' => (mk_pb_stdio l' s)
 		end
 	end.
@@ -55,17 +55,17 @@ Define pb_skip2 :=
 	|	S n' => (pb_skip2 n' (pb_skip pb_stdio))
 	end.
 
-%-
 Define pb_reset :=
 	fun(#unique pb_stdio : pb_stdio_t) : #unique pb_stdio_t.
 	match pb_stdio with
-		mk_pb_stdio l s =>	(mk_pb_stdio stringn s)
+		mk_pb_stdio l s =>	do (dec string l)
+			(mk_pb_stdio (inc string stringn) s)
+			end
 	end.
 
 Define pb_next_char :=
 	fun(#unique pb_stdio : pb_stdio_t) : #untracked char.
 	(pb_cur_char (pb_skip pb_stdio)).
--%
 
 Define pb_pushback :=
 	fun(c : char)(#unique pb_stdio : pb_stdio_t) : #unique pb_stdio_t.
@@ -74,7 +74,7 @@ Define pb_pushback :=
 	end.
 
 Define pb_pushback2 :=
-	fun(^#owned str : string)(#unique pb_stdio : pb_stdio_t) : #unique pb_stdio_t.
+	fun(str : string)(#unique pb_stdio : pb_stdio_t) : #unique pb_stdio_t.
 	match pb_stdio with
-		mk_pb_stdio l s => (mk_pb_stdio (string_app str l) s)
+		mk_pb_stdio l s => (mk_pb_stdio (string_app1 str l) s)
 	end.
