@@ -1,16 +1,28 @@
 Include "../lib/pb_stdio.g".
 
 Define test := 
+%	Bug case one: leaking
+	let c = (pb_next_char pb_stdio) in
+	(pb_print_char pb_stdio c).
+
+%	Case Two: works fine
+%	let pb_stdio = (pb_skip pb_stdio) in
+%	let c = (pb_cur_char pb_stdio) in
+%	(pb_print_char pb_stdio c).
+
+
 %	let pb_stdio = (pb_skip2 (S Z) pb_stdio) in
 %	let pb_stdio = (pb_pushback (pb_cur_char pb_stdio) pb_stdio) in
-	let pb_stdio = (pb_reset pb_stdio) in
-	let pb_stdio = (pb_pushback2 "xyz" pb_stdio) in
-	let pb_stdio = (pb_skip pb_stdio) in
+%	let pb_stdio = (pb_reset pb_stdio) in
+%	let pb_stdio = (pb_pushback2 "xyz" pb_stdio) in
+%	let pb_stdio = (pb_skip pb_stdio) in
 %-		match pb_stdio with
 			mk_pb_stdio l s => (print_string s l)
 		end.
 -%
-	(pb_print_char pb_stdio (pb_cur_char pb_stdio)).
+%	let pb_stdio = (pb_skip pb_stdio) in
+%	let c = (pb_next_char pb_stdio) in
+%	(pb_print_char pb_stdio c).
 %-	let c1 = (pb_cur_char pb_stdio) in
 	let c2 = (pb_cur_char pb_stdio) in
 	let c3 = (pb_cur_char (pb_pushback c1 (pb_pushback c2 pb_stdio))) in
