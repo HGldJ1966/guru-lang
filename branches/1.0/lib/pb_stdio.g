@@ -63,9 +63,20 @@ Define pb_reset :=
 			end
 	end.
 
+% A little problem here:
+% When I use Define test :=
+%	let pb_stdio = (pb_skip pb_stdio) in
+%	let c = (pb_cur_char pb_stdio) in
+%	(pb_print_char pb_stdio c).
+% it works fine;
+% When I use Define test :=
+%	let c = (pb_next_char pb_stdio) in
+%	(pb_print_char pb_stdio c).
+% Carraway complains the error.
 Define pb_next_char :=
 	fun(#unique pb_stdio : pb_stdio_t) : #untracked char.
-	(pb_cur_char (pb_skip pb_stdio)).
+	let pb_stdio = (pb_skip pb_stdio) in
+		(pb_cur_char pb_stdio).
 
 Define pb_pushback :=
 	fun(c : char)(#unique pb_stdio : pb_stdio_t) : #unique pb_stdio_t.
