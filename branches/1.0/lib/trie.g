@@ -113,7 +113,7 @@ Inductive trie_interp_i1 : Fun(A:type).type :=
 
 Define trie_interp_h1 :=
   fun(spec A':type)
-     (owned cookie:<trie_interp_i1 A'>)(owned p:<pair string A'>).
+     (#owned cookie:<trie_interp_i1 A'>)(#owned p:<pair string A'>).
     match cookie with
      mk_trie_interp_i1 A'' c =>
        match p with
@@ -136,7 +136,7 @@ Inductive trie_interp_i2 : Fun(A:type).type :=
 
 Define trie_interp_h2 :=
   fun(spec A:type)(owned cookie:<trie_interp_i2 A>)(c:char)
-     (unique_owned t:<trie A>)(p:<list <pair string A>>).
+     (#unique_owned t:<trie A>)(p:<list <pair string A>>).
     match cookie with
       mk_trie_interp_i2 A' r =>
         abbrev T' = <pair string A'> in
@@ -235,7 +235,7 @@ Define trie_interp_h2_tot
    end.
     
 Define trie_interp :=
-  fun trie_interp(A:type)(unique_owned t:<trie A>) : <list <pair string A>> .
+  fun trie_interp(A:type)(#unique_owned t:<trie A>) : <list <pair string A>> .
   abbrev T = <pair string A> in
     match t with
       trie_none A' => (nil T)
@@ -875,7 +875,7 @@ Define trusted trie_lookup_same_interp :
     { (trie_lookup t' s) = o} := truei.
 
 Define trie_range :=
-  fun(A:type)(unique_owned t:<trie A>) : <list A> .
+  fun(A:type)(#unique_owned t:<trie A>) : <list A> .
     (map <pair string A> A Unit unit fun(u:Unit).(snd string A) 
        (trie_interp A t)).
 
