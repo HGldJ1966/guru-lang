@@ -7,8 +7,8 @@ Define histget := (trie_lookup nat).
 Define histupdate := (trie_insert nat).
 
 Define do_hist :=
-  fun hist(unique stdin:stdin_t)(unique h:hist):unique hist.
-    match (read_string stdin_t stdio_reader stdin) with
+  fun hist(#unique stdin:stdin_t)(#unique h:hist):#unique hist.
+    match (read_until_char stdio ' ' join (eqchar ' ' Cc0) ff tt %- eat the newline -%) with
       mk_read_string_t ign s stdin' =>
       match inc s with
           nil A => dec stdin' dec s h
