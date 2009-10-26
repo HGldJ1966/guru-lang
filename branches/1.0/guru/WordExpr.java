@@ -47,7 +47,7 @@ public class WordExpr extends Expr {
 	public Expr buildExpr(Context ctxt, long hexnum) {
 		Expr[] args = new Expr[32];
 		for (int i = 0; i < 32; i++) {
-			if (((hexnum >> i) & 1) == 1)
+			if (((hexnum >> (31-i)) & 1) == 1)
 				args[i] = _const(ctxt, "tt");
 			else
 				args[i] = _const(ctxt, "ff");
