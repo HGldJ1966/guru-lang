@@ -98,6 +98,7 @@ public abstract class Expr {
     public static final int COMPRESS = 86; // term
 
     public static final int CHAR_EXPR = 87; // term
+    public static final int WORD_EXPR = 88; // term
 
 
     public static final int LAST = 200;
@@ -106,13 +107,13 @@ public abstract class Expr {
     boolean result; /* true iff we reached this Expr as the result
 		       of (partial) evaluation */
     public Position pos;
-    
+
     public Expr(int construct) {
 	this.construct = construct;
 	this.result = false;
 	this.pos = null;
     }
-    
+
     // subclasses for each construct must override to define printing 
     // for that construct.
     abstract protected void do_print(java.io.PrintStream w, Context ctxt);
@@ -199,7 +200,7 @@ public abstract class Expr {
     	
     	return returnValue;
     }
-    
+
     // substitute e for x in this Expr.  x may be an arbitrary ground
     //	term, and any sub term of this which is definitionally equal
     //  to x will be replaced with e. 
@@ -217,7 +218,7 @@ public abstract class Expr {
 		    return do_rewrite(ctxt, e, x, boundVars);
     	}
     }
-    
+
     public Expr do_rewrite(Context ctxt, Expr e, Expr x, Stack boundVars)
     {
     	handleError(ctxt, "Internal error: do_rewrite called on an inappropriate expression in: "+this.getClass().toString());
@@ -234,14 +235,14 @@ public abstract class Expr {
 	}
 	return classify(ctxt);
     }
-    
+
     /* subclasses should override one or the other classify method, or expect
        a stack overflow.  We will treat this as specificational (use the
        other classify() method to specify non-specificational). */
     public Expr classify(Context ctxt) {
 	return classify(ctxt,0,true);
     }
-    
+
     // is e definitionally equal to this expr in the given ctxt.
     protected boolean defEqNoAnno(Context ctxt, Expr e, boolean spec) {
 	System.out.println("Definitional equality for this construct"

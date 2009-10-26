@@ -43,6 +43,8 @@ public class Parser extends ParserBase {
 		return true;
 	    }
 	    return false;
+	case Expr.WORD_EXPR:
+	    return true;
 	case Expr.CHAR_EXPR:
 	    return true;
 	case Expr.LAST+STRING:
@@ -291,6 +293,9 @@ public class Parser extends ParserBase {
 		break;
 	    case Expr.CHAR_EXPR:
 		e = readCharExpr();
+		break;
+	    case Expr.WORD_EXPR:
+		e = readWordExpr();
 		break;
 	    case Expr.LAST+STRING:
 		e = readStringExpr();
@@ -685,7 +690,11 @@ public class Parser extends ParserBase {
 	ungetc('\'');
 	return new CharExpr(readString(new Character('\'')));
     }
- 
+
+    protected Expr readWordExpr() throws IOException {
+	return new WordExpr(readHex());
+    }
+
     protected Include readInclude() throws IOException
     {
 	boolean t = trusted;
@@ -2601,9 +2610,10 @@ public class Parser extends ParserBase {
 		keywordTree.add( "cind", Expr.CIND );
 		keywordTree.add( "impossible", Expr.IMPOSSIBLE );
 		keywordTree.add( "size", Expr.SIZE );
+		keywordTree.add( "0x", Expr.WORD_EXPR );
 		keywordTree.add( "\'", Expr.CHAR_EXPR );
 		keywordTree.add( "\"", Expr.LAST + STRING );
-		
+
 		keywordTree.add( ")", Expr.INVALID );
 		keywordTree.add( "]", Expr.INVALID );
 		keywordTree.add( ">", Expr.INVALID );

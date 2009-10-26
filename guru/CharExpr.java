@@ -104,7 +104,7 @@ public class CharExpr extends Expr {
 
     public void checkTermination(Context ctxt, Expr IH, int arg, Var[] vars)
     { }
-    
+
     public void getFreeVarsComputational(Context ctxt, Collection vars) { }
 
     public void checkTermination(Context ctxt) {

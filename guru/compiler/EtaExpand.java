@@ -361,6 +361,14 @@ public class EtaExpand {
 	    }
 	    return e;
 	}
+	case Expr.WORD_EXPR: {
+	    Iterator it = ( (WordExpr)e).getConstsUsed(src).iterator();
+	    while (it.hasNext()) {
+		Const c = (Const)it.next();
+		expand(c,from_fun,null);
+	    }
+	    return e;
+	}
 	case Expr.VAR: 
 	    return e;
 	case Expr.ABORT:

@@ -113,7 +113,12 @@ compiletest:	compiletest.g ../guru/Main.class Makefile
 test-stdio:	test-stdio.g
 	../bin/guru test-stdio.g
 	gcc -O0 -ggdb -w -o test-stdio test-stdio.c
-	echo "c" | valgrind ./test-stdio 
+	echo "c" | valgrind ./test-stdio
+
+test-word:	test-word.g
+	../bin/guru test-word.g
+	gcc -O0 -ggdb -w -o test-word test-word.c
+	echo "c" | valgrind ./test-word
 
 c:
 	gcc -O0 -ggdb -w -o compiletest compiletest.c
