@@ -62,37 +62,39 @@ public class WordExpr extends Expr {
 	public Expr expand(Context ctxt) {
 		char[] a = val.toCharArray();
 		long hexnum = 0;
+		double cur_pow;
 		Expr ret;
 		for(int i = 0; i < a.length; i++) {
+			cur_pow = Math.pow(16, (a.length - i - 1));
 			switch(a[i]) {
 				case '0' : break;
-				case '1' : hexnum += 1 * Math.pow(16,i); break;
-				case '2' : hexnum += 2 * Math.pow(16,i); break;
-				case '3' : hexnum += 3 * Math.pow(16,i); break;
-				case '4' : hexnum += 4 * Math.pow(16,i); break;
-				case '5' : hexnum += 5 * Math.pow(16,i); break;
-				case '6' : hexnum += 6 * Math.pow(16,i); break;
-				case '7' : hexnum += 7 * Math.pow(16,i); break;
-				case '8' : hexnum += 8 * Math.pow(16,i); break;
-				case '9' : hexnum += 9 * Math.pow(16,i); break;
+				case '1' : hexnum += 1 * cur_pow; break;
+				case '2' : hexnum += 2 * cur_pow; break;
+				case '3' : hexnum += 3 * cur_pow; break;
+				case '4' : hexnum += 4 * cur_pow; break;
+				case '5' : hexnum += 5 * cur_pow; break;
+				case '6' : hexnum += 6 * cur_pow; break;
+				case '7' : hexnum += 7 * cur_pow; break;
+				case '8' : hexnum += 8 * cur_pow; break;
+				case '9' : hexnum += 9 * cur_pow; break;
 				case 'a' :
 				case 'A' :
-					hexnum += 10 * Math.pow(16,i); break;
+					hexnum += 10 * cur_pow; break;
 				case 'b' :
 				case 'B' :
-					hexnum += 11 * Math.pow(16,i); break;
+					hexnum += 11 * cur_pow; break;
 				case 'c' :
 				case 'C' :
-					hexnum += 12 * Math.pow(16,i); break;
+					hexnum += 12 * cur_pow; break;
 				case 'd' :
 				case 'D' :
-					hexnum += 13 * Math.pow(16,i); break;
+					hexnum += 13 * cur_pow; break;
 				case 'e' :
 				case 'E' :
-					hexnum += 14 * Math.pow(16,i); break;
+					hexnum += 14 * cur_pow; break;
 				case 'f' :
 				case 'F' :
-					hexnum += 15 * Math.pow(16,i); break;
+					hexnum += 15 * cur_pow; break;
 				default :
 					//This is bad. Treating as 0 for now.
 					break;
