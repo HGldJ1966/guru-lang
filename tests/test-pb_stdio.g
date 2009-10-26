@@ -2,13 +2,17 @@ Include "../lib/pb_stdio.g".
 
 Define test := 
 %	Bug case one: leaking
-	let c = (pb_next_char pb_stdio) in
-	(pb_print_char pb_stdio c).
+%	let c = (pb_next_char pb_stdio) in
+%	(pb_print_char pb_stdio c).
 
 %	Case Two: works fine
-%	let pb_stdio = (pb_skip pb_stdio) in
-%	let c = (pb_cur_char pb_stdio) in
-%	(pb_print_char pb_stdio c).
+	let pb_stdio = (pb_skip pb_stdio) in
+	let c = (pb_cur_char pb_stdio) in
+        match (pb_checkout pb_stdio) with
+          return_pb_checkout pb_stdio stdio =>
+  	   let pb_stdio = (pb_checkin pb_stdio (print_char stdio c)) in
+             pb_stdio % <pb_stdio_t tt>
+        end.
 
 
 %	let pb_stdio = (pb_skip2 (S Z) pb_stdio) in
