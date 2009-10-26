@@ -118,6 +118,29 @@ public class ParserBase {
     }
 
 
+	protected String readHex() throws IOException
+	{
+		int c;
+		StringBuffer hexBuf = new StringBuffer();
+		while (true) {
+			c = getc();
+			//Check for 0-9, A-F, a-f
+			if ((! ((c <= 57 && c >= 48) || (c >= 65 && c<=70) ||
+				(c >= 97 && c <= 102))) || c == -1) {
+				if(c != -1)
+					ungetc(c);
+				break;
+			}
+			hexBuf.append((char) c);
+		}
+		if (hexBuf.length() == 0)
+			handleError("No hex digits specified after 0x .");
+		if (hexBuf.length() > 8)
+			handleError("Hex value greater than 32-bits.");
+		return hexBuf.toString();
+	}
+
+
     protected String readString(Character delimiter) throws IOException
     {
         int c;
