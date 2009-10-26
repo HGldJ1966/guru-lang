@@ -10,6 +10,23 @@ Include "unique_owned.g".
 
 Define primitive stdio_t : type := <pair string string> <<END
   #define gdelete_stdio_t(x) 
+
+  void *curc = 0;
+
+  inline void *gnext_char(void *x) {
+    gcur_char2(x); // to make sure we have read a character
+    curc = 0;
+    return 1;
+  }
+
+  inline int gcur_char2(void *s) {
+     if (curc == 0) {
+	int tmp = fgetc(stdin);
+	curc = (tmp == -1 ? 0 : tmp);
+     }
+     return curc;
+  }
+
 END.
 
 Define primitive stdio : #unique_point stdio_t <<END
@@ -24,15 +41,7 @@ Define primitive cur_char2 : Fun(^ #unique_owned_point x:stdio_t). #untracked ch
     end
 <<END
 
-  void *curc = 0;
-
-  inline int gcur_char2(void *s) {
-     if (curc == 0) {
-	int tmp = fgetc(stdin);
-	curc = (tmp == -1 ? 0 : tmp);
-     }
-     return curc;
-  }
+// C code included above
 
 END.
 
@@ -48,20 +57,21 @@ Define primitive next_char :=
     | ucons _ a l => (mkpair string string l (snd string string x))
     end 
 <<END
-
-  inline void *gnext_char(void *x) {
-    curc = 0;
-    return 1;
-  }
-
+ // C code included above
 END.
 
 Define primitive print_char := 
   fun(#unique_point x:stdio_t)(#untracked c:char): #unique_point stdio_t.
-    (mkpair string string (fst string string x) (stringc c (snd string string x))) 
+     match (eqchar c Cc0) with
+       ff => (mkpair string string (fst string string x) (stringc c (snd string string x)))
+     | tt => x
+     end 
 <<END
   int gprint_char(int stdio /* ignore */, int c) {
+    if (c == 0)
+      return 1;
     fputc(c, stdout);
+    return 1;
   }
 END.
 
