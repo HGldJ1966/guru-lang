@@ -53,18 +53,105 @@ int gmkword(int b31, int b30, int b29, int b28, int b27, int b26, int b25, int b
 }
 END.
 
-%Set "print_parsed".
+
+%=============================================================================
+% word constants
+%=============================================================================
+
+Define primitive word0 : word := (mkvec bool ff wordlen) <<END
+#define gword0 0
+END.
+
+% DEPRICATED
+Define word1 := 0x1.
+Define word2 := 0x2.
+Define word3 := 0x3.
+Define word4 := 0x4.
+Define word5 := 0x5.
+Define word7 := 0x7.
+Define word8 := 0x8.
+Define word0x1f := 0x1f.
+Define word0x20 := 0x20.
+
+
+%=============================================================================
+% word and nat
+%=============================================================================
+
+Define spec word_to_nat := (to_nat wordlen).
+Define word_to_nat_tot := [to_nat_tot wordlen].
+
+%-
+Define trim_to_wordlen : Fun(l:nat)(v':<bv l>).(l':nat)(v':<bv l'>) :=
+  fun trim_to_wordlen(l:nat)(v:<bv l>) : (l':nat)(v':<bv l'>).
+  match (nat_comp l wordlen) with
+    LT => (trim_to_wordlen (plus l one) (bv_append ...
+  | EQ => (wordlen, v)
+  | GT => (trim_to_wordlen (minus l one) (bv_tail v))
+  end.
+
+Define nat_to_word : Fun(x:nat).(c:bool)(w:word) :=
+  fun(x:nat).
+    match (to_bv x) with
+      mk_to_bv_t l v => match (nat_comp l wordlen) with
+      		     	  LT => (ff, (trim_to_wordlen v))
+			| EQ => (ff, v)
+			| GT => (tt, (trim_to_wordlen v))
+			end
+    end.
+-%
+
+
+%=============================================================================
+% word equality
+%=============================================================================
 
 Define primitive eqword : Fun(w1 w2:word).bool := (eqbv wordlen) <<END
   #define geqword(w1,w2) (w1 == w2)
 END.
 
-%Unset "print_parsed".
-
 Define eqword_eq := [eqbv_eq wordlen].
 Define eqword_tot := [eqbv_tot wordlen].
 Total eqword eqword_tot.
 Define eqword_refl := [eqbv_refl wordlen].
+
+
+%=============================================================================
+% word comparison
+%=============================================================================
+
+Define word_max := 0xffffffff.
+
+Define primitive ltword : Fun(#untracked w1 w2:word).bool :=
+  fun(w1 w2:word).
+  (lt (word_to_nat w1) (word_to_nat w2))<<END
+  int gltword(int w1, int w2) { return (w1 < w2); }
+END.
+
+Define primitive leword : Fun(#untracked w1 w2:word).bool :=
+  fun(w1 w2:word).
+  (le (word_to_nat w1) (word_to_nat w2)) <<END
+  int gleword(int w1, int w2) { return (w1 <= w2); }
+END.
+
+Define trusted ltword_trans :
+  Forall(a b c:word)
+        (u1: { (ltword a b) = tt })
+        (u2: { (ltword b c) = tt }).
+    { (ltword a c) = tt }
+  := truei.
+
+Define word_comp := (ucomparator word ltword leword).
+
+Define trusted ltword_implies_lt_word_max :
+  Forall(a b:word)(u:{ (ltword a b) = tt }).
+    { (ltword a word_max) = tt }
+  := truei.
+
+
+%=============================================================================
+% word incrementing
+%=============================================================================
 
 Inductive word_inc_t : type :=
   mk_word_inc_t : Fun(b:word)(carry:bool).word_inc_t.
@@ -110,8 +197,22 @@ Define word_inc_tot :=
           by r_eq end
       end.
 
-Define spec word_to_nat := (to_nat wordlen).
-Define word_to_nat_tot := [to_nat_tot wordlen].
+Define primitive word_inc_safe :=
+  fun(b:word)
+     (u:{ (ltword b word_max) = tt }).
+  (word_inc2 b) <<END
+  #define gword_inc_safe(b) (b+1)  
+END.
+
+Define trusted word_inc_safe_total :
+  Forall(b:word)
+        (u:{ (ltword b word_max) = tt }).
+  Exists(b':word).
+    { (word_inc_safe b u) = b' }
+  := truei.
+
+Total word_inc_safe word_inc_safe_total.
+
 
 Define word_to_nat_inc
    : Forall(w w2:word)(carry:bool)
@@ -160,25 +261,10 @@ Define word_inc2_word_to_nat
   [word_to_nat_inc2 w w2 p]
   .
 
-%-
-Define trim_to_wordlen : Fun(l:nat)(v':<bv l>).(l':nat)(v':<bv l'>) :=
-  fun trim_to_wordlen(l:nat)(v:<bv l>) : (l':nat)(v':<bv l'>).
-  match (nat_comp l wordlen) with
-    LT => (trim_to_wordlen (plus l one) (bv_append ...
-  | EQ => (wordlen, v)
-  | GT => (trim_to_wordlen (minus l one) (bv_tail v))
-  end.
 
-Define nat_to_word : Fun(x:nat).(c:bool)(w:word) :=
-  fun(x:nat).
-    match (to_bv x) with
-      mk_to_bv_t l v => match (nat_comp l wordlen) with
-      		     	  LT => (ff, (trim_to_wordlen v))
-			| EQ => (ff, v)
-			| GT => (tt, (trim_to_wordlen v))
-			end
-    end.
--%
+%=============================================================================
+% word individual bit operations
+%=============================================================================
 
 Define primitive word_read_bit
  : Fun(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word). bool :=
@@ -207,30 +293,18 @@ inline int gword_clear_bit(int i, int w) {
 }
 END.
 
-Define primitive word0 : word := (mkvec bool ff wordlen) <<END
-#define gword0 0
-END.
-
-Define word1 := (word_inc2 word0).
-Define word2 := (word_inc2 word1).
-Define word3 := (word_inc2 word2).
-Define word4 := (word_inc2 word3).
-Define word5 := (word_inc2 word4).
-Define word8 := (word_set_bit word3 join (lt (to_nat word3) wordlen) tt word0).
-
-Define word7 :=
-                (word_set_bit word2 join (lt (to_nat word2) wordlen) tt
-                (word_set_bit word1 join (lt (to_nat word1) wordlen) tt
-                (word_set_bit word0 join (lt (to_nat word0) wordlen) tt word0))).
-
-Define word0x1f := % number 31 in word
-                (word_set_bit word4 join (lt (to_nat word4) wordlen) tt
-                (word_set_bit word3 join (lt (to_nat word3) wordlen) tt
-                (word_set_bit word2 join (lt (to_nat word2) wordlen) tt
-                (word_set_bit word1 join (lt (to_nat word1) wordlen) tt
-                (word_set_bit word0 join (lt (to_nat word0) wordlen) tt word0))))).
-Define word0x20 := % number 32 in word
-                (word_set_bit word5 join (lt (to_nat word5) wordlen) tt word0).
+Define word_clear_read :
+  Forall(w:word)
+        (i:word)
+        (u:{ (lt (to_nat i) wordlen) = tt }).
+    { (word_read_bit i u (word_clear_bit i u w)) = ff }
+  :=
+  foralli(w:word)(i:word)
+         (u:{ (lt (to_nat i) wordlen) = tt }).
+  hypjoin (word_read_bit i u (word_clear_bit i u w))
+          ff
+          by [vec_update_get bool wordlen w (to_nat wordlen i) ff u] end
+  .
 
 Define word_msb :=
   fun(w:word).
@@ -242,6 +316,11 @@ Define trusted word0_set_bit_pow2
       { (to_nat (word_set_bit i word0)) = (pow2 (to_nat i)) } :=
   truei.
 
+
+%=============================================================================
+% word bit operations
+%=============================================================================
+
 Define primitive word_shift: Fun(x:word)(w:word). word := 
   fun(x:word)(w:word). 
    abbrev P = cong <bv *> join wordlen (S (minus wordlen (S Z))) in
@@ -250,12 +329,15 @@ Define primitive word_shift: Fun(x:word)(w:word). word :=
 #define gword_shift(x,w) ((w) >> (x))
 END.
 
-Define word_div2 := (word_shift word1).
+Define primitive word_or: Fun(x y:word). word :=
+  fun(x y:word) . (bv_or wordlen x y) <<END
+  inline int gword_or(unsigned int x, unsigned int y) { return x | y; }
+END.
 
-Define trusted word_div2_tot : 
-  Forall(x:word).Exists(y:word).{(word_div2 x) = y} := truei.
 
-Total word_div2 word_div2_tot.
+%=============================================================================
+% word arithmetic
+%=============================================================================
 
 Define primitive word_minus: Fun(x y:word). word :=
   fun(x y:word) . x
@@ -279,63 +361,50 @@ Define trusted word_plus_tot :
 
 Total word_plus word_plus_tot.
 
-Define primitive ltword : Fun(#untracked w1 w2:word).bool :=
-  fun(w1 w2:word).
-  (lt (word_to_nat w1) (word_to_nat w2))<<END
-  int gltword(int w1, int w2) { return (w1 < w2); }
+Define primitive word_mult: Fun(x y:word). word :=
+  fun(x y:word) . x <<END
+  inline int gword_mult(unsigned int x, unsigned int y) { return x * y; }
 END.
 
-Define primitive leword : Fun(#untracked w1 w2:word).bool :=
-  fun(w1 w2:word).
-  (le (word_to_nat w1) (word_to_nat w2)) <<END
-  int gleword(int w1, int w2) { return (w1 <= w2); }
-END.
+Define trusted word_mult_total :
+  Forall(x y:word). Exists(z:word). { (word_mult x y) = z } := truei.
 
-Define word_comp := (ucomparator word ltword leword).
+Total word_mult word_mult_total.
+
+Define word_div2 := (word_shift word1).
+
+Define trusted word_div2_tot : 
+  Forall(x:word).Exists(y:word).{(word_div2 x) = y} := truei.
+
+Total word_div2 word_div2_tot.
+
+
+%=============================================================================
+% WRONG lemmas
+%=============================================================================
 
 Define trusted word_div2_shrink :
   Forall(x:word).{(lt (to_nat (word_div2 x)) (to_nat x)) = tt} 
   := truei.
+  % doesn't look right. consider the case where x is zero.
+  % le, instead of lt, would fix it
 
 Define trusted word_plus_shrink :
   Forall(x y y':word)
         (u:{(lt (to_nat y) (to_nat y')) = tt}).
   {(lt (to_nat (word_plus x y)) (to_nat (word_plus x y'))) = tt}
   := truei.
+  % doesn't look right. consider the case where x + y' overflows.
 
 Define trusted word_plus_minus_shrink :
   Forall(x y:word).
   {(le (to_nat (word_plus x (word_minus y x))) (to_nat y)) = tt} 
   := truei.
+  % doesn't look right. consider the case where y is less than x.
 
 Define trusted word_minus_shrink :
   Forall(x:word).
   {(lt (to_nat (word_minus x word1)) (to_nat x)) = tt}
   := truei.
-
-
-Define word_clear_read :
-  Forall(w:word)
-        (i:word)
-        (u:{ (lt (to_nat i) wordlen) = tt }).
-    { (word_read_bit i u (word_clear_bit i u w)) = ff }
-  :=
-  foralli(w:word)(i:word)
-         (u:{ (lt (to_nat i) wordlen) = tt }).
-  hypjoin (word_read_bit i u (word_clear_bit i u w))
-          ff
-          by [vec_update_get bool wordlen w (to_nat wordlen i) ff u] end
-  .
-
-Define primitive word_mult: Fun(x y:word). word :=
-  fun(x y:word) . x
-  <<END
-  inline int gword_mult(unsigned int x, unsigned int y) { return x * y; }
-END.
-
-Define primitive word_or: Fun(x y:word). word :=
-  fun(x y:word) . (bv_or wordlen x y)
-  <<END
-  inline int gword_or(unsigned int x, unsigned int y) { return x | y; }
-END.
+  % doesn't look right. consider the case where x is zero.
 
