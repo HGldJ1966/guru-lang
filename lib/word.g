@@ -82,24 +82,49 @@ Define spec word_to_nat := (to_nat wordlen).
 Define word_to_nat_tot := [to_nat_tot wordlen].
 
 %-
-Define trim_to_wordlen : Fun(l:nat)(v':<bv l>).(l':nat)(v':<bv l'>) :=
-  fun trim_to_wordlen(l:nat)(v:<bv l>) : (l':nat)(v':<bv l'>).
-  match (nat_comp l wordlen) with
-    LT => (trim_to_wordlen (plus l one) (bv_append ...
-  | EQ => (wordlen, v)
-  | GT => (trim_to_wordlen (minus l one) (bv_tail v))
+ to_bv_trimmed : a different version of to_bv
+          converts a nat ``n'' to a bv with a specific length ``l''
+          (dropping the most significant bits)
+-%
+Define to_bv_trimmed : Fun(l n:nat).<bv l> := 
+  fun to_bv_trimmed(l n:nat):<bv l>.
+    match l with
+      Z => cast bvn by cong <bv *> symm l_eq
+    | S l' => cast (bvc l' (mod2 n) (to_bv_trimmed l' (div2 n))) by
+                cong <bv *> symm l_eq
+    end.
+
+Define to_bv_trimmed_total : Forall(l n:nat).Exists(r:<bv l>).
+                       { (to_bv_trimmed l n) = r } :=
+  foralli(l:nat).
+  case l with
+    Z =>
+      foralli(n:nat).
+        abbrev r = cast bvn by cong <bv *> symm l_eq in
+        existsi r { (to_bv_trimmed l n) = * }
+                hypjoin (to_bv_trimmed l n) r by l_eq end
+  | S l' =>
+      foralli(n:nat).
+        abbrev r = cast (bvc l' (mod2 n) (to_bv_trimmed l' (div2 n))) by
+                     cong <bv *> symm l_eq
+        in
+        existsi r { (to_bv_trimmed l n) = * }
+                hypjoin (to_bv_trimmed l n) r by l_eq end
   end.
 
-Define nat_to_word : Fun(x:nat).(c:bool)(w:word) :=
-  fun(x:nat).
-    match (to_bv x) with
-      mk_to_bv_t l v => match (nat_comp l wordlen) with
-      		     	  LT => (ff, (trim_to_wordlen v))
-			| EQ => (ff, v)
-			| GT => (tt, (trim_to_wordlen v))
-			end
-    end.
--%
+Total to_bv_trimmed to_bv_trimmed_total.
+
+Define spec nat_to_word : Fun(n:nat).word :=
+  fun(n:nat).
+    (to_bv_trimmed wordlen n).
+    
+Define nat_to_word_total :=
+  foralli(n:nat).
+  existsi (to_bv_trimmed wordlen n) { (nat_to_word n) = * }
+    join (nat_to_word n) (to_bv_trimmed wordlen n)
+  .
+
+Total nat_to_word nat_to_word_total.
 
 
 %=============================================================================
@@ -351,7 +376,7 @@ Define trusted word_minus_tot :
 Total word_minus word_minus_tot.
 
 Define primitive word_plus: Fun(x y:word). word :=
-  fun(x y:word) . x
+  fun(x y:word). (nat_to_word (plus (word_to_nat x) (word_to_nat y)))
   <<END
   inline int gword_plus(int x, int y) { return x+y; }
 END.
@@ -362,7 +387,7 @@ Define trusted word_plus_tot :
 Total word_plus word_plus_tot.
 
 Define primitive word_mult: Fun(x y:word). word :=
-  fun(x y:word) . x <<END
+  fun(x y:word). (nat_to_word (mult (word_to_nat x) (word_to_nat y))) <<END
   inline int gword_mult(unsigned int x, unsigned int y) { return x * y; }
 END.
 
