@@ -150,13 +150,13 @@ Define word_max := 0xffffffff.
 Define primitive ltword : Fun(#untracked w1 w2:word).bool :=
   fun(w1 w2:word).
   (lt (word_to_nat w1) (word_to_nat w2))<<END
-  int gltword(int w1, int w2) { return (w1 < w2); }
+  int gltword(unsigned int w1, unsigned int w2) { return (w1 < w2); }
 END.
 
 Define primitive leword : Fun(#untracked w1 w2:word).bool :=
   fun(w1 w2:word).
   (le (word_to_nat w1) (word_to_nat w2)) <<END
-  int gleword(int w1, int w2) { return (w1 <= w2); }
+  int gleword(unsigned int w1, unsigned int w2) { return (w1 <= w2); }
 END.
 
 Define trusted ltword_trans :
@@ -191,7 +191,7 @@ Define primitive word_inc :=
       end
 <<END
 #include <limits.h>
-void *gword_inc(int c) {
+void *gword_inc(unsigned int c) {
   return gmk_word_inc_t(c+1, (c == UINT_MAX));
 }
 END.
@@ -226,7 +226,7 @@ Define primitive word_inc_safe :=
   fun(b:word)
      (u:{ (ltword b word_max) = tt }).
   (word_inc2 b) <<END
-  #define gword_inc_safe(b) (b+1)  
+  #define gword_inc_safe(b) (b+1)
 END.
 
 Define trusted word_inc_safe_total :
@@ -286,6 +286,12 @@ Define word_inc2_word_to_nat
   [word_to_nat_inc2 w w2 p]
   .
 
+Define trusted word_inc_safe_word_to_nat
+  : Forall(w:word)
+          (u:{ (ltword w word_max) = tt}).
+      { (word_to_nat (word_inc_safe w u)) = (S (word_to_nat w)) }
+  := truei.
+
 
 %=============================================================================
 % word individual bit operations
@@ -295,7 +301,7 @@ Define primitive word_read_bit
  : Fun(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word). bool :=
    fun(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word).
     (vec_get bool wordlen w (to_nat wordlen i) u) <<END
-inline int gword_read_bit(int i, int w) {
+inline unsigned int gword_read_bit(unsigned int i, unsigned int w) {
     return  ((1 << i) & w);
 }
 END.
@@ -304,7 +310,7 @@ Define primitive word_set_bit
  : Fun(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word). word :=
    fun(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word).
     (vec_update bool wordlen w (to_nat wordlen i) tt u) <<END
-inline int gword_set_bit(int i, int w) {
+inline unsigned int gword_set_bit(unsigned int i, unsigned int w) {
     return  ((1 << i) | w);
 }
 END.
@@ -313,7 +319,7 @@ Define primitive word_clear_bit
  : Fun(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word). word :=
    fun(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word).
     (vec_update bool wordlen w (to_nat wordlen i) ff u) <<END
-inline int gword_clear_bit(int i, int w) {
+inline unsigned int gword_clear_bit(unsigned int i, unsigned int w) {
     return (~(1 << i) & w);
 }
 END.
@@ -351,12 +357,13 @@ Define primitive word_shift: Fun(x:word)(w:word). word :=
    abbrev P = cong <bv *> join wordlen (S (minus wordlen (S Z))) in
      cast (bv_shift (to_nat wordlen x)
             (minus wordlen (S Z)) cast w by P) by symm P <<END
-#define gword_shift(x,w) ((w) >> (x))
+  inline unsigned int gword_shift(unsigned int x, unsigned int w) {
+    return w >> x; }
 END.
 
 Define primitive word_or: Fun(x y:word). word :=
   fun(x y:word) . (bv_or wordlen x y) <<END
-  inline int gword_or(unsigned int x, unsigned int y) { return x | y; }
+  inline unsigned int gword_or(unsigned int x, unsigned int y) { return x | y; }
 END.
 
 
@@ -365,9 +372,14 @@ END.
 %=============================================================================
 
 Define primitive word_minus: Fun(x y:word). word :=
-  fun(x y:word) . x
-  <<END  
-  inline int gword_minus(int x, int y) { return x-y; }
+  fun(x y:word).
+  match (ltword x y) with
+    ff =>  % x >= y : no overflow
+      (nat_to_word (minus (word_to_nat x) (word_to_nat y)))
+  | tt =>  % x < y : x + word_max + 1 - y
+      (nat_to_word (minus (plus (word_to_nat x) (S (word_to_nat word_max))) (word_to_nat y)))
+  end <<END  
+  inline unsigned int gword_minus(unsigned int x, unsigned int y) { return x-y; }
 END.
 
 Define trusted word_minus_tot :
@@ -378,7 +390,7 @@ Total word_minus word_minus_tot.
 Define primitive word_plus: Fun(x y:word). word :=
   fun(x y:word). (nat_to_word (plus (word_to_nat x) (word_to_nat y)))
   <<END
-  inline int gword_plus(int x, int y) { return x+y; }
+  inline unsigned int gword_plus(unsigned int x, unsigned int y) { return x+y; }
 END.
 
 Define trusted word_plus_tot :
@@ -388,7 +400,7 @@ Total word_plus word_plus_tot.
 
 Define primitive word_mult: Fun(x y:word). word :=
   fun(x y:word). (nat_to_word (mult (word_to_nat x) (word_to_nat y))) <<END
-  inline int gword_mult(unsigned int x, unsigned int y) { return x * y; }
+  inline unsigned int gword_mult(unsigned int x, unsigned int y) { return x * y; }
 END.
 
 Define trusted word_mult_total :
