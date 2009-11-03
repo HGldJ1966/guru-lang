@@ -4,17 +4,13 @@ Include "../lib/pb_stdio.g".
 Define hist := Unit.
 
 Define do_hist :=
-  fun hist(#unique pb_stdio:pb_stdio_t)(h:hist):hist.
-    match (pb_cur_char pb_stdio) with %read_string
-      mk_read_string_t s pb_stdio' =>
-      let #owned os = s in
-      match os with
-          nil A => do (dec pb_stdio_t pb_stdio')
-					  (dec string s)
-					  h
-				   end
-        | cons A' a' s' => do (dec string s)
-							  (hist pb_stdio' h)
+  fun do_hist(#unique pb_stdio:<pb_stdio_t tt>)(h:Unit):Unit.
+    match (pb_readstring pb_stdio) with
+      mk_pb_readstring s pb_stdio =>
+      match s with
+          unil _ => h
+        | ucons _ a' s' => do (dec string s')
+							  (do_hist pb_stdio h)
 						   end
         end
     end.
@@ -22,7 +18,7 @@ Define do_hist :=
 Define spin := fun spin(u:Unit):Unit. (spin unit).
 
 Define main :=
-  fun(#unique pb_stdio:pb_stdio_t).
+  fun(#unique pb_stdio:<pb_stdio_t tt>).
     let r = (do_hist pb_stdio unit) in 
     Z.
  
