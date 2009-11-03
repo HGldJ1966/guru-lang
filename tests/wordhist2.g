@@ -1,24 +1,29 @@
 Include "../lib/trie.g".
-Include "../lib/stdio.g".
+Include "../lib/pb_stdio.g".
 
 Define hist := Unit.
 
 Define do_hist :=
-  fun hist(unique stdin:stdin_t)(h:hist):hist.
-    match (read_string stdin) with
-      mk_read_string_t s stdin' =>
-      let owned os = s in
+  fun hist(#unique pb_stdio:pb_stdio_t)(h:hist):hist.
+    match (pb_cur_char pb_stdio) with %read_string
+      mk_read_string_t s pb_stdio' =>
+      let #owned os = s in
       match os with
-          nil A => dec stdin' dec s h
-        | cons A' a' s' => dec s (hist stdin' h)
+          nil A => do (dec pb_stdio_t pb_stdio')
+					  (dec string s)
+					  h
+				   end
+        | cons A' a' s' => do (dec string s)
+							  (hist pb_stdio' h)
+						   end
         end
     end.
 
 Define spin := fun spin(u:Unit):Unit. (spin unit).
 
 Define main :=
-  fun(unique stdin:stdin_t).
-    let r = (do_hist stdin unit) in 
+  fun(#unique pb_stdio:pb_stdio_t).
+    let r = (do_hist pb_stdio unit) in 
     Z.
  
 Set "debug_split_by_arity".
