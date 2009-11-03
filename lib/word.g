@@ -48,7 +48,7 @@ cast
 by cong <bv *> join
   (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S Z)))))))))))))))))))))))))))))))) wordlen
 <<END
-int gmkword(int b31, int b30, int b29, int b28, int b27, int b26, int b25, int b24, int b23, int b22, int b21, int b20, int b19, int b18, int b17, int b16, int b15, int b14, int b13, int b12, int b11, int b10, int b9, int b8, int b7, int b6, int b5, int b4, int b3, int b2, int b1, int b0) {
+inline int gmkword(int b31, int b30, int b29, int b28, int b27, int b26, int b25, int b24, int b23, int b22, int b21, int b20, int b19, int b18, int b17, int b16, int b15, int b14, int b13, int b12, int b11, int b10, int b9, int b8, int b7, int b6, int b5, int b4, int b3, int b2, int b1, int b0) {
   return (b31 << 31) | (b30  << 30) | (b29  << 29) | (b28  << 28) | (b27  << 27) | (b26  << 26) | (b25  << 25) | (b24  << 24) | (b23  << 23) | (b22  << 22) | (b21  << 21) | (b20  << 20) | (b19  << 19) | (b18  << 18) | (b17  << 17) | (b16  << 16) | (b15  << 15) | (b14  << 14) | (b13  << 13) | (b12  << 12) | (b11  << 11) | (b10  << 10) | (b9 << 9) | (b8 << 8) | (b7 << 7) | (b6 << 6) | (b5 << 5) | (b4 << 4) | (b3 << 3) | (b2 << 2) | (b1 << 1) | (b0 << 0);
 }
 END.
@@ -61,6 +61,8 @@ END.
 Define primitive word0 : word := (mkvec bool ff wordlen) <<END
 #define gword0 0
 END.
+
+Define word_max := 0xffffffff.
 
 % DEPRICATED
 Define word1 := 0x1.
@@ -144,8 +146,6 @@ Define eqword_refl := [eqbv_refl wordlen].
 %=============================================================================
 % word comparison
 %=============================================================================
-
-Define word_max := 0xffffffff.
 
 Define primitive ltword : Fun(#untracked w1 w2:word).bool :=
   fun(w1 w2:word).
