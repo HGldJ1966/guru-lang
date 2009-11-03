@@ -21,6 +21,10 @@ Define foldr : Fun(A B C: type)(^#owned cookie:C)
                          (foldr A B C (clone_owned C cookie) fcn b l'))
    end. 
 
+Define spec foldr1 : Fun(A B:type)(f:Fun(a:A)(y:B).B)(b:B)(l:<list A>).B :=
+  fun foldr1(A B:type)(f:Fun(a:A)(y:B).B)(b:B)(l:<list A>):B.
+    (foldr A B nat Z fun(u:nat)(x:A)(y:B).(f x y) b l).
+
 Define foldl : Fun(A B : type) (fcn : Fun (x : A) (y : B) . B) (b : B)
   (l : <list A>) . B :=
   fun foldl (A B : type) (fcn : Fun (x : A) (y : B) . B) (b : B)
@@ -55,6 +59,40 @@ Define foldrTot : Forall(A B C : type)
                                      u2
       end.
 
+Define foldr1Tot :=
+  foralli(A B : type)(f:Fun(x:A)(y:B).B)
+         (fTot:Forall(x:A)(y:B).Exists(z:B).{(f x y) = z})(b:B)(l:<list A>).
+    existsi terminates (foldr A B nat Z fun(u:nat)(x:A)(y:B).(f x y) b l) by
+            [foldrTot A B nat Z fun(u:nat)(x:A)(y:B).(f x y) 
+               foralli(x:A)(y:B). existsi terminates (f x y) by [fTot x y]
+                                    { (fun(u:nat)(x:A)(y:B).(f x y) Z x y) = *}
+                                  join (fun(u:nat)(x:A)(y:B).(f x y) Z x y) (f x y)
+               b l]
+       { (foldr1 f b l) = * }
+       join (foldr1 f b l) (foldr Z fun(u)(x)(y).(f x y) b l).
+
+Define foldr_ext : Forall(A B C : type)
+                         (cookie1 cookie2:C)(f1 f2:Fun(cookie:C)(x:A)(y:B).B)
+                         (f1Tot:Forall(x:A)(y:B).Exists(z:B). {(f1 cookie1 x y) = z})
+                         (feq:Forall(x:A)(y:B).
+                                  {(f1 cookie1 x y) = (f2 cookie2 x y)})
+                         (b:B)(l:<list A>).
+                    { (foldr cookie1 f1 b l) = (foldr cookie2 f2 b l) } :=
+  foralli(A B C : type)
+         (cookie1 cookie2:C)(f1 f2:Fun(cookie:C)(x:A)(y:B).B)
+         (f1Tot:Forall(x:A)(y:B).Exists(z:B). {(f1 cookie1 x y) = z})
+         (feq:Forall(x:A)(y:B).
+               {(f1 cookie1 x y) = (f2 cookie2 x y)})
+         (b:B).
+  induction(l:<list A>) return { (foldr cookie1 f1 b l) = (foldr cookie2 f2 b l) } 
+  with
+    nil _ => hypjoin (foldr cookie1 f1 b l) (foldr cookie2 f2 b l) by l_eq end
+  | cons _ a l' => hypjoin (foldr cookie1 f1 b l) (foldr cookie2 f2 b l) 
+                   by l_eq [l_IH l'] 
+                      [feq a terminates (foldr A B C cookie1 f1 b l')
+                             by [foldrTot A B C cookie1 f1 f1Tot b l']] end
+  end.
+
 Inductive map_i : Fun(A B:type).type :=
   mk_map_i : Fun(A B C:type)
                 (fcn:Fun(^#owned cookie:C)(^#owned a:A).B)
@@ -85,6 +123,10 @@ Define map : Fun(A B C: type)(^#owned cookie:C)
       ret
    end.
 
+Define spec map1 : Fun(A B:type)(f:Fun(a:A).B)(l:<list A>).<list B> :=
+  fun map1(A B:type)(f:Fun(a:A).B)(l:<list A>):<list B>.
+    (map A B nat Z fun(u:nat)(a:A).(f a) l).
+
 Define map_total : Forall(A B C: type)(cookie:C)
                          (fcn: Fun(cookie:C)(a:A).B)
                          (fcnTot:Forall(a:A).Exists(b:B).{(fcn cookie a) = b})
@@ -107,6 +149,70 @@ Define map_total : Forall(A B C: type)(cookie:C)
   existsi z { (map cookie fcn l1) = * }
     trans join (map cookie fcn l1) (foldr Fcookie map_h nil l1)
           uz.
+
+Define map_ext : Forall(A B C:type)(f1 f2:Fun(c:C)(a:A).B)(cookie1 cookie2:C)
+                       (fTot : Forall(a:A). Exists(b:B). { (f1 cookie1 a) = b })
+                       (feq : Forall(a:A). {(f1 cookie1 a) = (f2 cookie2 a)})
+                       (l:<list A>).
+                  { (map cookie1 f1 l) = (map cookie2 f2 l) } :=
+  foralli(A B C:type)(f1 f2:Fun(c:C)(a:A).B)(cookie1 cookie2:C)
+         (fTot : Forall(a:A). Exists(b:B). { (f1 cookie1 a) = b })
+         (feq : Forall(a:A). {(f1 cookie1 a) = (f2 cookie2 a)})
+         (l:<list A>).
+    transs join (map cookie1 f1 l) (foldr (mk_map_i f1 cookie1) map_h nil l)
+           [foldr_ext A <list B> <map_i A B> (mk_map_i A B C f1 cookie1)
+             (mk_map_i A B C f2 cookie2) (map_h A B) (map_h A B)
+             foralli(x:A)(y:<list B>). 
+               existsi (cons B terminates (f1 cookie1 x) by fTot y)
+                 { (map_h (mk_map_i f1 cookie1) x y) = *}
+                 join (map_h (mk_map_i f1 cookie1) x y) (cons (f1 cookie1 x) y)
+             foralli(x:A)(y:<list B>). 
+               hypjoin (map_h (mk_map_i f1 cookie1) x y) (map_h (mk_map_i f2 cookie2) x y) 
+               by [feq x] end
+             (nil B) l]
+           join (foldr (mk_map_i f2 cookie2) map_h nil l) (map cookie2 f2 l)
+    end.
+
+Define map1_total : Forall(A B: type)
+                          (fcn: Fun(a:A).B)
+                          (fcnTot:Forall(a:A).Exists(b:B).{(fcn a) = b})
+                          (l1 : <list A>).
+                          Exists(l2:<list B>).
+                            { (map1 fcn l1) = l2 } :=
+  foralli(A B: type)
+         (fcn: Fun(a:A).B)
+         (fcnTot:Forall(a:A).Exists(b:B).{(fcn a) = b})
+         (l1 : <list A>).
+   existsi terminates (map A B nat Z fun(u:nat)(a:A).(fcn a) l1) by
+             [map_total A B nat Z fun(u:nat)(a:A).(fcn a)
+                foralli(a:A).existsi terminates (fcn a) by fcnTot
+                                { (fun(u)(a).(fcn a) Z a) = *} 
+                                join (fun(u)(a).(fcn a) Z a) (fcn a)
+                l1]
+      {(map1 fcn l1) = *}
+      join (map1 fcn l1) (map Z fun(u)(a).(fcn a) l1).
+
+Define map1_ext : Forall(A B:type)(f1 f2:Fun(a:A).B)
+                        (fTot : Forall(a:A). Exists(b:B). { (f1 a) = b })
+                        (feq : Forall(a:A). {(f1 a) = (f2 a)})
+                        (l:<list A>).
+                   { (map1 f1 l) = (map1 f2 l) } :=
+   foralli(A B:type)(f1 f2:Fun(a:A).B)
+          (fTot : Forall(a:A). Exists(b:B). { (f1 a) = b })
+          (feq : Forall(a:A). {(f1 a) = (f2 a)})
+          (l:<list A>).
+   transs join (map1 f1 l) (map Z fun(u)(a).(f1 a) l)
+          [map_ext A B nat fun(u:nat)(a:A).(f1 a) 
+             fun(u:nat)(a:A).(f2 a) 
+             Z Z
+             foralli(x:A).existsi terminates (f1 x) by fTot
+                            { (fun(u)(a).(f1 a) Z x) = *} 
+                            join (fun(u)(a).(f1 a) Z x) (f1 x)
+             foralli(x:A). hypjoin (fun(u)(a).(f1 a) Z x) (fun(u)(a).(f2 a) Z x)
+                           by [feq x] end
+             l]
+         join (map Z fun(u)(a).(f2 a) l) (map1 f2 l)
+   end.
 
 Define nth : Fun(A:type)(n:nat)(l:<list A>).A :=
   fun nth(A:type)(n:nat)(l:<list A>):A.
@@ -253,6 +359,22 @@ Define foldr_append
               cong (foldr cookie f (foldr cookie f b l2) *) symm u
    end.
 
+Define foldr1_append
+  : Forall(A B : type)
+          (f:Fun(a:A)(b:B).B)(b:B)
+          (l1 l2:<list A>).
+     {(foldr1 f b (append l1 l2)) =
+        (foldr1 f (foldr1 f b l2) l1)} :=
+   foralli(A B : type)
+          (f:Fun(a:A)(b:B).B)(b:B)
+          (l1 l2:<list A>).
+     transs join (foldr1 f b (append l1 l2))
+                 (foldr Z fun(u)(x)(y).(f x y) b (append l1 l2))
+            [foldr_append A B nat Z fun(x:nat)(a:A)(b:B).(f a b) b l1 l2]
+            join (foldr Z fun(x:nat)(a:A)(b:B).(f a b) (foldr Z  fun(x:nat)(a:A)(b:B).(f a b) b l2) l1)
+                 (foldr1 f (foldr1 f b l2) l1)
+     end.
+
 Define append_assoc
  : Forall(A:type)(l1 l2 l3:<list A>).
      { (append (append l1 l2) l3) = (append l1 (append l2 l3)) } :=
@@ -297,6 +419,17 @@ Define map_append :
            l1]
       cong (append * L2) join (foldr Fcookie f nil l1) (map cookie fcn l1).
 
+Define map1_append : 
+   Forall(A B:type)(f: Fun(a:A).B)(l1 l2:<list A>).
+     { (map1 f (append l1 l2)) = (append (map1 f l1) (map1 f l2)) } :=
+   foralli(A B:type)(f: Fun(a:A).B)(l1 l2:<list A>).
+   transs join (map1 f (append l1 l2)) (map Z fun(u:nat)(a:A).(f a) (append l1 l2))
+          [map_append A B nat Z fun(u:nat)(a:A).(f a) l1 l2]
+          join (append (map Z fun(u:nat)(a:A).(f a) l1) (map Z fun(u:nat)(a:A).(f a) l2))
+               (append (map1 f l1) (map1 f l2))
+   end.
+
+
 Define append_nil : Forall(A:type)(l:<list A>).{ (append l nil) = l } :=
   foralli(A:type).
     induction(l:<list A>) by lp lt IHl return { (append l nil) = l } with
@@ -312,6 +445,84 @@ Define append_nil : Forall(A:type)(l:<list A>).{ (append l nil) = l } :=
                    [IHl cast t by cong <list *> symm inj <list *> lt]
               symm lp
     end.
+
+Define spec concat : Fun(A:type)(l:<list <list A>>).<list A> :=
+  fun(A:type)(l:<list <list A>>).
+    (foldr1 <list A> <list A> (append A) (nil A) l).
+
+Define concat_tot :=
+  foralli(A:type)(l:<list <list A>>).
+    existsi terminates (foldr1 <list A> <list A> (append A) (nil A) l) by
+              [foldr1Tot <list A> <list A> (append A) [appendTot A] (nil A) l]
+      { (concat l) = *}
+      join (concat l) (foldr1 append nil l).
+
+Total concat concat_tot.
+
+Define map1_concat : Forall(A B:type)(f:Fun(x:A).B)(l:<list <list A>>).
+                       { (map1 f (concat l)) = (concat (map1 fun(x).(map1 f x) l)) } :=
+  foralli(A B:type)(f:Fun(x:A).B).
+    induction(l:<list <list A>>) return { (map1 f (concat l)) = (concat (map1 fun(x).(map1 f x) l)) }
+    with
+      nil _ => hypjoin (map1 f (concat l)) (concat (map1 fun(x).(map1 f x) l)) by l_eq end
+    | cons _ x l' => 
+      transs hypjoin (map1 f (concat l)) (map1 f (append x (concat l'))) by l_eq end
+             [map1_append A B f x (concat A l')]
+             cong (append (map1 f x) *) [l_IH l']
+             hypjoin (append (map1 f x) (concat (map1 fun(x).(map1 f x) l')))  
+                     (concat (map1 fun(x).(map1 f x) l)) 
+               by l_eq end
+      end
+    end.
+        
+Define concat_append : Forall(A:type)(l1 l2:<list <list A>>).
+                         { (concat (append l1 l2)) = (append (concat l1) (concat l2)) } :=
+ foralli(A:type)(l1 l2:<list <list A>>).
+   transs join (concat (append l1 l2))
+               (foldr1 append nil (append l1 l2))
+          [foldr1_append <list A> <list A> (append A) (nil A) l1 l2]
+          join (foldr1 append (foldr1 append nil l2) l1)
+               (foldr1 append (concat l2) l1)
+          [foralli(l2:<list A>).
+             induction(l1:<list <list A>>) return { (foldr1 append l2 l1) = (append (concat l1) l2) }
+             with
+               nil _ => hypjoin (foldr1 append l2 l1) (append (concat l1) l2)
+                        by l1_eq end
+             | cons _ x l1' => 
+               transs 
+                 hypjoin (foldr1 append l2 l1) (append x (foldr1 append l2 l1'))
+                   by l1_eq end
+                 cong (append x *) [l1_IH l1']
+                 symm [append_assoc A x (concat A l1') l2]
+                 hypjoin (append (append x (concat l1')) l2) (append (concat l1) l2)
+                 by l1_eq end
+               end
+             end
+           (concat A l2) l1]
+   end.
+
+Define concat_concat_map1 
+  : Forall(A B:type)(f:Fun(x:A).<list <list B>>)
+          (fTot:Forall(x:A).Exists(y:<list <list B>>). { (f x) = y})
+          (l:<list A>).
+     { (concat (concat (map1 f l))) = (concat (map1 fun(x).(concat (f x)) l)) } :=
+  foralli(A B:type)(f:Fun(x:A).<list <list B>>)
+         (fTot:Forall(x:A).Exists(y:<list <list B>>). { (f x) = y}).
+  induction(l:<list A>) return { (concat (concat (map1 f l))) = (concat (map1 fun(x).(concat (f x)) l)) }
+  with
+    nil _ => hypjoin (concat (concat (map1 f l))) (concat (map1 fun(x).(concat (f x)) l))
+             by l_eq end
+  | cons _ x l' => 
+    transs hypjoin (concat (concat (map1 f l))) (concat (append (f x) (concat (map1 f l'))))
+             by l_eq end
+           [concat_append B terminates (f x) by fTot
+              (concat <list B> (map1 A <list <list B>> f l'))]
+           cong (append (concat (f x)) *) [l_IH l']
+           hypjoin (append (concat (f x)) (concat (map1 fun(x). (concat (f x)) l')))
+                   (concat (map1 fun(x).(concat (f x)) l))
+           by l_eq end
+    end
+  end.
 
 Define nth_append : Forall(A:type)(n:nat)(l:<list A>)(a:A)
                           (u:{(nth n l) = a}).
@@ -1286,3 +1497,4 @@ Define list_any : Fun(A:type)(f:Fun(^#owned a:A).bool)(^#owned l:<list A>) . boo
                      | tt =>  tt
                      end
     end.
+
