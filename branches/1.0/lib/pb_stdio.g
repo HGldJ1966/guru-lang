@@ -139,4 +139,18 @@ Define pb_readstring2 :=
 			    end
 	end.
 
+Inductive pb_read_until_char_t : type :=
+	return_pb_read_until_char : Fun(s:string)(eof:bool)(#unique pb_stdio:<pb_stdio_t tt>).#unique pb_read_until_char_t.
+
+Define pb_read_until_char : Fun(#unique pb_stdio:<pb_stdio_t tt>)(c:char)(u:{ (eqchar c Cc0) = ff })
+                            (eat_char:bool).#unique pb_read_until_char_t :=
+	fun (#unique pb_stdio:<pb_stdio_t tt>)(c:char)(u:{ (eqchar c Cc0) = ff})(eat_char:bool):#unique pb_read_until_char_t.
+	match (pb_checkout pb_stdio) with
+		return_pb_checkout pb_stdio stdio =>
+			match (read_until_char stdio c u eat_char) with
+				return_read_until_char s eof stdio =>
+					(return_pb_read_until_char s eof (pb_checkin pb_stdio stdio))
+			end
+	end.
+
 % Opaque pb_stdio_t.
