@@ -3,6 +3,9 @@ test-pb_stdio:	test-pb_stdio.g Makefile
 	gcc -O2 -w -o test-pb_stdio test-pb_stdio.c
 	echo "cde" | ./test-pb_stdio
 
+monad-example:
+	../bin/guru monad-example.g
+
 test-trie:	test-trie.g Makefile
 	../bin/guru test-trie.g
 	gcc -O2 -w -o test-trie test-trie.c
