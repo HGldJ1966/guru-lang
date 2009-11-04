@@ -8,38 +8,46 @@ Define histupdate := (trie_insert nat).
 Define do_hist :=
   fun hist(#unique pb_stdio:<pb_stdio_t tt>)(#unique h:hist):#unique hist.
     match (pb_read_until_char pb_stdio ' ' join (eqchar ' ' Cc0) ff tt %- eat the newline -%) with
-      mk_pb_read_string_t ign s pb_stdio' =>
-      match (inc s) with
-          nil A => dec stdin' dec s h
-        | cons A' a' s' => 
-            dec s'
-            let r = (histget h s) in
-            let n = match r with
-                      nothing A => Z
-                    | something A n => cast n by symm inj <option *> r_Eq
-                    end in
-            (hist stdin' (histupdate s (S n) h))
+      return_pb_read_until_char s ign pb_stdio' =>
+      match (inc string s) with
+          unil _ => do (consume_unique <pb_stdio_t tt> pb_stdio)
+					   (dec string s)
+					   h
+					end
+        | ucons _ a' s' => 
+            do (dec string s')
+				let r = (histget h s) in
+				let n = match r with
+						  nothing _ => Z
+						| something _ n => cast n by symm inj <option *> r_Eq
+						end in
+				(hist pb_stdio' (histupdate s (S n) h))
+			end
         end
     end.
 
 Define spin := fun spin(u:Unit):Unit. (spin unit).
 
 Define main :=
-  fun(unique stdin:stdin_t).
+  fun(#unique pb_stdio:<pb_stdio_t tt>).
     let ign = mk_ucvmod_t2 in % so we will compile this
-    let r = (do_hist stdin (trie_none nat)) in 
+    let r = (do_hist pb_stdio (trie_none nat)) in 
     let s = (stringc Cc (stringc Co (stringc Cw inc stringn))) in
     let o = (histget r s) in
     dec s
     let ign = 
       match o with
-        nothing A' => (print_nat zero)
-      | something A' a' => 
+        nothing _ => (print_nat zero)
+      | something _ a' => 
         let r = (print_nat cast a' by symm inj <option *> o_Eq) in
-          dec a' r
+          do (dec a')
+			  r
+		  end
       end in
 %    let ign = (spin unit) in
-    dec r Z.
+    do (dec r)
+		Z
+	end.
  
 %Set "debug_split_by_arity".
 %Set "comment_vars".
