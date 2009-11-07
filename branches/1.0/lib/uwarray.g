@@ -8,17 +8,17 @@ Include trusted "comparator.g".
 
 %Set "print_parsed".
 
-Define primitive type_family_abbrev uwarray := fun(A:type)(n:nat).<vec A n> <<END
+Define primitive type_family_abbrev uwarray := fun(A:type)(n:word).<vec A (word_to_nat n)> <<END
 #define gdelete_uwarray(x)
 END.
 
 Define primitive uwarray_new
- : Fun(spec A:type)(n:word)(#untracked a:A).#unique <uwarray A (word_to_nat n)> := 
-  fun(A:type)(n:word)(a:A). (mkvec A a (to_nat wordlen n)) <<END
-void *guwarray_new(int n, int a) {
+ : Fun(A:type)(n:word)(#untracked a:A).#unique <uwarray A n> := 
+  fun(A:type)(n:word)(a:A). (mkvec A a (word_to_nat n)) <<END
+void *guwarray_new(unsigned int n, int a) {
   void **h = (void **)guru_malloc(sizeof(int)*n);
   // fprintf(stdout,"gmk_uwarray(%x).\n", h);
-  int c;
+  unsigned int c;
   for (c = 0; c < n; c++)
     h[c] = a; 
   return h;
@@ -26,29 +26,34 @@ void *guwarray_new(int n, int a) {
 END.
 
 Define primitive uwarray_get
-   : Fun(spec A:type)(spec n:nat)(! #unique_owned l:<uwarray A n>)
-        (i:word)
-        (u:{(lt (to_nat i) n) = tt}). #untracked A := 
-  fun(A:type)(spec n:nat)(l:<uwarray A n>)(i:word)(u:{(lt (to_nat i) n) = tt}). 
-    (vec_get A n l (to_nat wordlen i) u) <<END
-inline void* guwarray_get(void **l, int i) { return l[i]; }
+   : Fun(A:type)(spec n:word)(! #unique_owned l:<uwarray A n>)
+        (i:word)(u:{(ltword i n) = tt}). #untracked A := 
+  fun(A:type)(spec n:word)(l:<uwarray A n>)(i:word)(u:{(ltword i n) = tt}).
+  abbrev p = hypjoin (lt (to_nat i) (to_nat n)) tt by u end in
+    (vec_get A (word_to_nat n) l (word_to_nat i) p) <<END
+inline void* guwarray_get(void **l, unsigned int i) { return l[i]; }
 END.
 
 Define primitive uwarray_set 
-  : Fun(A:type)(i:word)(#untracked a:A)(spec n:nat)(#unique l:<uwarray A n>)
-       (u:{(lt (to_nat i) n) = tt}). #unique <uwarray A n> :=
-  fun(A:type)(i:word)(a:A)(spec n:nat)(l:<uwarray A n>)(u:{(lt (to_nat i) n) = tt}).
-   (vec_update A n l (to_nat wordlen i) a u) <<END
-void *guwarray_set(int A, int c, void *d, void *l) {
+  : Fun(A:type)(spec n:word)(#unique l:<uwarray A n>)
+       (i:word)(#untracked a:A)
+       (u:{(ltword i n) = tt}). #unique <uwarray A n> :=
+  fun(A:type)(spec n:word)(l:<uwarray A n>)
+     (i:word)(a:A)
+     (u:{(ltword i n) = tt}).
+  abbrev p = hypjoin (lt (to_nat i) (to_nat n)) tt by u end in
+   (vec_update A (word_to_nat n) l (word_to_nat i) a p) <<END
+void *guwarray_set(int A, void *l, unsigned int c, void *d) {
   ((void **)l)[c] = d;
   return l;
 }
 END.
 
-Define primitive uwarray_free : Fun(A:type)(n:word)(^ #unique l:<uwarray A (word_to_nat n)>).void :=
-  fun(A:type)(n:word)(l:<uwarray A (word_to_nat n)>).voidi <<END
-void guwarray_free(int A, int n, void *l) {
+Define primitive uwarray_free : Fun(A:type)(spec n:word)(^ #unique l:<uwarray A n>).void :=
+  fun(A:type)(spec n:word)(l:<uwarray A n>).voidi <<END
+void guwarray_free(int A, void *l) {
   // fprintf(stdout,"guwarray_free(%x).\n", l);
   carraway_free(l);
 }
 END.
+
