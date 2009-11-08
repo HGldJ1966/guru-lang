@@ -30,24 +30,25 @@ Define spin := fun spin(u:Unit):Unit. (spin unit).
 
 Define main :=
   fun(#unique pb_stdio:<pb_stdio_t tt>).
-    let ign = mk_ucvmod_t2 in % so we will compile this
+    %let ign = mk_ucvmod_t2 in % so we will compile this
     let r = (do_hist pb_stdio (trie_none nat)) in 
     let s = (stringc Cc (stringc Co (stringc Cw inc stringn))) in
     let o = (histget r s) in
-    dec s
-    let ign = 
-      match o with
-        nothing _ => (print_nat zero)
-      | something _ a' => 
-        let r = (print_nat cast a' by symm inj <option *> o_Eq) in
-          do (dec a')
-			  r
-		  end
-      end in
-%    let ign = (spin unit) in
-    do (dec r)
-		Z
-	end.
+    do (dec string s)
+	    let ign = 
+	      match o with
+		nothing _ => (print_nat zero)
+	      | something _ a' => 
+		let r = (print_nat cast a' by symm inj <option *> o_Eq) in
+		  do (dec a')
+				  r
+			  end
+	      end in
+	%    let ign = (spin unit) in
+		do (dec r)
+			Z
+		end
+    end.
  
 %Set "debug_split_by_arity".
 %Set "comment_vars".
