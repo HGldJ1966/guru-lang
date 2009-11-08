@@ -9,9 +9,11 @@ Define test :=
 %	(pb_printstring pb_stdio "xyz").
 
 %	match (pb_readstring2 pb_stdio (inc nat five)) with
-	match (pb_readstring pb_stdio) with
+%-	match (pb_readstring pb_stdio) with
 		mk_pb_readstring s pb_stdio => (pb_println_string pb_stdio s)
 	end.
+-%
+	(pb_print_nat pb_stdio (inc nat five)).
 
 %-	let pb_stdio = (pb_skip2 pb_stdio (S Z)) in
 	let pb_stdio = (pb_pushback pb_stdio (pb_cur_char pb_stdio)) in
