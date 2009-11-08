@@ -153,4 +153,12 @@ Define pb_read_until_char : Fun(#unique pb_stdio:<pb_stdio_t tt>)(c:char)(u:{ (e
 			end
 	end.
 
+Define pb_print_nat :=
+	fun pb_print_nat (#unique pb_stdio:<pb_stdio_t tt>)(n:nat):#unique <pb_stdio_t tt>.
+	match n with 
+		Z => (pb_print_char pb_stdio (inc char CZ))
+	|	S n' => let pb_stdio = (pb_print_char pb_stdio (inc char CS)) in 
+					(pb_print_nat pb_stdio n')
+	end.
+
 % Opaque pb_stdio_t.
