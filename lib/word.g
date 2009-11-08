@@ -233,7 +233,7 @@ Define trusted word_inc_safe_total :
   Forall(b:word)
         (u:{ (ltword b word_max) = tt }).
   Exists(b':word).
-    { (word_inc_safe b u) = b' }
+    { (word_inc_safe b) = b' }
   := truei.
 
 Total word_inc_safe word_inc_safe_total.
@@ -289,7 +289,13 @@ Define word_inc2_word_to_nat
 Define trusted word_inc_safe_word_to_nat
   : Forall(w:word)
           (u:{ (ltword w word_max) = tt}).
-      { (word_to_nat (word_inc_safe w u)) = (S (word_to_nat w)) }
+      { (word_to_nat (word_inc_safe w)) = (S (word_to_nat w)) }
+  := truei.
+
+Define trusted word_inc_safe_implies_ltword :
+  Forall(w w':word)
+          (u:{ (word_inc_safe w) = w'}).
+      { (ltword w word_max) = tt }
   := truei.
 
 
