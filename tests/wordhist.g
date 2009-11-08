@@ -32,7 +32,7 @@ Define main :=
   fun(#unique pb_stdio:<pb_stdio_t tt>).
     %let ign = mk_ucvmod_t2 in % so we will compile this
     let r = (do_hist pb_stdio (trie_none nat)) in 
-    let s = (stringc Cc (stringc Co (stringc Cw (inc string stringn)))) in
+    let s = (stringc (inc char Cc) (stringc (inc char Co) (stringc (inc char Cw) (inc string stringn)))) in
     let o = (histget r s) in
     do (dec string s)
 	    let ign = 
