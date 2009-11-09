@@ -113,7 +113,7 @@ Inductive trie_interp_i1 : Fun(A:type).type :=
 
 Define trie_interp_h1 :=
   fun(spec A':type)
-     (#owned cookie:<trie_interp_i1 A'>)(#owned p:<pair string A'>).
+     (^#owned cookie:<trie_interp_i1 A'>)(^#owned p:<pair string A'>).
     match cookie with
      mk_trie_interp_i1 A'' c =>
        match p with
@@ -123,19 +123,19 @@ Define trie_interp_h1 :=
         abbrev a = cast p2 
                    by trans symm inj <pair ** *> p_Eq  
                             PA'' in
-        cast (mkpair string A'' (stringc c inc s) inc a)
+        cast (mkpair string A'' (stringc c (inc string s)) (inc A'' a))
         by symm cong <pair string *> PA''
       end
     end.
 
 Inductive trie_interp_i2 : Fun(A:type).type :=
   mk_trie_interp_i2 : Fun(A:type)
-                         (r:Fun(A:type)(unique_owned t:<trie A>).
+                         (r:Fun(A:type)(#unique_owned t:<trie A>).
                                <list <pair string A>>).
                          <trie_interp_i2 A>.
 
 Define trie_interp_h2 :=
-  fun(spec A:type)(owned cookie:<trie_interp_i2 A>)(c:char)
+  fun(spec A:type)(#owned cookie:<trie_interp_i2 A>)(c:char)
      (#unique_owned t:<trie A>)(p:<list <pair string A>>).
     match cookie with
       mk_trie_interp_i2 A' r =>
@@ -145,13 +145,17 @@ Define trie_interp_h2 :=
         let cookie = (mk_trie_interp_i1 A' c) in
         let tmp = (map T' T' <trie_interp_i1 A'> cookie 
                     (trie_interp_h1 A') i) in
-        dec cookie dec i 
-        let ret = 
-        cast 
-         (append T' tmp
-          cast p by cong <list <pair string *>> PA)
-        by cong <list <pair string *>> symm PA in
-        dec tmp ret
+        do (dec <trie_interp_i1 A> cookie)
+			(dec <list <pair string A>> i) 
+			let ret = 
+			cast 
+			 (append T' tmp
+			  cast p by cong <list <pair string *>> PA)
+			by cong <list <pair string *>> symm PA in
+			do (dec <list <pair string A>> tmp)
+				ret
+			end
+		end
     end.
 
 Define trie_interp_h2_sztot
