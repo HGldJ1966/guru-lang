@@ -6,16 +6,15 @@ Define histget := (trie_lookup nat).
 Define histupdate := (trie_insert nat).
 
 Inductive do_hist_t : type := 
-	return_do_hist : Fun(#unique pb_stdio : <pb_stdio_t ff>)(#unique h:hist).#unique do_hist_t.
+	return_do_hist : Fun(#unique pb_stdio : <pb_stdio_t tt>)(#unique h:hist).#unique do_hist_t.
 
 Define do_hist :=
-  fun do_hist(#unique pb_stdio:<pb_stdio_t tt>)(#unique h:hist):#unique hist.
+  fun do_hist(#unique pb_stdio:<pb_stdio_t tt>)(#unique h:hist):#unique do_hist_t.
     match (pb_read_until_char pb_stdio ' ' join (eqchar ' ' Cc0) ff tt %- eat the newline -%) with
       return_pb_read_until_char s ign pb_stdio' =>
       match (inc string s) with
-          unil _ => do (consume_unique <pb_stdio_t tt> pb_stdio')
-					   (dec string s)
-					   h
+          unil _ => do (dec string s)
+					   (return_do_hist pb_stdio' h)
 					end
         | ucons _ a' s' => 
             do (dec string s')
@@ -34,25 +33,27 @@ Define spin := fun spin(u:Unit):Unit. (spin unit).
 Define main :=
   fun(#unique pb_stdio:<pb_stdio_t tt>).
     %let ign = mk_ucvmod_t2 in % so we will compile this
-    let r = (do_hist pb_stdio (trie_none nat)) in 
-    let s = "cow" in
-    let o = (histget (inspect_unique hist r) (inspect string s)) in
-    do (dec string s)
-	    let ign = 
-	      match o with
-			nothing _ => (pb_print_nat pb_stdio zero)
-	      | something _ a' => 
-			let r = (pb_print_nat pb_stdio cast a' by symm inj <option *> o_Eq) in
-		  do (dec nat a')
-				  r
-			  end
-	      end in
-	%    let ign = (spin unit) in
-		do (consume_unique hist r)
-			Z
+    let r' = (do_hist pb_stdio (trie_none nat)) in
+	match r' with
+		return_do_hist pb_stdio r =>
+		let s = "cow" in
+		let o = (histget (inspect_unique hist r) (inspect string s)) in
+		do (dec string s)
+			let ign = 
+			match o with
+				nothing _ => (pb_print_nat pb_stdio (inc nat zero))
+			|	something _ a' => 
+					(pb_print_nat pb_stdio cast a' by symm inj <option *> o_Eq)
+			end in
+			do  (consume_unique <pb_stdio_t tt> ign)
+				(consume_unique hist r)
+			end
 		end
     end.
  
+Define test :=
+	(main pb_stdio).
+
 %Set "debug_split_by_arity".
 %Set "comment_vars".
 
