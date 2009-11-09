@@ -85,16 +85,24 @@ Define trie_lookup : Fun(A:type)(^#unique_owned t:<trie A>)(^#owned s:string).
                         <option A> :=
   fun trie_lookup(A:type)(^#unique_owned t:<trie A>)(^#owned s:string)
       : <option A> .
-    match t with
-      trie_none _ => (nothing A)
+  let ret = 
+    match ! t with
+      trie_none _ => do (consume_owned string s) 
+                        (nothing A)
+                     end
     | trie_exact _ s' a' => 
         match (stringeq s s') with
-          ff => (nothing A)
-        | tt => (something A a')
+          ff => do (consume_owned A a')
+                   (nothing A)
+                end
+        | tt => (something A (owned_to_unowned A a'))
         end
     | trie_next _ o' l' =>
-        match s with
-          unil _ => (inc <option A> o')
+      let ret = 
+        match ! s with
+          unil _ => do (consume_unique_owned <qcharray <trie A> stringn> l')
+                       (owned_to_unowned <option A> o')
+                    end
         | ucons _ c s' => 
           let r = (trie_lookup A (qcharray_read <trie A> c l') s') in 
           do
@@ -102,8 +110,14 @@ Define trie_lookup : Fun(A:type)(^#unique_owned t:<trie A>)(^#owned s:string).
             (consume_unique_owned <qcharray <trie A> stringn> l')
             r
           end
-        end
-     end.
+        end in
+      do (consume_owned string s)
+         ret
+      end
+    end in
+  do (consume_unique_owned <trie A> t)
+     ret
+  end.
 
 %-
 Inductive trie_interp_i1 : Fun(A:type).type :=
@@ -111,9 +125,9 @@ Inductive trie_interp_i1 : Fun(A:type).type :=
                         (c:char).
                         <trie_interp_i1 A>.
 
-Define trie_interp_h1 :=
+Define spec trie_interp_h1 :=
   fun(spec A':type)
-     (^#owned cookie:<trie_interp_i1 A'>)(^#owned p:<pair string A'>).
+     (cookie:<trie_interp_i1 A'>)(p:<pair string A'>).
     match cookie with
      mk_trie_interp_i1 A'' c =>
        match p with
@@ -134,9 +148,9 @@ Inductive trie_interp_i2 : Fun(A:type).type :=
                                <list <pair string A>>).
                          <trie_interp_i2 A>.
 
-Define trie_interp_h2 :=
-  fun(spec A:type)(#owned cookie:<trie_interp_i2 A>)(c:char)
-     (#unique_owned t:<trie A>)(p:<list <pair string A>>).
+Define spec trie_interp_h2 :=
+  fun(spec A:type)(cookie:<trie_interp_i2 A>)(c:char)
+     (t:<trie A>)(p:<list <pair string A>>).
     match cookie with
       mk_trie_interp_i2 A' r =>
         abbrev T' = <pair string A'> in
@@ -145,22 +159,15 @@ Define trie_interp_h2 :=
         let cookie = (mk_trie_interp_i1 A' c) in
         let tmp = (map T' T' <trie_interp_i1 A'> cookie 
                     (trie_interp_h1 A') i) in
-        do (dec <trie_interp_i1 A> cookie)
-			(dec <list <pair string A>> i) 
-			let ret = 
-			cast 
-			 (append T' tmp
-			  cast p by cong <list <pair string *>> PA)
-			by cong <list <pair string *>> symm PA in
-			do (dec <list <pair string A>> tmp)
-				ret
-			end
-		end
+        cast 
+	 (append T' tmp
+            cast p by cong <list <pair string *>> PA)
+        by cong <list <pair string *>> symm PA 
     end.
 
 Define trie_interp_h2_sztot
   : Forall(A:type)
-          (l:<qcharray <trie A>>)
+          (l:<qcharray <trie A> stringn>)
           (r:Fun(A:type)(t:<trie A>).
                <list <pair string A>>)
           (rTot: Forall(A:type)(t:<trie A>)(st:{(lt size t size l) = tt}).
@@ -173,7 +180,7 @@ Define trie_interp_h2_sztot
       Exists(l:<list <pair string A>>).
         {(trie_interp_h2 (mk_trie_interp_i2 r) c a b) = l} :=
   foralli(A:type)
-         (l:<qcharray <trie A>>)
+         (l:<qcharray <trie A> stringn>)
          (r:Fun(A:type)(t:<trie A>). <list <pair string A>>)
          (rTot: Forall(A:type)(t:<trie A>)(st:{(lt size t size l) = tt}).
                   Exists(l:<list <pair string A>>).
@@ -238,7 +245,7 @@ Define trie_interp_h2_tot
         b]
    end.
     
-Define trie_interp :=
+Define spec trie_interp :=
   fun trie_interp(A:type)(#unique_owned t:<trie A>) : <list <pair string A>> .
   abbrev T = <pair string A> in
     match t with
@@ -264,7 +271,6 @@ Define trie_interp :=
         end          
     end.
 
-%Set "debug_eval".
 
 Define trie_interp_tot : Forall(A:type)(t:<trie A>).
                           Exists(l:<list <pair string A>>).
