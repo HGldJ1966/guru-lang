@@ -64,21 +64,40 @@ Define equlist : Fun(A:type)(eqA:Fun(#untracked x1 x2:A).bool)
                     (^#owned l1 l2:<ulist A>)
                     .bool :=
   fun equlist(A:type)(eqA:Fun(#untracked x1 x2:A).bool)(^#owned l1 l2:<ulist A>):bool.
-  match l1 with
+  let ret = 
+  match ! l1 with
     unil _ =>
-      match l2 with
+    let ret = 
+      match ! l2 with
         unil _ => tt
-      | ucons _ h2 t2 => ff
-      end
+      | ucons _ h2 t2 => do (consume_owned <ulist A> t2) 
+                            ff
+                         end
+      end in
+    do (consume_owned <ulist A> l2)
+       ret
+    end
   | ucons _ h1 t1 =>
-      match l2 with
-        unil _ => ff
+    let ret =
+      match ! l2 with
+        unil _ => do (consume_owned <ulist A> t1) 
+                     ff
+                  end
       | ucons _ h2 t2 => 
          match (eqA h1 h2) with
-           ff => ff
+           ff => do (consume_owned <ulist A> t1) 
+                    (consume_owned <ulist A> t2) 
+                    ff
+                 end
          | tt => (equlist A eqA t1 t2)
          end
-      end
+      end in
+    do (consume_owned <ulist A> l2)
+       ret
+    end
+  end in
+  do (consume_owned <ulist A> l1)
+     ret
   end.
 
 Define equlist_total

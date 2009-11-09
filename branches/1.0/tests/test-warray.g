@@ -1,8 +1,10 @@
 
-Include "../lib/nat.g".
-Include "../lib/warray.g".
-Include "../lib/stdio.g".
-Include "../lib/boxedword.g".
+Set "print_parsed".
+
+Include trusted "../lib/nat.g".
+Include trusted "../lib/warray-util.g".
+Include trusted "../lib/stdio.g".
+Include trusted "../lib/boxedword.g".
 
 %Set "debug_eta_expand".
 %Set "debug_to_carraway".
