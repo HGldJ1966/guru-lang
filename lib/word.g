@@ -166,11 +166,30 @@ Define trusted ltword_trans :
     { (ltword a c) = tt }
   := truei.
 
+Define trusted leltword_trans :
+  Forall(a b c:word)
+        (u1: { (leword a b) = tt })
+        (u2: { (ltword b c) = tt }).
+    { (ltword a c) = tt }
+  := truei.
+
+Define trusted ltleword_trans :
+  Forall(a b c:word)
+        (u1: { (ltword a b) = tt })
+        (u2: { (leword b c) = tt }).
+    { (ltword a c) = tt }
+  := truei.
+
 Define word_comp := (ucomparator word ltword leword).
+
+Define trusted ltword_implies_ltword_word_max :
+  Forall(a b:word)(u:{ (ltword a b) = tt }).
+    { (ltword a word_max) = tt }
+  := truei.
 
 Define trusted ltword_implies_lt_word_max :
   Forall(a b:word)(u:{ (ltword a b) = tt }).
-    { (ltword a word_max) = tt }
+    { (lt (to_nat a) (to_nat word_max)) = tt }
   := truei.
 
 
