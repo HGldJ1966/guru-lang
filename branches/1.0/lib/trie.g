@@ -160,7 +160,7 @@ Define trie_interp_h2 :=
 
 Define trie_interp_h2_sztot
   : Forall(A:type)
-          (l:<charvec <trie A>>)
+          (l:<qcharray <trie A>>)
           (r:Fun(A:type)(t:<trie A>).
                <list <pair string A>>)
           (rTot: Forall(A:type)(t:<trie A>)(st:{(lt size t size l) = tt}).
@@ -173,7 +173,7 @@ Define trie_interp_h2_sztot
       Exists(l:<list <pair string A>>).
         {(trie_interp_h2 (mk_trie_interp_i2 r) c a b) = l} :=
   foralli(A:type)
-         (l:<charvec <trie A>>)
+         (l:<qcharray <trie A>>)
          (r:Fun(A:type)(t:<trie A>). <list <pair string A>>)
          (rTot: Forall(A:type)(t:<trie A>)(st:{(lt size t size l) = tt}).
                   Exists(l:<list <pair string A>>).
