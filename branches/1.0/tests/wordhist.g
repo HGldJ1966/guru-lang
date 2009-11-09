@@ -5,23 +5,26 @@ Define hist := <trie nat>.
 Define histget := (trie_lookup nat).
 Define histupdate := (trie_insert nat).
 
+Inductive do_hist_t : type := 
+	return_do_hist : Fun(#unique pb_stdio : <pb_stdio_t ff>)(#unique h:hist).#unique do_hist_t.
+
 Define do_hist :=
-  fun hist(#unique pb_stdio:<pb_stdio_t tt>)(#unique h:hist):#unique hist.
+  fun do_hist(#unique pb_stdio:<pb_stdio_t tt>)(#unique h:hist):#unique hist.
     match (pb_read_until_char pb_stdio ' ' join (eqchar ' ' Cc0) ff tt %- eat the newline -%) with
       return_pb_read_until_char s ign pb_stdio' =>
       match (inc string s) with
-          unil _ => do (consume_unique <pb_stdio_t tt> pb_stdio)
+          unil _ => do (consume_unique <pb_stdio_t tt> pb_stdio')
 					   (dec string s)
 					   h
 					end
         | ucons _ a' s' => 
             do (dec string s')
-				let r = (histget h s) in
+				let r = (histget (inspect_unique hist h) (inspect string s)) in
 				let n = match r with
 						  nothing _ => Z
 						| something _ n => cast n by symm inj <option *> r_Eq
 						end in
-				(hist pb_stdio' (histupdate s (S n) h))
+				(do_hist pb_stdio' (histupdate s (S n) h))
 			end
         end
     end.
@@ -33,7 +36,7 @@ Define main :=
     %let ign = mk_ucvmod_t2 in % so we will compile this
     let r = (do_hist pb_stdio (trie_none nat)) in 
     let s = "cow" in
-    let o = (histget r s) in
+    let o = (histget (inspect_unique hist r) (inspect string s)) in
     do (dec string s)
 	    let ign = 
 	      match o with
@@ -45,7 +48,7 @@ Define main :=
 			  end
 	      end in
 	%    let ign = (spin unit) in
-		do (dec hist r)
+		do (consume_unique hist r)
 			Z
 		end
     end.

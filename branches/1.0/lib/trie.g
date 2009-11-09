@@ -30,7 +30,7 @@ Define trie_insert : Fun(A:type)(s:string)(a:A)(#unique t:<trie A>).
          insert (s,a) into the result. -%
 
       let cookie = Z in
-      let v = (qcharray_new <trie A> nat cookie
+      let v = (qcharray_new <trie A> nat (inspect nat cookie)
                  fun(^#owned cookie:nat) : #unique <trie A>.
                      (trie_none A)) in
       do 
