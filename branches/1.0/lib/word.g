@@ -367,6 +367,7 @@ Define word_msb :=
     abbrev p = join (lt (to_nat word0x1f) wordlen) tt in
     (word_read_bit word0x1f p w).
 
+
 Define trusted word0_set_bit_pow2
   : Forall(i:word)(u:{(lt (to_nat i) wordlen) = tt}).
       { (to_nat (word_set_bit i word0)) = (pow2 (to_nat i)) } :=

@@ -221,7 +221,7 @@ hist-test2h:	hist-test2h.hs
 
 W:	
 #	gcc -O0 -pg -ggdb wordhist.c -o wordhist
-	gcc -O4 wordhist.c -o wordhist
+	gcc -O4 -w wordhist.c -o wordhist
 #	gcc -O0 -ggdb wordhist.c -o wordhist
 
 wordhist:	wordhist.g
