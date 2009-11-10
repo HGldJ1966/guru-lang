@@ -30,7 +30,7 @@ Define do_hist :=
 
 Define spin := fun spin(u:Unit):Unit. (spin unit).
 
-Define pmain :=
+Define main :=
   fun(#unique pb_stdio:<pb_stdio_t tt>).
     %let ign = mk_ucvmod_t2 in % so we will compile this
     let r' = (do_hist pb_stdio (trie_none nat)) in
@@ -52,7 +52,7 @@ Define pmain :=
     end.
  
 Define test :=
-	(pmain pb_stdio).
+	(main pb_stdio).
 
 %Set "debug_split_by_arity".
 %Set "comment_vars".
