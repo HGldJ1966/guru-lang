@@ -119,7 +119,7 @@ Define trie_lookup : Fun(A:type)(^#unique_owned t:<trie A>)(^#owned s:string).
      ret
   end.
 
-%-
+
 Inductive trie_interp_i1 : Fun(A:type).type :=
   mk_trie_interp_i1 : Fun(A:type)
                         (c:char).
@@ -212,6 +212,7 @@ Define trie_interp_h2_sztot
                (append l2 b)
        by ul2 end.
     
+%-
 Define trie_interp_h2_tot
   : Forall(A:type)
           (r:Fun(A:type)(t:<trie A>). <list <pair string A>>)
@@ -244,7 +245,7 @@ Define trie_interp_h2_tot
                   [mkvec_sz <trie A> a n']
         b]
    end.
-    
+
 Define spec trie_interp :=
   fun trie_interp(A:type)(#unique_owned t:<trie A>) : <list <pair string A>> .
   abbrev T = <pair string A> in
@@ -257,7 +258,7 @@ Define spec trie_interp :=
     | trie_next A' o' l' => 
         abbrev P = symm inj <trie *> t_Eq in
         abbrev o = cast o' by cong <option *> P in
-        abbrev l = cast l' by cong <charvec <trie *>> P in
+        abbrev l = cast l' by cong <qcharray <trie *> stringn> P in
         let cookie = (mk_trie_interp_i2 A trie_interp) in
         let S = 
            (cvfold <trie A> <list T> <trie_interp_i2 A> l

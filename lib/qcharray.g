@@ -6,6 +6,7 @@ Include trusted "vec.g".
 Include trusted "string.g".
 Include trusted "minus.g".
 Include trusted "unique_owned.g".
+Include "charray.g".
 
 % the string tells which characters' values are checked out right now.
 
@@ -118,23 +119,23 @@ END.
 %-
 
 Inductive cvfold_i : Fun(A B:type).type :=
-  mk_cvfold_i : Fun(A B C:type)(unique_owned l:<charray A>)
+  mk_cvfold_i : Fun(A B C:type)(#unique_owned l:<charray A>)
                    (start next : char)
                    (fcookie:C)
-                   (f:Fun(owned fcookie:C)(c:char)(unique_owned a:A)(b:B).B)
+                   (f:Fun(#owned fcookie:C)(c:char)(#unique_owned a:A)(b:B).B)
                    (b:B)
-                   (r:Fun(A B C:type)(unique_owned l:<charray A>)
+                   (r:Fun(A B C:type)(#unique_owned l:<charray A>)
                          (start : char)
-                         (owned fcookie:C)
-                         (f:Fun(owned fcookie:C)
-                               (c:char)(unique_owned a:A)(b:B).B)
+                         (#owned fcookie:C)
+                         (f:Fun(#owned fcookie:C)
+                               (c:char)(#unique_owned a:A)(b:B).B)
                          (b:B).B). <cvfold_i A B>.
 
 Define cvfold_h :=
-  fun cvfold_h(A B C:type)(unique_owned l:<charray A>)
+  fun cvfold_h(A B C:type)(#unique_owned l:<charray A>)
               (start : char)
-              (owned fcookie:C)
-              (f:Fun(owned fcookie:C)(c:char)(unique_owned a:A)(b:B).B)
+              (#owned fcookie:C)
+              (f:Fun(#owned fcookie:C)(c:char)(#unique_owned a:A)(b:B).B)
               (b:B):B.
     match (char_inc start) with
       mk_char_inc_t next wrapped =>
@@ -142,16 +143,16 @@ Define cvfold_h :=
               match wrapped with
                 ff => (mk_cvfold_i A B C l start next inc fcookie f b cvfold_h)
               | tt => (mk_cvfold_i A B C l start next inc fcookie f b 
-                         fun(A B C:type)(unique_owned l:<charray A>)
+                         fun(A B C:type)(#unique_owned l:<charray A>)
                             (start : char)
-                            (owned fcookie:C)
-                            (f:Fun(owned fcookie:C)(c:char)
-                                  (unique_owned a:A)(b:B).B)
+                            (#owned fcookie:C)
+                            (f:Fun(#owned fcookie:C)(c:char)
+                                  (#unique_owned a:A)(b:B).B)
                             (b:B). b)
                      end in
           (ucvget A l start <cvfold_i A B> B
             cookie
-            fun(cookie: <cvfold_i A B>)(unique_owned a:A).
+            fun(cookie: <cvfold_i A B>)(#unique_owned a:A).
               match cookie with
                 mk_cvfold_i A' B' C' l' start' next' fcookie' f' b' r =>
                   abbrev ca = cast a by inj <cvfold_i * **> cookie_Eq in
