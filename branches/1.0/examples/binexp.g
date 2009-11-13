@@ -7,8 +7,7 @@ Include trusted "../lib/nat.g".
 Include trusted "../lib/list.g".
 
 %=============================================================================
-% definition of the function
-% function g below is the binexp function
+% definition of the binexp function (named g below)
 %=============================================================================
 
 Define f :=
@@ -36,12 +35,13 @@ Interpret (g (S (S Z))).
 Interpret (g (S (S (S Z)))).
 -%
 
+
 %=============================================================================
 % proof of termination
 %=============================================================================
 
 % a helper function h
-% h defines the second argument of the function f
+% h constructs the second argument for the function f
 % it also allows the same argument with multiset-ordering-based proof
 % because it generates a set of numbers in an increasing order
 
@@ -53,7 +53,8 @@ Define h :=
   end.
 
 
-% lem1 findes f in terms of h and simplifies f
+% lem1 defines f in terms of h and simplifies f
+% by fixing the first arugment to be Z
 
 Define lem1 :
   Forall(n:nat)(l:<list nat>).
