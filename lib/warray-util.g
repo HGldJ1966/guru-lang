@@ -1,5 +1,7 @@
 Include trusted "warray.g".
 
+%Set "debug_join".
+
 Define warray_binary_search
   : Fun(A:type)                 %% type of the warray
        (spec n:word)            %% length of the warray
@@ -41,11 +43,11 @@ Define warray_binary_search
                        ff %not found
                     end
             | tt => 
-            abbrev ltuP = trans join (le (word_to_nat (word_plus mid word1)) (word_to_nat last)) 
-		                     (leword (word_plus mid word1) last)
+            abbrev ltuP = trans [leword_lem (word_plus mid word1) last]
                                 ltu in
 
-             (warray_binary_search A n l (word_plus mid word1)
+             (warray_binary_search 
+                A n l (word_plus mid word1)
                      last value c [lelt_trans (word_to_nat (word_plus mid word1)) 
 		     	  	  	      (word_to_nat last) (word_to_nat n)
                                    ltuP v]
@@ -62,8 +64,7 @@ Define warray_binary_search
                     end
             | tt => (warray_binary_search A n l first (word_minus mid word1)
                      value c u midMinusOneProof 
-		     trans join (le (word_to_nat first) (word_to_nat (word_minus mid word1)))
-		     	   	(leword first (word_minus mid word1)) gtu)
+		     trans [leword_lem first (word_minus mid word1)] gtu)
             end
     end.
 

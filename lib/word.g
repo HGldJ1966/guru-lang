@@ -159,6 +159,11 @@ Define primitive leword : Fun(#untracked w1 w2:word).bool :=
   int gleword(unsigned int w1, unsigned int w2) { return (w1 <= w2); }
 END.
 
+Define leword_lem : Forall(w1 w2:word). { (le (word_to_nat w1) (word_to_nat w2)) = (leword w1 w2) } :=
+  foralli(w1 w2:word).
+    join (le (word_to_nat w1) (word_to_nat w2)) 
+	 (leword w1 w2).
+
 Define trusted ltword_trans :
   Forall(a b c:word)
         (u1: { (ltword a b) = tt })
@@ -372,6 +377,58 @@ Define trusted word0_set_bit_pow2
   : Forall(i:word)(u:{(lt (to_nat i) wordlen) = tt}).
       { (to_nat (word_set_bit i word0)) = (pow2 (to_nat i)) } :=
   truei.
+
+
+Define lt_word_set_bit
+  : Forall(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word).
+      { (lt Z (to_nat (word_set_bit i w))) = tt } :=
+  foralli(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word).
+  trans
+    cong (lt Z (to_nat *)) 
+      join (word_set_bit i w) (vec_update w (to_nat i) tt)
+    [induction(l:nat)(v:<vec bool l>) 
+     return Forall(n:nat)(u:{(lt n l) = tt}).
+             {(lt Z (to_nat (vec_update v n tt))) = tt }
+     with
+       vecn _ => foralli(n:nat)(u:{(lt n l) = tt}).
+                 contra
+                   transs symm u
+                          cong (lt n *) inj <vec ** *> v_Eq
+                          [lt_Z n]
+                          clash ff tt
+                   end
+                   {(lt Z (to_nat (vec_update v n tt))) = tt }                                         
+     | vecc _ l' b v' => 
+         foralli(n:nat)(u:{(lt n l) = tt}).
+           case n with
+             Z => hypjoin (lt Z (to_nat (vec_update v n tt))) tt
+                  by n_eq v_eq end
+           | S n' => 
+             abbrev P = symm
+                        transs symm u
+                               cong (lt * l) n_eq
+                               cong (lt (S n') *) inj <vec ** *> v_Eq
+                               [S_lt_S n' l']
+                        end in
+             abbrev IH = [v_IH l' v' n' P] in
+             case b with
+               ff => transs cong (lt Z *) 
+                              hypjoin (to_nat (vec_update v n tt))  
+                                      (mult two (to_nat (vec_update v' n' tt)))
+                              by b_eq v_eq n_eq end
+                            cong (lt * (mult two (to_nat (vec_update v' n' tt))))
+                              join Z (mult two Z) 
+                            [mult_lt one Z (to_nat l' (vec_update bool l' v' n' tt P)) IH]
+                     end
+             | tt => hypjoin (lt Z (to_nat (vec_update v n tt))) tt
+                     by b_eq n_eq v_eq end
+             end
+           end
+     end
+   wordlen
+   w 
+   (to_nat wordlen i) 
+   u].
 
 
 %=============================================================================
