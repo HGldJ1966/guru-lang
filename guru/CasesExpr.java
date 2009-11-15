@@ -140,7 +140,7 @@ public class CasesExpr extends Expr {
 
     public Expr classify(Context ctxt, int approx, boolean spec) {
 	Expr clt = t.classify(ctxt,approx,spec).defExpandTop(ctxt,false,spec);
-	if (!clt.isdtype(ctxt, spec))
+	if (approx != APPROX_TRIVIAL && !clt.isdtype(ctxt, spec))
 	    handleError(ctxt,
 			"The scrutinee's type in a match-term is not"
 			+" an inductive type (or is opaque).\n"
@@ -187,10 +187,14 @@ public class CasesExpr extends Expr {
 		ctxt.setClassifier(x2, assump2);
 	    }
 
-	    if (!C[i].refine(ctxt, clt1, approx, spec)) 
+	    if (!C[i].refine(ctxt, clt1, approx, spec)) {
+		C[i].clearDefs(ctxt);
 		continue;
+	    }
 
 	    Expr tp = C[i].body.classify(ctxt,approx,spec);
+
+	    C[i].impossible = C[i].impossible || (C[i].body.construct == IMPOSSIBLE);
 
 	    if (retT == null) {
 		int freevars = 0;
@@ -215,13 +219,15 @@ public class CasesExpr extends Expr {
 			    +"\n"
 			    +"2. computed: "+tp.toString(ctxt)+"\n"
 			    +"3. expected: "+retT.toString(ctxt));
+
+	    C[i].clearDefs(ctxt);
 	}
 		
 	if (retT == null) {
 	    if (iend > 0)
 		handleError(ctxt, "Could not compute the "
 			    +"return type for a match, since no cases\n"
-			    +"were checked.");
+			    +"were checked.  Check that the pattern's term constructors are from\nthe same type as the scrutinee.");
 	    handleError(ctxt, "No return type is stated for a match term,"
 			+ " but the match has no cases, so no return type\n"
 			+ "could be computed.\n");

@@ -36,8 +36,8 @@ public class PredApp extends ReducibleApp{
 
     /* we cannot use this, since beta-reduction may return an arbitrary
        formula. */
-    public App spineForm(Context ctxt, boolean drop_annos, boolean spec,
-			 boolean expand_defs) {
+    public Expr spineForm(Context ctxt, boolean drop_annos, boolean spec,
+			  boolean expand_defs) {
 	handleError(ctxt,"Internal error: spineForm called on a PredApp.");
 	return null;
     }
@@ -49,6 +49,10 @@ public class PredApp extends ReducibleApp{
 	    return false;
 
 	return ctxt.isPredicate(c); 
+    }
+
+    public Expr classify(Context ctxt, int approx, boolean spec) {
+	return super.classify(ctxt,approx,true);
     }
 
     public Expr dropAnnos(Context ctxt) {

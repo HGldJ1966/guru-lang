@@ -12,23 +12,52 @@ public class Position {
     }
     
     public void print(java.io.PrintStream w) {
-	w.print("\"");
+	print(w,true);
+    }
+    public void print(java.io.PrintStream w, boolean quoted) {
+	if (quoted)
+	    w.print("\"");
 	w.print(file);
 	if (linenum > 0) {
-		w.print("\", line ");
+	    if (quoted)
+		w.print("\"");
+	    w.print(", line ");
+	    w.print(new Integer(linenum));
+	    w.print(", column ");
+	    w.print(new Integer(column));
+	}
+	else
+	    if (quoted)
+		w.print("\" ");
+    }
+
+    public String toString(boolean quoted) {
+	java.io.ByteArrayOutputStream s = new java.io.ByteArrayOutputStream();
+	java.io.PrintStream w = new java.io.PrintStream(s);
+	print(w,quoted);
+	return s.toString();
+    }
+
+    public String toString() {
+	return toString(true);
+    }
+
+    public void printNoQuotes(java.io.PrintStream w) {
+	w.print(file);
+	if (linenum > 0) {
+		w.print(", line ");
 		w.print(new Integer(linenum));
 		w.print(", column ");
 		w.print(new Integer(column));
 	}
 	else
-		w.print("\" ");
+		w.print(" ");
     }
 
-    public String toString() {
+    public String toStringNoQuotes() {
 	java.io.ByteArrayOutputStream s = new java.io.ByteArrayOutputStream();
 	java.io.PrintStream w = new java.io.PrintStream(s);
-	print(w);
+	printNoQuotes(w);
 	return s.toString();
     }
-
 }

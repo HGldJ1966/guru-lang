@@ -4,6 +4,8 @@ Include "pow.g".
 Include "vec.g".
 
 Define bv := <vec bool>.
+Define bv_head := (vec_head bool).
+Define bv_tail := (vec_tail bool).
 Define bvn := (vecn bool).
 Define bvc := (vecc bool).
 Define bv_reverse := (vec_reverse bool). 
@@ -66,6 +68,8 @@ Define to_nat_tot
            end
           cast a by symm inj <vec * **> vv join a a]
   end.
+
+Total to_nat to_nat_tot.
 
 Inductive to_bv_t : type :=
   mk_to_bv_t : Fun(spec l:nat)(v:<bv l>).to_bv_t.
@@ -258,9 +262,6 @@ Define to_nat_eq_Z2 : Forall(l:nat)(v:<bv l>)
      end
   end.
 
-
-Set "show_spec_args".
-
 Define to_bv_nat : Forall(l:nat)(v:<bv l>).
                    { (to_bv (to_nat v)) = (normalize v) } :=
   induction(l:nat)(v:<bv l>) 
@@ -305,7 +306,7 @@ Define to_bv_nat : Forall(l:nat)(v:<bv l>).
                                            terminates (to_nat l' cv') 
                                            by to_nat_tot]
                            trans [v_IH l' cv']
-	 		   nv'_eq
+                           nv'_eq
                    trans join match (mk_to_bv_t rv) with
                               mk_to_bv_t v => 
                                 (mk_to_bv_t (bvc (mod2 (S n)) v))
@@ -668,3 +669,65 @@ Define to_nat_append
              by inj <vec ** *> v1_Eq end
      end
      l1 v1].
+
+Define to_nat_neq 
+  : Forall(l:nat)(v1:<bv l>)(v2:<bv l>)
+          (u:{ (eqnat (to_nat v1) (to_nat v2)) = ff }).
+      { (eqbv v1 v2) = ff } :=
+  foralli(l:nat)(v1:<bv l>)(v2:<bv l>)
+         (u:{ (eqnat (to_nat v1) (to_nat v2)) = ff }).
+  case (eqbv l v1 v2) by x y with
+    ff => x
+  | tt => 
+    contra
+      trans
+        trans symm u
+        trans cong (eqnat (to_nat *) (to_nat v2)) 
+                    [eqbv_eq l v1 v2 x]
+              [x_eqnat_x (to_nat l v2)]
+        clash tt ff
+      { (eqbv v1 v2) = ff }
+  end.
+
+Define to_nat_eq
+  : Forall(l:nat)(v1:<bv l>)(v2:<bv l>)
+          (u:{(eqbv v1 v2) = tt}).
+     {(eqnat (to_nat v1) (to_nat v2)) = tt} :=
+  foralli(l:nat)(v1:<bv l>)(v2:<bv l>)
+         (u:{(eqbv v1 v2) = tt}).
+  trans cong (eqnat (to_nat v1) (to_nat *)) 
+          symm [eqbv_eq l v1 v2 u]
+        [eqnat_refl (to_nat l v1)].
+   
+Define trusted to_nat_neq1 : Forall(l:nat)(v1:<bv l>)(v2:<bv l>)
+                                   (u:{(eqbv v1 v2) = ff}).
+                               {(eqnat (to_nat v1) (to_nat v2)) = ff} := truei.
+
+Define bv_shift: Fun(x:nat)(spec n:nat)(l:<bv (S n)>). <bv (S n)> :=
+  fun bv_shift(x:nat)(spec n:nat)(l:<bv (S n)>): <bv (S n)>.
+  match x with
+    Z => l
+  | S x' => (bv_shift x' n cast (bv_append n (S Z) (bv_tail n l) (bvc Z ff bvn)) by
+                                cong <bv *> trans [plusS n Z] %is there an easier way?
+                                                  cong (S *) [plusZ n])
+  end.
+
+Define bv_or : Fun(spec n:nat)(l1:<bv n>)(l2:<bv n>).<bv n> :=
+  fun bv_or(spec n:nat)(l1:<bv n>)(l2:<bv n>) : <bv n>.
+  match l1 with
+    vecn _ => cast (vecn bool) by symm l1_Eq
+  | vecc _ n' b1 l1' =>
+      match l2 with
+        vecn _ => abort <bv n>
+      | vecc _ n'' b2 l2' =>
+          % have: <bv n> = <bv (S n')>
+          % have: <bv n> = <bv (S n'')>
+          abbrev p1 = inj <bv *> l1_Eq in % n = (S n')
+          abbrev p2 = inj <bv *> l2_Eq in % n = (S n'')
+          abbrev p3 = inj (S *) trans symm p2 p1 in
+          let l2'' = cast l2' by cong <bv *> p3 in
+          cast (vecc bool n' (or b1 b2) (bv_or n' l1' l2'')) by
+            cong <bv *> symm p1
+      end
+  end.
+

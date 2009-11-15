@@ -1,8 +1,7 @@
 Include "plus.g".
-Include "list2.g".
+Include "list.g".
 Include "mult.g".
 Include "bool.g".
-Include "type_t.g".
 
 %Set "print_parsed".
 
@@ -11,20 +10,42 @@ Inductive vec : Fun(A:type)(n:nat).type :=
 | vecc : Fun(A:type)(spec n:nat)(a:A)(l:<vec A n>).
               <vec A (S n)>.
 
-Define spec vec_append :=
+Define vec_fold : Fun( A B C : type )( spec n : nat )(^#owned cookie:C)
+               ( f : Fun(^#owned cookie:C)( ^#owned a : A )( y : B). B )
+               (b:B)( ^#owned v : <vec A n>). B :=
+   fun vec_fold( A B C : type )( spec n : nat )(^#owned cookie:C)
+               ( f : Fun(^#owned cookie:C)( ^#owned a : A )( y : B). B )
+               (b:B)( ^#owned v : <vec A n>): B.
+   match v with
+      vecn A' => b
+      | vecc A' n' a' l' => (f cookie a' (vec_fold A B C n' cookie f b l'))
+   end.
+
+Define vec_foldr := vec_fold.
+Define vec_foldl : Fun( A B C : type )( spec n : nat )(^#owned cookie:C)
+                      ( f : Fun(^#owned cookie:C)( a : A )( y : B). B )
+                      (b:B)( v : <vec A n>). B :=
+  fun vec_foldl( A B C : type )( spec n : nat )(^#owned cookie:C)
+               ( f : Fun(^#owned cookie:C)( a : A )( y : B). B )
+               (b:B)( v : <vec A n>): B.
+  match v with
+    vecn _ => b
+  | vecc _ n' a' v' => (vec_foldl A B C n' cookie f (f cookie a' b) v')
+  end.
+
+Define vec_append :=
 fun vec_append(A:type)(spec n m:nat)(l1 : <vec A n>)(l2 : <vec A m>):
               <vec A (plus n m)>.
     match l1 with
-      vecn A' => cast l2 by
+      vecn _ => cast l2 by
                 cong <vec A *>
                  symm trans
                         cong (plus * m)
                             inj <vec ** *> l1_Eq
                         join (plus Z m) m
-    | vecc A' n' x l1' => 
+    | vecc _ n' x l1' => 
        cast
-          (vecc A' terminates (plus n' m) by plus_total
-             x (vec_append A' n' m l1' l2)) 
+          (vecc A (plus n' m) x (vec_append A n' m l1' l2)) 
        by cong <vec A *>
              trans
                symm join (plus (S n') m)
@@ -90,6 +111,8 @@ Define mkvec_tot : Forall(A:type)(a:A)(n:nat).
           hypjoin (mkvec a n) (vecc a r)
           by ur n_eq end
     end.         
+
+Total mkvec mkvec_tot.
 
 Define mkvec_sz : Forall(A:type)(a:A)(n:nat).
                    { (lt size a size (mkvec a (S n))) = tt } :=
@@ -201,27 +224,34 @@ Define vec_update :=
          cong <vec A *> symm inj <vec ** *> l_Eq
       end.
 
-Define head : Fun(A:type)(spec n:nat)(l:<vec A (S n)>). A :=
+Define vec_head : Fun(A:type)(spec n:nat)(l:<vec A (S n)>). A :=
   fun(A:type)(spec n:nat)(l:<vec A (S n)>).
     match l by x1 x2 return A with
       vecn A' => abort A
     | vecc A' n' x' l' => cast x' by symm inj <vec * **> x2
     end.
 
-Define head_total : Forall(A:type)(n:nat)(l:<vec A (S n)>).
-                    Exists(x:A). { (head l) = x } :=
+Define vec_head_total : Forall(A:type)(n:nat)(l:<vec A (S n)>).
+                    Exists(x:A). { (vec_head l) = x } :=
   foralli(A:type)(n:nat).
     induction(l:<vec A (S n)>) by x1 x2 IH 
-    return Exists(x:A). { (head l) = x } with
+    return Exists(x:A). { (vec_head l) = x } with
       vecn A' => contra trans inj <vec ** *> x2 
                              clash Z (S n)
-                 Exists(x:A). { (head l) = x }
+                 Exists(x:A). { (vec_head l) = x }
     | vecc A' n' x' l' => existsi cast x' by symm inj <vec * **> x2
-                          { (head l) = * }
-                          trans cong (head *) x1
-                                join (head (vecc x' l'))
+                          { (vec_head l) = * }
+                          trans cong (vec_head *) x1
+                                join (vec_head (vecc x' l'))
                                      x'
     end.
+
+Define vec_tail : Fun(A:type)(spec n:nat)(l:<vec A (S n)>). <vec A n> :=
+  fun(A:type)(spec n:nat)(l:<vec A (S n)>).
+    match l with
+	  vecn _ => abort <vec A n>
+	| vecc _ _ _ l' => cast l' by refl <vec A n> 
+	end.
 
 Define vec_append_assoc : Forall(A:type)(n1 : nat)(l1 : <vec A n1>)
                       (n2 n3 : nat)(l2 : <vec A n2>)(l3 : <vec A n3>).
@@ -476,3 +506,108 @@ Define eqvec_eq
       end
   end.
 
+Define vec_exists : Fun(A C:type)( spec n : nat )(^#owned c:C)
+                      (f:Fun(^#owned c:C)(^#owned a:A).bool)(^#owned l:<vec A n>).bool :=
+fun(A C:type)( spec n : nat )(^#owned c:C)(f:Fun(^#owned c:C)(^#owned a:A).bool).
+  (vec_foldr A bool C n c fun(^#owned c:C)(^#owned a:A)(b:bool).(or (f c a) b) ff).
+    
+Define vec_forall : Fun(A C:type)( spec n : nat )(^#owned c:C)
+                      (f:Fun(^#owned c:C)(^#owned a:A).bool)(^#owned l:<vec A n>).bool :=
+fun(A C:type)( spec n : nat )(^#owned c:C)(f:Fun(^#owned c:C)(^#owned a:A).bool).
+  (vec_foldr A bool C n c fun(^#owned c:C)(^#owned a:A)(b:bool).(and (f c a) b) tt).
+    
+Define list_to_vec : Fun( A : type )( L : < list A > ). <vec A (length A L)> :=
+fun list_to_vec( A : type )( L : < list A > ) : <vec A (length A L)>.
+  match L with
+    nil _ => cast (vecn A) by
+                cong <vec A *>
+                  symm trans cong (length A *) L_eq
+                  join (length A nil) Z
+
+  | cons _ a L' => cast (vecc A (length A L') a (list_to_vec A L')) by
+                cong <vec A *>
+                    symm trans cong (length *) L_eq
+                              join (length (cons a L')) (S (length L'))
+  end.
+  
+Define vec_to_list : Fun( A : type )(spec n:nat)(V : <vec A n>). <list A > :=
+fun vec_to_list( A : type )(spec n:nat)(V : <vec A n>): < list A >.
+  match V with
+    vecn _ => (nil A)
+  | vecc _ n' a V' => (cons A a (vec_to_list A n' V'))
+  end.
+
+
+Define list_vec_list:
+   Forall (A:type)(L:<list A>).{(vec_to_list (list_to_vec L)) = L} :=
+   foralli (A:type).
+   induction (L:<list A>)
+   return {(vec_to_list (list_to_vec L)) = L} with
+
+        nil _ => trans cong (vec_to_list (list_to_vec *)) L_eq
+                 trans join (vec_to_list (list_to_vec nil)) nil
+                       symm L_eq
+
+
+      | cons _ a L' =>  trans cong (vec_to_list (list_to_vec *)) L_eq
+                        trans join (vec_to_list (list_to_vec (cons a L')))
+                                   (cons a (vec_to_list (list_to_vec L')))
+                        trans cong (cons a *) [L_IH L']
+                              symm  L_eq
+end.
+  
+
+Define vec_list_vec:
+   Forall (A:type)(n:nat)(V:<vec A n>).{(list_to_vec (vec_to_list V)) = V} :=
+   foralli (A:type).
+   induction (n:nat)(V:<vec A n>)
+   return {(list_to_vec (vec_to_list V)) = V} with
+
+       vecn _ => trans cong (list_to_vec (vec_to_list *)) V_eq
+                 trans join (list_to_vec (vec_to_list vecn)) vecn
+                       symm V_eq
+
+      | vecc _ n' a V' => trans cong (list_to_vec (vec_to_list *)) V_eq
+                          trans join (list_to_vec (vec_to_list (vecc a V')))
+                                     (vecc a (list_to_vec (vec_to_list V')))
+                          trans cong (vecc a *) [V_IH n' V']
+                                symm V_eq
+end.
+
+Define vec_update_get :
+  Forall(A:type)(n:nat)(l:<vec A n>)
+        (m:nat)(a:A)
+        (u:{ (lt m n) = tt }).
+    { (vec_get (vec_update l m u a) m u) = a }
+  :=
+  foralli(A:type).
+  induction(n:nat)(l:<vec A n>) return 
+    Forall(m:nat)(a:A)
+          (u:{ (lt m n) = tt }).
+      { (vec_get (vec_update l m u a) m u) = a }
+  with
+    vecn _ =>
+      foralli(m:nat)(a:A)
+             (u:{ (lt m n) = tt }).
+      abbrev n_Z = inj <vec ** *> l_Eq in
+      abbrev p = hypjoin (lt m n) ff by n_Z [lt_Z m] end in
+      contra trans symm u
+             trans p
+                   clash ff tt
+             { (vec_get (vec_update l m u a) m u) = a }
+  | vecc _ n' a' l' =>
+      foralli(m:nat)(a:A)
+             (u:{ (lt m n) = tt }).
+      case m with
+        Z => hypjoin (vec_get (vec_update l m u a) m u) a by m_eq l_eq end
+      | S m' =>
+          abbrev n'_pf = inj <vec ** *> l_Eq in
+          abbrev p1 = hypjoin (lt (S m') (S n')) tt by m_eq u n'_pf end in
+          abbrev u' = hypjoin (lt m' n') tt by [S_lt_S m' n'] p1 end in
+          
+          hypjoin (vec_get (vec_update l m u a) m u)
+                  a
+                  by l_eq m_eq [l_IH n' l' m' a u'] end
+      end
+  end
+  .

@@ -2,95 +2,79 @@ package guru;
 
 public class Ownership {
     public int status;
-    public Expr e; // null except for OWNEDBY and UNIQUE_OWNEDBY
+    public Const e1;
+    public Var e2; // null except for PINNED
     public Ownership(int status) {
 	this.status = status;
-	this.e = null;
+	this.e1 = null;
+	this.e2 = null;
     }
-    public Ownership(int status, Expr e) {
-	this.status = status;//could be OWNEDBY or UNIQUE_OWNEDBY
-	this.e = e;
+    public Ownership(int status, Const c) {
+	this.status = status;
+	this.e1 = c;
+	this.e2 = null;
+    }
+    public Ownership(int status, Const e1, Var e2) {
+	this.status = status;
+	this.e1 = e1;
+	this.e2 = e2;
     }
 
-    /* UNIQUE means unowned and cannot be incremented. */
-    public static final int UNOWNED = 0;
-    public static final int OWNEDBY = 1;
-    public static final int UNIQUE = 2; 
-    public static final int NOT_TRACKED = 3; /* for functions and elts. of 
-						flat types */
-    public static final int UNIQUE_OWNEDBY = 4; 
-    public static final int NEW = 5; /* for constructor terms.  New things
-					can become UNIQUE or UNOWNED. */
-    public static final int KILLED = 6; /* introduced by compiler/CheckRefs. */
+    public static final int DEFAULT = 0;
+    public static final int PINNED = 1;
+    public static final int SPEC = 2; 
+    public static final int RESOURCE = 3; 
+    public static final int UNTRACKED = 4; 
 
-    public static final int SPEC = 7; //for specificational data
+    public boolean mustTrack() {
+	return (status != DEFAULT && status != SPEC && status != UNTRACKED);
+    }
 
+    public boolean equalOwnership(Ownership r) {
+	return ((status == r.status) && 
+		(e1 == r.e1) &&
+		(e2 == r.e2));
+    }	
 
     public String toString(Context ctxt) {
 	switch (status) {
-	case OWNEDBY:
-	    if (e == null)
-		return "owned";
-	    else
-		return "owned_by "+e.toString(ctxt);
-	case UNIQUE_OWNEDBY:
-	    if (e == null)
-		return "unique_owned";
-	    else
-		return "unique_owned_by "+e.toString(ctxt);
-	case UNOWNED:
-	    return "unowned";
-	case UNIQUE:
-	    return "unique";
-	case NOT_TRACKED:
-	    return "untracked";
-	case NEW:
-	    return "new";
-	case KILLED:
-	    return "killed";
+	case DEFAULT:
+	    return "";
+	case PINNED:
+	    return "#<"+e1.toString(ctxt)+" "+e2.toString(ctxt)+">";
 	case SPEC:
 	    return "spec";
+	case UNTRACKED:
+	    return "#untracked";
+	case RESOURCE:
+	    return "#"+e1.toString(ctxt);
 	default:
 	    return "unrecognized status ("
 		+(new Integer(status)).toString()+")";
 	}
     }
 
+    public guru.carraway.Expr toCarrawayType(Context ctxt, Position p) {
+	guru.carraway.Context cctxt = ctxt.carraway_ctxt;
 
-    // return true iff this is coercible to owned2.
-    public boolean subStatus(Ownership owned2) {
-	if (status == owned2.status)
-	    return true;
+	switch (status) {
+	case DEFAULT: {
+	    guru.carraway.Sym e = cctxt.lookup("unowned");
+	    if (e == null) 
+		Expr.handleError(p,"The declaration of the \"unowned\" resource type is missing.  \n\n"
+				 +"You need to include lib/unowned.g.");
+	    return e;
+	}
+	case PINNED: 
+	    return new guru.carraway.Pin((guru.carraway.Sym)e1.toCarrawayType(ctxt,true),
+					 (guru.carraway.Sym)e2.toCarrawayType(ctxt,true));
+	case UNTRACKED:
+	    return new guru.carraway.Untracked();
+	case RESOURCE:
+	    return e1.toCarrawayType(ctxt,true);
 
-	if ((status == UNOWNED || status == NEW) && 
-	    owned2.status == OWNEDBY)
-	    // unowned/new things can be coerced to owned.
-	    return true;
-
-	if (status == NEW && 
-	    (owned2.status == UNIQUE || owned2.status == UNOWNED 
-	     || owned2.status == UNIQUE_OWNEDBY))
-	    return true;
-
-	if (status == UNIQUE && owned2.status == UNIQUE_OWNEDBY)
-	    return true;
+	}
+	return null;
+    }
 	
-	if (status == NOT_TRACKED && 
-	    (owned2.status == OWNEDBY || owned2.status == UNOWNED))
-	    return true;
-
-	if ((status == OWNEDBY || status == UNOWNED) && 
-	    (owned2.status == NOT_TRACKED))
-	    return true;
-
-	return false;
-    }
-
-    boolean shouldPrint(Context ctxt) {
-	return ((status != UNOWNED && status != NOT_TRACKED)
-		|| ctxt.getFlag("print_ownership_annos"));
-    }
-
-
-
 }

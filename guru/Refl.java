@@ -34,6 +34,10 @@ public class Refl extends Expr{
 	return this;
     }
     
+    public Expr classify(Context ctxt) {
+	return new Atom(true, Y, Y);
+    }
+
     public void checkTermination(Context ctxt, Expr IH, int arg, Var[] vars)
     { }
 

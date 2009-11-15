@@ -59,8 +59,11 @@ public class TermApp extends App{
 
     public Expr subst(Expr e, Expr x) {
 	App s = (App)super.subst(e,x);
-	if (s != this)
-	    return new TermApp(s, specarg);
+	if (s != this) {
+	    Expr ret = new TermApp(s, specarg);
+	    ret.pos = pos;
+	    return ret;
+	}
 	return this;
     }
     
@@ -79,13 +82,20 @@ public class TermApp extends App{
 	    nX2[i-n] = X[i];
 	    specarg2[i-n] = specarg[i];
 	}
-	return new TermApp(new TermApp(head, nX1, specarg1), nX2, specarg2);
+	TermApp ret = new TermApp(head, nX1, specarg1);
+	ret.pos = pos;
+	ret = new TermApp(ret, nX2, specarg2);
+	ret.pos = pos;
+	return ret;
     }
 
     public Expr do_rewrite(Context ctxt, Expr e, Expr x, Stack boundVars) {
 	App s = (App)super.do_rewrite(ctxt,e,x,boundVars);
-	if (s != this)
-	    return new TermApp(s, specarg);
+	if (s != this) {
+	    Expr ret = new TermApp(s, specarg);
+	    ret.pos = pos;
+	    return ret;
+	}
 	return this;
     }
 
@@ -126,13 +136,15 @@ public class TermApp extends App{
 	}
 
 	if (changed || h != head){
-	    return new TermApp(h, X3);
+	    Expr ret = new TermApp(h, X3);
+	    ret.pos = pos;
+	    return ret;
 	}
 	return this;
     }
 
-    public App spineForm(Context ctxt, boolean drop_annos, boolean spec,
-			 boolean expand_defs) {
+    public Expr spineForm(Context ctxt, boolean drop_annos, boolean spec,
+			  boolean expand_defs) {
 	Expr h = head;
 	Expr prev = null;
 	if (expand_defs) {
@@ -157,7 +169,7 @@ public class TermApp extends App{
 	    ctxt.w.println("Head expands to "+h.toString(ctxt));
 	    ctxt.w.flush();
 	}
-	App ret = this;
+	Expr ret = this;
 	if (h.construct == construct) {
 	    TermApp e = (TermApp)((TermApp)h).spineForm(ctxt, drop_annos,
 							spec, expand_defs);
@@ -174,9 +186,12 @@ public class TermApp extends App{
 		specarg2[i+eXlen] = specarg[i];
 	    }
 	    ret = new TermApp(e.head, X2, specarg2);
+	    ret.pos = pos;
 	}
-	else if (h != head)
+	else if (h != head) {
 	    ret = new TermApp(h, X, specarg);
+	    ret.pos = pos;
+	}
 
 	if (ctxt.getFlag("debug_spine_form")) {
 	    ret.print(ctxt.w,ctxt);
@@ -184,6 +199,17 @@ public class TermApp extends App{
 	    ctxt.w.flush();
 	}
 	return ret;
+    }
+
+    protected boolean apply_classifier_types_defeq(Context ctxt, int arg,
+						   Expr expected, Expr actual,
+						   int approx, boolean spec) {
+	return expected.defEq(ctxt,actual,approx,spec || specarg[arg]);
+    }
+
+    protected Expr apply_classifier_classify_arg(Context ctxt, int arg, Expr arg_e, 
+						 int approx, boolean spec) {
+	return arg_e.classify(ctxt,approx,spec || specarg[arg]);
     }
 
     public Expr classify(Context ctxt, int approx, boolean spec) {
@@ -195,16 +221,40 @@ public class TermApp extends App{
 	}
 	Expr cl = head.classify(ctxt,approx,spec).defExpandTop(ctxt,false,
 							       spec);
-	Expr ret = apply_classifier(FUN_TYPE, approx, spec, ctxt, cl, 0);
+	if (ctxt.getFlag("debug_classify_term_apps")) {
+	    ctxt.w.println("Head is "+head.toString(ctxt)+", with classifier "+cl.toString(ctxt));
+	    ctxt.w.flush();
+	}
+
+	/* before we classify the arguments, we need to set the values
+	   of specarg. */
+
+	if (cl.construct != FUN_TYPE) 
+	    handleError(ctxt,"The head of a term application does not have functional type."
+			+"\n\n1. the head of the application: "+head.toString(ctxt)
+			+"\n\n2. its classifier: "+cl.toString(ctxt));
+
 	FunType ch = (FunType)((FunType)cl).coalesce(ctxt,spec);
+
+	if (ch.owned.length < X.length) 
+	    handleError(ctxt,"Too many arguments are being given in a term application."
+			+"\n\n1. the head of the application: "+head.toString(ctxt)
+			+"\n\n2. its classifier: "+cl.toString(ctxt)
+			+"\n\n3. the number of arguments: "+(new Integer(X.length)).toString());
+
 	boolean check_spec_terminates = ctxt.getFlag("check_spec_terminates");
 	for (int i = 0;i < X.length; i++) {
 	    if (ch.owned[i].status == Ownership.SPEC) {
-		if (check_spec_terminates)
+		if (check_spec_terminates && !spec)
 		    X[i].checkTermination(ctxt);
 		specarg[i] = true;
 	    }
 	}
+
+	// now we can actually type check the arguments
+
+	Expr ret = apply_classifier(FUN_TYPE, approx, spec, ctxt, cl, 0);
+
 	if (ctxt.getFlag("debug_classify_term_apps")) {
 	    ctxt.w.println(") Classifier is:");
 	    ret.print(ctxt.w,ctxt);
@@ -217,8 +267,11 @@ public class TermApp extends App{
 
     public Expr evalStep(Context ctxt) {
 	Expr h = head.evalStep(ctxt);
-	if (h != head)
-	    return new TermApp(h, X);
+	if (h != head) {
+	    Expr ret = new TermApp(h, X);
+	    ret.pos = pos;
+	    return ret;
+	}
 	if (h.construct == ABORT)
 	    return ctxt.abort;
 	
@@ -229,7 +282,9 @@ public class TermApp extends App{
 	    if (X2[i] != X[i]) {
 		for (int j = i+1; j < iend; j++)
 		    X2[j] = X[j];
-		return new TermApp(h, X2);
+		Expr ret = new TermApp(h, X2);
+		ret.pos = pos;
+		return ret;
 	    }
 	    else {
 		if (X[i].construct == ABORT)
@@ -257,7 +312,9 @@ public class TermApp extends App{
 	    Expr[] X3 = new Expr[iend];
 	    for (int i = 0; i < iend; i++)
 		X3[i] = X2[i+1];
-	    return new TermApp(hh, X3);
+	    Expr ret = new TermApp(hh, X3);
+	    ret.pos = pos;
+	    return ret;
 	}
 	return this;
     }
@@ -289,7 +346,9 @@ public class TermApp extends App{
 	    for (int j = 0; j <= i; j++) {
 		newX[j] = X[j];
 	    }
-	    if (e.defEqNoAnno(ctxt, new TermApp(head, newX), true))
+	    Expr tmp = new TermApp(head, newX);
+	    tmp.pos = pos;
+	    if (e.defEqNoAnno(ctxt, tmp, true))
 		return true;
 	}
 	return false;
@@ -320,9 +379,11 @@ public class TermApp extends App{
 	if (changed) {
 	    if (nX.size() == 0)
 		ret = head;
-	    else
+	    else {
 		ret = new TermApp(head, Parser.toExprArray(nX),
 				  Parser.toBooleanArray(no));
+		ret.pos = pos;
+	    }
 	}
 	
 	if (ctxt.getFlag("debug_drop_noncomp")) {
@@ -331,6 +392,7 @@ public class TermApp extends App{
 	    ctxt.w.flush();
 	}
 
+	ret.pos = pos;
 	return ret;
     }
 
@@ -357,7 +419,7 @@ public class TermApp extends App{
 			   +anno_t.isI(ctxt)
 			   +"\n5. head is ctor:"
 			   +(anno_t.head.construct == CONST ? 
-			     ctxt.isTermCtor((Const)anno_t.head) : "false"));
+			     (new Boolean(ctxt.isTermCtor((Const)anno_t.head))).toString() : "false"));
 	    ctxt.w.flush();
 	}
 
@@ -423,16 +485,22 @@ public class TermApp extends App{
 	    anno_t.X[i].checkTermination(ctxt);
     }
 
-    public void checkSpec(Context ctxt, boolean in_type){
-	head.checkSpec(ctxt, in_type);
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
+	head.checkSpec(ctxt, in_type, pos);
 	
 	// we set specarg[i] in classify() above
 
 	for (int i = 0;i < X.length; i++) {
 	    if (X[i].isProof(ctxt))
 		continue;
-	    if (!specarg[i])
-		X[i].checkSpec(ctxt, in_type);
+	    if (!specarg[i]) 
+		X[i].checkSpec(ctxt, in_type, pos);
+	    else {
+		if (ctxt.getFlag("debug_check_spec")) {
+		    ctxt.w.println("checkSpec: skipping specificational argument: "+X[i].toString(ctxt));
+		    ctxt.w.flush();
+		}
+	    }
 	}
     }
 
@@ -445,4 +513,28 @@ public class TermApp extends App{
 		X[i].getFreeVarsComputational(ctxt,vars);
     }
 
+    public guru.carraway.Expr toCarraway(Context ctxt) {
+	if (head.construct == MATCH)
+	    handleError(ctxt, "Compilation of match-terms used as functions is currently not supported.");
+	if (head.construct != CONST && head.construct != VAR) {
+	    Expr tmp = spineForm(ctxt,false,false,false);
+	    if (tmp != this)
+		tmp.toCarraway(ctxt);
+	    handleError(ctxt,"Internal error: cannot translate application:\n\n"
+			+tmp.toString(ctxt));
+	}
+
+	guru.carraway.App a = new guru.carraway.App();
+	a.pos = pos;
+
+	a.head = (guru.carraway.Sym)head.toCarraway(ctxt);
+	int iend = X.length;
+	guru.carraway.Expr[] args = new guru.carraway.Expr[iend];
+	for (int i = 0; i < iend; i++) 
+	    args[i] = X[i].toCarraway(ctxt);
+	
+	a.args = args;
+
+	return a;
+    }
 }

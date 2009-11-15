@@ -20,6 +20,10 @@ public class Var extends Expr{
 	    print_pos_comment_long(w);
     }
 
+    public int hashCode_h(Context ctxt) {
+	return ctxt.varHashCode(this);
+    }
+
     public void do_print(java.io.PrintStream w, Context ctxt) {
 	if (!ctxt.getFlag("no_expand_vars") && ctxt.isMacroDefined(this))
 	    ctxt.getDefBody(this).print(w,ctxt);
@@ -101,6 +105,10 @@ public class Var extends Expr{
 	if (ctxt.isMacroDefined((Var)this)) 
 	    return ctxt.getDefBody(this).dropAnnos(ctxt);
 
+	if (ctxt.getClassifier(this) == null)
+	    // this can only happen in an unannotated term we parsed in
+	    return this;
+
 	if (ctxt.isAssumption(this))
 	    return new Bang();
 
@@ -133,7 +141,7 @@ public class Var extends Expr{
 	    ctxt.getDefBody(this).checkTermination(ctxt);
     }
 
-    public void checkSpec(Context ctxt, boolean in_type){
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
 	if (ctxt.isSpec(this) && !in_type) {
 	    /*	    Expr n = null;
 	      n.print(ctxt.w,ctxt); */
@@ -142,4 +150,11 @@ public class Var extends Expr{
                         + "1. the variable: " + toString(ctxt));
 	}
     }
+
+    public guru.carraway.Expr toCarrawayType(Context ctxt, boolean rttype) {
+	guru.carraway.Sym s = ctxt.carraway_ctxt.lookup(name);
+	if (s == null)
+	    handleError(ctxt, "Internal error: Carraway declaration missing for \""+toString(ctxt)+"\".");
+	return s;
+    }	
 }

@@ -174,8 +174,7 @@ public class DumpDependence extends Command {
                     if(ex.construct == Expr.FUN_TYPE)
                         ex = ((FunType)ex).body;
                     if(ex.construct == Expr.TYPE_APP)
-                        ex = ((App)ex).spineForm(ctxt, false, 
-						 true, false).head;
+                        ex = ((App)ex).getHead(ctxt, false, true, false);
                     typedeps.add(ex);
                 }
             }

@@ -17,8 +17,8 @@ public abstract class Expr {
     public static final int BANG = 7;
     
     // terms
-    public static final int INC = 9;
-    public static final int DEC = 10;
+    //    public static final int INC = 9;
+    //    public static final int DEC = 10;
 
     public static final int FUN_TERM = 11;
 
@@ -91,19 +91,29 @@ public abstract class Expr {
     public static final int PRED_APP = 80; //formula
     public static final int FALSE = 81; // formula
 
+    public static final int VOID = 82; // type
+    public static final int VOIDI = 83; // term
+    public static final int DO = 84; // term
+    public static final int TRANSS = 85; //proof
+    public static final int COMPRESS = 86; // term
+
+    public static final int CHAR_EXPR = 87; // term
+    public static final int WORD_EXPR = 88; // term
+
+
     public static final int LAST = 200;
 
     public int construct;
     boolean result; /* true iff we reached this Expr as the result
 		       of (partial) evaluation */
     public Position pos;
-    
+
     public Expr(int construct) {
 	this.construct = construct;
 	this.result = false;
 	this.pos = null;
     }
-    
+
     // subclasses for each construct must override to define printing 
     // for that construct.
     abstract protected void do_print(java.io.PrintStream w, Context ctxt);
@@ -143,6 +153,18 @@ public abstract class Expr {
 	return s.toString();
     }
 
+    // intended only for unannotated terms -- others may fail.
+    public final int hashCode(Context ctxt) {
+	ctxt.next_var_hash_code = 0;
+	return hashCode_h(ctxt);
+    }
+
+    public int hashCode_h(Context ctxt) {
+	handleError(ctxt,"Internal error: hashCode() function not implemented for"
+		    +" construct "+(new Integer(construct)).toString()+".");
+	return 0;
+    }
+
     // count free occurrences of e.
     abstract public int numOcc(Expr e);
 
@@ -178,7 +200,7 @@ public abstract class Expr {
     	
     	return returnValue;
     }
-    
+
     // substitute e for x in this Expr.  x may be an arbitrary ground
     //	term, and any sub term of this which is definitionally equal
     //  to x will be replaced with e. 
@@ -196,7 +218,7 @@ public abstract class Expr {
 		    return do_rewrite(ctxt, e, x, boundVars);
     	}
     }
-    
+
     public Expr do_rewrite(Context ctxt, Expr e, Expr x, Stack boundVars)
     {
     	handleError(ctxt, "Internal error: do_rewrite called on an inappropriate expression in: "+this.getClass().toString());
@@ -213,14 +235,14 @@ public abstract class Expr {
 	}
 	return classify(ctxt);
     }
-    
+
     /* subclasses should override one or the other classify method, or expect
        a stack overflow.  We will treat this as specificational (use the
        other classify() method to specify non-specificational). */
     public Expr classify(Context ctxt) {
 	return classify(ctxt,0,true);
     }
-    
+
     // is e definitionally equal to this expr in the given ctxt.
     protected boolean defEqNoAnno(Context ctxt, Expr e, boolean spec) {
 	System.out.println("Definitional equality for this construct"
@@ -288,6 +310,8 @@ public abstract class Expr {
     }
 
     // do not drop annotations, treat as specificational
+    //
+    // type family abbrev's are not expanded.
     public Expr defExpandTop(Context ctxt) {
 	return defExpandTop(ctxt, false, true);
     }
@@ -331,12 +355,26 @@ public abstract class Expr {
 	return this;
     }
 
-    public void handleError(Context ctxt, String msg) {
-	if (pos != null) {
-	    pos.print(System.out);
+    public static void handleError(Position p, String msg) {
+	if (p != null) {
+	    p.print(System.out);
 	    System.out.print(": ");
 	}
-	System.out.println("classification error.\n"+msg);
+	System.out.println("");
+	System.out.println(msg);
+	System.exit(2);
+    }
+
+    public void handleError(Context ctxt, String msg) {
+	handleError(ctxt,pos,msg);
+    }
+
+    public void handleError(Context ctxt, Position p, String msg) {
+	if (p != null) {
+	    p.print(System.out);
+	    System.out.print(": ");
+	}
+	System.out.println("classification error.\n\n"+msg);
 	ctxt.printDefEqErrorIf();
 	System.exit(2);
     }
@@ -359,8 +397,8 @@ public abstract class Expr {
 	if (construct == CONST) {
 	    Const c = (Const)this;
 	    boolean not_opaque_if = spec || !ctxt.isOpaque(c);
-	    if (ctxt.isDefined(c) && not_opaque_if)
-		return c.defExpandTop(ctxt).isdtype(ctxt, spec);
+	    if (ctxt.isDefined(c) && not_opaque_if) 
+		return c.defExpandTop(ctxt,false,true).isdtype(ctxt, spec);
 	    return (ctxt.isTypeCtor((Const)this) && not_opaque_if);
 	}
 	if (construct != TYPE_APP)
@@ -444,6 +482,7 @@ public abstract class Expr {
 	case REFL:
 	case SYMM:
 	case TRANS:
+        case TRANSS:
 	case CONG:
 	case NCONG:
 	case INJ:
@@ -465,8 +504,9 @@ public abstract class Expr {
 	switch(construct) {
 	case VAR:
 	case CONST:
-	case INC:
-	case DEC:
+	case VOIDI:
+	case DO:
+	case COMPRESS:
 	case FUN_TERM:
 	case CAST:
 	case TERMINATES:
@@ -491,12 +531,13 @@ public abstract class Expr {
 	switch(construct) {
 	case VAR:
 	case CONST:
+	case VOID:
 	case BANG:
 	case ABBREV:
 	case EABBREV:
 	case FUN_TYPE:
 	case TYPE_APP:
-	    // shouldn't TYPE be here, too?
+	case TYPE:
 	    return true;
 	}
 	return false;
@@ -514,13 +555,14 @@ public abstract class Expr {
 
     public boolean isTypeOrKind(Context ctxt) {
 	Expr tmp = defExpandTop(ctxt);
+
 	if (tmp.construct == VAR) {
             if(ctxt.getClassifier((Var)tmp) == null)
                 System.err.println("NULL classifier for: "+tmp.toString(ctxt));
 	    return ctxt.getClassifier((Var)tmp).construct == TYPE;
         }
 	if (tmp.construct == CONST) 
-	    return ctxt.isTypeCtor((Const)tmp);
+	    return ctxt.isTypeCtor((Const)tmp) || ctxt.isTypeFamilyAbbrev((Const)tmp);
 	
 	return isTypeOrKind(tmp.construct);
     }
@@ -678,14 +720,36 @@ public abstract class Expr {
     }
 
 
-    public void checkSpec(Context ctxt, boolean in_type) {
+    public void checkSpec(Context ctxt, boolean in_type, Position p) {
 	handleError(ctxt, "Internal error: checkSpec() is "
 		    + "unimplemented for construct "
 		    + (new Integer(construct)));
     }
     
 
+    // get all the constants in this Expr.
     public java.util.Set getDependences() {
         return new TreeSet();
+    }
+
+    /* get all the constants in this Expr or in any Expr reachable by
+       a definition from it.
+    public java.util.Set getAllDependences(ctxt) {
+	
+    }
+    */
+
+    // if dtype is true, compute the carraway datatype (aka runtime type), 
+    // if dtype is false, compute the carraway resource type.
+    public guru.carraway.Expr toCarrawayType(Context ctxt, boolean dtype) {
+	handleError(ctxt, "Internal error: toCarraway() or toCarrawayType() is "
+		    + "unimplemented for construct "
+		    + (new Integer(construct)));
+	return null;
+    }
+
+    // by default, we assume this is a type
+    public guru.carraway.Expr toCarraway(Context ctxt) {
+	return toCarrawayType(ctxt, true);
     }
 }

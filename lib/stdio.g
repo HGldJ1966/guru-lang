@@ -1,46 +1,109 @@
-Include "char.g".
+%Set "print_parsed".
+
+Include trusted "char.g".
 Include "pair.g".
 Include "unit.g".
-Include "string.g".
+Include trusted "string.g".
+Include "unique_owned.g".
 
-Define spec stdin_t := string.
+%Set "print_parsed".
 
-Inductive getc_t : Fun(A:type).type :=
-  getc_none : Fun(A:type)(unique l:A).<getc_t A>
-| getc_char : Fun(A:type)(a:char)(unique l:A).<getc_t A>.
+Define primitive stdio_t : type := <pair string string> <<END
+  #define gdelete_stdio_t(x) 
 
-Define spec next_char := 
-  fun(unique x:stdin_t): unique <getc_t stdin_t>.
-    match x by u v with
-      nil A => (getc_none stdin_t stringn)
-    | cons A a l => (getc_char stdin_t a l)
-    end.
+  void *curc = 0;
 
-Define print_nat :=
-  fun print_nat(owned n:nat):Unit.
-    match n with
-      Z => (print_char CZ)
-    | S n' => let ign = (print_char CS) in (print_nat n')
-    end.
+  inline void *gnext_char(void *x) {
+    gcur_char2(x); // to make sure we have read a character
+    curc = 0;
+    return 1;
+  }
 
-Define nat_to_string :=
-  fun nat_to_string(owned n:nat):string.
-    match n with
-      Z => (stringc CZ inc stringn)
-    | S n' => (stringc CS (nat_to_string n'))
-    end.
+  inline int gcur_char2(void *s) {
+     if (curc == 0) {
+	int tmp = fgetc(stdin);
+	curc = (tmp == -1 ? 0 : tmp);
+     }
+     return curc;
+  }
 
-Define print_string :=
-  fun print_string(s:string):Unit.
+END.
+
+Define primitive stdio : #unique_point stdio_t <<END
+  #define gstdio 0
+END.
+
+Define primitive cur_char2 : Fun(^ #unique_owned_point x:stdio_t). #untracked char :=
+  fun(x:stdio_t): char.
+    match (fst string string x) with
+      unil _ => Cc0
+    | ucons _ a l => a
+    end
+<<END
+
+// C code included above
+
+END.
+
+Define cur_char : Fun(! #unique_point x:stdio_t). #untracked char := 
+  fun(! #unique_point x:stdio_t): #untracked char.
+    (cur_char2 (inspect_unique_point stdio_t x)).
+    
+
+Define primitive next_char := 
+  fun(#unique_point x:stdio_t): #unique_point stdio_t.
+    match (fst string string x) with
+      unil _ => x
+    | ucons _ a l => (mkpair string string l (snd string string x))
+    end 
+<<END
+ // C code included above
+END.
+
+Define primitive print_char := 
+  fun(#unique_point x:stdio_t)(#untracked c:char): #unique_point stdio_t.
+     match (eqchar c Cc0) with
+       ff => (mkpair string string (fst string string x) (stringc c (snd string string x)))
+     | tt => x
+     end 
+<<END
+  int gprint_char(int stdio /* ignore */, int c) {
+    if (c == 0)
+      return 1;
+    fputc(c, stdout);
+    return 1;
+  }
+END.
+
+Define print_string : Fun(#unique_point x:stdio_t)(s:string).#unique_point stdio_t :=
+  fun print_string(#unique_point x:stdio_t)(s:string):#unique_point stdio_t.
     match s with
-      nil A => unit
-    | cons A a s' => 
-      abbrev P = symm inj <list *> s_Eq in
-      let ign = (print_char cast a by P) in
-        (print_string cast s' by cong <list *> P)
+      unil _ => x
+    | ucons _ c s' => let x' = (print_char x c) in
+                        (print_string x' s')
     end.
+  
+Define println_string : Fun(#unique_point x:stdio_t)(s:string).#unique_point stdio_t :=
+  fun(#unique_point x:stdio_t)(s:string):#unique_point stdio_t.
+    let x' = (print_string x s) in
+    (print_char x' Cnl).
 
-Define println_string := 
-  fun(s:string).
-    let ign = (print_string s) in
-      (print_char Cnl).
+Inductive read_until_char_t : type :=
+  return_read_until_char : Fun(s:string)(eof:bool)(#unique_point stdio:stdio_t).#unique read_until_char_t.
+
+% read until we reach character c, and then stop, reading also that occurrence of c iff eat_char is true.
+% We also stop if we reach the end of file.
+Define read_until_char : Fun(#unique_point stdio:stdio_t)(c:char)(u:{ (eqchar c Cc0) = ff })
+                            (eat_char:bool).#unique read_until_char_t :=
+  fun r(#unique_point stdio:stdio_t)(c:char)(u:{ (eqchar c Cc0) = ff})(eat_char:bool):#unique read_until_char_t.
+    let d = (cur_char stdio) in
+    match (eqchar d c) with
+      ff => match (eqchar d Cc0) with
+              ff => match (r (next_char stdio) c u eat_char) with
+                      return_read_until_char s eof stdio => (return_read_until_char (stringc d s) eof stdio)
+                    end
+            | tt => % end of file
+              (return_read_until_char (inc string stringn) tt stdio)
+            end
+    | tt => (return_read_until_char (inc string stringn) ff match eat_char with ff => stdio | tt => (next_char stdio) end)
+    end.

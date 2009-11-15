@@ -34,12 +34,14 @@ public class TypeApp extends ReducibleApp{
 	return ctxt.tkind;
     }
 
-    public App spineForm(Context ctxt, boolean drop_annos, boolean spec,
+    public Expr spineForm(Context ctxt, boolean drop_annos, boolean spec,
 			 boolean expand_defs) {
-	App s = (App)super.spineForm(ctxt, drop_annos, spec, expand_defs);
-	if (s != this)
-	    return new TypeApp(s);
-	return this;
+	Expr s = super.spineForm(ctxt, drop_annos, spec, expand_defs);
+	if (s == this)
+	    return this;
+	if (s.construct == CONST)
+	    return s;
+	return new TypeApp((App)s);
     }
 
     protected boolean headBetaOk(Context ctxt, boolean spec) {
@@ -72,4 +74,7 @@ public class TypeApp extends ReducibleApp{
     public void getFreeVarsComputational(Context ctxt,
 					 java.util.Collection vars) { }
 
+    public guru.carraway.Expr toCarrawayType(Context ctxt, boolean dtype) {
+	return head.toCarrawayType(ctxt,dtype);
+    }
 }

@@ -19,14 +19,11 @@ Define minus_tot : Forall(a b:nat)(u:{ (lt a b) = ff }).Exists(c:nat).{ (minus a
         Z =>
           foralli(u:{ (lt a b) = ff }).
             existsi a { (minus a b) = * }
-              trans cong (minus a *) bp
-                    join (minus a Z) a
+              hypjoin (minus a b) a by bp end
       | S b' =>
           foralli(u:{ (lt a b) = ff }).
             contra trans symm u
-                   trans cong (lt * b) ap
-                   trans cong (lt Z *) bp
-                   trans join (lt Z (S b')) tt
+                   trans hypjoin (lt a b) tt by ap bp end
                          clash tt ff
               Exists(c:nat).{ (minus a b) = c }
       end
@@ -35,8 +32,7 @@ Define minus_tot : Forall(a b:nat)(u:{ (lt a b) = ff }).Exists(c:nat).{ (minus a
         Z =>
           foralli(u:{ (lt a b) = ff }).
             existsi a { (minus a b) = * }
-              trans cong (minus a *) bp
-                    join (minus a Z) a
+              hypjoin (minus a b) a by bp end
       | S b' =>
           foralli(u:{ (lt a b) = ff }).
             abbrev lt_a'_b' = trans symm [S_lt_S a' b']
@@ -46,13 +42,12 @@ Define minus_tot : Forall(a b:nat)(u:{ (lt a b) = ff }).Exists(c:nat).{ (minus a
             existse [IHa a' b' lt_a'_b']
               foralli(c':nat)(cpf:{ (minus a' b') = c' }).
                 existsi c' { (minus a b) = * }
-                  trans cong (minus * b) ap
-                  trans cong (minus (S a') *) bp
-                  trans join (minus (S a') (S b'))
-                             (minus a' b')
+                  trans hypjoin (minus a b) (minus a' b') by ap bp end
                         cpf
       end
   end.
+
+Total minus minus_tot.
 
 Define minus_tot2 : Forall(a b:nat)(u:{ (le a b) = tt }).
                       Exists(c:nat).{ (minus b a) = c } :=
@@ -258,6 +253,32 @@ Define minus_plus2 : Forall(a b:nat).{ (minus (plus a b) b) = a } :=
                           symm bp
       end
   end.
+
+Define plus_minus_le: Forall(x y:nat)(u:{ (le x y) = tt}). { (plus x (minus y x)) = y } :=
+	induction(x:nat) return Forall(y:nat)(u:{ (le x y) = tt}). { (plus x (minus y x)) = y } with
+	     Z => foralli(y:nat)(u:{ (le x y) = tt}).
+		  trans cong (plus * (minus y *)) x_eq
+			      join (plus Z (minus y Z)) y		
+	   | S x' => foralli(y:nat)(u:{ (le x y) = tt}).
+		     abbrev W = [ltle_trans x' (S x') y [lt_S x'] 
+							    symm trans symm u
+							 	       cong (le * y) x_eq ] in
+
+		     trans cong (plus * (minus y x)) x_eq
+		     trans [plusS_hop x' terminates (minus y x) by [minus_tot2 x y u]] 
+		     trans cong (plus x' (S (minus y * ))) x_eq
+	 	     trans cong (plus x' *) 
+                           symm 
+                           [minusS2 y x' W]
+							         
+		     [x_IH x' y [lt_implies_le x' y W]] 
+			
+	   end.
+
+Define plus_minus_lt : Forall(x y:nat)(u:{ (lt x y) = tt}). { (plus x (minus y x)) = y } :=
+	foralli(x y:nat)(u:{ (lt x y) = tt}).
+	     [plus_minus_le x y [lt_implies_le x y u]]
+	.		
 
 Define minus_le : Forall(x y z:nat)(u:{ (minus x y) = z }).{ (le z x) = tt } :=
   induction(x:nat) by xp xt IHx return Forall(y z:nat)(u:{ (minus x y) = z }).{ (le z x) = tt } with
