@@ -1,8 +1,11 @@
 
 Include "../../../lib/nat.g".
 Include "../../../lib/warray.g".
+Include "../../../lib/warray-util.g".
 Include "../../../lib/stdio.g".
 Include "../../../lib/boxedword.g".
+
+%Set "print_parsed".
 
 %Set "debug_eta_expand".
 %Set "debug_to_carraway".
@@ -25,12 +28,15 @@ Define fill_array: Fun(spec n:word)(#unique l:<warray boxedWord n>)(i:word)
   | tt => l
   end.
 
+Define trusted assumed1 : { (le (to_nat word0) (to_nat (word_minus mysize word1))) = tt } := truei.
+
 Define search : Fun(!#unique l:<warray boxedWord mysize>)(i:word)(b:bool). bool
   := fun search(!#unique l:<warray boxedWord mysize>)(i:word)(b:bool) : bool.
   let ret = (warray_binary_search boxedWord mysize (inspect_unique <warray boxedWord mysize> l) word0 (word_minus mysize word1) (boxWord i)
-              boxedWord_comp join (lt (to_nat word0) (to_nat mysize)) tt
-    		   	          [word_minus_shrink mysize]
-			          join (le (to_nat word0) (to_nat (word_minus mysize word1))) tt) in
+              boxedWord_comp trans cong (lt * (to_nat mysize)) join (to_nat word0) Z
+                                [lt_word_set_bit word20 join (lt (to_nat word20) wordlen) tt word0]
+              [word_minus_shrink mysize]
+	      assumed1) in
   match (eqword i word0) with
     ff => (search l (word_minus i word1) (and ret b))
   | tt => (and ret b)

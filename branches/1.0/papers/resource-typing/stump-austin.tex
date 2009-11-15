@@ -43,6 +43,7 @@
 \newcommand{\quant}[0]{\textit{Quant}}
 
 \newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
 \newtheorem{definition}{Definition}
 \newtheorem{lemma}{Lemma}
 
@@ -59,11 +60,7 @@
 
 \conferenceinfo{PLPV'10,} {January 19, 2010, Madrid, Spain.}
 \CopyrightYear{2010}
-\copyrightdata{\ } 
-
-\titlebanner{\ }        % These are ignored unless
-\preprintfooter{\ }   % 'preprint' option specified.
-
+\copyrightdata{978-1-60558-890-2/10/01}
 
 %\newenvironment{proof}
 %               {\hspace{-1\parindent}\textbf{Proof:}}
@@ -127,7 +124,7 @@ relatively small conceptual leap to go from a type like $\langle
 $\langle \texttt{list}\ A\ n\rangle$ (for homogeneous lists of length
 $n$).  Of course, the richer the properties expressed by the types,
 the more verification burden we might expect.  But still, with
-dependent types, there seems a better change of incrementally
+dependent types, there seems a better chance of incrementally
 exploring the continuum of correctness, starting with current
 programming practice, than with traditional verification methods.
 
@@ -136,7 +133,7 @@ programming languages.  Despite the great intellectual depth of the
 literature on functional programming, and enthusiastic user
 communities, industrial adoption of functional programming is
 miniscule compared to languages like C/C++ or Java.  There are, no
-doubt, many non-techical reasons for this, such as maturity of
+doubt, many non-technical reasons for this, such as maturity of
 standard libraries (it is very difficult to compete, for example, with
 the massive standard library for Java).  But there is at least one
 technical issue which has always held back functional programming
@@ -162,7 +159,7 @@ defined by a set of primitive types, along with operations on those
 types.  The definition of a term-level primitive consists of its type,
 an optional pure functional term which models the primitive, and
 (imperative) C code which the Guru compiler will use for the
-definition of the primitive.  The connection between this C code and
+implementation of the primitive.  The connection between this C code and
 the pure functional model (if supplied) must be trusted.  The resource
 typing framework -- in particular, its linear types -- helps ensure
 that the abstraction is used only in ways where the behaviors of the
@@ -183,11 +180,19 @@ results comparing our approach to memory management with that based on
 garbage collection in \textsc{OCaml} and \textsc{Haskell} on some
 benchmark programs.
 
-The reader may find the sources for all the examples in this paper in
-the Google Code repository for \textsc{Guru}, at
+The following \textsc{Subversion} command will check out the version
+of \textsc{Guru} and the sources for all the examples in this paper,
+from the Google Code repository for \textsc{Guru}, at
 \url{www.guru-lang.org}.  Most are in \textsc{Guru}'s standard
 library, \texttt{guru-lang/lib/}.  A few (noted below) are in a
-special directory along with the source of this paper: \texttt{guru-lang/papers/resource-typing/tests/}.
+special directory along with the source of this paper:
+\texttt{guru-lang/papers/resource-typing/tests/}:
+{\footnotesize
+\begin{verbatim}
+svn co
+ http://guru-lang.googlecode.com/svn/branches/plpv2010/ 
+\end{verbatim}
+}
 
 \section{Overview of \textsc{Guru}'s Resource Typing}
 
@@ -280,7 +285,7 @@ T & ::= & x\ ||\ d\ ||\ \bang\ ||\
 Y & ::= & t\ ||\ T
 \\
 \\
-o & ::= & \#\texttt{untracked}\ ||\ \texttt{spec}\ ||\ \#\texttt{r}\ ||\ \#\langle r\ x\rangle
+o & ::= & \#\texttt{untracked}\ ||\ \texttt{spec}\ ||\ \#r\ ||\ \#\langle r\ x\rangle
 \\
 \\
 i & ::= & \textnormal{\^{\ }}\ ||\ !\ ||\ 1
@@ -311,7 +316,7 @@ the \texttt{by} keyword, which provide information in the rest of
 those terms about the computation that must have led there.  For
 example, in \texttt{let}-terms, the assumption variable has classifier
 $\{ x = t \}$, following the \texttt{let}-definition of $x$ to $t$.
-This is useful informationa in the body of the \texttt{let}, since it
+This is useful information in the body of the \texttt{let}, since it
 tells us that $t$ has terminated, and that $x$ is provably equal to
 its value.  The \texttt{existse\_term} is a rarely used construct for
 elimination of a proved existential formula, inside a term.  The final
@@ -336,7 +341,7 @@ consistency, proofs are syntactically separated from terms, and a
 straightforward termination analysis is used to ensure that induction
 proofs are well-founded.  The separation of logical and computational
 parts in a type-theoretic language has been independently proposed in
-Luo's Logic-Enriched Type Theory~\cite{luo08}).
+Luo's Logic-Enriched Type Theory~\cite{luo08}.
 
 \subsection{Ownership annotations}
 
@@ -435,7 +440,7 @@ these in turn:
 \begin{itemize}
 \item the \texttt{ResourceType}-command.  This declares the resource
   type, together with a primitive function \texttt{consume\_unowned}.
-  This function will be used by the \textsc{Guru} for consuming
+  This function will be used by \textsc{Guru} for consuming
   elements of that resource type, in one special situation:
   \texttt{match}-terms.  By default, when we match on a piece of data,
   that data will be consumed.  The \textsc{Guru} compiler will insert
@@ -445,11 +450,13 @@ these in turn:
   The functional model given for \texttt{consume\_unowned} is a
   trivial \textsc{Guru} function.  The C code for
   \texttt{consume\_unowned}, which follows ``\texttt{<<END}'', uses
-  functions \texttt{dec}, \texttt{op}, and \texttt{releaes}, provided
-  by the \textsc{Guru} runtime, to check the reference count, which
+  functions \texttt{dec}, \texttt{op}, and \texttt{release}, provided
+  by the \textsc{Guru} runtime, to check the reference counts, which
   are stored in all but the low 8 bits of a single word per
   constructor application.  If the reference count is 0 (so all those
-  bits at and above bit 8 are off), then the data is released.
+  bits at and above bit 8 are off), then the data is released.  (So
+  the \textsc{Guru} runtime provides special built-in support for
+  reference counting.)
 
 \item the \texttt{Init}-command.  This specifies how to initialize
   subdata $y$ of $x$ when we pattern-match on $x$.  The \textsc{Guru}
@@ -464,7 +471,11 @@ these in turn:
   the reference counts of its subdata when it is consumed.  That is
   why we increment the subdata's reference counts with this
   \texttt{Init}-function, so that we still have a reference to them
-  even after the scrutinee is consumed.
+  even after the scrutinee is consumed.  Note that while this use of
+  \texttt{Init}-commands could require a number of commands quadratic
+  in the number of resource types, we anticipate that the number of
+  resource types, particularly used in combination with each other,
+  will be small (less than 10, say).
   
 \item The \texttt{Define}-commands.  The keyword \texttt{primitive}
 signals that these are primitives.  Here, it is the resource types declared for
@@ -683,7 +694,7 @@ Init must_consume_scrutinee ginit_unique_owned(#unique x)(#owned y).#owned <<END
 END.
 
 Init must_consume_scrutinee ginit_unique_unowned(#unique x)(#unowned y).#unowned <<END
-  #define ginit_unique_unowned( A, x, y) y
+  #define ginit_unique_unowned(A,x,y) y
 END.
 \end{verbatim}
 \caption{The \texttt{unique} resource type}
@@ -700,7 +711,7 @@ abstractions insist that operations which update the object $o$ to
 which $x$ refers consume $x$, producing as output a new reference to
 the (imperatively) updated $o$.  Since they consume the
 \texttt{unique} $x$, our resource-tracking discipline forbids there
-from being any pinning references to $x$ extant.  This ensures
+from being any extant pinning references to $x$.  This ensures
 (statically) that all read-only references to $o$ are consumed, before
 the read-write reference $x$ can be used.  The \texttt{Init}-function
 for initializing an \texttt{unowned} subdatum $y$ of a
@@ -851,8 +862,8 @@ qcharray_in
      (#unique l:<qcharray A (string_app s1 (stringc c s2))>). 
    #unique <qcharray A (string_app s1 s2)>
 \end{verbatim}
-\label{fig:qcharray}
 \caption{Types for selected \texttt{qcharray} primitives}
+\label{fig:qcharray}
 \end{figure}
 
 \section{Abstractions Using Aliasing}
@@ -924,8 +935,8 @@ main point to note is the use of the \texttt{rheaplet\_id} $I$ to
 connect an alias with its \texttt{rheaplet}.  Even though we may
 deallocate a cell in the imperative implementation (if the number of
 outstanding aliases to that cell falls to zero), in the functional
-model we never remove an element from the list which model the
-heaplet.  So aliases are always valid indices into the list of their
+model we never remove an element from the list which models the
+heaplet.  So an alias is always a valid index into the list of its
 associated heaplet.
 
 \begin{figure}
@@ -1059,7 +1070,7 @@ a valid index into the heaplet \texttt{h}; \texttt{inv\_qout} is similar.
 
 \noindent Some discussion of these invariants is warranted.  First,
 the reader might well wonder why we are introducing these explicit
-statements that aliases being valid indices into the heaplet.  After
+statements that aliases are valid indices into the heaplet.  After
 all, we maintain the relationship between aliases and heaplets
 statically, using the shared \texttt{rheaplet\_id}.  
 While we have designed our static typing to ensure that heaplets
@@ -1146,8 +1157,8 @@ Inductive queue : Fun(A:type).type :=
        (inv:@<rheaplet_queue_inv A I h>).
      #unique <queue A>.
 \end{verbatim}
-\label{fig:queue2}
 \caption{The main datatype, with invariants, for the verified queue abstraction}
+\label{fig:queue2}
 \end{figure}
 
 \section{Type System}
@@ -1211,8 +1222,10 @@ consume the scrutinee, right after initialization of subdata, into
 
 We assume the (singly recursive) terms have already been
 defunctionalized into global first-order recursive equations of the
-forms $(f\ \bar{x}) = t$.  Term constructors we denote with $c$, and
-primitives with $p$. Finally, we assume that proofs (including
+forms $(f\ \bar{x}) = t$.  This is a standard step for compilation of
+functional languages, and allows us to assume below that all functions
+are defined at the top level.  Term constructors we denote with $c$,
+and primitives with $p$. Finally, we assume that proofs (including
 assumption variables) as well as data marked specificational have
 already been dropped, after datatype checking.  Also, we do not treat
 \texttt{existse\_term}- and \texttt{do}-terms (both easily handled),
@@ -1223,8 +1236,9 @@ for space reasons.
 We define a graph-based evaluation relation $\Delta; t \Downarrow_k r;
 \Delta'$, where $t$ is a term; $r$ (here and below) is a variable;
 $\Delta, \Delta'$ are functions from variables $x$ to values of the
-form $(c\ x_1\ \ldots\ c_n)$, with $c$ an arity-$n$ term constructor;
-and $k$ a natural number.  If $\Delta(x) = (c\ \bar{x})$, this means
+form $(c\ x_1\ \ldots\ x_n)$, with $c$ an arity-$n$ term constructor;
+and $k$ a natural number (thus describing inductive data more
+explicitly as a graph).  If $\Delta(x) = (c\ \bar{x})$, this means
 variable $x$ is instantiated with that term, where the variables
 $\bar{x}$ may have their own instantiations in $\Delta$ (similarly for
 $\Delta'$).  Furthermore, $k$ is a natural number used as a timer; it
@@ -1255,7 +1269,7 @@ rule to indicate that the consumption annotations $\bar{i}$ are the
 ones stated in $p$'s type for its arguments.  We also inductively
 define a function ``$-$'' on $\Delta$ and an
 $x\in\textit{dom}(\Delta)$ for removing subgraphs from the graph
-defined $\Delta$:
+defined by $\Delta$:
 \[
 \begin{array}{ll}
 \infer{S_0 - x = (\bigcap_i S_i) \setminus \{(x,(c\ \bar{x}))\} }
@@ -1367,20 +1381,28 @@ variables $x$ to a consumption annotation $i$ (see
 Figure~\ref{fig:terms}) or an expression $\langle y \rangle$, where
 $y$ is a variable pinned by $x$.  The rules are given in
 Figure~\ref{fig:opsema}, using a meta-theoretic function $V$ similar
-to $U$ above, and defined in Figure~\ref{fig:consumea}. The rules of
-Figure~\ref{fig:opsema} are syntax-directed and all decrease the size
-of the term from conclusion to premises.  Hence, in a standard way,
-they determine a terminating algorithm.  The first two rules are for
-variables and constructor applications, while in the third, $g$ is for
-a regular function symbol or a primitive function symbol: the two
-cases are handled the same way here, based on their resource type.  We
-treat \texttt{abort}, similarly here as above, with a judgment form
-ending in $\perp$, which is propagated via straightforward omitted
-rules.
+to $U$ above, and defined in Figure~\ref{fig:consumea}.  (The first
+rule of that Figure removes a resource $x$ from $\Theta$ if (1) it is
+there, (2) not a pinning reference (these must be removed with
+consumption annotation \^{\ }), and (3) not itself pinned by another
+reference.)  The rules of Figure~\ref{fig:opsema} are syntax-directed
+and all decrease the size of the term from conclusion to premises.
+Hence, in a standard way, they determine a terminating algorithm.  The
+first two rules are for variables and constructor applications, while
+in the third, $g$ is for a regular function symbol or a primitive
+function symbol: the two cases are handled the same way here, based on
+their resource type.  Note that our indexed notation in the second and
+third rule forces the initial $\Theta$ ($\Theta_1$) to propagate
+sequentially through the evaluation of the arguments, ending with a
+final $\Theta_{n+1}$. We treat \texttt{abort}, similarly here as
+above, with a judgment form ending in $\perp$, which is propagated via
+straightforward omitted rules.
 
 The rules are modular, in the sense that they rely on types for all
-the regularly defined functions they call.  These types (given in the
-original source code) are confirmed using the following rule:
+the regularly defined functions they call.  This is justified by our
+assumption that our code has already been defunctionalized into
+top-level definitions.  These types (given in the original source
+code) are confirmed using the following rule:
 \[
 \infer{f::\bar{i}}
       {\begin{array}{l}
@@ -1397,12 +1419,18 @@ references cannot be consumed until all their pinning references are.
 
 Some simplifying design choices have been made in this algorithm.  For
 example, the rule for constructor applications disallows arguments
-marked with \^{\ } (meaning to be consumed but not
-returned).  Also, branches in \texttt{match}-cases must have the same
-effect on $\Theta$, and may not return pinning references.  These
-restrictions could perhaps be relaxed.  Also, we have not formalized
-consuming resource named in (global) definitions, although our
-implementation supports this.
+marked with \^{\ } (meaning to be consumed but not returned).  Also,
+branches in \texttt{match}-cases must have the same effect on
+$\Theta$, and may not return pinning references.  Note that having the
+same effect on $\Theta$ is not the same as having exactly the same
+pattern of resource allocations and consumptions.  One
+\texttt{match}-case might create a reference, which another does not.
+But then that first \texttt{match}-case must ensure that the reference
+is consumed by the end of the case, so that the observable effect on
+$\Theta$ is the same as in the other case.  These restrictions could
+perhaps be relaxed.  Also, we have not formalized consuming resources
+named in (global) definitions, although our implementation supports
+this.
 
 \begin{figure}
 \[
@@ -1483,7 +1511,7 @@ that:
 \end{enumerate}
 \end{enumerate}
 
-\begin{theorem}[Type Soundness]
+\begin{proposition}[Type Soundness]
 If $\Theta; t \Downarrow r; \Theta'$, then for all ground shallowly
 augmented forests $\Delta$ and $\sigma::\Theta\to\Delta$, the
 following are both true.
@@ -1503,7 +1531,7 @@ following are both true.
   of $\Delta^*(z)$.
 \item If $(x,!)\in\Theta$, then $\sigma'(x)$ is defined.
 \end{enumerate}
-\end{theorem}
+\end{proposition}
 
 \noindent The first condition states that resources are consumed from
 $\Delta$ in a way consistent with $\Theta$ (as mediated by $\sigma$).
@@ -1666,40 +1694,39 @@ There are several points arising in this study that deserve further discussion:
 
 \textbf{The status of memory leaks.} Our \texttt{rheaplet} abstraction
 does not guarantee absence of memory leaks, and indeed, cyclic
-structures can be leaked.  We will attempt to persuade the reader that
-this is not as great a shortcoming as it might seem.  First, our goal
-is to apply verification judiciously for improved software quality.
-Memory leaks are certainly software flaws, but statically ensuring
-that they do not exist appears costly.  Indeed, dynamic methods such
-as garbage collection are currently so widely for just that reason:
-they ensure that memory is not leaked, with no additional verification
-cost.  There is a performance cost, which we are trying to avoid.  One
-could imagine punting and adding garbage-collected regions as
-additional resource types.  Indeed, our \texttt{rheaplet} data
-structure already compromises performance in order to reduce the
-burden of static verification.
+structures can be leaked.  Statically ensuring that memory leaks do
+not occur appears costly.  Indeed, dynamic methods such as garbage
+collection are currently so widely used for just that reason: they
+ensure that memory is not leaked, with no additional verification
+cost.  But there is a performance cost, which we are trying to avoid.
+One could imagine adding garbage-collected regions as additional
+resource types.  Indeed, our \texttt{rheaplet} data structure already
+compromises performance in order to reduce the burden of static
+verification.  If static verification of the absence of memory leaks
+is desired, then the approach we would advocate is to use a version of
+heaplets (not yet implemented) where the number of outstanding aliases
+is statically tracked in the heaplet's type.  
 
-If static verification of the absence of memory leaks is desired, then
-the approach we would advocate is to use a version of heaplets (not
-yet implemented) where the number of outstanding aliases is statically
-tracked in the heaplet's type.  Verifying that the number of aliases
-is zero when the heaplet is consumed would require significant
-verification effort in general, since one would need to maintain
-invariants expressing the aliasing structure of the heaplet, in order
-to be able to show statically that all aliases have been consumed.
-For cyclic structures, it might be necessary to disassemble the
-structure carefully on deallocation, in a reverse manner to its
-construction.  This choreography will be too intricate for the
-verification budget of many applications.
+%Verifying that the
+%number of aliases is zero when the heaplet is consumed would require
+%significant verification effort in general, since one would need to
+%maintain invariants expressing the aliasing structure of the heaplet,
+%in order to be able to show statically that all aliases have been
+%consumed.
 
-A final note on memory leaks is that to the best of our knowledge,
-there are no general methods for statically verifying the absence of
-live leaks.  And of course, the absence of leaks of unreachable memory
-is simply an approximation to the truly desired property, which is
-that memory which will no longer be used will be reclaimed.  Dynamic
-leak-pruning methods have been considered (see, e.g.,~\cite{bond+09}),
-but a general theory for statically guaranteeing the absence of live
-leaks where possible appears to be lacking from the literature.
+%For cyclic structures, it might be necessary to disassemble the
+%structure carefully on deallocation, in a reverse manner to its
+%construction.  This choreography will be too intricate for the
+%verification budget of many applications.
+
+%A final note on memory leaks is that to the best of our knowledge,
+%there are no general methods for statically verifying the absence of
+%live leaks.  And of course, the absence of leaks of unreachable memory
+%is simply an approximation to the truly desired property, which is
+%that memory which will no longer be used will be reclaimed.  Dynamic
+%leak-pruning methods have been considered (see, e.g.,~\cite{bond+09}),
+%but a general theory for statically guaranteeing the absence of live
+%leaks where possible appears to be lacking from the literature.
 
 \textbf{On automating proofs.} Our current burden of proof for our
 example using aliased heap-allocated data is similar to that of the
@@ -1708,23 +1735,29 @@ desirable~\cite{nanevski+08}.  The 2009 version of Ynot greatly
 decreases the burden of manual proof through clever use of automated
 tactics (in the \textsc{Coq} proof assistant)~\cite{ynot09}.  We also
 agree that automation must be applied to help reduce the manual effort
-for proofs about the heap.  But the methodology for automation we are
-pursuing in \textsc{Guru} differs greatly from that of \textsc{Coq},
-and of at least some of the tactics reported in~\cite{ynot09}.  The
-\texttt{hypjoin} tactic mentioned above is sound, but also complete
-(under modest conditions about termination of the functional terms
-involved): if two terms are joinable modulo the given ground
-equations, without case splitting or induction, then \texttt{hypjoin}
-will determine that they are.  It is our hypothesis that usability of
-powerful tactics is greatly increased by increased predictability.
-Heuristic methods, or methods lacking a simple independent delineation
-of the class of problems they can solve , seem likely to increase
-fragility of proofs and difficulties for users (particularly less
-proficient ones).  It remains to be seen which tactics fitting such a
-description can be devised for reasoning about the heap, or more
-generally.  Certainly one path is to try to extend methods like
-\texttt{hypjoin} to the non-ground case, but this is likely to be
-technically challenging.
+for proofs about the heap.  Our emphasis in \textsc{Guru} is on
+developing predictable and complete tactics like \texttt{hypjoin}.  In
+contrast, \textsc{Coq}'s standard tactics include many of a heuristic
+and unpredictable nature, which can easily break when a proof script
+is modified.
+
+%But the methodology for automation we are
+%pursuing in \textsc{Guru} differs greatly from that of \textsc{Coq},
+%and of at least some of the tactics reported in~\cite{ynot09}.  The
+%\texttt{hypjoin} tactic mentioned above is sound, but also complete
+%(under modest conditions about termination of the functional terms
+%involved): if two terms are joinable modulo the given ground
+%equations, without case splitting or induction, then \texttt{hypjoin}
+%will determine that they are.  It is our hypothesis that usability of
+%powerful tactics is greatly increased by increased predictability.
+%Heuristic methods, or methods lacking a simple independent delineation
+%of the class of problems they can solve, seem likely to increase
+%fragility of proofs and difficulties for users (particularly less
+%proficient ones).  It remains to be seen which tactics fitting such a
+%description can be devised for reasoning about the heap, or more
+%generally.  Certainly one path is to try to extend methods like
+%\texttt{hypjoin} to the non-ground case, but this is likely to be
+%technically challenging.
 
 \textbf{The provable connection between aliases and heaplets.} The use
 of heaplets to model just a portion of the heap is similar in spirit
@@ -1736,15 +1769,19 @@ of type $t$ occurs at address $l$, in the single implicit global
 heap~\cite{zhu+05}.  Above we were forced to reason in more detail
 than we would like about the fact that aliases associated statically
 (via their \texttt{rheaplet\_id}) with a heaplet are actually valid
-indices into that heaplet (considered as a list).  It might be
-possible to reduce this burden of proof by adding some more direct
-language support for heaplets.  For example, we could add a feature to
-add proofs automatically inside terms -- via new assumption variables
--- that valid indices remain valid under all the heaplet operations
-(recalling that in the functional model, we never remove a value from
-a heaplet).  This would greatly reduce the burden of proof for the
-verified queue example, which is mostly concerned with proving that
-aliases are valid heap indices.
+indices into that heaplet (considered as a list).  This must be
+improved in future work.
+
+
+%It might be
+%possible to reduce this burden of proof by adding some more direct
+%language support for heaplets.  For example, we could add a feature to
+%add proofs automatically inside terms -- via new assumption variables
+%-- that valid indices remain valid under all the heaplet operations
+%(recalling that in the functional model, we never remove a value from
+%a heaplet).  This would greatly reduce the burden of proof for the
+%verified queue example, which is mostly concerned with proving that
+%aliases are valid heap indices.
 
 \section{Conclusion}
 
@@ -1761,10 +1798,11 @@ soundness, using the formulation devised above. On the practical side,
 our focus will be on reducing the burden of annotation and proof in
 the ways discussed in the previous section, and also by finding ways
 to eliminate the need for programmers to apply resource primitives
-like \texttt{inc}, \texttt{dec}, and \texttt{inspect} explicitly.  A
-simple first approach might be to devise an algorithm that will
-automatically insert calls to these primitives, given types for all
-function input variables.
+like \texttt{inc}, \texttt{dec}, and \texttt{inspect} explicitly.
+Ideas from other uniqueness-type systems could help there
+(e.g.~\cite{vries08}). A simple first approach might be to devise an
+algorithm that will automatically insert calls to these primitives,
+given types for all function input variables.
 
 \textbf{Acknowledgements:} the U.S. NSF for support under award
 CCF-0841554; and the growing group of students and researchers
