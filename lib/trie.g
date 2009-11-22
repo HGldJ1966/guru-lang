@@ -232,18 +232,21 @@ Define trie_interp_h2_tot
          (b:<list <pair string A>>).
    abbrev l = terminates (mkvec <trie A> a num_chars) by mkvec_tot in
    case num_chars with
-     Z => contra
+     Z => truei
+		  %- contra
             trans symm num_chars_eq num_chars_not_Z
           Exists(l:<list <pair string A>>).
-           {(trie_interp_h2 (mk_trie_interp_i2 r) c a b) = l} 
-   | S n' =>
-     [trie_interp_h2_sztot A l r 
+           {(trie_interp_h2 (mk_trie_interp_i2 r) c a b) = l}
+		  -%
+   | S n' => truei
+     %- [trie_interp_h2_sztot A l r 
         foralli(A:type)(t:<trie A>)(st:{(lt size t size l) = tt}).
           [rTot A t]
         c a trans cong (lt size a size (mkvec a *))
                     num_chars_eq
                   [mkvec_sz <trie A> a n']
         b]
+		-%
    end.
 
 Define spec trie_interp :=

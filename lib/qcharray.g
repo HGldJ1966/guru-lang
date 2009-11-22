@@ -116,15 +116,14 @@ void gqcharray_free(void *l, void *cookie, ucvfree_fun_t delA) {
 }
 END.
 
-%-
 
 Inductive cvfold_i : Fun(A B:type).type :=
-  mk_cvfold_i : Fun(A B C:type)(#unique_owned l:<charray A>)
+  mk_cvfold_i : Fun(A B C:type)(#unique_owned l:<qcharray A>)
                    (start next : char)
                    (fcookie:C)
                    (f:Fun(#owned fcookie:C)(c:char)(#unique_owned a:A)(b:B).B)
                    (b:B)
-                   (r:Fun(A B C:type)(#unique_owned l:<charray A>)
+                   (r:Fun(A B C:type)(#unique_owned l:<qcharray A>)
                          (start : char)
                          (#owned fcookie:C)
                          (f:Fun(#owned fcookie:C)
@@ -132,7 +131,7 @@ Inductive cvfold_i : Fun(A B:type).type :=
                          (b:B).B). <cvfold_i A B>.
 
 Define cvfold_h :=
-  fun cvfold_h(A B C:type)(#unique_owned l:<charray A>)
+  fun cvfold_h(A B C:type)(#unique_owned l:<qcharray A>)
               (start : char)
               (#owned fcookie:C)
               (f:Fun(#owned fcookie:C)(c:char)(#unique_owned a:A)(b:B).B)
@@ -141,8 +140,8 @@ Define cvfold_h :=
       mk_char_inc_t next wrapped =>
         let cookie = 
               match wrapped with
-                ff => (mk_cvfold_i A B C l start next inc fcookie f b cvfold_h)
-              | tt => (mk_cvfold_i A B C l start next inc fcookie f b 
+                ff => (mk_cvfold_i A B C l start next (inc C fcookie) f b cvfold_h)
+              | tt => (mk_cvfold_i A B C l start next (inc C fcookie) f b 
                          fun(A B C:type)(#unique_owned l:<charray A>)
                             (start : char)
                             (#owned fcookie:C)
@@ -150,7 +149,8 @@ Define cvfold_h :=
                                   (#unique_owned a:A)(b:B).B)
                             (b:B). b)
                      end in
-          (ucvget A l start <cvfold_i A B> B
+%		  (qcharray_out A start 
+		  (ucvget A l start <cvfold_i A B> B
             cookie
             fun(cookie: <cvfold_i A B>)(#unique_owned a:A).
               match cookie with
@@ -160,7 +160,9 @@ Define cvfold_h :=
                     cast (f' fcookie' start' ca 
                            (r A' B' C' l' next' fcookie' f' b')) 
                     by symm inj <cvfold_i ** *> cookie_Eq in
-                  dec fcookie' ret
+                  do (dec C' fcookie')
+					 ret
+				  end
               end)
     end.
 
