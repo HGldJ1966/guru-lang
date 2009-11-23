@@ -397,8 +397,21 @@ public abstract class Expr {
 	if (construct == CONST) {
 	    Const c = (Const)this;
 	    boolean not_opaque_if = spec || !ctxt.isOpaque(c);
-	    if (ctxt.isDefined(c) && not_opaque_if) 
-		return c.defExpandTop(ctxt,false,true).isdtype(ctxt, spec);
+	    if (ctxt.isDefined(c) && not_opaque_if) {
+		if (ctxt.getFlag("debug_isdtype")) {
+		    ctxt.w.println("isdtype() called on: "+toString(ctxt)
+				   +", with spec="+(new Boolean(spec)).toString()
+				   +", opaque="+(new Boolean(ctxt.isOpaque(c))).toString());
+		    ctxt.w.flush();
+		}
+		/* if c is coming from a type of the form <d xs> where d is a
+		   type family abbrev and xs is an incomplete argument list,
+		   then we will get an infinite loop without the following check. */
+		Expr cc = c.defExpandTop(ctxt,false,true);
+		if (cc == c)
+		    return false;
+		return cc.isdtype(ctxt, spec);
+	    }
 	    return (ctxt.isTypeCtor((Const)this) && not_opaque_if);
 	}
 	if (construct != TYPE_APP)

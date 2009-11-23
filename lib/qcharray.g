@@ -116,7 +116,6 @@ void gqcharray_free(void *l, void *cookie, ucvfree_fun_t delA) {
 }
 END.
 
-
 Inductive cvfold_i : Fun(A B:type).type :=
   mk_cvfold_i : Fun(A B C:type)(#unique_owned l:<qcharray A>)
                    (start next : char)
