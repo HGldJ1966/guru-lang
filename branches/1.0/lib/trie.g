@@ -248,6 +248,7 @@ Define trie_interp_h2_tot
         b]
 		-%
    end.
+-%
 
 Define spec trie_interp :=
   fun trie_interp(A:type)(#unique_owned t:<trie A>) : <list <pair string A>> .
@@ -275,7 +276,7 @@ Define spec trie_interp :=
         end          
     end.
 
-
+%-
 Define trie_interp_tot : Forall(A:type)(t:<trie A>).
                           Exists(l:<list <pair string A>>).
                            { (trie_interp t) = l } :=
