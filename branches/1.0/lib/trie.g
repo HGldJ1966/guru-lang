@@ -250,15 +250,23 @@ Define trie_interp_h2_tot
    end.
 -%
 
-%-
+Define spec qcharray_fold :=
+	fun qcharray_fold (A B C:type)(l:<qcharray A stringn>)(cookie:C)
+		(f:Fun(cookie:C)(c:char)(a:A)(b:B).B)
+		(b:B) : B.
+	match l with
+		vecn A' => b
+	|	vecc A' n' a' l' => (f cookie Cc0 a' (qcharray_fold A B C l' cookie f b))
+	end.
+
 Define spec trie_interp :=
   fun trie_interp(A:type)(#unique_owned t:<trie A>) : <list <pair string A>> .
   abbrev T = <pair string A> in
     match t with
       trie_none A' => (nil T)
     | trie_exact A' s' a' => 
-        (cons T (mkpair string A inc s' 
-                   inc cast a' by symm inj <trie *> t_Eq)
+        (cons T (mkpair string A (inc string s') 
+                   (inc A cast a' by symm inj <trie *> t_Eq))
            (nil T))
     | trie_next A' o' l' => 
         abbrev P = symm inj <trie *> t_Eq in
@@ -266,17 +274,21 @@ Define spec trie_interp :=
         abbrev l = cast l' by cong <qcharray <trie *> stringn> P in
         let cookie = (mk_trie_interp_i2 A trie_interp) in
         let S = 
-           (cvfold <trie A> <list T> <trie_interp_i2 A> l
+           (qcharray_fold <trie A> <list T> <trie_interp_i2 A> l
               cookie (trie_interp_h2 A) (nil T)) in
-        dec cookie
-        match o with
-          nothing A' => S
-        | something A' a' => 
-           abbrev P2 = symm inj <option *> o_Eq in
-           (cons T (mkpair string A (nil char) inc cast a' by P2) S)
-        end          
+		   %- (cvfold <trie A> <list T> <trie_interp_i2 A> l
+              cookie (trie_interp_h2 A) (nil T)) in -%
+        do (dec <trie_interp_i2 A> cookie)
+			match o with
+			  nothing A' => S
+			| something A' a' => 
+			   abbrev P2 = symm inj <option *> o_Eq in
+			   (cons T (mkpair string A (inc string stringn) (inc A cast a' by P2)) S)
+			end
+		end
     end.
 
+%-
 Define trie_interp_tot : Forall(A:type)(t:<trie A>).
                           Exists(l:<list <pair string A>>).
                            { (trie_interp t) = l } :=
@@ -332,9 +344,10 @@ Define trie_interp_tot : Forall(A:type)(t:<trie A>).
         | trie_next A' o' l' => 
           abbrev P = symm inj <trie *> t_Eq in
           abbrev o = cast o' by cong <option *> P in
-          abbrev l = cast l' by cong <charvec <trie *>> P in
+          abbrev l = cast l' by cong <qcharray <trie *>> P in
           abbrev cookie = (mk_trie_interp_i2 A trie_interp) in
           existse 
+		    %% a little complex here
             [cvfold_sztot <trie A> <list T> <trie_interp_i2 A> l cookie
                (trie_interp_h2 A) 
                [trie_interp_h2_sztot A l trie_interp
@@ -353,7 +366,7 @@ Define trie_interp_tot : Forall(A:type)(t:<trie A>).
                                  [lt_Splus2 size o' size l']
                                u]]]]]]
                  (nil T)]
-          abbrev cS = (cvfold l cookie trie_interp_h2 nil) in
+          abbrev cS = (qcharray_fold l cookie trie_interp_h2 nil) in
           foralli(l:<list <pair string A>>)
                  (ul:{ cS = l}).
           abbrev P1 = 
@@ -888,12 +901,14 @@ Define trusted trie_lookup_same_interp :
         (u1:{ (trie_lookup t s) = o})
         (u2:{ (trie_interp t) = (trie_interp t') }).
     { (trie_lookup t' s) = o} := truei.
+-%
 
-Define trie_range :=
+Define spec trie_range :=
   fun(A:type)(#unique_owned t:<trie A>) : <list A> .
-    (map <pair string A> A Unit unit fun(u:Unit).(snd string A) 
+    (map <pair string A> A nat Z fun(u:nat).(snd string A) 
        (trie_interp A t)).
 
+%-
 % the map function used in trie_range is total.
 Define trie_range_map_tot 
   : Forall(A:type)(l1:<list <pair string A>>).
