@@ -250,15 +250,6 @@ Define trie_interp_h2_tot
    end.
 -%
 
-Define spec qcharray_fold :=
-	fun qcharray_fold (A B C:type)(l:<qcharray A stringn>)(cookie:C)
-		(f:Fun(cookie:C)(c:char)(a:A)(b:B).B)
-		(b:B) : B.
-	match l with
-		vecn A' => b
-	|	vecc A' n' a' l' => (f cookie Cc0 a' (qcharray_fold A B C l' cookie f b))
-	end.
-
 Define spec trie_interp :=
   fun trie_interp(A:type)(#unique_owned t:<trie A>) : <list <pair string A>> .
   abbrev T = <pair string A> in
@@ -274,10 +265,8 @@ Define spec trie_interp :=
         abbrev l = cast l' by cong <qcharray <trie *> stringn> P in
         let cookie = (mk_trie_interp_i2 A trie_interp) in
         let S = 
-           (qcharray_fold <trie A> <list T> <trie_interp_i2 A> l
-              cookie (trie_interp_h2 A) (nil T)) in
-		   %- (cvfold <trie A> <list T> <trie_interp_i2 A> l
-              cookie (trie_interp_h2 A) (nil T)) in -%
+           (qcharray_fold <trie A> <list T> 
+              (fun (append T ) (nil T) l) in
         do (dec <trie_interp_i2 A> cookie)
 			match o with
 			  nothing A' => S

@@ -188,6 +188,10 @@ public class CasesExpr extends Expr {
 	    }
 
 	    if (!C[i].refine(ctxt, clt1, approx, spec)) {
+		if (ctxt.getFlag("debug_refine_cases")) {
+		    ctxt.w.println("Impossible case in match (so not checking body): "+pat.toString(ctxt));
+		    ctxt.w.flush();
+		}
 		C[i].clearDefs(ctxt);
 		continue;
 	    }

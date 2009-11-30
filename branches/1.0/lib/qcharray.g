@@ -6,6 +6,7 @@ Include trusted "vec.g".
 Include trusted "string.g".
 Include trusted "minus.g".
 Include trusted "unique_owned.g".
+Include "unit.g".
 Include "charray.g".
 
 % the string tells which characters' values are checked out right now.
@@ -116,7 +117,36 @@ void gqcharray_free(void *l, void *cookie, ucvfree_fun_t delA) {
 }
 END.
 
+%Set "debug_classify_term_apps".
+%Set "debug_refine_cases".
 
+Define spec qcharray_fold :=
+	fun qcharray_fold (A B C:type)(l:<qcharray A stringn>)(cookie:C)
+		(f:Fun(cookie:C)(c:char)(a:A)(b:B).B)
+		(b:B) : B.
+	match l with
+		vecn A' => b
+	|	vecc A' n' a' l' => (f cookie Cc0 a' (qcharray_fold A B C l' cookie f b))
+	end.
+%-
+-%
+
+Define spec qcharray_fold :=
+	fun qcharray_fold(A B:type)(c:char)(spec n:nat)
+                (inv1 : { (plus (to_nat c) n) = num_chars}) 
+		(f:Fun(c:char)(a:A)(b:B).B)
+		(b:B)
+                (l:<vec A n>) : B.
+	match l with
+		vecn _ => b
+	|	vecc _ n' a' l' => 
+                   match l' with
+                     vecn _ => b 
+                   | vecc _ n'' _ _ =>
+                      (f c a' (qcharray_fold A B (char_inc1 c missing_proof1) n' missing_proof2 l' f b))
+                   end
+	end.
+%-
 Inductive cvfold_i : Fun(A B:type).type :=
   mk_cvfold_i : Fun(A B C:type)(#unique_owned l:<charray A>)
                    (start next : char)
@@ -129,8 +159,6 @@ Inductive cvfold_i : Fun(A B:type).type :=
                          (f:Fun(#owned fcookie:C)
                                (c:char)(#unique_owned a:A)(b:B).B)
                          (b:B).B). <cvfold_i A B>.
-
-%-
 Define cvfold_h :=
   fun cvfold_h(A B C:type)(#unique_owned l:<qcharray A>)
               (start : char)

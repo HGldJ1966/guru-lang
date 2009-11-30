@@ -366,14 +366,13 @@ public class Case extends Expr{
 
     protected boolean refine(Context ctxt, Expr pattp, Expr scruttp,
 			     int approx, boolean spec, Vector vars) {
+	pattp = pattp.defExpandTop(ctxt,true,spec);
+	scruttp = scruttp.defExpandTop(ctxt,true,spec);
 	if (ctxt.getFlag("debug_refine_cases")) {
 	    ctxt.w.println("Refining "+pattp.toString(ctxt)+" with "
 			   +scruttp.toString(ctxt));
 	    ctxt.w.flush();
 	}
-
-	pattp = pattp.defExpandTop(ctxt,true,spec);
-	scruttp = scruttp.defExpandTop(ctxt,true,spec);
 	if (pattp.construct == VAR) {
 	    if (!pattp.defEqNoAnno(ctxt,scruttp,spec)) {
 		Var v = (Var)pattp;
@@ -394,12 +393,13 @@ public class Case extends Expr{
 		return true;
 	    if (scruttp.construct == CONST ||
 		scruttp.construct == TYPE_APP)
-		return pattp.defEq(ctxt,scruttp,spec);
+		return true; // can't rule this out
 	    if (scruttp.construct == TERM_APP) {
 		TermApp scruttp1 = (TermApp)(((TermApp)scruttp)
 					     .spineForm(ctxt,true,spec,true));
 		if (scruttp1.head.construct == CONST
-		    && ctxt.isTermCtor((Const)scruttp1.head))
+		    && ctxt.isTermCtor((Const)scruttp1.head)
+		    && ctxt.isTermCtor((Const)pattp))
 		    // different constructors
 		    return false;
 	    }
@@ -429,9 +429,15 @@ public class Case extends Expr{
 	case TERM_APP: {
 	    TermApp pattp1 = (TermApp)(((TermApp)pattp)
 				       .spineForm(ctxt,true,spec,true));
-	    if (pattp1.head.construct == CONST 
-		&& ctxt.isTermCtor((Const)pattp1.head)
-		&& scruttp.construct == CONST)
+	    if (pattp1.head.construct != CONST 
+		|| !ctxt.isTermCtor((Const)pattp1.head))
+		// pattern is not a constructor application -- no hope of ruling anything out
+		return true;
+
+	    // pattern is a constructor application
+
+	    if (scruttp.construct == CONST
+		&& ctxt.isTermCtor((Const)scruttp))
 		// different constructors
 		return false;
 
@@ -441,7 +447,10 @@ public class Case extends Expr{
 
 	    TermApp scruttp1 = (TermApp)(((TermApp)scruttp)
 					 .spineForm(ctxt,true,spec,true));
-	    if (!pattp1.head.defEq(ctxt,scruttp1.head,spec))
+	    if (scruttp1.head.construct == CONST
+		&& ctxt.isTermCtor((Const)scruttp1.head)
+		&& !pattp1.head.defEq(ctxt,scruttp1.head,spec))
+		// different constructor applications
 		return false;
 	    
 	    for (int i = 0, iend = scruttp1.X.length; i < iend; i++)
