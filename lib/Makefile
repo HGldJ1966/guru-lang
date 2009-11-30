@@ -22,6 +22,9 @@ heaplet:
 charray:
 	time ../bin/guru charray.g
 
+ucharray:
+	time ../bin/guru ucharray.g
+
 warray:
 	time ../bin/guru warray.g
 
