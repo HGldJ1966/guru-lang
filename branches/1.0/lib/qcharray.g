@@ -120,6 +120,7 @@ END.
 %Set "debug_classify_term_apps".
 %Set "debug_refine_cases".
 
+%-
 Define spec qcharray_fold :=
 	fun qcharray_fold (A B C:type)(l:<qcharray A stringn>)(cookie:C)
 		(f:Fun(cookie:C)(c:char)(a:A)(b:B).B)
@@ -128,23 +129,36 @@ Define spec qcharray_fold :=
 		vecn A' => b
 	|	vecc A' n' a' l' => (f cookie Cc0 a' (qcharray_fold A B C l' cookie f b))
 	end.
-%-
 -%
 
 Define spec qcharray_fold :=
 	fun qcharray_fold(A B:type)(c:char)(spec n:nat)
-                (inv1 : { (plus (to_nat c) n) = num_chars}) 
+		(inv1 : { (plus (to_nat c) n) = num_chars}) 
 		(f:Fun(c:char)(a:A)(b:B).B)
-		(b:B)
-                (l:<vec A n>) : B.
+		(b:B)(l:<vec A n>) : B.
 	match l with
 		vecn _ => b
-	|	vecc _ n' a' l' => 
-                   match l' with
-                     vecn _ => b 
-                   | vecc _ n'' _ _ =>
-                      (f c a' (qcharray_fold A B (char_inc1 c missing_proof1) n' missing_proof2 l' f b))
-                   end
+	|	vecc _ n' a' l' =>
+			match l' with
+				vecn _ => b 
+			|	vecc _ n'' _ _ =>
+                    % have l_Eq: <vec A n> = <vec A (S n')>
+                    % know: n = (S n')
+                    % have: c < num_chars (from inv1)
+                    abbrev p0 = inj <vec ** *> l_Eq in
+					abbrev p1 = [lt_implies_not_zero n' n trans cong (lt n' *) p0 [lt_S n']] in
+					abbrev p2 = trans cong (lt * (which_char CLast)) join (which_char c) (to_nat c)
+									  [plus_implies_lt (to_nat charlen c) n (which_char CLast) p1 inv1]
+								% (lt (which_char c) num_chars) = tt
+								% (lt (which_char c) (which_char CLast)) = tt
+								in
+					(f c a' (qcharray_fold A B (char_inc1 c p2) n' 
+						trans symm inv1
+						trans cong (plus (to_nat c) *) p0
+						trans symm [plusS_hop (to_nat c) n']
+							  join (plus (to_nat (char_inc1 c [chars_bounded2 c])) n')
+						f b l'))
+			end
 	end.
 %-
 Inductive cvfold_i : Fun(A B:type).type :=

@@ -1289,3 +1289,6 @@ Define trusted eqnat_ff_implies_lt : Forall(x y:nat)(u:{(eqnat x y) = ff})(v:{(l
 
 Define nat_comp := (comparator1 nat lt eqnat).
 
+Define S_implies_not_zero : Forall(n n':nat)(u: {n = (S n')}).{n != Z} :=
+	foralli(n n':nat)(u: {n = (S n')}).
+	[lt_implies_not_zero n' n trans cong (lt n' *) u [lt_S n']].
