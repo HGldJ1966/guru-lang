@@ -13,19 +13,19 @@ Inductive pb_checkout_t : type :=
 	return_pb_checkout : Fun(#unique pb_stdio : <pb_stdio_t ff>)(#unique_point stdio:stdio_t).#unique pb_checkout_t.
 
 Inductive pb_readstring_t : type :=
-	mk_pb_readstring : Fun(s:string)(#unique pb_stdio : <pb_stdio_t tt>) . #unique pb_readstring_t.
+	mk_pb_readstring : Fun(#unique pb_stdio : <pb_stdio_t tt>)(s:string) . #unique pb_readstring_t.
 
 Define pb_checkout : Fun(#unique pb_stdio : <pb_stdio_t tt>).#unique pb_checkout_t :=
   fun(#unique pb_stdio : <pb_stdio_t tt>):#unique pb_checkout_t.
     match pb_stdio with
       mk_pb_stdio l s => (return_pb_checkout (mk_pb_stdio2 l) s)
-    | mk_pb_stdio2 l => Z
+    | mk_pb_stdio2 l => abort pb_checkout_t
     end.
 
 Define pb_checkin : Fun(#unique pb_stdio : <pb_stdio_t ff>)(#unique_point stdio:stdio_t).#unique <pb_stdio_t tt> :=
   fun(#unique pb_stdio : <pb_stdio_t ff>)(#unique_point stdio:stdio_t):#unique <pb_stdio_t tt> .
     match pb_stdio with
-      mk_pb_stdio l s => Z
+      mk_pb_stdio l s => abort <pb_stdio_t tt>
     | mk_pb_stdio2 l => (mk_pb_stdio l stdio)
     end.
 
@@ -43,7 +43,7 @@ Define pb_cur_char2 : Fun(^ #unique_owned pb_stdio : <pb_stdio_t tt>) . #untrack
 		do (consume_owned string l)
 			ret
 		end 
-             | mk_pb_stdio2 l => Z
+             | mk_pb_stdio2 l => ' '
 	end in
 	do (consume_unique_owned <pb_stdio_t tt> pb_stdio)
 		ret
@@ -68,7 +68,7 @@ Define pb_skip :=
 			unil _ => (mk_pb_stdio (inc string stringn) (next_char s))
 		|	ucons _ a l' => (mk_pb_stdio l' s)
 		end
-             | mk_pb_stdio2 l => Z
+             | mk_pb_stdio2 l => abort <pb_stdio_t tt>
 	end.
 
 Define pb_skip2 :=
@@ -84,7 +84,7 @@ Define pb_reset :=
 		mk_pb_stdio l s =>	do (dec string l)
 			(mk_pb_stdio (inc string stringn) s)
 			end
-             | mk_pb_stdio2 l => Z
+             | mk_pb_stdio2 l => abort <pb_stdio_t tt>
 	end.
 
 Define pb_next_char := pb_skip.
@@ -93,14 +93,14 @@ Define pb_pushback :=
 	fun(#unique pb_stdio : <pb_stdio_t tt>)(c : char) : #unique <pb_stdio_t tt>.
 	match pb_stdio with
 		mk_pb_stdio l s => (mk_pb_stdio (ucons char c l) s)
-             | mk_pb_stdio2 l => Z
+             | mk_pb_stdio2 l => abort <pb_stdio_t tt>
 	end.
 
 Define pb_pushback2 :=
 	fun(#unique pb_stdio : <pb_stdio_t tt>)(str : string) : #unique <pb_stdio_t tt>.
 	match pb_stdio with
 		mk_pb_stdio l s => (mk_pb_stdio (string_app1 str l) s)
-             | mk_pb_stdio2 l => Z
+             | mk_pb_stdio2 l => abort <pb_stdio_t tt>
 	end.
 
 Define pb_print_string :=
@@ -123,9 +123,9 @@ Define pb_readstring :=
 	let pb_stdio = (pb_next_char pb_stdio) in
 	match (eqchar c Cnl) with
 		ff => match (pb_readstring pb_stdio) with
-				mk_pb_readstring s pb_stdio => (mk_pb_readstring (ucons char c s) pb_stdio)
+				mk_pb_readstring pb_stdio s => (mk_pb_readstring pb_stdio (ucons char c s))
 			  end
-	|	tt => (mk_pb_readstring (inc string stringn) pb_stdio)
+	|	tt => (mk_pb_readstring pb_stdio (inc string stringn))
 	end.
 
 Define pb_readstring2 :=
@@ -133,9 +133,9 @@ Define pb_readstring2 :=
 	let c = (pb_cur_char pb_stdio) in
 	let pb_stdio = (pb_next_char pb_stdio) in
 	match n with
-		Z => (mk_pb_readstring (inc string stringn) pb_stdio)
+		Z => (mk_pb_readstring pb_stdio (inc string stringn))
 	|	S n' => match (pb_readstring2 pb_stdio n') with
-					mk_pb_readstring s pb_stdio => (mk_pb_readstring (ucons char c s) pb_stdio)
+					mk_pb_readstring pb_stdio s => (mk_pb_readstring pb_stdio (ucons char c s))
 			    end
 	end.
 
@@ -159,6 +159,21 @@ Define pb_print_nat :=
 		Z => (pb_print_char pb_stdio CZ)
 	|	S n' => let pb_stdio = (pb_print_char pb_stdio CS) in 
 					(pb_print_nat pb_stdio n')
+	end.
+
+% read the next character which is non-whitespace, non-comment
+Define pb_next_nonws_noncomment :=
+	fun r(#unique pb_stdio:<pb_stdio_t tt>) : #unique pb_readstring_t.
+	let c = (pb_cur_char pb_stdio) in
+	match (eqchar c ' ') with
+		ff => match (eqchar c '%') with
+				ff => match (pb_read_until_char pb_stdio C10 join (eqchar C10 Cc0) ff tt) with
+						return_pb_read_until_char s ign pb_stdio => (r pb_stdio)
+					  end
+			  |	tt => (mk_pb_readstring pb_stdio (ucons char c (unil char)))
+			  end
+	|	tt => let pb_stdio = (pb_skip pb_stdio) in
+				  (r pb_stdio)
 	end.
 
 % Opaque pb_stdio_t.
