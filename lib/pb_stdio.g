@@ -163,10 +163,10 @@ Define pb_print_nat :=
 
 % read the next character which is non-whitespace, non-comment
 Define pb_next_nonws_noncomment :=
-	fun r(#unique pb_stdio:<pb_stdio_t tt>) : #unique pb_readstring_t.
+	fun r(#unique pb_stdio:<pb_stdio_t tt>)(c_char:char) : #unique pb_readstring_t.
 	let c = (pb_cur_char pb_stdio) in
 	match (eqchar c ' ') with
-		ff => match (eqchar c '%') with
+		ff => match (eqchar c c_char) with
 				ff => match (pb_read_until_char pb_stdio C10 join (eqchar C10 Cc0) ff tt) with
 						return_pb_read_until_char s ign pb_stdio => (r pb_stdio)
 					  end
