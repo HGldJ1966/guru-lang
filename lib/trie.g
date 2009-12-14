@@ -265,8 +265,9 @@ Define spec trie_interp :=
         abbrev l = cast l' by cong <qcharray <trie *> stringn> P in
         let cookie = (mk_trie_interp_i2 A trie_interp) in
         let S = 
-           (qcharray_fold <trie A> <list T> 
-              (fun (append T ) (nil T) l) in
+           (qcharray_fold <trie A> <list T>
+				% c n inv1 
+            	fun(append T ) (nil T) l) in
         do (dec <trie_interp_i2 A> cookie)
 			match o with
 			  nothing A' => S
