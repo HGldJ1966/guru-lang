@@ -143,20 +143,24 @@ Define spec qcharray_fold :=
 				vecn _ => b 
 			|	vecc _ n'' _ _ =>
                     % have l_Eq: <vec A n> = <vec A (S n')>
-                    % know: n = (S n')
-                    % have: c < num_chars (from inv1)
+                    % know: n = (S n') =(S (S n''))
+                    % want: (lt (which_char c) (which_char CLast)) = tt
                     abbrev p0 = inj <vec ** *> l_Eq in
-					abbrev p1 = [lt_implies_not_zero n' n trans cong (lt n' *) p0 [lt_S n']] in
-					abbrev p2 = trans cong (lt * (which_char CLast)) join (which_char c) (to_nat c)
-									  [plus_implies_lt (to_nat charlen c) n (which_char CLast) p1 inv1]
-								% (lt (which_char c) num_chars) = tt
-								% (lt (which_char c) (which_char CLast)) = tt
-								in
-					(f c a' (qcharray_fold A B (char_inc1 c p2) n' 
-						trans symm inv1
+                    abbrev p1 = inj <vec ** *> l'_Eq in
+					abbrev p2 = [lt_implies_not_zero n' n trans cong (lt n' *) p0 [lt_S n']] in
+					abbrev p3 = [lt_implies_not_zero n'' n' trans cong (lt n'' *) p1 [lt_S n'']] in
+					abbrev p4 = trans join (S (which_char CLast)) num_chars
+								trans symm inv1
+								trans cong (plus (to_nat c) *) p0
+									  [plusS (to_nat charlen c) n'] in
+					abbrev p5 = inj (S *) symm p4 in
+					abbrev p6 = [plus_implies_lt (to_nat charlen c) n' (which_char CLast) p3 p5] in
+
+					(f c a' (qcharray_fold A B (char_inc1 c p6) n' 
+						symm trans symm inv1
 						trans cong (plus (to_nat c) *) p0
-						trans symm [plusS_hop (to_nat c) n']
-							  join (plus (to_nat (char_inc1 c [chars_bounded2 c])) n')
+						trans symm [plusS_hop (to_nat charlen c) n']
+							  cong (plus * n') symm [char_inc1_lem c p6]
 						f b l'))
 			end
 	end.
