@@ -168,12 +168,12 @@ Define pb_next_nonws_noncomment :=
 	match (eqchar c ' ') with
 		ff => match (eqchar c c_char) with
 				ff => match (pb_read_until_char pb_stdio C10 join (eqchar C10 Cc0) ff tt) with
-						return_pb_read_until_char s ign pb_stdio => (r pb_stdio)
+						return_pb_read_until_char s ign pb_stdio => (r pb_stdio c_char)
 					  end
 			  |	tt => (mk_pb_readstring pb_stdio (ucons char c (unil char)))
 			  end
 	|	tt => let pb_stdio = (pb_skip pb_stdio) in
-				  (r pb_stdio)
+				  (r pb_stdio c_char)
 	end.
 
 % Opaque pb_stdio_t.
