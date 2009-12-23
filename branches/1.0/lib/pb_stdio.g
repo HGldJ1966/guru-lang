@@ -176,4 +176,16 @@ Define pb_next_nonws_noncomment :=
 				  (r pb_stdio c_char)
 	end.
 
+% read until eol
+Define pb_consume_to_eol :=
+	fun r(#unique pb_stdio:<pb_stdio_t tt>) : #unique <pb_stdio_t tt>.
+	let c = (pb_cur_char pb_stdio) in
+	match (eqchar c C10) with
+		ff => match (eqchar c Cc0) with
+				ff => (r (pb_skip pb_stdio))
+			  |	tt => pb_stdio
+			  end
+	|	tt => (pb_skip pb_stdio)
+	end.
+
 % Opaque pb_stdio_t.
