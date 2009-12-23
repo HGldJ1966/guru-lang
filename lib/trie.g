@@ -259,8 +259,8 @@ Define spec trie_interp :=
         (cons T (mkpair string A (inc string s') 
                    (inc A cast a' by symm inj <trie *> t_Eq))
            (nil T))
-    | trie_next A' o' l' => 
-        abbrev P = symm inj <trie *> t_Eq in
+    | trie_next A' o' l' => abort <list <pair string A>>
+%-        abbrev P = symm inj <trie *> t_Eq in
         abbrev o = cast o' by cong <option *> P in
         abbrev l = cast l' by cong <qcharray <trie *> stringn> P in
         let cookie = (mk_trie_interp_i2 A trie_interp) in
@@ -275,7 +275,7 @@ Define spec trie_interp :=
 			   abbrev P2 = symm inj <option *> o_Eq in
 			   (cons T (mkpair string A (inc string stringn) (inc A cast a' by P2)) S)
 			end
-		end
+		end -%
     end.
 
 %-
