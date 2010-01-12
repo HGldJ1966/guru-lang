@@ -84,7 +84,8 @@ public class FunTerm extends FunBase {
 	    if (T.consumable()) {
 		Sym r = ctxt.newRef(vars[i],vars[i].pos,
 				    (consumps[i] == NOT_CONSUMED || consumps[i] == CONSUMED_NO_RET),
-				    (consumps[i] == CONSUMED_NO_RET || consumps[i] == CONSUMED_RET_OK));
+				    (consumps[i] == CONSUMED_NO_RET || consumps[i] == CONSUMED_RET_OK),
+				    T.isAffine(ctxt));
 		prev[i] = ctxt.getSubst(vars[i]);
 		ctxt.setSubst(vars[i],r);
 		if (T.construct == PIN)

@@ -23,9 +23,9 @@ public class Primitive extends Command {
 			+"\n\n3. its type: "+cT.toString(ctxt));
 	ctxt.addPrimitive(s,T,code);
 
-	if (T.construct == Expr.SYM) 
+	if (T.construct == Expr.SYM || T.construct == Expr.PIN) 
 	    // we need to add a reference here for simulation purposes.
-	    ctxt.setSubst(s, ctxt.newRef(s,pos));
+	    ctxt.setSubst(s, ctxt.newRef(s,pos,T.isAffine(ctxt)));
 
 	if (!ctxt.getFlag("output_ocaml")) {
 	    ctxt.stage = 0;

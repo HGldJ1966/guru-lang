@@ -52,7 +52,8 @@ public class Compile extends Command {
 	    cctxt.declareConst(R.s);
 	
 	    Define drop = ctxt.getDropFuncDef(ctxt.getDropFunc(c));
-	    R.drop = drop.toCarraway(ctxt);
+	    if (drop != null)
+		R.drop = drop.toCarraway(ctxt);
 
 	    cmds.add(R);
 

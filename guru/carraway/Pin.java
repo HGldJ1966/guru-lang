@@ -100,4 +100,8 @@ public class Pin extends Expr {
 	    s.print(w,ctxt);
     }    
 
+    public boolean isAffine(Context ctxt) {
+	return ctxt.isAffine(s);
+    }
+
 }

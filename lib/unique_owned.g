@@ -1,15 +1,17 @@
 Include "unique.g".
 
-ResourceType unique_owned with
-  Define primitive consume_unique_owned : Fun(A:type)(^#unique_owned x:A).void
-  := fun(A:type)(x:A).voidi <<END
-inline void gconsume_unique_owned(int A, int x) { }
+ResourceType unique_owned affine.
+
+Define primitive consume_unique_owned : Fun(spec A:type)(^#unique_owned a:A).void :=
+  fun(A:type)(a:A).voidi <<END
+#define gconsume_unique_owned(a) a
 END.
 
-ResourceType unique_owned_point with
-  Define primitive consume_unique_owned_point : Fun(A:type)(^#unique_owned_point x:A).void
-  := fun(A:type)(x:A).voidi <<END
-inline void gconsume_unique_owned_point(int A, int x) { }
+ResourceType unique_owned_point affine.
+
+Define primitive consume_unique_owned_point : Fun(spec A:type)(^#unique_owned a:A).void :=
+  fun(A:type)(a:A).voidi <<END
+#define gconsume_unique_owned_point(a) a
 END.
 
 Init ginit_unique_owned_unique(#unique_owned x)(#unique y).#<unique_owned x> <<END

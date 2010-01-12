@@ -253,7 +253,8 @@ public class Match extends Expr {
 
 	for (int i = 0, iend = C.length; i < iend; i++) {
 	    Expr drop = null;
-	    if (!ctxt.isNotConsumed(x) && scrut_t.construct != UNTRACKED) {
+	    if (!ctxt.isNotConsumed(x) && scrut_t.construct != UNTRACKED
+		&& !ctxt.isAffine((Sym)scrut_t)) {
 		drop = new DropTerm(ctxt.getDropFunction((Sym)scrut_t), s, x);
 		drop.pos = C[i].lastpos;
 	    }
@@ -302,12 +303,12 @@ public class Match extends Expr {
 	return null;
     }
 
-    // try to return a RefStat that is in c1 but whose ref does not have a RefStat in c2.
+    // try to return a non-affine RefStat that is in c1 but whose ref does not have a RefStat in c2.
     protected Context.RefStat findDiff(Context ctxt,Collection c1, Collection c2) {
 	Iterator it = c1.iterator();
 	while (it.hasNext()) {
 	    Context.RefStat u = (Context.RefStat)it.next();
-	    if (findRef(ctxt,u.ref,c2) == null)
+	    if (!u.affine && findRef(ctxt,u.ref,c2) == null)
 		return u;
 	}
 	return null;
@@ -385,7 +386,7 @@ public class Match extends Expr {
 	    while (it.hasNext()) {
 		Context.RefStat u = (Context.RefStat)it.next();
 		if (u.dropping_expr == null) {
-		    if (u.ref != rs[i])
+		    if (u.ref != rs[i] && !u.affine)
 			C[i].simulateError(ctxt,"A reference created in a case but not returned by it is being leaked.\n\n"
 					   +"1. the case: "+C[i].c.toString(ctxt)
 					   +"\n\n2. "+u.ref.refString(ctxt,u));
@@ -457,7 +458,7 @@ public class Match extends Expr {
 	    // this can only happen if we are returning void
 	    return ctxt.voidref;
 
-	return ctxt.newRef(this,pos,ret_data.non_ret,ret_data.consume);
+	return ctxt.newRef(this,pos,ret_data.non_ret,ret_data.consume,ret_data.affine);
     }
 
     public Expr linearize(Context ctxt, guru.Position p, Sym dest, Collection decls, Collection defs) {

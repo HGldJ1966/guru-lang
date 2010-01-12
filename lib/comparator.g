@@ -15,10 +15,7 @@ Define comparator1: Fun(A:type)(lt:Fun(^ #owned a b:A).bool)(eq:Fun(^ #owned a b
       	      ff => GT
  	    | tt => EQ
 	    end
-    | tt => do (consume_owned A x)
-      	       (consume_owned A y)
-	       LT
-	    end
+    | tt => LT
     end.
 
 Define comparator2: Fun(A:type)(lt:Fun(w1 w2:A).bool)

@@ -10,9 +10,11 @@ public class ResourceType extends Command {
     }
 
     public void process(Context ctxt) {
-	drop.process(ctxt);
-	// we already called ctxt.addResourceType() in the parser.
-	ctxt.setDropFunc(s,drop);
+	if (drop != null) {
+	    drop.process(ctxt);
+	    // we already called ctxt.addResourceType() in the parser.
+	    ctxt.setDropFunc(s,drop);
+	}
     }
 
     public void print(java.io.PrintStream w, 

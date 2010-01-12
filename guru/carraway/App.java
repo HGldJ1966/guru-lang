@@ -197,7 +197,7 @@ public class App extends Expr {
 	    rettype.construct == UNTRACKED)
 	    return ctxt.voidref;
 
-	Sym ret = ctxt.newRef(this);
+	Sym ret = ctxt.newRef(this,rettype.isAffine(ctxt));
 	if (rettype.construct == PIN) {
 	    // we need to make sure this does not depend on any consumed references
 

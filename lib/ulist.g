@@ -13,15 +13,9 @@ Define ufoldr : Fun(A B C: type)(^#owned cookie:C)
            (fcn: Fun(^#owned cookie:C)(#untracked x:A)(y:B).B)
            (b:B)(^#owned l : <ulist A>):B.
     match ! l with
-      unil A' => do (consume_owned <ulist A> l)
-                    (consume_owned C cookie)
-                    b
-                 end
+      unil A' => b
    | ucons A' a' l' => 
-     let ret = (fcn cookie a' (foldr A B C (clone_owned C cookie) fcn b l')) in
-     do (consume_owned <ulist A> l)
-        ret
-     end
+     (fcn cookie a' (foldr A B C (clone_owned C cookie) fcn b l'))
    end. 
 
 Define ufoldrTot : Forall(A B C : type)
@@ -64,40 +58,21 @@ Define equlist : Fun(A:type)(eqA:Fun(#untracked x1 x2:A).bool)
                     (^#owned l1 l2:<ulist A>)
                     .bool :=
   fun equlist(A:type)(eqA:Fun(#untracked x1 x2:A).bool)(^#owned l1 l2:<ulist A>):bool.
-  let ret = 
   match ! l1 with
     unil _ =>
-    let ret = 
       match ! l2 with
         unil _ => tt
-      | ucons _ h2 t2 => do (consume_owned <ulist A> t2) 
-                            ff
-                         end
-      end in
-    do (consume_owned <ulist A> l2)
-       ret
-    end
+      | ucons _ h2 t2 => ff
+      end
   | ucons _ h1 t1 =>
-    let ret =
       match ! l2 with
-        unil _ => do (consume_owned <ulist A> t1) 
-                     ff
-                  end
+        unil _ => ff
       | ucons _ h2 t2 => 
          match (eqA h1 h2) with
-           ff => do (consume_owned <ulist A> t1) 
-                    (consume_owned <ulist A> t2) 
-                    ff
-                 end
+           ff => ff
          | tt => (equlist A eqA t1 t2)
          end
-      end in
-    do (consume_owned <ulist A> l2)
-       ret
-    end
-  end in
-  do (consume_owned <ulist A> l1)
-     ret
+      end
   end.
 
 Define equlist_total

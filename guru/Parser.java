@@ -361,11 +361,19 @@ public class Parser extends ParserBase {
 	
 	ctxt.addResourceType(a.s);
 	
-	eat("with", "ResourceType");
-	if (!eat_ws())
-	    handleError("Unexpected end of input reading a ResourceType-command.");
-	eat("Define", "ResourceType");
-	a.drop = readDefine();
+	eat_ws();
+
+	if (tryToEat("affine")) {
+	    a.drop = null;
+	    eat(".", "ResourceType");
+	}
+	else {
+	    eat("with", "ResourceType");
+	    if (!eat_ws())
+		handleError("Unexpected end of input reading a ResourceType-command.");
+	    eat("Define", "ResourceType");
+	    a.drop = readDefine();
+	}
 	return a;
     }
 

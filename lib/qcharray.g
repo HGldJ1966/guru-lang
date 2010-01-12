@@ -7,7 +7,7 @@ Include trusted "string.g".
 Include trusted "minus.g".
 Include trusted "unique_owned.g".
 Include "unit.g".
-Include "charray.g".
+Include trusted "charray.g".
 
 % the string tells which characters' values are checked out right now.
 
