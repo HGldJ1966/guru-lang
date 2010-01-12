@@ -63,7 +63,8 @@ public class Case extends Expr {
 		prev[i] = ctxt.getSubst(vars[i]);
 		if (/* !ctxt.isNotConsumed(vars[i]) && */ T.consumable()) {
 
-		    Sym r = ctxt.newRef(vars[i]);
+		    Expr vT = ctxt.getType(vars[i]);
+		    Sym r = ctxt.newRef(vars[i],vT.isAffine(ctxt));
 		    ctxt.setSubst(f.vars[i],r); // so substituted pin-types will mention r
 		    ctxt.setSubst(vars[i],r);
 		    

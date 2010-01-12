@@ -203,6 +203,14 @@ public class Context extends guru.FlagManager {
 	attrs.put(s,drop);
     }
 
+    public void addResourceType(Sym s) {
+	addResourceType(s,null);
+    }
+
+    public boolean isAffine(Sym s) {
+	return (attrs.get(s) == null);
+    }
+
     public boolean isNotConsumed(Sym x) {
 	return not_consumed.contains(x);
     }
@@ -505,6 +513,7 @@ public class Context extends guru.FlagManager {
 	public Sym ref;
 	public boolean non_ret;
 	public boolean consume;
+	public boolean affine;
 	public HashSet pinning;
 	public HashSet pinnedby;
 	public Position creating_pos; // in case creating_expr is a Sym.
@@ -515,6 +524,7 @@ public class Context extends guru.FlagManager {
 	    ref = u.ref;
 	    non_ret = u.non_ret;
 	    consume = u.consume;
+	    affine = u.affine;
 	    pinning = new HashSet(u.pinning);
 	    pinnedby = new HashSet(u.pinnedby);
 	    creating_pos = u.creating_pos;
@@ -524,10 +534,11 @@ public class Context extends guru.FlagManager {
 	}
 	protected RefStat(Sym ref, Position creating_pos, Expr creating_expr, 
 			  Position dropping_pos, Expr dropping_expr, 
-			  boolean non_ret, boolean consume) {
+			  boolean non_ret, boolean consume, boolean affine) {
 	    this.ref = ref;
 	    this.non_ret = non_ret;
 	    this.consume = consume;
+	    this.affine = affine;
 	    this.creating_pos = creating_pos;
 	    this.creating_expr = creating_expr;
 	    this.dropping_expr = dropping_expr;
@@ -549,7 +560,10 @@ public class Context extends guru.FlagManager {
 		if (dropping_pos != null)
 		    w.println(" at "+dropping_pos.toString());
 	    }
-
+	    if (affine)
+		w.println("     affine.");
+	    else
+		w.println("     linear.");
 	    Iterator it = pinning.iterator();
 	    w.print("     pinning:");
 	    while(it.hasNext()) {
@@ -630,9 +644,10 @@ public class Context extends guru.FlagManager {
 
     /* create a new reference and add it to the refs data structure(s).
        The position is the one to associate with the new reference. */
-    public Sym newRef(Expr e, Position p, boolean non_ret, boolean consume) {
+    public Sym newRef(Expr e, Position p, boolean non_ret, boolean consume,
+		      boolean affine) {
 	Sym r = new_ref(p);
-	RefStat s = new RefStat(r,p,e,null,null,non_ret,consume);
+	RefStat s = new RefStat(r,p,e,null,null,non_ret,consume,affine);
 	refs.put(r, s);
 	changed_refs.add(r);
 	if (getFlag("debug_refs")) {
@@ -643,18 +658,19 @@ public class Context extends guru.FlagManager {
 	return r;
     }
 
-    public Sym newRef(Expr e) {
-	return newRef(e,e.pos,false,true);
+    public Sym newRef(Expr e, boolean affine) {
+	return newRef(e,e.pos,false,true,affine);
     }
 
-    public Sym newRef(Expr e, Position p) {
-	return newRef(e,p,false,true);
+    public Sym newRef(Expr e, Position p, boolean affine) {
+	return newRef(e,p,false,true,affine);
     }
 
     public Sym newRef(Position p, RefStat data) {
 	Sym r = new_ref(p);
 	RefStat s = new RefStat(r,p,data.creating_expr,data.dropping_pos,
-				data.dropping_expr,data.non_ret,data.consume);
+				data.dropping_expr,data.non_ret,data.consume,
+				data.affine);
 	s.pinning = new HashSet(data.pinning);
 	s.pinnedby = new HashSet(data.pinnedby);
 	refs.put(r, s);

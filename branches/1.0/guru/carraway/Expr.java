@@ -261,5 +261,9 @@ public abstract class Expr {
     public boolean need_datatype_for_ctor_arg_resource_type() {
 	return (construct != Expr.FUN_TYPE && construct != Expr.TYPE && construct != Expr.UNTRACKED);
     }
-   
+ 
+    // overridden in Sym and Pin
+    public boolean isAffine(Context ctxt) {
+	return false;
+    }
 }

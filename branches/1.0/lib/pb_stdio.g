@@ -31,22 +31,13 @@ Define pb_checkin : Fun(#unique pb_stdio : <pb_stdio_t ff>)(#unique_point stdio:
 
 Define pb_cur_char2 : Fun(^ #unique_owned pb_stdio : <pb_stdio_t tt>) . #untracked char :=
 	fun(^ #unique_owned pb_stdio : <pb_stdio_t tt>).
-	let ret = match ! pb_stdio with
+	match ! pb_stdio with
 		mk_pb_stdio l s =>
-		let ret = match ! l with
-					unil _ => (cur_char2 s)
-				|	ucons _ a l' => do (consume_owned string l') 
-							(consume_unique_owned_point stdio_t s)
-							a
-							end
-				end in
-		do (consume_owned string l)
-			ret
+		match ! l with
+			unil _ => (cur_char2 s)
+		|	ucons _ a l' => a
 		end 
              | mk_pb_stdio2 l => ' '
-	end in
-	do (consume_unique_owned <pb_stdio_t tt> pb_stdio)
-		ret
 	end.
 
 Define pb_cur_char : Fun(! #unique pb_stdio : <pb_stdio_t tt>) . #untracked char :=

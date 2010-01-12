@@ -136,9 +136,11 @@ public class EtaExpand {
 	    Const c = (Const)it.next();
 	    Define drop = src.getDropFuncDef(src.getDropFunc(c));
 	    dst.addResourceType(c);
-	    dst.setDropFunc(c,drop);
 	    all_consts_add(c);
-	    all_consts_add(drop.c);
+	    if (drop != null) {
+		dst.setDropFunc(c,drop);
+		all_consts_add(drop.c);
+	    }
 	}
 
 	return expand(e, false, null);

@@ -132,7 +132,7 @@ public class Sym extends Expr {
 	    Expr T = ctxt.getType(this);
 	    if (!T.consumable())
 		return this;
-	    return ctxt.newRef(this,p);
+	    return ctxt.newRef(this,p,false);
 	}
 	return (Sym)applySubst(ctxt);
     }
@@ -145,4 +145,9 @@ public class Sym extends Expr {
 	    e = this;
 	return linearize_return(ctxt,e,p,dest);
     }
+
+    public boolean isAffine(Context ctxt) {
+	return ctxt.isAffine((Sym)this);
+    }
+
 }

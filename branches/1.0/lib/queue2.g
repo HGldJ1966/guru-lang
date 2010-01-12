@@ -70,14 +70,11 @@ Define queue_cell_has_next : Fun(A:type)(spec I:rheaplet_id)(c:<queue_cell A I>)
   fun(A:type)(spec I:rheaplet_id)(c:<queue_cell A I>):bool.
     match c with
       queue_cellc _ _ a p => 
-        do (consume_owned A a)
-           (dec <alias I> p)
+        do (dec <alias I> p)
            tt
         end
     | queue_celln _ _ a => 
-        do (consume_owned A a)
-           ff
-        end
+        ff
     end.
 
 Inductive queue : Fun(A:type).type :=
@@ -108,38 +105,22 @@ Define queue_new : Fun(A:type)(#unique I:rheaplet_id).#unique <queue_new_t A> :=
 
 Define queue_is_empty : Fun(spec A:type)(^#unique_owned q:<queue A>).bool :=
   fun(spec A:type)(^#unique_owned q:<queue A>).
-  let ret = 
     match ! q with
       queue_datac _ I h qin qout _ _ _ _ => 
-        do (consume_unique_owned <rheaplet_queue A I> h)
-           (consume_owned <alias I> qin) 
-           (consume_owned <alias I> qout) 
-           ff
-        end
+        ff
     | queue_datan _ I h _ => 
-        do (consume_unique_owned <rheaplet_queue A I> h)
-           tt
-        end
-    end in
-  do (consume_unique_owned <queue A> q)
-     ret
-  end.    
+        tt
+    end.    
 
 Define queue_front : Fun(spec A:type)(^#unique_owned q:<queue A>)(u:{ (queue_is_empty q) = ff }).A :=
   fun(spec A:type)(^#unique_owned q:<queue A>)(u:{ (queue_is_empty q) = ff }).
     match ! q with
       queue_datac _ I h qin qout _ _ _ _ => 
         let cell = (rheaplet_get <queue_cell A I> I qout h) in
-        let ret = 
            match ! cell by v1 _ with
-             queue_cellc _ _ a nextp => do (consume_owned <alias I> nextp) (owned_to_unowned A a) end
+             queue_cellc _ _ a nextp => (owned_to_unowned A a)
            | queue_celln _ _ a => (owned_to_unowned A a)
-           end in
-        do (consume_owned <queue_cell A I> cell)
-           (consume_owned <alias I> qin)
-           (consume_unique_owned <rheaplet_queue A I> h)
-           ret
-        end
+           end 
     | queue_datan _ I h _ => 
       impossible transs symm u
                         hypjoin (queue_is_empty q) tt by q_eq end
@@ -165,7 +146,7 @@ Define enqueue : Fun(spec A:type)(#unique q:<queue A>)(a:A).#unique <queue A> :=
       | queue_celln _ _ b => 
         let x = (owned_to_unowned A1 b) in
         do (consume_owned <queue_cell A I> cell)
-           (consume_unique_owned <rheaplet_queue A I> ih) 
+           (consume_unique_owned <rheaplet_queue A I> ih)
            match (rheaplet_in <queue_cell A I> I h (queue_celln A1 I a)) by i _ with
              return_rheaplet_in _ _ h' new_qin => 
                let h'' = (rheaplet_set <queue_cell A I> I (inspect <alias I> qin) h' 
@@ -233,7 +214,7 @@ Define enqueue : Fun(spec A:type)(#unique q:<queue A>)(a:A).#unique <queue A> :=
                end
            end
         end
-      end
+     end
   | queue_datan A1 I h inv =>
     match (rheaplet_in <queue_cell A I> I h (queue_celln A1 I a)) by i _ with
       return_rheaplet_in _ _ h' new_qout => 

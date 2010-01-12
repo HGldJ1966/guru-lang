@@ -33,20 +33,24 @@ public class ResourceType extends Command {
     public void process(Context ctxt) {
 	ctxt.stage = 0;
 	String ss = ctxt.name("consume_"+s.name);
-	if (!drop.s.output_name.equals(ss))
-	    handleError(ctxt,"The drop function given for an attribute is not named as required."
-			+"\n\n1. the given name: "+drop.s.name
-			+"\n\n2. the output version: "+drop.s.output_name
-			+"\n\n3. the output version should be: "+ss);
-	FunType F = buildDropType(ctxt);
+	if (drop != null) {
+	    if (!drop.s.output_name.equals(ss))
+		handleError(ctxt,"The drop function given for an attribute is not named as required."
+			    +"\n\n1. the given name: "+drop.s.name
+			    +"\n\n2. the output version: "+drop.s.output_name
+			    +"\n\n3. the output version should be: "+ss);
+	    FunType F = buildDropType(ctxt);
+	    
+	    if (!drop.T.eqType(ctxt,F)) 
+		handleError(ctxt, "The type given for the drop function for an attribute is not of the expected form.\n\n"
+			    +"1. the type given: "+drop.T.toString(ctxt)
+			    +"\n\n2. the expected form: "+F.toString(ctxt));
+	    // need to add the attribute first, since it is mentioned in the type of the drop function.
+	    ctxt.addResourceType(s,drop.s);
+	}
+	else
+	    ctxt.addResourceType(s);
 
-	if (!drop.T.eqType(ctxt,F)) 
-	    handleError(ctxt, "The type given for the drop function for an attribute is not of the expected form.\n\n"
-			+"1. the type given: "+drop.T.toString(ctxt)
-			+"\n\n2. the expected form: "+F.toString(ctxt));
-
-	// need to add the attribute first, since it is mentioned in the type of the drop function.
-	ctxt.addResourceType(s,drop.s);
 	if (first_attribute) {
 	    if (!ctxt.getFlag("output_ocaml")) {
 		ctxt.cw.println("#include <limits.h>\n\n"
@@ -64,14 +68,19 @@ public class ResourceType extends Command {
 	    }
 	    first_attribute = false;
 	}
-
-	drop.process(ctxt);
+	if (drop != null)
+	    drop.process(ctxt);
     }
 
     public void print(java.io.PrintStream w, 
 		      Context ctxt) {
-	w.println("ResourceType "+s.toString(ctxt)+" with ");
-	drop.print(w,ctxt);
+	w.println("ResourceType "+s.toString(ctxt));
+	if (drop == null)
+	    w.print(" affine ");
+	else {
+	    w.println(" with ");
+	    drop.print(w,ctxt);
+	}
     }
 
 

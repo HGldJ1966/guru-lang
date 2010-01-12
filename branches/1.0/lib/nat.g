@@ -45,24 +45,15 @@ Define S_not_zero : Forall (n:nat).{(S n) != Z} :=
 
 Define eqnat : Fun(^ #owned n m:nat).bool :=
   fun eqnat(^ #owned n m:nat):bool.
-  let ret = 
     match ! n with
       Z => match ! m with
              Z => tt
-           | S m' => do (consume_owned nat m')
-	       	     	ff
-		     end
+           | S m' => ff
            end
    | S n' => match ! m with
-               Z => do (consume_owned nat n')
-	       	       ff
-		    end
+               Z => ff
              | S m' => (eqnat n' m')
              end
-   end in
-   do (consume_owned nat n)
-      (consume_owned nat m)
-      ret
    end
 .
 
@@ -246,24 +237,16 @@ Define Sneq_neq : Forall(a b:nat)(u:{ (S a) != (S b) }).{ a != b } :=
 
 Define lt : Fun(^ #owned a b:nat).bool :=
 	fun lt(^ #owned a b:nat) : bool.
-        let ret =
 		match ! a with
 		Z => match ! b with
 			Z => ff
-			| S b' => do (consume_owned nat b')
-			       	     tt
-				  end
+			| S b' => tt
 			end
 		| S a' => match ! b with
-			Z => do (consume_owned nat a')
-			     	ff
-			     end
+			Z => ff
 			| S b' => (lt a' b')
 			end
-                end in
-        do (consume_owned nat a) (consume_owned nat b)
-           ret
-        end.
+                end.
 
 Define le : Fun(a b:nat).bool :=
 	fun (a b: nat). (or (lt a b) (eqnat a b)).

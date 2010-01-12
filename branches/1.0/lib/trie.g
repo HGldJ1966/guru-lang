@@ -85,39 +85,20 @@ Define trie_lookup : Fun(A:type)(^#unique_owned t:<trie A>)(^#owned s:string).
                         <option A> :=
   fun trie_lookup(A:type)(^#unique_owned t:<trie A>)(^#owned s:string)
       : <option A> .
-  let ret = 
     match ! t with
-      trie_none _ => do (consume_owned string s) 
-                        (nothing A)
-                     end
+      trie_none _ => (nothing A)
     | trie_exact _ s' a' => 
         match (stringeq s s') with
-          ff => do (consume_owned A a')
-                   (nothing A)
-                end
+          ff => (nothing A)
         | tt => (something A (owned_to_unowned A a'))
         end
     | trie_next _ o' l' =>
-      let ret = 
         match ! s with
-          unil _ => do (consume_unique_owned <qcharray <trie A> stringn> l')
-                       (owned_to_unowned <option A> o')
-                    end
+          unil _ => (owned_to_unowned <option A> o')
         | ucons _ c s' => 
-          let r = (trie_lookup A (qcharray_read <trie A> c l') s') in 
-          do
-            (consume_owned <option A> o')
-            (consume_unique_owned <qcharray <trie A> stringn> l')
-            r
-          end
-        end in
-      do (consume_owned string s)
-         ret
-      end
-    end in
-  do (consume_unique_owned <trie A> t)
-     ret
-  end.
+          (trie_lookup A (qcharray_read <trie A> c l') s') 
+        end
+    end.
 
 
 Inductive trie_interp_i1 : Fun(A:type).type :=
