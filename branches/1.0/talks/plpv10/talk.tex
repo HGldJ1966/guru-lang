@@ -247,7 +247,7 @@ node(g) {C target code};
 
 \item Resource analysis:
 \begin{itemize}
-\item Check linearity conditions (used exactly once).
+\item Check linearity conditions (used exactly once, affine).
 \item Track subresource relationships.
 \item Enforce \emph{consumption annotations} on input variables:
 \begin{itemize}
@@ -266,6 +266,7 @@ node(g) {C target code};
 
 \begin{itemize}
 \item ``Deathly Hallows'' as subresource of Harry Potter boxed set.
+\item Cannot use boxed set until all individual volumes returned.
 \item Sublist \texttt{l'} as a subresource of \texttt{(cons x l')}.
 \item Subresource relationship based on type \texttt{<R x>}:
 \begin{itemize}
@@ -274,7 +275,7 @@ node(g) {C target code};
 \end{itemize}
 
 \item Cannot consume \texttt{x} until all subresources have been consumed.
-
+\item Need \textbf{\^{\ }} (``consume but do not return'') to consume \texttt{y:<R' x>}.
 \end{itemize}
 
 \end{frame}
@@ -302,12 +303,17 @@ END.
 \end{verbatim}
 }
 
-All inductive (tree-like) data are reference-counted.
+\begin{itemize}
+\item Inductive (tree-like) data are reference-counted.
+
+\item (Flat types like \texttt{bool} are \texttt{untracked}.)
+\end{itemize}
 \end{frame}
 
 
 \begin{frame}[containsverbatim]
 \frametitle{Resource Abstraction: Owned References}
+{
 \footnotesize
 \begin{verbatim}
 ResourceType owned affine.
@@ -319,44 +325,39 @@ Define primitive inspect
   #define ginspect(x) x
 END.
 \end{verbatim}
+}
+\ \ \ \ \ \ \ \ \ \ \ \ \begin{tikzpicture}
+\draw (-2,0) 
+   node[fill=purple,ellipse,minimum height=2cm,minimum width=1cm](f) {\ };
+\draw[-latex',black,very thick] (-0.25,1.5) -- (-2,1); 
+\draw[-latex',black,dashed] (-0.25,1) -- (-1.8,0.9) ; 
+\draw (0.55,1.5) node {\texttt{x\,:\,A}} ;
+\draw (1.7,1) node {\texttt{y\,:\,\#<owned x> A}} ;
+% \draw[-latex',blue!40,very thick] (g.south) .. controls (1,-1) and (-1,-1) .. (f.south);
+\end{tikzpicture}
 
 \begin{itemize}
-\item Cannot consume \texttt{x:A} before \texttt{y:\#<owned x> A}.
 \item This \texttt{y} is \emph{pinning} \texttt{x}.
-\item So no \texttt{inc},\texttt{dec} required.
-\item => improved performance, still memory safe.
+\item Cannot consume \texttt{x} while \texttt{y} is live.
+\begin{itemize}
+\item No \texttt{inc}, \texttt{dec} required for \texttt{y}.
+\item improved performance, still memory safe.
+\end{itemize}
 \end{itemize}
 
 \end{frame}
 
-\begin{frame}[containsverbatim]
-\frametitle{Initializing Subdata in \texttt{match}-cases}
+\begin{frame}
+\frametitle{Mutable State and Readers/Writers}
 \begin{itemize}
-\item \texttt{Init}-function defined as part of resource abstraction.
-\item Suppose matching on \texttt{x:r}, subdatum \texttt{y:r'}.
-\item \texttt{Init}-function for \texttt{r-r'} initializes \texttt{y}.
-
-{\footnotesize
-\begin{verbatim}
-Init ginit_unowned_unowned(#unowned x)(#unowned y).#unowned 
-<<END
-  inline void *ginit_unowned_unowned(int A,void *x,void *y) {
-    ginc(y);
-    return y;
-  }
-END.
-
-Init ginit_owned_unowned(#owned x)(#unowned y).#<owned x> <<END
-  #define ginit_owned_unowned(A,x,y) y
-END.
-\end{verbatim}
-}
-
-\item Compressing chains of ownership:
-\[
-\infer{\texttt{@ t:<r z>}}{\texttt{t:<r y>} & \texttt{y:<r' z>}}
-\]
-
+\item For writing mutable state, require unique reference.
+\item Can implement readers/writers, using subresource idea.
+\begin{itemize}
+\item Must check in the read-only views to get the read/write one.
+\item For read/write, \texttt{x\,:\,\texttt{\#unique}}.
+\item For read-only, \texttt{y\,:\,\texttt{\#<unique\_owned x>}}.
+\end{itemize}
+\item Use \texttt{unique/unique\_owned} for arrays, queues, tries, etc.
 \end{itemize}
 \end{frame}
 
@@ -365,7 +366,7 @@ END.
 
 \begin{itemize}
 \item Type: \texttt{<warray A N L>}.
-\item Resource type: \texttt{unique}.
+\item Resource types: \texttt{unique} (read/write), \texttt{unique\_owned} (read-only).
 \begin{itemize}
 \item \texttt{A} is type of elements.
 \item \texttt{N} is length of array.
@@ -391,12 +392,12 @@ END.
 \end{frame}
 
 \begin{frame}
-\frametitle{Example: FIFO Queues}
+\frametitle{Data Abstraction: FIFO Queues}
 
 \begin{itemize}
-\item Mutable singly-linked list, with direct pointer to end.
-\item \textbf{Aliasing!}
-\item \textsc{Guru} approach: \emph{heaplets} (part of heap).
+\item Mutable singly-linked list, with direct pointer to enqueue-end.
+\item \textbf{Aliasing.}
+\item Resource abstraction: \emph{heaplets} (part of heap).
 
 \ 
 
@@ -436,8 +437,8 @@ Type & Functional Model & Imperative Implementation \\
 \frametitle{Garbage Collection, Or Lack Thereof}
 \begin{itemize}
 \item Garbage collection has led to great productivity gains...
-\item ... but hurts performance generally.
-\item No continuum: either all GC (\textcolor{orange}{slow}) or no GC (\textcolor{purple}{unsafe}).
+\item ... but can hurt performance.
+\item No continuum in mainstream: all GC (\textcolor{orange}{slow}) or no GC (\textcolor{purple}{unsafe}).
 \item \textsc{Guru} does not use GC.
 \begin{itemize}
 \item Resource abstractions are memory safe.
@@ -509,7 +510,9 @@ Language & Time & Binary \\
 \begin{tabular}{r}
 Compilers: \texttt{ghc 6.10.4, ocamlopt 3.11.1, gcc 4.3.3} \\
 
-Machine: \texttt{2.67Ghz Intel Xeon, 8 GB mem, Linux 2.6.18}
+Machine: \texttt{2.67Ghz Intel Xeon, 8 GB mem, Linux 2.6.18} \\
+
+Implementations: \texttt{Data.Sequence} (\textsc{Haskell}), references (\textsc{OCaml}).
 \end{tabular}}
 
 \end{frame}
@@ -531,7 +534,7 @@ Machine: \texttt{2.67Ghz Intel Xeon, 8 GB mem, Linux 2.6.18}
 \end{itemize}
 \end{itemize}
 
-\item Meta-theoretic work.
+\item Meta-theoretic work on resources.
 
 \item To learn more:
 
@@ -546,6 +549,50 @@ Machine: \texttt{2.67Ghz Intel Xeon, 8 GB mem, Linux 2.6.18}
 
 \end{itemize}
 
+\end{frame}
+
+\begin{frame}[plain]
+\ 
+
+\ 
+
+\ 
+
+\Large
+\begin{center}
+Extra Slides
+\end{center}
+\end{frame}
+
+\begin{frame}[containsverbatim]
+\frametitle{Initializing Subdata in \texttt{match}-cases}
+\begin{itemize}
+\item \texttt{Init}-function defined as part of resource abstraction.
+\item Suppose matching on \texttt{x:r}, subdatum \texttt{y:r'}.
+\item \texttt{Init}-function for \texttt{r-r'} initializes \texttt{y}.
+
+{\footnotesize
+\begin{verbatim}
+Init ginit_unowned_unowned(#unowned x)(#unowned y).#unowned 
+<<END
+  inline void *ginit_unowned_unowned(int A,void *x,void *y) {
+    ginc(y);
+    return y;
+  }
+END.
+
+Init ginit_owned_unowned(#owned x)(#unowned y).#<owned x> <<END
+  #define ginit_owned_unowned(A,x,y) y
+END.
+\end{verbatim}
+}
+
+\item Compressing chains of ownership:
+\[
+\infer{\texttt{@ t:<r z>}}{\texttt{t:<r y>} & \texttt{y:<r' z>}}
+\]
+
+\end{itemize}
 \end{frame}
 
 \end{document}
