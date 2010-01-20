@@ -120,12 +120,12 @@ Define pb_readstring :=
 	end.
 
 Define pb_readstring2 :=
-	fun pb_readstring2(#unique pb_stdio : <pb_stdio_t tt>)(n : nat) : #unique pb_readstring_t.
+	fun pb_readstring2(n : nat)(#unique pb_stdio : <pb_stdio_t tt>) : #unique pb_readstring_t.
 	let c = (pb_cur_char pb_stdio) in
 	let pb_stdio = (pb_next_char pb_stdio) in
 	match n with
 		Z => (mk_pb_readstring pb_stdio (inc string stringn))
-	|	S n' => match (pb_readstring2 pb_stdio n') with
+	|	S n' => match (pb_readstring2 n' pb_stdio) with
 					mk_pb_readstring pb_stdio s => (mk_pb_readstring pb_stdio (ucons char c s))
 			    end
 	end.
