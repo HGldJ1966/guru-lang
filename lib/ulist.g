@@ -132,3 +132,5 @@ Define ulist_mem : Fun(A:type)(eqA:Fun(#untracked a b:A).bool)(#untracked a:A)(l
                       end
     end.
 
+Define ulist_isnil := fun(A:type)(^#owned l:<ulist A>). 
+                  match l with unil A' => tt | ucons A' a' l' => ff end.
