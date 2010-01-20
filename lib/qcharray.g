@@ -120,17 +120,8 @@ END.
 %Set "debug_classify_term_apps".
 %Set "debug_refine_cases".
 
-%-
-Define spec qcharray_fold :=
-	fun qcharray_fold (A B C:type)(l:<qcharray A stringn>)(cookie:C)
-		(f:Fun(cookie:C)(c:char)(a:A)(b:B).B)
-		(b:B) : B.
-	match l with
-		vecn A' => b
-	|	vecc A' n' a' l' => (f cookie Cc0 a' (qcharray_fold A B C l' cookie f b))
-	end.
--%
-
+%% Iterate the function f over the elements of the list l, starting with value b
+%% n is the length of the list
 Define spec qcharray_fold :=
 	fun qcharray_fold(A B:type)(c:char)(spec n:nat)
 		(inv1 : { (plus (to_nat c) n) = num_chars}) 
