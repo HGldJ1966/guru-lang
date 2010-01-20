@@ -167,6 +167,21 @@ Define pb_next_nonws_noncomment :=
 				  (r c_char pb_stdio)
 	end.
 
+% same function as above with different return type
+Define pb_next_nonws_noncomment2 :=
+	fun r(c_char:char)(#unique pb_stdio:<pb_stdio_t tt>) : #unique <pb_stdio_t tt>.
+	let c = (pb_cur_char pb_stdio) in
+	match (eqchar c ' ') with
+		ff => match (eqchar c c_char) with
+				ff => match (pb_read_until_char pb_stdio C10 join (eqchar C10 Cc0) ff tt) with
+						return_pb_read_until_char s ign pb_stdio => (r c_char pb_stdio)
+					  end
+			  |	tt => pb_stdio
+			  end
+	|	tt => let pb_stdio = (pb_skip pb_stdio) in
+				  (r c_char pb_stdio)
+	end.
+
 % read until eol
 Define pb_consume_to_eol :=
 	fun r(#unique pb_stdio:<pb_stdio_t tt>) : #unique <pb_stdio_t tt>.
