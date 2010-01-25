@@ -564,8 +564,9 @@ Define trie_lookup_interp_charvec :
    end tnc Cc0 trans cong (minus (which_char c) *) 
                        join (which_char Cc0) Z
                      [minusZ tnc] ].
+-%
 
-
+%-
 Define trie_lookup_interp :
   Forall(A:type)(t:<trie A>)(s:string)(a:A)
         (u:{ (trie_lookup t s) = (something a) }).
@@ -640,7 +641,7 @@ Define trie_lookup_interp :
                             (append l1 (cons (mkpair s a) l2)) } in
            abbrev P = symm inj <trie *> t_Eq in
            abbrev o = cast o' by cong <option *> P in
-           abbrev l = cast l' by cong <charvec <trie *>> P in
+		   abbrev l = cast l' by cong <qcharray <trie *> stringn> P in
              case o with
               nothing A'' =>
                 contra
@@ -651,8 +652,13 @@ Define trie_lookup_interp :
                 F
             | something A' a' =>
               abbrev ca' = cast a' by symm inj <option *> o_Eq in
-              abbrev cS = (cvfold l (mk_trie_interp_i2 trie_interp) 
-                             trie_interp_h2 nil) in
+			  let cookie = (mk_trie_interp_i2 A trie_interp) in
+              abbrev cS = (qcharray_fold <trie A> <list T>
+							Cc0 num_chars % c n inv1
+							trans join (plus (to_nat Cc0) num_chars) (plus Z num_chars)
+							trans [plus_comm Z num_chars]
+								  [plusZ num_chars]
+							(trie_interp_h2 A cookie) (nil T) l) in
               existse [trie_interp_charvec_tot A l]
               foralli(r:<list T>)
                      (ur:{ cS = r}).
@@ -815,7 +821,9 @@ Define trie_lookup_interp :
        end
    end
    s t u].
+-%
 
+%-
 Define trusted trie_insert_interp :
   Forall(A:type)(t t':<trie A>)(s:string)(a:A)
         (u:{ (trie_insert s a t) = t'}).
