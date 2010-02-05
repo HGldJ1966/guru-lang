@@ -31,6 +31,7 @@ public class Command {
     // for carraway layer
     public static final int RESOURCE_TYPE = 20;
     public static final int INIT = 21;
+    public static final int LOCATE = 22;
 
     protected int which;
     public Position pos;

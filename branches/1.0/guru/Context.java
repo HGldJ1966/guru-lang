@@ -35,6 +35,7 @@ public class Context extends FlagManager {
     protected Vector resource_types_vec;
     protected HashMap resource_type_to_drop_func;
     protected HashMap drop_func_defs;
+    protected HashMap deps_to_name;
 
     public Vector initCmds;
     public guru.carraway.Context carraway_ctxt;
@@ -80,6 +81,7 @@ public class Context extends FlagManager {
 	resource_types_vec = new Vector();
 	resource_type_to_drop_func = new HashMap(256);
 	drop_func_defs = new HashMap(256);
+        deps_to_name = new HashMap(1024);
 
 	star = new Star();
 	starstar = new StarStar();
@@ -332,6 +334,7 @@ public class Context extends FlagManager {
 	defsDelim.put(c,delim);
 	defsCode.put(c,code);
 	defsVec.add(c);
+        addDeps_to_Name(c,classifier);                   // <--------- John added here
     }
 
     public void macroDefine(Var v, Expr body) {
@@ -548,5 +551,25 @@ public class Context extends FlagManager {
 
     public Collection getTrustedDefs() {
 	return trustedDefs;
+    }
+
+    public void addDeps_to_Name(Const c, Expr classifier) {              // <-------- John added here
+         Collection clist = classifier.getDependences();
+         Iterator i = clist.iterator();
+         while (i.hasNext()){
+            Const x = (Const)i.next();
+            if (deps_to_name.containsKey(x)){
+               Vector v = (Vector)deps_to_name.get(x);
+               v.add(c);
+            } else {
+               Vector v = new Vector();
+               v.add(c);
+               deps_to_name.put(x, v);
+            }
+          }
+    }
+
+    public Collection getUsingDefs(Const c){
+         return (Collection)deps_to_name.get(c);
     }
 }
