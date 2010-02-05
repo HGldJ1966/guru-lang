@@ -346,11 +346,30 @@ public class Parser extends ParserBase {
 	    c = readResourceType();
 	else if (tryToEat("Init"))
 	    c = readInit();
+        else if (tryToEat("Locate"))
+            c = readLocate();
 	else
 	    handleError("Unexpected start of a command.");
 	c.pos = pos;
 	return c;
     }
+
+    protected Locate readLocate() throws IOException {
+	Locate l = new Locate();
+	ArrayList a = new ArrayList();
+
+	while (!tryToEat(".")){
+            if (!eat_ws())
+	    handleError("Unexpected end of input reading a Locate-command.");
+            
+            a.add(readConst());
+
+        }
+        
+	l.c =  toConstArray(a); 
+
+	return l;
+     }
 
     protected ResourceType readResourceType() throws IOException {
 	ResourceType a = new ResourceType();
