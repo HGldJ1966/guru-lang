@@ -211,7 +211,7 @@ node(g) {C target code};
 
 \ 
 
-\ \ \ \textcolor{brown}{heap abstractions} \ \ \ \textcolor{green}{read-only views}
+\ \ \ \textcolor{brown}{heap abstractions} \ \ \ \textcolor{blue}{read-only views}
 
 \ 
 
@@ -251,7 +251,7 @@ node(g) {C target code};
 \item Track subresource relationships.
 \item Enforce \emph{consumption annotations} on input variables:
 \begin{itemize}
-\item (default)\ \ -- \ \ consume exactly once.
+\item (default)\ \ -- \ \ consume exactly once/affine.
 \item \textbf{\^{\ }}\ \ -- \ \  consume but do not return.
 \item \textbf{!} \ \ -- \ \  do not consume.
 \end{itemize}
@@ -366,7 +366,7 @@ END.
 
 \begin{itemize}
 \item Type: \texttt{<warray A N L>}.
-\item Resource types: \texttt{unique} (read/write), \texttt{unique\_owned} (read-only).
+\item Resource types: \texttt{unique}/\texttt{unique\_owned}.
 \begin{itemize}
 \item \texttt{A} is type of elements.
 \item \texttt{N} is length of array.
