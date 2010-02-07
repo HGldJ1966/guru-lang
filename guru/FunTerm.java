@@ -283,6 +283,9 @@ public class FunTerm extends FunAbstraction {
 
     public java.util.Set getDependences() {
         java.util.Set s = super.getDependences();
+	if (T == null)
+	    return s;
+	
         s.addAll(T.getDependences());
         return s;
     }
