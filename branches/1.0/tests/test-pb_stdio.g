@@ -1,19 +1,24 @@
 Include "../lib/pb_stdio.g".
 
 Define test := 
+  match (pb_next_nonws_noncomment '%' pb_stdio) with
+    mk_pb_readchar pb_stdio s =>
+      (pb_print_char pb_stdio s)
+    end.
+
 %-	let pb_stdio = (pb_skip pb_stdio) in
 	let c = (pb_cur_char pb_stdio) in
 	(pb_print_char pb_stdio c).
 -%
 
-%	(pb_printstring pb_stdio "xyz").
+%	(pb_print_string pb_stdio "xyz").
 
 %	match (pb_readstring2 pb_stdio (inc nat five)) with
 %-	match (pb_readstring pb_stdio) with
 		mk_pb_readstring s pb_stdio => (pb_println_string pb_stdio s)
 	end.
 -%
-	(pb_print_nat pb_stdio (inc nat five)).
+%- 	(pb_print_nat pb_stdio (inc nat five)). -%
 
 %-	let pb_stdio = (pb_skip2 pb_stdio (S Z)) in
 	let pb_stdio = (pb_pushback pb_stdio (pb_cur_char pb_stdio)) in

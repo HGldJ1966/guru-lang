@@ -197,9 +197,9 @@ Define eqchar_refl := [eqbv_refl charlen].
 
 Define is_whitespace :=
  fun(#untracked a:char):#untracked bool.
-   (or (eqchar a Cnl)
-   (or (eqchar a Csp) 
-   (or (eqchar a Cc9)
+   (or (eqchar a '\n')
+   (or (eqchar a ' ') 
+   (or (eqchar a '\t')
        (eqchar a C13)))).
 
 Inductive char_inc_t : type :=
