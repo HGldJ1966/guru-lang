@@ -75,6 +75,8 @@ Define primitive print_char :=
   }
 END.
 
+Define is_eof := fun(c:char).(eqchar c Cc0).
+
 Define print_string : Fun(#unique_point x:stdio_t)(s:string).#unique_point stdio_t :=
   fun print_string(#unique_point x:stdio_t)(s:string):#unique_point stdio_t.
     match s with

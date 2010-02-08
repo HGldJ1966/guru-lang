@@ -152,16 +152,19 @@ Define pb_print_nat :=
 					(pb_print_nat pb_stdio n')
 	end.
 
+Inductive pb_readchar_t : type :=
+	mk_pb_readchar : Fun(#unique pb_stdio : <pb_stdio_t tt>)(c:char) . #unique pb_readchar_t.
+
 % read the next character which is non-whitespace, non-comment
 Define pb_next_nonws_noncomment :=
-	fun r(c_char:char)(#unique pb_stdio:<pb_stdio_t tt>) : #unique pb_readstring_t.
+	fun r(c_char:char)(#unique pb_stdio:<pb_stdio_t tt>) : #unique pb_readchar_t.
 	let c = (pb_cur_char pb_stdio) in
-	match (eqchar c ' ') with
+	match (is_whitespace c) with
 		ff => match (eqchar c c_char) with
-				ff => match (pb_read_until_char pb_stdio C10 join (eqchar C10 Cc0) ff tt) with
-						return_pb_read_until_char s ign pb_stdio => (r c_char pb_stdio)
+				ff => (mk_pb_readchar pb_stdio c)
+			  |	tt => match (pb_read_until_char pb_stdio '\n' join (eqchar '\n' Cc0) ff tt) with
+						return_pb_read_until_char s ign pb_stdio => do (dec string s) (r c_char pb_stdio) end
 					  end
-			  |	tt => (mk_pb_readstring pb_stdio (ucons char c (unil char)))
 			  end
 	|	tt => let pb_stdio = (pb_skip pb_stdio) in
 				  (r c_char pb_stdio)
@@ -169,18 +172,10 @@ Define pb_next_nonws_noncomment :=
 
 % same function as above with different return type
 Define pb_next_nonws_noncomment2 :=
-	fun r(c_char:char)(#unique pb_stdio:<pb_stdio_t tt>) : #unique <pb_stdio_t tt>.
-	let c = (pb_cur_char pb_stdio) in
-	match (eqchar c ' ') with
-		ff => match (eqchar c c_char) with
-				ff => match (pb_read_until_char pb_stdio C10 join (eqchar C10 Cc0) ff tt) with
-						return_pb_read_until_char s ign pb_stdio => (r c_char pb_stdio)
-					  end
-			  |	tt => pb_stdio
-			  end
-	|	tt => let pb_stdio = (pb_skip pb_stdio) in
-				  (r c_char pb_stdio)
-	end.
+	fun(c_char:char)(#unique pb_stdio:<pb_stdio_t tt>) : #unique <pb_stdio_t tt>.
+          match (pb_next_nonws_noncomment c_char pb_stdio) with
+            mk_pb_readchar pb_stdio c => pb_stdio
+          end.
 
 % read until eol
 Define pb_consume_to_eol :=
