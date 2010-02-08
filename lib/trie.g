@@ -888,7 +888,6 @@ Define spec trie_range :=
     (map <pair string A> A nat Z fun(u:nat).(snd string A) 
        (trie_interp A t)).
 
-%-
 % the map function used in trie_range is total.
 Define trie_range_map_tot 
   : Forall(A:type)(l1:<list <pair string A>>).
@@ -904,6 +903,7 @@ Define trie_range_map_tot
        { (hf unit a) = *}
           join (hf unit a) (snd a)].
 
+%- error called spine form???
 Define trie_range_tot
  : Forall(A:type)(t:<trie A>).
    Exists(l:<list A>). { (trie_range t) = l} := 
@@ -914,6 +914,7 @@ Define trie_range_tot
      by trie_range_map_tot in
    existsi ret { (trie_range t) = *}
      join (trie_range t) ret.
+-%
 
 Define trie_interp_range1
  : Forall(A:type)(t1 t2:<trie A>)
@@ -924,6 +925,7 @@ Define trie_interp_range1
   hypjoin (trie_range t1) (trie_range t2)
   by u1 end.
 
+%- proof error
 Define trie_interp_range2 :
   Forall(A:type)(t:<trie A>)(s:string)(a:A)
         (l1 l2:<list <pair string A>>)
