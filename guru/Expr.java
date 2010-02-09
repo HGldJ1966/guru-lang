@@ -391,15 +391,15 @@ public abstract class Expr {
 	return false;
     }
 
-    // we assume this is a type, and return true iff it is an inductive
-    // type that is not opaque.
-    boolean isdtype(Context ctxt, boolean spec) {
+    // if this is a dtype, return its head (i.e., c if this is c or <c Y1 ... Yn>);
+    // otherwise return null.
+    Const typeGetHead(Context ctxt, boolean spec) {
 	if (construct == CONST) {
 	    Const c = (Const)this;
 	    boolean not_opaque_if = spec || !ctxt.isOpaque(c);
 	    if (ctxt.isDefined(c) && not_opaque_if) {
-		if (ctxt.getFlag("debug_isdtype")) {
-		    ctxt.w.println("isdtype() called on: "+toString(ctxt)
+		if (ctxt.getFlag("debug_typeGetHead")) {
+		    ctxt.w.println("typeGetHead() called on: "+toString(ctxt)
 				   +", with spec="+(new Boolean(spec)).toString()
 				   +", opaque="+(new Boolean(ctxt.isOpaque(c))).toString());
 		    ctxt.w.flush();
@@ -409,14 +409,23 @@ public abstract class Expr {
 		   then we will get an infinite loop without the following check. */
 		Expr cc = c.defExpandTop(ctxt,false,true);
 		if (cc == c)
-		    return false;
-		return cc.isdtype(ctxt, spec);
+		    return null;
+		return cc.typeGetHead(ctxt, spec);
 	    }
-	    return (ctxt.isTypeCtor((Const)this) && not_opaque_if);
+	    if (ctxt.isTypeCtor((Const)this) && not_opaque_if)
+		return (Const)this;
+	    return null;
 	}
 	if (construct != TYPE_APP)
-	    return false;
-	return ((TypeApp)this).getHead(ctxt,spec).isdtype(ctxt, spec);
+	    return null;
+	return ((TypeApp)this).getHead(ctxt,spec).typeGetHead(ctxt, spec);
+    }
+
+    // we assume this is a type, and return true iff it is an inductive
+    // type that is not opaque.
+    boolean isdtype(Context ctxt, boolean spec) {
+	Const head = typeGetHead(ctxt,spec);
+	return (head != null); 
     }
 
     /* assuming this is a type, is it one corresponding to tracked references?

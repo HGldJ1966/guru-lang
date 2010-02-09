@@ -1624,6 +1624,18 @@ public class Parser extends ParserBase {
 
 	int num_ctors = ctors.size();
 	int num_actual = cList.size();
+
+	if (ctxt.getFlag("debug_readCases")) {
+	    ctxt.w.println("readCases checking cases now, with:");
+	    ctxt.w.println("  tp = "+tp.toString(ctxt));
+	    ctxt.w.println("  num_ctors = "+(new Integer(num_ctors)).toString());
+	    ctxt.w.println("  num_actual = "+(new Integer(num_actual)).toString());
+	}		
+
+	if (num_actual > num_ctors)
+	    handleError("A "+where+" has too many cases for "
+			+"datatype \""+tp.toString(ctxt)+"\".");
+
 	Case[] cases = new Case[num_ctors];
 	int j = 0;
 	for (int i = 0; i < num_ctors; i++) {
@@ -1633,6 +1645,8 @@ public class Parser extends ParserBase {
 		Case actual_case = (Case)cList.get(j);
 		
 		if (expected_ctor == actual_case.c) {
+		    if (ctxt.getFlag("debug_readCases")) 
+			ctxt.w.println("expected_ctor == actual_case.c == "+expected_ctor.toString(ctxt)+".  Continuing.");
 		    cases[i] = actual_case;
 		    j++;
 		    continue; // around for loop
@@ -1645,7 +1659,7 @@ public class Parser extends ParserBase {
 
 	    if (j >= num_ctors)
 		handleError("A "+where+" appears not to be listing the constructors for"
-			    +"\ndatatype \""+tp.toString(ctxt)+"\" in order.");
+			    +"datatype \""+tp.toString(ctxt)+"\" in order.");
 	    if (adefault == null)
 		handleError("A "+where+" appears not to be listing the constructors for"
 			    +"\ndatatype \""+tp.toString(ctxt)+"\" in order, or else"
@@ -1663,35 +1677,6 @@ public class Parser extends ParserBase {
 	    cases[i] = new Case(expected_ctor, v, adefault, 
 				false /* default for impossible */);
 	}
-
-	/*
-	String msg = ("A "+where+" does not list all the constructors, in"
-		      +" the order in which they\nare declared in their"
-		      +" datatype, as the patterns of the cases.\n");
-	int s = ctxt.checkTermCtors(cs);
-	if (s == -2) 
-	    handleError(msg + "\nThere is an extra constructor after the "
-			+"ones declared for the datatype.");
-	else if (s == cs.length)
-	    handleError(msg + "\nThe match is apparently missing a case.\n"
-			+ "\n1. The actual number of cases: "
-			+(new Integer(cs.length)).toString()
-			+ "\n2. The expected number: " +
-			(new Integer(((List)ctxt.typeCtorsTermCtors.get
-				      (ctxt.getTypeCtor(cs[0]))).size())).
-			toString());
-	else if (s != -1)
-	    handleError(msg + "\nThe constructor at position "
-			+ (new Integer(s))
-			+ " in the list of cases is different\nfrom the "
-			+ "declared one at that position."
-			+ "\n1. The constructor for the case: "
-			+cs[s].toString(ctxt) 
-			+ "\n2. The declared constructor: " +
-			((Expr)((List)ctxt.typeCtorsTermCtors.get
-				(ctxt.getTypeCtor(cs[0]))).get(s))
-			.toString(ctxt));
-	*/
 
 	return cases;
     }
