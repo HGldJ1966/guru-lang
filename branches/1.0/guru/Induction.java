@@ -83,7 +83,8 @@ public class Induction extends Expr{
 	int last = vl.types.length - 1;
 	Expr last_var = vl.vars[last];
 	Expr last_type = vl.types[last];
-	if (!last_type.isdtype(ctxt,true /* spec */))
+	Const head = last_type.typeGetHead(ctxt,true /* spec */);
+	if (head == null)
 	    handleError(ctxt,
 			"The last type in the quantified part of an "
 			+"induction-proof is not\n"
@@ -103,9 +104,22 @@ public class Induction extends Expr{
 	Forall renamedIH = (Forall)IH.rename(ctxt, x3.pos);
 	ctxt.setClassifier(x3, renamedIH);
 
+	Const head2 = null;
+
 	for (int i = 0, iend = C.length; i < iend; i++) {
 	    // get this first, to set the types of pattern variables.
 	    // dropAnnos() needs these to be set.
+
+	    if (head2 == null) {
+		head2 = ctxt.getTypeCtor(C[i].c);
+		if (!head2.defEq(ctxt,head)) 
+		    handleError(ctxt,
+				"The head of the type of the scrutinee does not match the head of the type of the cases\n"
+				+"in an induction-proof.\n\n"
+				+"1. the head of the type of the scrutinee: "+head.toString(ctxt)
+				+"\n\n2. the head of the type of the first case: "+head2.toString(ctxt));
+	    }
+
 
 	    C[i].setPatternVarTypes(ctxt, false);
 	    

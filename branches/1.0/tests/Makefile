@@ -6,6 +6,9 @@ test-pb_stdio:	test-pb_stdio.g Makefile
 monad-example:
 	../bin/guru monad-example.g
 
+bug:
+	../bin/guru bug.g
+
 test-trie:	test-trie.g Makefile
 	../bin/guru test-trie.g
 	gcc -O2 -w -o test-trie test-trie.c

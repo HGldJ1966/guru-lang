@@ -140,7 +140,8 @@ public class CasesExpr extends Expr {
 
     public Expr classify(Context ctxt, int approx, boolean spec) {
 	Expr clt = t.classify(ctxt,approx,spec).defExpandTop(ctxt,false,spec);
-	if (approx != APPROX_TRIVIAL && !clt.isdtype(ctxt, spec))
+	Const head = clt.typeGetHead(ctxt,spec);
+	if (approx != APPROX_TRIVIAL && head == null)
 	    handleError(ctxt,
 			"The scrutinee's type in a match-term is not"
 			+" an inductive type (or is opaque).\n"
@@ -154,7 +155,19 @@ public class CasesExpr extends Expr {
 			   +t.toString(ctxt));
 	    ctxt.w.flush();
 	}
+
+	Const head2 = null;
+
 	for (i = 0, iend = C.length; i < iend; i++) {
+
+	    if (head2 == null) {
+		head2 = ctxt.getTypeCtor(C[i].c);
+		if (!head2.defEq(ctxt,head,approx,spec)) 
+		    handleError(ctxt,
+				"The head of the type of the scrutinee does not match the head of the type of the cases.\n\n"
+				+"1. the head of the type of the scrutinee: "+head.toString(ctxt)
+				+"\n\n2. the head of the type of the first case: "+head2.toString(ctxt));
+	    }
 
 	    Expr pat = C[i].getPattern();
 	    if (!C[i].allVarsPresent(ctxt))
