@@ -26,23 +26,18 @@ public class Locate extends Command {
         } else {
           int i = usingDefs.size();
           ctxt.w.println("");
-          ctxt.w.print("The following ");
-          ctxt.w.print( i );
-          ctxt.w.println(" definitions use the elements of your locate query: ");
-          ctxt.w.println("");
+          ctxt.w.println("The following " + i + " definitions use the elements of your locate query: ");
 
           for (int k = 0; k < usingDefs.size(); k++){
                Const c = (Const)usingDefs.get(k);
-               ctxt.w.print(k+1);
-               ctxt.w.print(") ");
+               ctxt.w.print(k+1 + ") ");
                c.print(ctxt.w, ctxt);
-               ctxt.w.println("");
+               ctxt.w.print(" : ");
                Expr e = (Expr)ctxt.getClassifier(c);
-               ctxt.w.print("   Classifier: ");
                e.print(ctxt.w, ctxt);
                ctxt.w.println("");
                Position p = e.pos;
-               ctxt.w.print("   Location: ");
+               ctxt.w.print("Location: ");
                p.printNoQuotes(ctxt.w);
                ctxt.w.println("\n");
           }
