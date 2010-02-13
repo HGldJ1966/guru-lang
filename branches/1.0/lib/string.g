@@ -7,7 +7,7 @@ Define stringc := (ucons char).
 Define string_app := fun(^#owned s1:string)(s2:string). (uappend char s1 s2).
 Define string_app1 := fun(s1 s2:string). let ret = (uappend char (inspect string s1) s2) in do (dec string s1) ret end.
 Define string_appnl := fun(s1:string)(s2:string).
-                         (string_app (stringc Cnl s1) s2).
+                         (string_app1 (stringc Cnl s1) s2).
 Define stringeq := (equlist char eqchar).
 
 Define string_mem := (ulist_mem char eqchar).
