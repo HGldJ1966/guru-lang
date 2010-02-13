@@ -110,17 +110,6 @@ public class Induction extends Expr{
 	    // get this first, to set the types of pattern variables.
 	    // dropAnnos() needs these to be set.
 
-	    if (head2 == null) {
-		head2 = ctxt.getTypeCtor(C[i].c);
-		if (!head2.defEq(ctxt,head)) 
-		    handleError(ctxt,
-				"The head of the type of the scrutinee does not match the head of the type of the cases\n"
-				+"in an induction-proof.\n\n"
-				+"1. the head of the type of the scrutinee: "+head.toString(ctxt)
-				+"\n\n2. the head of the type of the first case: "+head2.toString(ctxt));
-	    }
-
-
 	    C[i].setPatternVarTypes(ctxt, false);
 	    
 	    C[i].markSpec(ctxt); // AS: I'm not sure why this is needed
@@ -146,6 +135,16 @@ public class Induction extends Expr{
 
 	    if (!C[i].refine(ctxt, last_type, NO_APPROX, true)) 
 		continue;
+
+	    if (head2 == null) {
+		head2 = ctxt.getTypeCtor(C[i].c);
+		if (!head2.defEq(ctxt,head)) 
+		    handleError(ctxt,
+				"The head of the type of the scrutinee does not match the head of the type of the cases\n"
+				+"in an induction-proof.\n\n"
+				+"1. the head of the type of the scrutinee: "+head.toString(ctxt)
+				+"\n\n2. the head of the type of the first case: "+head2.toString(ctxt));
+	    }
 
 	    Expr form = C[i].body.classify(ctxt);
 	    if (!F.defEq(ctxt, form))

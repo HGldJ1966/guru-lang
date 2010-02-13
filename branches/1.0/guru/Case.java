@@ -320,7 +320,8 @@ public class Case extends Expr{
 	}
     }
 
-    // return true iff we could refine the pattern's type with the scrutinee's.
+    /* return true iff we could refine the pattern's type with the scrutinee's, or 
+       couldn't tell if a refinement is possible. */
     public boolean refine(Context ctxt, Expr scruttp,
 			  int approx, boolean spec) {
 	Expr pat = getPattern();
@@ -332,9 +333,10 @@ public class Case extends Expr{
 	
 
 	if (ctxt.getFlag("debug_refine_cases")) {
-	    ctxt.w.println("About to refine "
+	    ctxt.w.println("(About to refine "
 			   +pattp.toString(ctxt)+" with "
 			   +scruttp.toString(ctxt));
+	    ctxt.w.println("Location: "+this.pos.toString());
 	    ctxt.w.println("The pattern is: "+pat.toString(ctxt));
 	    ctxt.w.flush();
 	}
@@ -348,11 +350,11 @@ public class Case extends Expr{
 
 	if (ctxt.getFlag("debug_refine_cases")) {
 	    if (ret)
-		ctxt.w.println("Successfully refined "
+		ctxt.w.println(") Successfully refined "
 			       +pattp.toString(ctxt)+" with "
 			       +scruttp.toString(ctxt));
 	    else
-		ctxt.w.println("Could not refine "
+		ctxt.w.println(") Could not refine "
 			       +pattp.toString(ctxt)+" with "
 			       +scruttp.toString(ctxt));
 	    ctxt.w.flush();
@@ -391,9 +393,10 @@ public class Case extends Expr{
 	case CONST: {
 	    if (scruttp.construct == VAR)
 		return true;
-	    if (scruttp.construct == CONST ||
-		scruttp.construct == TYPE_APP)
-		return true; // can't rule this out
+	    if (scruttp.construct == CONST)
+		return pattp.defEq(ctxt,scruttp,spec);
+	    if (scruttp.construct == TYPE_APP)
+		return false; 
 	    if (scruttp.construct == TERM_APP) {
 		TermApp scruttp1 = (TermApp)(((TermApp)scruttp)
 					     .spineForm(ctxt,true,spec,true));
