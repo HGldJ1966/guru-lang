@@ -160,15 +160,6 @@ public class CasesExpr extends Expr {
 
 	for (i = 0, iend = C.length; i < iend; i++) {
 
-	    if (head2 == null) {
-		head2 = ctxt.getTypeCtor(C[i].c);
-		if (!head2.defEq(ctxt,head,approx,spec)) 
-		    handleError(ctxt,
-				"The head of the type of the scrutinee does not match the head of the type of the cases.\n\n"
-				+"1. the head of the type of the scrutinee: "+head.toString(ctxt)
-				+"\n\n2. the head of the type of the first case: "+head2.toString(ctxt));
-	    }
-
 	    Expr pat = C[i].getPattern();
 	    if (!C[i].allVarsPresent(ctxt))
 		C[i].handleError(ctxt,
@@ -207,6 +198,15 @@ public class CasesExpr extends Expr {
 		}
 		C[i].clearDefs(ctxt);
 		continue;
+	    }
+
+	    if (head2 == null) {
+		head2 = ctxt.getTypeCtor(C[i].c);
+		if (!head2.defEq(ctxt,head,approx,spec)) 
+		    handleError(ctxt,
+				"The head of the type of the scrutinee does not match the head of the type of the cases.\n\n"
+				+"1. the head of the type of the scrutinee: "+head.toString(ctxt)
+				+"\n\n2. the head of the type of the first case: "+head2.toString(ctxt));
 	    }
 
 	    Expr tp = C[i].body.classify(ctxt,approx,spec);
