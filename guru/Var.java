@@ -29,6 +29,11 @@ public class Var extends Expr{
 	    ctxt.getDefBody(this).print(w,ctxt);
 	else
 	    w.print(name);
+	if (ctxt.getFlag("print_var_context")) {
+	    w.print(" [ctxt is ");
+	    w.print(ctxt);
+	    w.print("]");
+	}
 	print_pos_comment(w,ctxt);
     }    
 

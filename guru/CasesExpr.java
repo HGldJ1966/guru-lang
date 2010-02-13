@@ -200,7 +200,7 @@ public class CasesExpr extends Expr {
 		continue;
 	    }
 
-	    if (head2 == null) {
+	    if (approx != APPROX_TRIVIAL && head2 == null) {
 		head2 = ctxt.getTypeCtor(C[i].c);
 		if (!head2.defEq(ctxt,head,approx,spec)) 
 		    handleError(ctxt,
@@ -237,7 +237,7 @@ public class CasesExpr extends Expr {
 			    +"2. computed: "+tp.toString(ctxt)+"\n"
 			    +"3. expected: "+retT.toString(ctxt));
 
-	    C[i].clearDefs(ctxt);
+	    //C[i].clearDefs(ctxt);
 	}
 		
 	if (retT == null) {

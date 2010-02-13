@@ -336,7 +336,7 @@ public class Case extends Expr{
 	    ctxt.w.println("(About to refine "
 			   +pattp.toString(ctxt)+" with "
 			   +scruttp.toString(ctxt));
-	    ctxt.w.println("Location: "+this.pos.toString());
+	    ctxt.w.println("Location: "+(pos == null ? "unknown" : this.pos.toString()));
 	    ctxt.w.println("The pattern is: "+pat.toString(ctxt));
 	    ctxt.w.flush();
 	}

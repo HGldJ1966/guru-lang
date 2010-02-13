@@ -223,6 +223,8 @@ public class TermApp extends App{
 							       spec);
 	if (ctxt.getFlag("debug_classify_term_apps")) {
 	    ctxt.w.println("Head is "+head.toString(ctxt)+", with classifier "+cl.toString(ctxt));
+	    if (cl.construct == VAR)
+		ctxt.w.println("Macro-defined = "+(ctxt.isMacroDefined((Var)cl) ? "yes" : "no"));
 	    ctxt.w.flush();
 	}
 

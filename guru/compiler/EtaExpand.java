@@ -50,16 +50,16 @@ public class EtaExpand {
 	Const c = d;
 	Expr T = _T;
 	if (T == null) {
-	    if (src.getFlag("debug_eta_expand")) {
-		src.w.print("Classifying (addDef) ");
-		e.print(src.w,src);
-		src.w.println("");
-		src.w.flush();
+	    if (dst.getFlag("debug_eta_expand")) {
+		dst.w.print("Classifying [ctxt is "+dst.toString()+"] (addDef) ");
+		e.print(dst.w,src);
+		dst.w.println("");
+		dst.w.flush();
 	    }
 	    T = e.classify(dst,Expr.APPROX_TRIVIAL,false);
-	    if (src.getFlag("debug_eta_expand")) {
-		src.w.println("done.");
-		src.w.flush();
+	    if (dst.getFlag("debug_eta_expand")) {
+		dst.w.println("done.");
+		dst.w.flush();
 	    }
 	}
 
@@ -70,12 +70,12 @@ public class EtaExpand {
 		return c;
 
 	    if (dst.getFlag("debug_eta_expand")) {
-		src.w.print("Defining "+c.name+" : ");
-		T.print(src.w, src);
-		src.w.print(" := ");
-		e.print(src.w,src);
-		src.w.println("");
-		src.w.flush();
+		dst.w.print("Defining "+c.name+" : ");
+		T.print(dst.w, src);
+		dst.w.print(" := ");
+		e.print(dst.w,src);
+		dst.w.println("");
+		dst.w.flush();
 	    }
 	    all_consts_add(c);
 	    dst.define(c, src.getDefOwnership(c), T, e, e2,
@@ -450,7 +450,15 @@ public class EtaExpand {
 		}
 		expand(c.c,false,null); // we might need to add c.c to dst
 		c.setPatternVarTypes(dst, false); 
+		if (src.getFlag("debug_eta_expand")) {
+		    src.w.println("Eta-expand about to refine pattern type [ctxt is "+dst.toString()+"] (");
+		    src.w.flush();
+		}
 		c.refine(dst,scruttp,Expr.APPROX_TRIVIAL,false);
+		if (src.getFlag("debug_eta_expand")) {
+		    src.w.println(") eta-expand done refining pattern type.");
+		    src.w.flush();
+		}
 
 		Expr nbody = expand(c.body,false,null);
 		if (nbody == c.body && c.x == m.C[i].x) 
