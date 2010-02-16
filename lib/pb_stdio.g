@@ -15,6 +15,9 @@ Inductive pb_checkout_t : type :=
 Inductive pb_readstring_t : type :=
 	mk_pb_readstring : Fun(#unique pb_stdio : <pb_stdio_t tt>)(s:string) . #unique pb_readstring_t.
 
+Inductive pb_readchar_t : type :=
+	mk_pb_readchar : Fun(#unique pb_stdio : <pb_stdio_t tt>)(c:char) . #unique pb_readchar_t.
+
 Define pb_checkout : Fun(#unique pb_stdio : <pb_stdio_t tt>).#unique pb_checkout_t :=
   fun(#unique pb_stdio : <pb_stdio_t tt>):#unique pb_checkout_t.
     match pb_stdio with
@@ -151,9 +154,6 @@ Define pb_print_nat :=
 	|	S n' => let pb_stdio = (pb_print_char pb_stdio CS) in 
 					(pb_print_nat pb_stdio n')
 	end.
-
-Inductive pb_readchar_t : type :=
-	mk_pb_readchar : Fun(#unique pb_stdio : <pb_stdio_t tt>)(c:char) . #unique pb_readchar_t.
 
 % read the next character which is non-whitespace, non-comment
 Define pb_next_nonws_noncomment :=
