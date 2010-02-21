@@ -59,7 +59,7 @@ Define trie_remove : Fun(spec A:type)(^#owned s:string)(#unique t:<trie A>).
     match t with
       trie_none _ => (trie_none A)
     | trie_exact A' s' a' =>
-        match (stringeq s s') with
+        match (stringeq s (inspect string s')) with
           ff => (trie_exact A' s' a')
         | tt => do (dec A' a')
                    (dec string s')
