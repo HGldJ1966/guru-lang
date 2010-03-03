@@ -134,7 +134,9 @@ Total nat_to_word nat_to_word_total.
 %=============================================================================
 
 Define primitive eqword : Fun(w1 w2:word).bool := (eqbv wordlen) <<END
-  #define geqword(w1,w2) (w1 == w2)
+inline int geqword(int w1,int w2) {
+  return (w1 == w2);
+}
 END.
 
 Define eqword_eq := [eqbv_eq wordlen].
