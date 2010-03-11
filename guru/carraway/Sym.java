@@ -130,7 +130,7 @@ public class Sym extends Expr {
     public Sym simulate_h(Context ctxt, Position p) {
 	if (ctxt.isCtor(this)) {
 	    Expr T = ctxt.getType(this);
-	    if (!T.consumable())
+	    if (!T.consumable(ctxt))
 		return this;
 	    return ctxt.newRef(this,p,false);
 	}

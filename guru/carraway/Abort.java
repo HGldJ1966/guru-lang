@@ -8,11 +8,14 @@ public class Abort extends Expr {
     }
 
     public void do_print(java.io.PrintStream w, Context ctxt) {
-	if (ctxt.stage > 2)
-	    w.println("fprintf(stderr,\"abort at "+pos.toString(false/*not quoted */)
-		      +"\\n\"); exit(EXIT_FAILURE)");
-	else
-	    w.print("abort");
+        if (ctxt.stage > 2)
+            if (pos == null)
+                w.println("fprintf(stderr,\"abort (location missing)\\n\"); exit(EXIT_FAILURE)");
+            else
+                w.println("fprintf(stderr,\"abort at "+pos.toString(false/*not quoted */)
+                          +"\\n\"); exit(EXIT_FAILURE)");
+        else
+            w.print("abort");
     }    
 
     public Expr simpleType(Context ctxt) {

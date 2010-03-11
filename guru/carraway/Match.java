@@ -87,142 +87,142 @@ public class Match extends Expr {
     }    
 
     protected Expr simpleTypeCase(Context ctxt, Case C, Expr scrut_t, 
-				  Expr drop_term /* to drop the scrutinee, null if it is not to be dropped */) {
-	if (ctxt.getFlag("debug_init_terms")) {
-	    ctxt.w.println("simpleTypeCase called for case "+C.c.toString(ctxt)+", with scrut_t = "
-			   +scrut_t.toString(ctxt)+", drop_term = "+drop_term.toString(ctxt)
-			   +", consume_scrut = "+(new Boolean(consume_scrut)).toString());
-	    ctxt.w.flush();
-	}
+                                  Expr drop_term /* to drop the scrutinee, null if it is not to be dropped */) {
+        if (ctxt.getFlag("debug_init_terms")) {
+            ctxt.w.println("simpleTypeCase called for case "+C.c.toString(ctxt)+", with scrut_t = "
+                           +scrut_t.toString(ctxt)+", drop_term = "+drop_term.toString(ctxt)
+                           +", consume_scrut = "+(new Boolean(consume_scrut)).toString());
+            ctxt.w.flush();
+        }
 
-	/* include the drop term (to drop the scrutinee) here, if we're consuming the
-	   scrutinee first. */
+        /* include the drop term (to drop the scrutinee) here, if we're consuming the
+           scrutinee first. */
 
-	if (consume_scrut && drop_term != null) {
-	    if (ctxt.getFlag("debug_init_terms")) {
-		ctxt.w.println("Inserting drop term for case "+C.c.toString(ctxt));
-		ctxt.w.flush();
-	    }
+        if (consume_scrut && drop_term != null) {
+            if (ctxt.getFlag("debug_init_terms")) {
+                ctxt.w.println("Inserting drop term for case "+C.c.toString(ctxt));
+                ctxt.w.flush();
+            }
 
-	    Do tmp = new Do();
-	    tmp.pos = C.body.pos;
-	    tmp.ts = new Expr[2];
-	    tmp.ts[0] = drop_term;
-	    tmp.ts[1] = C.body;
-	    C.body = tmp;
-	}
+            Do tmp = new Do();
+            tmp.pos = C.body.pos;
+            tmp.ts = new Expr[2];
+            tmp.ts[0] = drop_term;
+            tmp.ts[1] = C.body;
+            C.body = tmp;
+        }
 
-	Expr cT = ctxt.getType(C.c);
+        Expr cT = ctxt.getType(C.c);
 
-	Expr ret;
+        Expr ret;
 
-	if (C.vars.length == 0) {
+        if (C.vars.length == 0) {
 
-	    // no pattern variables to worry about
+            // no pattern variables to worry about
 
-	    if (cT.construct != SYM && cT.construct != UNTRACKED)
-		classifyError(ctxt,"A constructor given as the pattern of a match-case has a type which is not a datatype.\n\n"
-			      +"1. the constructor: "+C.c.toString(ctxt)
-			      +"\n\n2. its type: "+cT.toString(ctxt));
-	    ret = C.body.simpleType(ctxt);
-	}
-	else {
+            if (cT.construct != SYM && cT.construct != UNTRACKED)
+                classifyError(ctxt,"A constructor given as the pattern of a match-case has a type which is not a datatype.\n\n"
+                              +"1. the constructor: "+C.c.toString(ctxt)
+                              +"\n\n2. its type: "+cT.toString(ctxt));
+            ret = C.body.simpleType(ctxt);
+        }
+        else {
 
-	    if (cT.construct != FUN_TYPE)
-		classifyError(ctxt,"The constructor heading the pattern of a match-case has an unexpected type.\n\n"
-			      +"1. the constructor: "+C.c.toString(ctxt)
-			      +"\n\n2. its type: "+cT.toString(ctxt));
+            if (cT.construct != FUN_TYPE)
+                classifyError(ctxt,"The constructor heading the pattern of a match-case has an unexpected type.\n\n"
+                              +"1. the constructor: "+C.c.toString(ctxt)
+                              +"\n\n2. its type: "+cT.toString(ctxt));
 	
-	    // we have pattern variables to worry about
+            // we have pattern variables to worry about
 
-	    FunType f = (FunType)cT;
-	    FunType rf = (FunType)ctxt.getCtorRuntimeType(C.c);
+            FunType f = (FunType)cT;
+            FunType rf = (FunType)ctxt.getCtorRuntimeType(C.c);
 	
-	    if (f.vars.length != C.vars.length)
-		classifyError(ctxt,
-			      "The constructor heading the pattern of a match-case is applied to the wrong number of pattern variables.\n\n"
-			      +"1. the constructor: "+C.c.toString(ctxt)
-			      +"\n\n2. its type: "+cT.toString(ctxt));
+            if (f.vars.length != C.vars.length)
+                classifyError(ctxt,
+                              "The constructor heading the pattern of a match-case is applied to the wrong number of pattern variables.\n\n"
+                              +"1. the constructor: "+C.c.toString(ctxt)
+                              +"\n\n2. its type: "+cT.toString(ctxt));
 
-	    /* first map the variables from the ctor's type to the pattern
-	       vars, and set the types of the pattern vars.  This must be
-	       done first in this order, because next we will modify the
-	       body by wrapping it in one let-construct for each pattern
-	       var -- and that has to be done in reverse order. */
+            /* first map the variables from the ctor's type to the pattern
+               vars, and set the types of the pattern vars.  This must be
+               done first in this order, because next we will modify the
+               body by wrapping it in one let-construct for each pattern
+               var -- and that has to be done in reverse order. */
 
-	    //	    boolean scrut_not_consumed = ctxt.isNotConsumed(x);
-	    for (int i = 0, iend = C.vars.length; i < iend; i++) {
-		Expr vT = f.types[i].applySubst(ctxt);
-		ctxt.setType(C.vars[i], vT);
-		ctxt.setSubst(f.vars[i],C.vars[i]);
-		/*		if (scrut_not_consumed)
-		  ctxt.setNotConsumed(C.vars[i]); */
-	    }
+            //	    boolean scrut_not_consumed = ctxt.isNotConsumed(x);
+            for (int i = 0, iend = C.vars.length; i < iend; i++) {
+                Expr vT = f.types[i].applySubst(ctxt);
+                ctxt.setType(C.vars[i], vT);
+                ctxt.setSubst(f.vars[i],C.vars[i]);
+                /*		if (scrut_not_consumed)
+                        ctxt.setNotConsumed(C.vars[i]); */
+            }
 
-	    for (int i = C.vars.length - 1; i >= 0; i--) {
-		if (rf.types[i].construct != UNTRACKED) {
-		    // we have a runtime type for this var
+            for (int i = C.vars.length - 1; i >= 0; i--) {
+                if (rf.types[i].construct != UNTRACKED) {
+                    // we have a runtime type for this var
 
-		    Sym rt = null;
-		    try {
-			rt = (Sym)rf.types[i].applySubst(ctxt);
-		    }
-		    catch(Exception e) {
-			C.classifyError(ctxt,"Internal error: the runtime type we have for a constructor argument"
-					+"\nis untracked, but not a symbol."
-					+"\n\n1. the constructor: "+C.c.toString(ctxt)
-					+"\n\n2. the argument: "+C.vars[i].toString(ctxt)
-					+"\n\n3. its runtime type: "+rf.types[i].applySubst(ctxt).toString(ctxt));
-		    }
+                    Sym rt = null;
+                    try {
+                        rt = (Sym)rf.types[i].applySubst(ctxt);
+                    }
+                    catch(Exception e) {
+                        C.classifyError(ctxt,"Internal error: the runtime type we have for a constructor argument"
+                                        +"\nis untracked, but not a symbol."
+                                        +"\n\n1. the constructor: "+C.c.toString(ctxt)
+                                        +"\n\n2. the argument: "+C.vars[i].toString(ctxt)
+                                        +"\n\n3. its runtime type: "+rf.types[i].applySubst(ctxt).toString(ctxt));
+                    }
 		
-		    Sym q = null;
-		    if (f.types[i].construct == SYM)
-			q = (Sym)f.types[i];
-		    else
-			q = ((Pin)f.types[i]).s;
+                    Sym q = null;
+                    if (f.types[i].construct == SYM)
+                        q = (Sym)f.types[i];
+                    else
+                        q = ((Pin)f.types[i]).s;
 
-		    if (scrut_t.construct == UNTRACKED) {
-			Expr vT = ctxt.getType(C.vars[i]);
-			C.classifyError(ctxt, "A match-term requires initialization from untracked data.\n\n"
-					+"1. the pattern variable: "+C.vars[i].toString(ctxt)
-					+"\n\n2. its type: "+vT.toString(ctxt)
-					+"\n\n3. the scrutinee's type: "+scrut_t.toString(ctxt));
-		    }
+                    if (scrut_t.construct == UNTRACKED) {
+                        Expr vT = ctxt.getType(C.vars[i]);
+                        C.classifyError(ctxt, "A match-term requires initialization from untracked data.\n\n"
+                                        +"1. the pattern variable: "+C.vars[i].toString(ctxt)
+                                        +"\n\n2. its type: "+vT.toString(ctxt)
+                                        +"\n\n3. the scrutinee's type: "+scrut_t.toString(ctxt));
+                    }
 
-		    Context.InitH h = ctxt.getInit((Sym)scrut_t,q);
+                    Context.InitH h = ctxt.getInit((Sym)scrut_t,q);
 
-		    if (h == null) {
-			Expr vT = ctxt.getType(C.vars[i]);
-			C.classifyError(ctxt, "There is no initialization function for a pattern variable in a match-case.\n"
-					+"Probably the resource type of the scrutinee is not what it should be."
-					+"\n\n1. the scrutinee's resource type: "+scrut_t.toString(ctxt)
-					+"\n\n2. the pattern variable: "+C.vars[i].toString(ctxt)
-					+"\n\n3. its resource type: "+vT.toString(ctxt));
-		    }
+                    if (h == null) {
+                        Expr vT = ctxt.getType(C.vars[i]);
+                        C.classifyError(ctxt, "There is no initialization function for a pattern variable in a match-case.\n"
+                                        +"Probably the resource type of the scrutinee is not what it should be."
+                                        +"\n\n1. the scrutinee's resource type: "+scrut_t.toString(ctxt)
+                                        +"\n\n2. the pattern variable: "+C.vars[i].toString(ctxt)
+                                        +"\n\n3. its resource type: "+vT.toString(ctxt));
+                    }
 
-		    Expr n = new InitTerm(h,rt,x,s,C.c,rf.vars[i],C.vars[i]);
-		    n.pos = C.pos;
-		    Position p = C.body.pos;
-		    C.body = new Let(C.vars[i],n,C.body);
-		    C.body.pos = p;
-		}
-		else {
-		    Expr n = new InitTerm(null,null,x,s,C.c,rf.vars[i],C.vars[i]);
-		    n.pos = C.pos;
-		    Position p = C.body.pos;
-		    C.body = new Let(C.vars[i],n,C.body);
-		    C.body.pos = p;
-		}
-	    }
+                    Expr n = new InitTerm(h,rt,x,s,C.c,rf.vars[i],C.vars[i]);
+                    n.pos = C.pos;
+                    Position p = C.body.pos;
+                    C.body = new Let(C.vars[i],n,C.body);
+                    C.body.pos = p;
+                }
+                else {
+                    Expr n = new InitTerm(null,null,x,s,C.c,rf.vars[i],C.vars[i]);
+                    n.pos = C.pos;
+                    Position p = C.body.pos;
+                    C.body = new Let(C.vars[i],n,C.body);
+                    C.body.pos = p;
+                }
+            }
 
-	    // clear the substitution of f's vars now.
-	    for (int i = 0, iend = f.vars.length; i < iend; i++) 
-		ctxt.setSubst(f.vars[i],null);
+            // clear the substitution of f's vars now.
+            for (int i = 0, iend = f.vars.length; i < iend; i++) 
+                ctxt.setSubst(f.vars[i],null);
 	
-	    ret = C.body.simpleType(ctxt);
-	}
+            ret = C.body.simpleType(ctxt);
+        }
 
-	return ret;
+        return ret;
     }
 
     public Expr simpleType(Context ctxt) {

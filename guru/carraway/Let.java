@@ -47,29 +47,34 @@ public class Let extends Expr {
     }
 
     public void do_print(java.io.PrintStream w, Context ctxt) {
-	if (t1 == null) {
-	    Expr T = ctxt.getType(x);
-	    if (T != null && T.construct == TYPE)
-		w.print("int ");
-	    else
-		w.print("void *");
-	    x.print(w,ctxt);
-	    if (t2 != null)
-		compileError(ctxt,"Internal error: a Let term is malformed (t1 is null but t2 is not).");
-	}
-	else if (t2 == null) {
-	    x.print(w,ctxt);
-	    w.print(" = ");
-	    t1.print(w,ctxt);
-	}
-	else {
-	    w.print("let ");
-	    x.print(w,ctxt);
-	    w.print(" = ");
-	    t1.print(w,ctxt);
-	    w.print(" in ");
-	    t2.print(w,ctxt);
-	}
+        if (t1 == null) {
+            Expr T = ctxt.getType(x);
+            if (T != null) {
+                if (T.construct == TYPE)
+                    w.print("int");
+                else 
+                    T.print(w,ctxt);
+            }
+            else
+                w.print("void *");
+            w.print(" ");
+            x.print(w,ctxt);
+            if (t2 != null)
+                compileError(ctxt,"Internal error: a Let term is malformed (t1 is null but t2 is not).");
+        }
+        else if (t2 == null) {
+            x.print(w,ctxt);
+            w.print(" = ");
+            t1.print(w,ctxt);
+        }
+        else {
+            w.print("let ");
+            x.print(w,ctxt);
+            w.print(" = ");
+            t1.print(w,ctxt);
+            w.print(" in ");
+            t2.print(w,ctxt);
+        }
     }    
 
     public Sym simulate_h(Context ctxt, Position p) {
@@ -85,9 +90,9 @@ public class Let extends Expr {
     }
 
     public Expr linearize(Context ctxt, guru.Position p, Sym dest, Collection decls, Collection defs) {
-	decls.add(x);
-	Expr nt1 = t1.linearize(ctxt,pos,x,decls,defs);
-	defs.add(nt1);
-	return t2.linearize(ctxt,pos,dest,decls,defs);
+        decls.add(x);
+        Expr nt1 = t1.linearize(ctxt,pos,x,decls,defs);
+        defs.add(nt1);
+        return t2.linearize(ctxt,pos,dest,decls,defs);
     }
 }

@@ -75,14 +75,25 @@ abstract public class FunBase extends Expr {
 	else {
 	    w.print("(");
 	    for(int i = 0, iend = vars.length; i < iend; i++) {
-		types[i].print(w,ctxt);
-		w.print(" ");
-		vars[i].print(w,ctxt);
-		if (i < iend - 1)
-		    w.print(", ");
+            if (construct == FUN_TYPE)
+                w.print("void *");
+            else {
+                types[i].print(w,ctxt);
+                w.print(" ");
+            }
+            vars[i].print(w,ctxt);
+            if (i < iend - 1)
+                w.print(", ");
 	    }
 	    w.print(")");
 	}
     }    
+    
+    public Expr linearize(Context ctxt, guru.Position p, Sym dest) {
+        for (int i = 0, iend = types.length; i < iend; i++)
+            types[i] = types[i].flattenType(ctxt);
+        rettype = rettype.flattenType(ctxt);
+        return this;
+    }
 
 }

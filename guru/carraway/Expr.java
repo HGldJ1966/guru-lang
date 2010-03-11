@@ -141,11 +141,14 @@ public abstract class Expr {
 	}
     }
 
-    public boolean consumable() {
+    public boolean consumable(Context ctxt) {
 	if (construct == UNTRACKED ||
 	    construct == TYPE ||
 	    construct == FUN_TYPE)
 	    return false;
+
+    if (construct == SYM && ctxt.isTypeDef((Sym)this))
+        return ctxt.getTypeDefBody((Sym)this).consumable(ctxt);
 	
 	return true;
     }
