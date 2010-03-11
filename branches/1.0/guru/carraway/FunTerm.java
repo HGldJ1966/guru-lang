@@ -81,7 +81,7 @@ public class FunTerm extends FunBase {
 	Sym[] prev = new Sym[vars.length];
 	for (int i = 0, iend = vars.length; i < iend; i++) {
 	    Expr T = types[i];
-	    if (T.consumable()) {
+	    if (T.consumable(ctxt)) {
 		Sym r = ctxt.newRef(vars[i],vars[i].pos,
 				    (consumps[i] == NOT_CONSUMED || consumps[i] == CONSUMED_NO_RET),
 				    (consumps[i] == CONSUMED_NO_RET || consumps[i] == CONSUMED_RET_OK),
@@ -140,10 +140,8 @@ public class FunTerm extends FunBase {
     }
 
     public Expr linearize(Context ctxt, guru.Position p, Sym dest) {
-	for (int i = 0, iend = types.length; i < iend; i++)
-	    types[i] = types[i].flattenType(ctxt);
-	rettype = rettype.flattenType(ctxt);
-	body = body.linearize(ctxt,p,ctxt.returnf);
-	return this;
+        super.linearize(ctxt,p,dest);
+        body = body.linearize(ctxt,p,ctxt.returnf);
+        return this;
     }
 }

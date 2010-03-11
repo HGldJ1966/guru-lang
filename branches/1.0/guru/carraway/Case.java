@@ -61,7 +61,7 @@ public class Case extends Expr {
 		Expr T = f.types[i].applySubst(ctxt);
 		fprev[i] = ctxt.getSubst(f.vars[i]);
 		prev[i] = ctxt.getSubst(vars[i]);
-		if (/* !ctxt.isNotConsumed(vars[i]) && */ T.consumable()) {
+		if (/* !ctxt.isNotConsumed(vars[i]) && */ T.consumable(ctxt)) {
 
 		    Expr vT = ctxt.getType(vars[i]);
 		    Sym r = ctxt.newRef(vars[i],vT.isAffine(ctxt));

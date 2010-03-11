@@ -26,21 +26,21 @@ public class TypeDef extends Command {
 
 	if (!ctxt.getFlag("output_ocaml")) {
 	    if (T.construct == Expr.FUN_TYPE) {
-		FunType F = (FunType)T;
-		ctxt.cw.print("typedef ");
-		F.rettype.print(ctxt.cw,ctxt);
-		ctxt.cw.print("(* ");
-		c.print(ctxt.cw,ctxt);
-		ctxt.cw.print(")");
-		F.print(ctxt.cw,ctxt);
-		ctxt.cw.println(";\n");
+            FunType F = (FunType)T;
+            ctxt.cw.print("typedef ");
+            F.rettype.print(ctxt.cw,ctxt);
+            ctxt.cw.print("(* ");
+            c.print(ctxt.cw,ctxt);
+            ctxt.cw.print(")");
+            F.print(ctxt.cw,ctxt);
+            ctxt.cw.println(";\n");
 	    }
 	    else {
-		ctxt.cw.print("#define ");
-		c.print(ctxt.cw,ctxt);
-		ctxt.cw.print(" ");
-		T.print(ctxt.cw,ctxt);
-		ctxt.cw.println("\n");
+            ctxt.cw.print("#define ");
+            c.print(ctxt.cw,ctxt);
+            ctxt.cw.print(" ");
+            T.print(ctxt.cw,ctxt);
+            ctxt.cw.println("\n");
 	    }
 	}
 	ctxt.cw.flush();

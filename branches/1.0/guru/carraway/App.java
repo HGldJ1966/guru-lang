@@ -7,6 +7,7 @@ public class App extends Expr {
 
     public Sym head;
     public Expr[] args;
+    public Expr headTp;
 
     public App(){
 	super(APP);
@@ -81,51 +82,60 @@ public class App extends Expr {
 	}
     }    
 
+    public Expr getHeadType(Context ctxt) {
+        if (headTp != null)
+            return headTp;
+        headTp = ctxt.getType(head);
+        if (headTp == null)
+            classifyError(ctxt,"The head of an application is missing a type.\n\n"
+                          +"1. the head: "+head.toString(ctxt));
+        while (headTp.construct == SYM && ctxt.isTypeDef((Sym)headTp)) 
+            headTp = ctxt.getTypeDefBody((Sym)headTp);
+        return headTp;
+    }
+
     public Expr simpleType(Context ctxt) {
-	Expr hT = ctxt.getType(head);
-	if (hT == null)
-	    classifyError(ctxt,"The head of an application is missing a type.\n\n"
-			+"1. the head: "+head.toString(ctxt));
-	if (hT.construct != FUN_TYPE)
-	    classifyError(ctxt,"The head of an application does not have functional type.\n\n"
-			  +"1. the head: "+head.toString(ctxt)
-			  +"\n2. its type: "+ctxt.getType(head).toString(ctxt));
+        Expr hT = getHeadType(ctxt);
+        if (hT.construct != FUN_TYPE)
+            classifyError(ctxt,"The head of an application does not have functional type.\n\n"
+                          +"1. the head: "+head.toString(ctxt)
+                          +"\n2. its type: "+ctxt.getType(head).toString(ctxt));
 
-	FunType F = (FunType)hT;
-	if (F.vars.length != args.length)
-	    classifyError(ctxt,"The head of an application does not accept as many arguments as given.\n\n"
-			    +"1. the head: "+head.toString(ctxt)
-			    +"\n2. its type: "+ctxt.getType(head).toString(ctxt)
-			    +"\n3. the number of arguments: "+(new Integer(args.length)).toString());
-	for (int i = 0, iend = args.length; i < iend; i++) {
-	    Expr T = args[i].simpleType(ctxt);
-	    if ((F.consumps[i] == FunBase.CONSUMED_NO_RET ||
-		 F.consumps[i] == FunBase.NOT_CONSUMED) && T.construct == PIN && F.types[i].construct == SYM)
-		T = ((Pin)T).s;
-	    Expr hdT = T;
-	    if (!F.types[i].eqType(ctxt,hdT))
-		classifyError(ctxt,"The type computed for an argument does not match the expected type.\n\n"
-			      +"1. the argument: "+args[i].toString(ctxt)
-			      +"\n\n2. its type: "+T.toString(ctxt)
-			      +"\n\n3. the expected type: "+F.types[i].toString(ctxt)
-			      +"\n\n4. the application: "+toString(ctxt));
-	    if (F.nonBindingOccurrence(ctxt, F.vars[i])) {
-		// dependent type here
-		if (args[i].construct != SYM || (!ctxt.isVar((Sym)args[i]) && !ctxt.isGlobal((Sym)args[i])))
-		    classifyError(ctxt,"The type for an application will depend on an argument which is not a variable or global.\n\n"
-				  +"1. the argument (which is argument "+(new Integer(i+1)).toString()+"): "+args[i].toString(ctxt)
-				  +"\n\n2. the type of the head: "+F.applySubst(ctxt).toString(ctxt)
-				  +"\n\n3. the variable with a non-binding occurrence in the type: "+F.vars[i].toString(ctxt));
+        FunType F = (FunType)hT;
+        if (F.vars.length != args.length)
+            classifyError(ctxt,"The head of an application does not accept as many arguments as given.\n\n"
+                          +"1. the head: "+head.toString(ctxt)
+                          +"\n2. its type: "+ctxt.getType(head).toString(ctxt)
+                          +"\n3. the number of arguments: "+(new Integer(args.length)).toString());
+        for (int i = 0, iend = args.length; i < iend; i++) {
+            Expr T = args[i].simpleType(ctxt);
+            if ((F.consumps[i] == FunBase.CONSUMED_NO_RET ||
+                 F.consumps[i] == FunBase.NOT_CONSUMED) && T.construct == PIN && F.types[i].construct == SYM)
+                T = ((Pin)T).s;
+            Expr hdT = T;
+            if (!F.types[i].eqType(ctxt,hdT))
+                classifyError(ctxt,"The type computed for an argument does not match the expected type.\n\n"
+                              +"1. the argument: "+args[i].toString(ctxt)
+                              +"\n\n2. its type: "+T.toString(ctxt)
+                              +"\n\n3. the expected type: "+F.types[i].toString(ctxt)
+                              +"\n\n4. the application: "+toString(ctxt));
+            if (F.nonBindingOccurrence(ctxt, F.vars[i])) {
+                // dependent type here
+                if (args[i].construct != SYM || (!ctxt.isVar((Sym)args[i]) && !ctxt.isGlobal((Sym)args[i])))
+                    classifyError(ctxt,"The type for an application will depend on an argument which is not a variable or global.\n\n"
+                                  +"1. the argument (which is argument "+(new Integer(i+1)).toString()+"): "+args[i].toString(ctxt)
+                                  +"\n\n2. the type of the head: "+F.applySubst(ctxt).toString(ctxt)
+                                  +"\n\n3. the variable with a non-binding occurrence in the type: "+F.vars[i].toString(ctxt));
 		
-		ctxt.setSubst(F.vars[i],(Sym)args[i]);
-	    }
-	}
+                ctxt.setSubst(F.vars[i],(Sym)args[i]);
+            }
+        }
 
-	return F.rettype.applySubst(ctxt);
+        return F.rettype.applySubst(ctxt);
     }
 
     public Sym simulate_h(Context ctxt, Position p) {
-	FunType f = (FunType) ctxt.getType(head);
+	FunType f = (FunType) getHeadType(ctxt);
 
 	if (ctxt.getFlag("debug_simulate")) {
 	    ctxt.w.println("(Simulating an application: "+toString(ctxt));
@@ -160,7 +170,7 @@ public class App extends Expr {
 		simulateError(ctxt,s);
 	    }
 	    if ((f.consumps[i] == FunBase.CONSUMED_RET_OK || f.consumps[i] == FunBase.CONSUMED_NO_RET) 
-		&& f.types[i].consumable()) {
+		&& f.types[i].consumable(ctxt)) {
 		// this is a reference we are supposed to consume
 		Context.RefStat u = ctxt.refStatus(rs[i]);
 		if (!u.consume)

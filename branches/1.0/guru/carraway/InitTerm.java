@@ -47,72 +47,72 @@ public class InitTerm extends Expr {
     }
 
     public void do_print(java.io.PrintStream w, Context ctxt) {
-	if (h == null) {
-	    if (ctxt.stage <= 2) 
-		var.print(w,ctxt);
-	    else {
-		if (ctxt.getFlag("output_ocaml"))
-		    var.print(w,ctxt);
-		else {
-		    var.print(w,ctxt);
-		    w.print(" = ((");
-		    scruttp.print(w,ctxt);
-		    w.print("_");
-		    ctor.print(w,ctxt);
-		    w.print(" *)");
-		    scrut.print(w,ctxt);
-		    w.print(")->");
-		    field.print(w,ctxt);
-		    w.print("");
-		}
-	    }
-	}
-	else {
-	    // actually calling the init function
-	    if (ctxt.stage <= 2) {
-		w.print("(");
-		h.init.print(w,ctxt);
-		w.print(" ");
-		rttype.print(w,ctxt);
-		w.print(" ");
-		scrut.print(w,ctxt);
-		w.print(" ");
-		var.print(w,ctxt);
-		w.print(")");
-	    }
-	    else {
-		if (ctxt.getFlag("output_ocaml"))
-		    var.print(w,ctxt);
-		else {
-		    String field_access = 
-			"(("+scruttp.toString(ctxt)+"_"+ctor.toString(ctxt)
-			+" *)"+ scrut.toString(ctxt)+")->";
+        if (h == null) {
+            if (ctxt.stage <= 2) 
+                var.print(w,ctxt);
+            else {
+                if (ctxt.getFlag("output_ocaml"))
+                    var.print(w,ctxt);
+                else {
+                    var.print(w,ctxt);
+                    w.print(" = ((");
+                    scruttp.print(w,ctxt);
+                    w.print("_");
+                    ctor.print(w,ctxt);
+                    w.print(" *)");
+                    scrut.print(w,ctxt);
+                    w.print(")->");
+                    field.print(w,ctxt);
+                    w.print("");
+                }
+            }
+        }
+        else {
+            // actually calling the init function
+            if (ctxt.stage <= 2) {
+                w.print("(");
+                h.init.print(w,ctxt);
+                w.print(" ");
+                rttype.print(w,ctxt);
+                w.print(" ");
+                scrut.print(w,ctxt);
+                w.print(" ");
+                var.print(w,ctxt);
+                w.print(")");
+            }
+            else {
+                if (ctxt.getFlag("output_ocaml"))
+                    var.print(w,ctxt);
+                else {
+                    String field_access = 
+                        "(("+scruttp.toString(ctxt)+"_"+ctor.toString(ctxt)
+                        +" *)"+ scrut.toString(ctxt)+")->";
 
-		    var.print(w,ctxt);
-		    w.print(" = ");
-		    h.init.print(w,ctxt);
-		    w.print("(");
-		    if (ctxt.isVar((Sym)rttype))
-			w.print(field_access);
-		    rttype.print(w,ctxt);
-		    w.print(", ");
-		    scrut.print(w,ctxt);
-		    w.print(", ");
-		    w.print(field_access);
-		    field.print(w,ctxt);
-		    w.print(")");
+                    var.print(w,ctxt);
+                    w.print(" = ");
+                    h.init.print(w,ctxt);
+                    w.print("(");
+                    if (ctxt.isVar((Sym)rttype))
+                        w.print(field_access);
+                    rttype.print(w,ctxt);
+                    w.print(", ");
+                    scrut.print(w,ctxt);
+                    w.print(", ");
+                    w.print(field_access);
+                    field.print(w,ctxt);
+                    w.print(")");
 		    
-		    if (h.take_pointer) {
-			w.println(";");
-			w.print(field_access);
-			field.print(w,ctxt);
-			w.print(" = 0");
-		    }
-		    else
-			w.println("");
-		}
-	    }
-	}
+                    if (h.take_pointer) {
+                        w.println(";");
+                        w.print(field_access);
+                        field.print(w,ctxt);
+                        w.print(" = 0");
+                    }
+                    else
+                        w.println("");
+                }
+            }
+        }
     }    
 
     public Sym simulate_h(Context ctxt, Position p) {

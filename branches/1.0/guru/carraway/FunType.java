@@ -8,7 +8,11 @@ public class FunType extends FunBase {
     public void do_print(java.io.PrintStream w, Context ctxt) {
 	if (ctxt.stage <= 2)
 	    w.print("Fun");
+
+    // we actually take special action in our parent class when
+    // this is a FunType.
 	super.do_print(w,ctxt);
+
     }    
 
     public Expr simpleType(Context ctxt) {
