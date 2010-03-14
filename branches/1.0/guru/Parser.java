@@ -1834,6 +1834,8 @@ public class Parser extends ParserBase {
 	    return new Ownership(Ownership.SPEC);
 	if (tryToEat("#untracked"))
 	    return new Ownership(Ownership.UNTRACKED);
+	if (tryToEat("#abort"))
+	    return new Ownership(Ownership.ABORT);
 	if (tryToEat("#",true))
 	    return new Ownership(Ownership.RESOURCE, readConst());
 	return new Ownership(Ownership.DEFAULT);

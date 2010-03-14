@@ -25,15 +25,17 @@ public class Ownership {
     public static final int SPEC = 2; 
     public static final int RESOURCE = 3; 
     public static final int UNTRACKED = 4; 
+    public static final int ABORT = 5; 
 
     public boolean mustTrack() {
-	return (status != DEFAULT && status != SPEC && status != UNTRACKED);
+	return (status != DEFAULT && status != SPEC && status != UNTRACKED && status != ABORT);
     }
 
     public boolean equalOwnership(Ownership r) {
 	return ((status == r.status) && 
-		(e1 == r.e1) &&
-		(e2 == r.e2));
+		( (e1 == r.e1) && (e2 == r.e2) ||
+		status == ABORT)
+		);
     }	
 
     public String toString(Context ctxt) {
@@ -46,6 +48,8 @@ public class Ownership {
 	    return "spec";
 	case UNTRACKED:
 	    return "#untracked";
+	case ABORT:
+	    return "#abort";
 	case RESOURCE:
 	    return "#"+e1.toString(ctxt);
 	default:
@@ -70,6 +74,9 @@ public class Ownership {
 					 (guru.carraway.Sym)e2.toCarrawayType(ctxt,true));
 	case UNTRACKED:
 	    return new guru.carraway.Untracked();
+	case ABORT:
+		// abort
+	    return new guru.carraway.Abort();
 	case RESOURCE:
 	    return e1.toCarrawayType(ctxt,true);
 
