@@ -217,6 +217,7 @@ public class FunTerm extends FunAbstraction {
     }
 
     public Expr classify(Context ctxt, int approx, boolean spec) {
+		
 	checkClassifiers(ctxt, approx, spec);
 	if (r != null) {
 	    if (T == null)
@@ -333,8 +334,8 @@ public class FunTerm extends FunAbstraction {
 	    F.rettype = T.toCarrawayType(ctxt,true);
 	else if (!T.isTrackedType(ctxt))
 	    F.rettype = new guru.carraway.Untracked();
-	else if (T.construct == ABORT) // This condition is incorrect. Abort should be detected by other way
-	    F.rettype = new guru.carraway.Abort();
+	/* else if (ret_stat.construct == Ownership.ABORT) 
+	    F.rettype = new guru.carraway.Abort(); */
 	else
 	    F.rettype = ret_stat.toCarrawayType(ctxt,T.pos);
 	F.consumps = nconsumps;
