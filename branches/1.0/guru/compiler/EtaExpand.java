@@ -157,9 +157,8 @@ public class EtaExpand {
 					  (Var)expand(o.e2,false,null));
 	     break;
 	case Ownership.SPEC:
-	    ret = o;
-	    break;
 	case Ownership.UNTRACKED:
+    case Ownership.ABORT:
 	    ret = o;
 	    break;
 

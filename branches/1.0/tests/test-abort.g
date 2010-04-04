@@ -18,4 +18,7 @@ in
 Define main :=
 (test Z Z).
 
-#Compile main to "test-abort.c".
+Set "debug_to_carraway".
+Set "debug_eta_expand".
+
+Compile main to "test-abort.c".

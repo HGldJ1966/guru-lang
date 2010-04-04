@@ -39,8 +39,8 @@ Define pb_cur_char2 : Fun(^ #unique_owned pb_stdio : <pb_stdio_t tt>) . #untrack
 		match ! l with
 			unil _ => (cur_char2 s)
 		|	ucons _ a l' => a
-		end 
-             | mk_pb_stdio2 l => ' '
+		end
+	|	mk_pb_stdio2 l => ' '
 	end.
 
 Define pb_cur_char : Fun(! #unique pb_stdio : <pb_stdio_t tt>) . #untracked char :=
@@ -173,9 +173,10 @@ Define pb_next_nonws_noncomment :=
 % same function as above with different return type
 Define pb_next_nonws_noncomment2 :=
 	fun(c_char:char)(#unique pb_stdio:<pb_stdio_t tt>) : #unique <pb_stdio_t tt>.
-          match (pb_next_nonws_noncomment c_char pb_stdio) with
-            mk_pb_readchar pb_stdio c => pb_stdio
-          end.
+	match (pb_next_nonws_noncomment c_char pb_stdio) with
+		mk_pb_readchar pb_stdio c => 
+		pb_stdio
+	end.
 
 % read until eol
 Define pb_consume_to_eol :=
