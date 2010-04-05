@@ -182,7 +182,7 @@ public abstract class Expr {
 	    if (ret)
 		ctxt.w.println(") = true");
 	    else
-		ctxt.w.println(") = true");
+		ctxt.w.println(") = false");
 	    ctxt.w.flush();
 	}
 	return ret;

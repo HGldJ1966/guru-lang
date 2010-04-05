@@ -18,7 +18,8 @@ in
 Define main :=
 (test Z Z).
 
-Set "debug_to_carraway".
-Set "debug_eta_expand".
+% Set "debug_to_carraway".
+% Set "debug_eta_expand".
+Set "debug_nonBindingOccurrence".
 
 Compile main to "test-abort.c".

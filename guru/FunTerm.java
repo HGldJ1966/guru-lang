@@ -334,8 +334,8 @@ public class FunTerm extends FunAbstraction {
 	    F.rettype = T.toCarrawayType(ctxt,true);
 	else if (!T.isTrackedType(ctxt))
 	    F.rettype = new guru.carraway.Untracked();
-	/* else if (ret_stat.construct == Ownership.ABORT) 
-	    F.rettype = new guru.carraway.Abort(); */
+	else if (T.construct == Ownership.ABORT) 
+	    F.rettype = new guru.carraway.Abort();
 	else
 	    F.rettype = ret_stat.toCarrawayType(ctxt,T.pos);
 	F.consumps = nconsumps;
