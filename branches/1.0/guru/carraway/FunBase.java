@@ -48,7 +48,7 @@ abstract public class FunBase extends Expr {
 	}
 	if (rettype.construct != TYPE) {
 	    Expr T = rettype.simpleType(ctxt);
-	    if (T.construct != TYPE)
+	    if (T.construct != TYPE && T.construct != ABORT)
 		classifyError(ctxt,"The expression given as a return type is not a type.\n\n"
 			      +"1. the expression: "+rettype.toString(ctxt)
 			      +"\n2. its type: "+T.toString(ctxt));

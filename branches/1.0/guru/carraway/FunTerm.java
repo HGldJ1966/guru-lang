@@ -59,7 +59,10 @@ public class FunTerm extends FunBase {
 	    ctxt.setSubst(vars[i],F.vars[i]); 
 	}
 
-	F.rettype = rettype.applySubst(ctxt);
+	if(rettype.construct == Expr.ABORT)
+		F.rettype = new guru.carraway.Abort();
+	else
+		F.rettype = rettype.applySubst(ctxt);
 
 	for (int i = 0; i < iend; i++) 
 	    ctxt.setSubst(vars[i],null);
