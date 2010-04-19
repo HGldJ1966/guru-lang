@@ -155,7 +155,9 @@ Define pb_print_nat :=
 					(pb_print_nat pb_stdio n')
 	end.
 
-% read the next character which is non-whitespace, non-comment
+% read the next character which is non-whitespace, non-comment.
+% The current character will be left to point to the character 
+% which is returned.
 Define pb_next_nonws_noncomment :=
 	fun r(c_char:char)(#unique pb_stdio:<pb_stdio_t tt>) : #unique pb_readchar_t.
 	let c = (pb_cur_char pb_stdio) in
