@@ -366,3 +366,48 @@ Define minus_which_char_Z :
          terminates (which_char d) by to_nat_tot
          m]].
 
+%=============================================================================
+% convert character number to word
+%=============================================================================
+Define char_num_to_word := 
+	fun(c : char) : word.
+	match(not (eqchar c '0')) with
+		ff => 0x0
+	|	tt =>
+	match(not (eqchar c '1')) with
+		ff => 0x1
+	|	tt =>
+	match(not (eqchar c '2')) with
+		ff => 0x2
+	|	tt =>
+	match(not (eqchar c '3')) with
+		ff => 0x3
+	|	tt =>
+	match(not (eqchar c '4')) with
+		ff => 0x4
+	|	tt =>
+	match(not (eqchar c '5')) with
+		ff => 0x5
+	|	tt =>
+	match(not (eqchar c '6')) with
+		ff => 0x6
+	|	tt =>
+	match(not (eqchar c '7')) with
+		ff => 0x7
+	|	tt =>
+	match(not (eqchar c '8')) with
+		ff => 0x8
+	|	tt =>
+	match(not (eqchar c '9')) with
+		ff => 0x9
+	|	tt => abort word
+	end
+	end
+	end
+	end
+	end
+	end
+	end
+	end
+	end
+	end.

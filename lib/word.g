@@ -70,8 +70,10 @@ Define word2 := 0x2.
 Define word3 := 0x3.
 Define word4 := 0x4.
 Define word5 := 0x5.
+Define word6 := 0x6.
 Define word7 := 0x7.
 Define word8 := 0x8.
+Define word9 := 0x9.
 Define word0x1f := 0x1f.
 Define word0x20 := 0x20.
 
@@ -499,7 +501,6 @@ Define trusted word_div2_tot :
   Forall(x:word).Exists(y:word).{(word_div2 x) = y} := truei.
 
 Total word_div2 word_div2_tot.
-
 
 %=============================================================================
 % WRONG lemmas

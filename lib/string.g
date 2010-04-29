@@ -42,3 +42,19 @@ Define trusted char_range_member
 
 Define all_chars := (char_range Cc0 CLast [chars_bounded2 Cc0]).
 
+%=============================================================================
+% convert string number to word
+%=============================================================================
+Define string_num_to_word_h := 
+	fun string_num_to_word_h(s : string)(w : word) : word.
+	match s with
+		unil char => w
+	|	ucons char c s' =>
+		let w1 = (char_num_to_word c) in
+		let w2 = (word_plus (word_mult w 0xa) w1) in
+		(string_num_to_word_h s' w2)
+	end.
+
+Define string_num_to_word :=
+	fun(s : string) : word.
+	(string_num_to_word_h s 0x0).
