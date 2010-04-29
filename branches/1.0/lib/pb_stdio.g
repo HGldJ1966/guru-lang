@@ -192,4 +192,56 @@ Define pb_consume_to_eol :=
 	|	tt => (pb_skip pb_stdio)
 	end.
 
+%==============================================================================
+% Error handler
+%==============================================================================
+Define handle_error_sym :=
+  fun(A:type)(#unique pb_stdio:<pb_stdio_t tt>)(msg:string).
+    match (pb_checkout pb_stdio) with
+      return_pb_checkout pb_stdio s =>
+        let s = (print_string s msg) in
+          abort A
+      end.
+
+Define handle_error_sym_unique :=
+  fun(A:type)(#unique pb_stdio:<pb_stdio_t tt>)(msg:string):#unique A.
+    let r = (handle_error_sym A pb_stdio msg) in
+		abort A.
+
+Define handle_error :=
+  fun(A:type)(#unique pb_stdio:<pb_stdio_t tt>)(msg:string).
+    let pb_stdio = (pb_print_string pb_stdio msg) in
+    let pb_stdio = (pb_print_char pb_stdio Cnl) in
+      abort A.
+
+Define handle_error_unique :=
+  fun(A:type)(#unique pb_stdio:<pb_stdio_t tt>)(msg:string):#unique A.
+    let r = (handle_error A pb_stdio msg) in
+      abort A.
+
+%==============================================================================
+% comments to the end of the line are initiated with '%'.
+%==============================================================================
+Define pb_comment_char := '%'.
+
+%==============================================================================
+% next non-whitespace, non-comment character; the current
+% character of pb_stdio will be set to the next one after
+% the one returned.
+%==============================================================================
+Define pb_get_char := 
+	fun(#unique pb_stdio:<pb_stdio_t tt>):#unique pb_readchar_t.
+		match (pb_next_nonws_noncomment pb_comment_char pb_stdio) with
+			mk_pb_readchar pb_stdio c =>
+				(mk_pb_readchar (pb_skip pb_stdio) c) 
+		end.
+
+%==============================================================================
+% like pb_get_char, but do not advance past the character read, and
+% just return pb_stdio.
+%==============================================================================
+Define pb_get_char2 := 
+	(pb_next_nonws_noncomment2 pb_comment_char).
+
+
 % Opaque pb_stdio_t.
