@@ -15,6 +15,9 @@ Inductive pb_checkout_t : type :=
 Inductive pb_readstring_t : type :=
 	mk_pb_readstring : Fun(#unique pb_stdio : <pb_stdio_t tt>)(s:string) . #unique pb_readstring_t.
 
+Inductive pb_readword_t : type :=
+	mk_pb_readword : Fun(#unique pb_stdio : <pb_stdio_t tt>)(w:word) . #unique pb_readword_t.
+
 Inductive pb_readchar_t : type :=
 	mk_pb_readchar : Fun(#unique pb_stdio : <pb_stdio_t tt>)(c:char) . #unique pb_readchar_t.
 
