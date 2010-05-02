@@ -110,7 +110,8 @@ public class Match extends CasesExpr{
 	if (e != t)
 	    return new Match(e,x1,x2,T,C,consume_scrut);
 	if (t.construct == ABORT)
-	    return ctxt.abort;
+	    //return ctxt.abort;
+		return t;
 	
 	Expr ret = instantiate(ctxt, e);
 	if (ret == null) 

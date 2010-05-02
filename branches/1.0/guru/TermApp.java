@@ -275,7 +275,8 @@ public class TermApp extends App{
 	    return ret;
 	}
 	if (h.construct == ABORT)
-	    return ctxt.abort;
+	    //return ctxt.abort;
+		return h;
 	
 	int iend = X.length;
 	Expr[] X2 = new Expr[iend];
@@ -290,7 +291,8 @@ public class TermApp extends App{
 	    }
 	    else {
 		if (X[i].construct == ABORT)
-		    return ctxt.abort;
+		    //return ctxt.abort;
+			return X[i];
 	    }
 	}
 	

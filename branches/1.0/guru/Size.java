@@ -75,7 +75,8 @@ public class Size extends Expr {
 	if (nt != t)
 	    return new Size(nt);
 	if (t.construct == ABORT)
-	    return ctxt.abort;
+	    //return ctxt.abort;
+		return t;
 	
 	if (t.construct == FUN_TERM)
 	    return _const(ctxt,"Z");
