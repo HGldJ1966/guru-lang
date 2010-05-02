@@ -45,8 +45,11 @@ public class Abort extends Expr{
     }
 
     public Expr dropAnnos(Context ctxt) {
-	if (T.construct != BANG)
-	    return new Abort(new Bang());
+	if (T.construct != BANG) {
+		Expr ret = new Abort(new Bang());
+		ret.pos = pos;
+	    return ret;
+	}
 	return this;
     }
 
