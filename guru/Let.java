@@ -139,7 +139,8 @@ public class Let extends Expr{
 	if (et1 != t1)
 	    return new Let(x1, x1_stat, et1,x2,t2);
 	if (t1.construct == ABORT)
-	    return ctxt.abort;
+	    //return ctxt.abort;
+		return t1;
 	return t2.subst(t1, x1);
     }
     
