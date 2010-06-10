@@ -16,8 +16,8 @@ Define foldr : Fun(A B C: type)(^#owned cookie:C)
            (fcn: Fun(^#owned cookie:C)(^#owned x:A)(y:B).B)
            (b:B)(^#owned l : <list A>):B.
     match l with
-      nil A' => b
-   | cons A' a' l' => (fcn cookie a' 
+      nil _ => b
+   | cons _ a' l' => (fcn cookie a' 
                          (foldr A B C (clone_owned C cookie) fcn b l'))
    end. 
 
@@ -25,13 +25,24 @@ Define spec foldr1 : Fun(A B:type)(f:Fun(a:A)(y:B).B)(b:B)(l:<list A>).B :=
   fun foldr1(A B:type)(f:Fun(a:A)(y:B).B)(b:B)(l:<list A>):B.
     (foldr A B nat Z fun(u:nat)(x:A)(y:B).(f x y) b l).
 
-Define foldl : Fun(A B : type) (fcn : Fun (x : A) (y : B) . B) (b : B)
+Define foldl' : Fun(A B: type) (fcn : Fun (x : A) (y : B) . B) (b : B)
   (l : <list A>) . B :=
   fun foldl (A B : type) (fcn : Fun (x : A) (y : B) . B) (b : B)
     (l : <list A>) : B .
     match l with
         nil _ => b
       | cons _ a' l' => (foldl A B fcn (fcn a' b) l')
+  end.
+
+Define foldl : Fun(A B C: type)(^#owned cookie:C)
+                   (fcn : Fun(^#owned cookie:C)(^#owned x : A)(y : B) . B)
+                   (b : B)(^#owned l : <list A>) . B :=
+  fun foldl (A B C: type)(^#owned cookie:C)
+            (fcn : Fun(^#owned cookie:C)(^#owned x : A)(y : B). B)
+            (b : B)(^#owned l : <list A>) : B .
+    match l with
+        nil _ => b
+      | cons _ a' l' => (foldl A B C (clone_owned C cookie) fcn (fcn cookie a' b) l')
   end.
 
 Define foldrTot : Forall(A B C : type)
