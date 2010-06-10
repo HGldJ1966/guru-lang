@@ -495,6 +495,18 @@ Define trusted word_mult_total :
 
 Total word_mult word_mult_total.
 
+Define primitive word_div: Fun(x y:word)(u:{ y != word0 }). word :=
+  fun(x y:word)(u:{ y != word0 }). word0  %% TODO: complete the model
+<<END
+  inline unsigned int gword_div(unsigned int x, unsigned int y) { return x / y; }
+END.
+
+Define trusted word_div_tot : 
+  Forall(x y:word)(u:{ y != word0 }).Exists(z:word).{(word_div x y) = z}
+  := truei.
+
+Total word_div word_div_tot.
+
 Define word_div2 := (word_shift word1).
 
 Define trusted word_div2_tot : 
