@@ -1,5 +1,6 @@
 Include "unique_owned.g".
 Include "stdio.g".
+Include "word.g".
 
 % Set "print_parsed".
 % define a type for "pushback stdio"
@@ -245,6 +246,17 @@ Define pb_get_char :=
 %==============================================================================
 Define pb_get_char2 := 
 	(pb_next_nonws_noncomment2 pb_comment_char).
+
+%=============================================================================
+% print word
+%=============================================================================
+Define pb_print_word :=
+	fun(#unique pb_stdio:<pb_stdio_t tt>)(w : word) : #unique <pb_stdio_t tt>.
+	(pb_print_string pb_stdio (word_num_to_string w)).
+
+Define pb_println_word :=
+	fun(#unique pb_stdio : <pb_stdio_t tt>)(w : word) : #unique <pb_stdio_t tt>.
+	(pb_println_string pb_stdio (word_num_to_string w)).
 
 
 % Opaque pb_stdio_t.
