@@ -64,7 +64,7 @@ Define string_num_to_word :=
 %=============================================================================
 Define word_num_to_string_h :=
 	fun word_num_to_string_h(w : word)(s : string) : string.
-	match (eqword w 0x0) with
+	match (not (eqword w 0x0)) with
 		ff => s
 	|	tt =>
 		let w1 = (word_mod10 w) in
@@ -75,7 +75,7 @@ Define word_num_to_string_h :=
 
 Define word_num_to_string :=
 	fun(w : word) : string.
-	match (eqword w 0x0) with
+	match (not (eqword w 0x0)) with
 		ff => (ucons char '0' (unil char))
 	|	tt => (word_num_to_string_h w (unil char))
 	end.
