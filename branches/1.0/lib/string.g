@@ -58,3 +58,24 @@ Define string_num_to_word_h :=
 Define string_num_to_word :=
 	fun(s : string) : word.
 	(string_num_to_word_h s 0x0).
+
+%=============================================================================
+% convert word number to string
+%=============================================================================
+Define word_num_to_string_h :=
+	fun word_num_to_string_h(w : word)(s : string) : string.
+	match (eqword w 0x0) with
+		ff => s
+	|	tt =>
+		let w1 = (word_mod10 w) in
+		let w2 = (word_div10 w) in
+		let c1 = (word_num_to_char w1) in
+		(word_num_to_string_h w2 (ucons char c1 s))
+	end.
+
+Define word_num_to_string :=
+	fun(w : word) : string.
+	match (eqword w 0x0) with
+		ff => (ucons char '0' (unil char))
+	|	tt => (word_num_to_string_h w (unil char))
+	end.
