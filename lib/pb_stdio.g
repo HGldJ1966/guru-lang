@@ -263,11 +263,17 @@ Define pb_println_word :=
 %=============================================================================
 Define pb_print_boxedword :=
 	fun(#unique pb_stdio:<pb_stdio_t tt>)(bw : boxedWord) : #unique <pb_stdio_t tt>.
-	(pb_print_string pb_stdio (word_num_to_string (unboxWord bw))).
+	match bw with
+		mk_uholder word w =>
+		(pb_print_string pb_stdio (word_num_to_string w))
+	end.
 
 Define pb_println_boxedword :=
 	fun(#unique pb_stdio : <pb_stdio_t tt>)(bw : boxedWord) : #unique <pb_stdio_t tt>.
-	(pb_println_string pb_stdio (word_num_to_string (unboxWord bw))).
+	match bw with
+		mk_uholder word w =>
+		(pb_println_string pb_stdio (word_num_to_string w))
+	end.
 
 
 % Opaque pb_stdio_t.
