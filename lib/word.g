@@ -371,11 +371,22 @@ Define word_clear_read :
           by [vec_update_get bool wordlen w (to_nat wordlen i) ff u] end
   .
 
-Define word_msb :=
+Define word_read_msb :=
   fun(w:word).
     abbrev p = join (lt (to_nat word0x1f) wordlen) tt in
     (word_read_bit word0x1f p w).
 
+Define word_set_msb :=
+  fun(w:word).
+    abbrev p = join (lt (to_nat word0x1f) wordlen) tt in
+    (word_set_bit word0x1f p w).
+
+Define word_clear_msb :=
+  fun(w:word).
+    abbrev p = join (lt (to_nat word0x1f) wordlen) tt in
+    (word_clear_bit word0x1f p w).
+
+Define word_msb := word_read_msb.
 
 Define trusted word0_set_bit_pow2
   : Forall(i:word)(u:{(lt (to_nat i) wordlen) = tt}).
