@@ -1,6 +1,6 @@
 Include "unique_owned.g".
 Include "stdio.g".
-Include "word.g".
+Include "boxedword.g".
 
 % Set "print_parsed".
 % define a type for "pushback stdio"
@@ -257,6 +257,17 @@ Define pb_print_word :=
 Define pb_println_word :=
 	fun(#unique pb_stdio : <pb_stdio_t tt>)(w : word) : #unique <pb_stdio_t tt>.
 	(pb_println_string pb_stdio (word_num_to_string w)).
+
+%=============================================================================
+% print boxedword
+%=============================================================================
+Define pb_print_boxedword :=
+	fun(#unique pb_stdio:<pb_stdio_t tt>)(bw : boxedWord) : #unique <pb_stdio_t tt>.
+	(pb_print_string pb_stdio (word_num_to_string (unboxWord bw))).
+
+Define pb_println_boxedword :=
+	fun(#unique pb_stdio : <pb_stdio_t tt>)(bw : boxedWord) : #unique <pb_stdio_t tt>.
+	(pb_println_string pb_stdio (word_num_to_string (unboxWord bw))).
 
 
 % Opaque pb_stdio_t.
