@@ -507,12 +507,36 @@ Define trusted word_div_tot :
 
 Total word_div word_div_tot.
 
+Define primitive word_div10: Fun(x : word). word :=
+  fun(x : word). word0  %% TODO: complete the model
+<<END
+  inline unsigned int gword_div10(unsigned int x) { return x / 10; }
+END.
+
+Define trusted word_div10_tot : 
+  Forall(x : word).Exists(z : word).{(word_div10 x) = z}
+  := truei.
+
+Total word_div10 word_div10_tot.
+
 Define word_div2 := (word_shift word1).
 
 Define trusted word_div2_tot : 
   Forall(x:word).Exists(y:word).{(word_div2 x) = y} := truei.
 
 Total word_div2 word_div2_tot.
+
+Define primitive word_mod10: Fun(x : word). word :=
+  fun(x : word). word0  %% TODO: complete the model
+<<END
+  inline unsigned int gword_mod10(unsigned int x) { return x % 10; }
+END.
+
+Define trusted word_mod10_tot : 
+  Forall(x : word).Exists(z : word).{(word_mod10 x) = z}
+  := truei.
+
+Total word_mod10 word_mod10_tot.
 
 %=============================================================================
 % WRONG lemmas

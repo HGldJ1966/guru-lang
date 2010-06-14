@@ -411,3 +411,46 @@ Define char_num_to_word :=
 	end
 	end
 	end.
+
+Define word_num_to_char := 
+	fun(w : word) : char.
+	match(not (eqword w 0x0)) with
+		ff => '0'
+	|	tt =>
+	match(not (eqword w 0x1)) with
+		ff => '1'
+	|	tt =>
+	match(not (eqword w 0x2)) with
+		ff => '2'
+	|	tt =>
+	match(not (eqword w 0x3)) with
+		ff => '3'
+	|	tt =>
+	match(not (eqword w 0x4)) with
+		ff => '4'
+	|	tt =>
+	match(not (eqword w 0x5)) with
+		ff => '5'
+	|	tt =>
+	match(not (eqword w 0x6)) with
+		ff => '6'
+	|	tt =>
+	match(not (eqword w 0x7)) with
+		ff => '7'
+	|	tt =>
+	match(not (eqword w 0x8)) with
+		ff => '8'
+	|	tt =>
+	match(not (eqword w 0x9)) with
+		ff => '9'
+	|	tt => abort char
+	end
+	end
+	end
+	end
+	end
+	end
+	end
+	end
+	end
+	end.
