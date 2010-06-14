@@ -507,6 +507,19 @@ Define trusted word_div_tot :
 
 Total word_div word_div_tot.
 
+% this is pretty terrible, but Guru does not have great support fo
+% disequality reasoning.
+Define word10_neq_word0 : { 0xa != 0x0 } :=
+symm
+trans join 0x0 (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff vecn))))))))))))))))))))))))))))))))
+symm
+trans join 0xa  (vecc ff (vecc tt (vecc ff (vecc tt (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff vecn))))))))))))))))))))))))))))))))
+ncong
+  (vecc ff (vecc * (vecc ff (vecc ** (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff vecn))))))))))))))))))))))))))))))))
+  (vecc ff (vecc tt (vecc ff (vecc tt (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff vecn))))))))))))))))))))))))))))))))
+  (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff (vecc ff vecn))))))))))))))))))))))))))))))))
+ clash tt ff. 
+
 Define primitive word_div10: Fun(x : word). word :=
   fun(x : word). word0  %% TODO: complete the model
 <<END
