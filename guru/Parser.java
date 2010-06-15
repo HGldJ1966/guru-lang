@@ -183,6 +183,9 @@ public class Parser extends ParserBase {
 	    case Expr.CASE_PROOF:
 		e = readCaseProof();
 		break;
+	    case Expr.TERM_CASE:		
+		e = readTerminatesCase();
+		break;
 	    case Expr.EXISTSI:
 		e = readExistsi();
 		break;
@@ -346,30 +349,11 @@ public class Parser extends ParserBase {
 	    c = readResourceType();
 	else if (tryToEat("Init"))
 	    c = readInit();
-        else if (tryToEat("Locate"))
-            c = readLocate();
 	else
 	    handleError("Unexpected start of a command.");
 	c.pos = pos;
 	return c;
     }
-
-    protected Locate readLocate() throws IOException {
-	Locate l = new Locate();
-	ArrayList a = new ArrayList();
-
-	while (!tryToEat(".")){
-            if (!eat_ws())
-	    handleError("Unexpected end of input reading a Locate-command.");
-            
-            a.add(readConst());
-
-        }
-        
-	l.c =  toConstArray(a); 
-
-	return l;
-     }
 
     protected ResourceType readResourceType() throws IOException {
 	ResourceType a = new ResourceType();
@@ -1542,6 +1526,79 @@ public class Parser extends ParserBase {
 
 	return e;
     }
+
+protected TerminatesCase readTerminatesCase() throws IOException
+    {
+        TerminatesCase e = new TerminatesCase();
+
+        e.t = readTerm();
+        
+	e.u = null;
+
+	String errstr = "Unexpected end of input parsing assumption var.";
+
+	if (!eat_ws())
+	    handleError(errstr);
+
+	if (tryToEat("by")) {
+	    if (!eat_ws())
+		handleError(errstr);
+	    
+	    Position p = getPos();
+	    e.u = readBindingVar();
+	    e.u.pos = p;
+
+	    if (!eat_ws())
+		handleError(errstr);
+	}
+	else {
+	    if (e.t.construct == Expr.VAR || e.t.construct == Expr.CONST) {
+		String n = 
+		    (e.t.construct == Expr.VAR ? ((Var)e.t).name
+		     : ((Const)e.t).name);
+		e.u = new Var(n+"_eq");
+		Position p = getPos();
+		e.u.pos = p;
+	    }
+	}
+
+	if (e.u == null) 
+	    handleError("A terminates-case proof lacks a \"by\" clause, and we"
+			+" cannot automatically declare\n"
+			+"its variable, since the scrutinee is not"
+			+" a variable.");
+
+	ctxt.pushVar(e.u);
+
+	
+	eat("with", "case-terminates proof");
+	// put an error message here if no with?
+
+        eat_ws();
+	e.x = readBindingVar();
+        ctxt.pushVar(e.x);
+
+	eat("=>", "case-terminates proof");
+
+	e.p1 = readProof();
+        ctxt.popVar(e.x);
+
+	eat("|", "case-terminates proof");
+	eat("abort", "case-terminates proof");
+	//put in an error if abort isn't the second case
+
+	eat("=>", "case-terminates proof");
+	e.p2 = readProof();
+	eat("end", "case-terminates proof");
+		
+	
+	ctxt.popVar(e.u);
+
+        return e;
+
+
+    }
+
     
     // read a list of cases, and check that the constructors are
     // the ones for a single datatype, in that order.
@@ -1624,18 +1681,6 @@ public class Parser extends ParserBase {
 
 	int num_ctors = ctors.size();
 	int num_actual = cList.size();
-
-	if (ctxt.getFlag("debug_readCases")) {
-	    ctxt.w.println("readCases checking cases now, with:");
-	    ctxt.w.println("  tp = "+tp.toString(ctxt));
-	    ctxt.w.println("  num_ctors = "+(new Integer(num_ctors)).toString());
-	    ctxt.w.println("  num_actual = "+(new Integer(num_actual)).toString());
-	}		
-
-	if (num_actual > num_ctors)
-	    handleError("A "+where+" has too many cases for "
-			+"datatype \""+tp.toString(ctxt)+"\".");
-
 	Case[] cases = new Case[num_ctors];
 	int j = 0;
 	for (int i = 0; i < num_ctors; i++) {
@@ -1645,8 +1690,6 @@ public class Parser extends ParserBase {
 		Case actual_case = (Case)cList.get(j);
 		
 		if (expected_ctor == actual_case.c) {
-		    if (ctxt.getFlag("debug_readCases")) 
-			ctxt.w.println("expected_ctor == actual_case.c == "+expected_ctor.toString(ctxt)+".  Continuing.");
 		    cases[i] = actual_case;
 		    j++;
 		    continue; // around for loop
@@ -1659,7 +1702,7 @@ public class Parser extends ParserBase {
 
 	    if (j >= num_ctors)
 		handleError("A "+where+" appears not to be listing the constructors for"
-			    +"datatype \""+tp.toString(ctxt)+"\" in order.");
+			    +"\ndatatype \""+tp.toString(ctxt)+"\" in order.");
 	    if (adefault == null)
 		handleError("A "+where+" appears not to be listing the constructors for"
 			    +"\ndatatype \""+tp.toString(ctxt)+"\" in order, or else"
@@ -1677,6 +1720,35 @@ public class Parser extends ParserBase {
 	    cases[i] = new Case(expected_ctor, v, adefault, 
 				false /* default for impossible */);
 	}
+
+	/*
+	String msg = ("A "+where+" does not list all the constructors, in"
+		      +" the order in which they\nare declared in their"
+		      +" datatype, as the patterns of the cases.\n");
+	int s = ctxt.checkTermCtors(cs);
+	if (s == -2) 
+	    handleError(msg + "\nThere is an extra constructor after the "
+			+"ones declared for the datatype.");
+	else if (s == cs.length)
+	    handleError(msg + "\nThe match is apparently missing a case.\n"
+			+ "\n1. The actual number of cases: "
+			+(new Integer(cs.length)).toString()
+			+ "\n2. The expected number: " +
+			(new Integer(((List)ctxt.typeCtorsTermCtors.get
+				      (ctxt.getTypeCtor(cs[0]))).size())).
+			toString());
+	else if (s != -1)
+	    handleError(msg + "\nThe constructor at position "
+			+ (new Integer(s))
+			+ " in the list of cases is different\nfrom the "
+			+ "declared one at that position."
+			+ "\n1. The constructor for the case: "
+			+cs[s].toString(ctxt) 
+			+ "\n2. The declared constructor: " +
+			((Expr)((List)ctxt.typeCtorsTermCtors.get
+				(ctxt.getTypeCtor(cs[0]))).get(s))
+			.toString(ctxt));
+	*/
 
 	return cases;
     }
@@ -2588,6 +2660,7 @@ public class Parser extends ParserBase {
 		keywordTree.add( "foralli", Expr.FORALLI );
 		keywordTree.add( "[", Expr.PROOF_APP );
 		keywordTree.add( "case", Expr.CASE_PROOF );
+		keywordTree.add( "terminates-case", Expr.TERM_CASE ); 
 		keywordTree.add( "!", Expr.BANG );
 		keywordTree.add( "existsi", Expr.EXISTSI );
 		keywordTree.add( "andi", Expr.ANDI );
