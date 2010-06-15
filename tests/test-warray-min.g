@@ -29,10 +29,10 @@ Define test :=
   let arr = (warray_new boxedWord mysize (inspect boxedWord a)) in
   let arr' = (fill_array mysize arr (word_minus mysize word1)
                  [word_minus_shrink mysize]) in
-  let ret = (warray_minElement boxedWord mysize word0 arr' a 
+  let ret = (warray_minElement boxedWord mysize word0 
+              (inspect_unique <warray boxedWord mysize> arr') a 
                boxedWord_le word0_lt_mysize) in
   do
-    (dec boxedWord a)
     (warray_free boxedWord mysize arr')
     match ret with
       mk_uholder _ retw =>
