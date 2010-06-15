@@ -99,6 +99,7 @@ public abstract class Expr {
 
     public static final int CHAR_EXPR = 87; // term
     public static final int WORD_EXPR = 88; // term
+    public static final int TERM_CASE = 89; // proof
 
 
     public static final int LAST = 200;
@@ -517,6 +518,7 @@ public abstract class Expr {
 	case TRUEI:
 	case DISEQI:
 	case CIND:
+        case TERM_CASE:
 	    return true;
 	}
 	return false;
