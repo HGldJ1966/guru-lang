@@ -13,7 +13,8 @@ Define list_seteq: Fun(A:type)(eqA : Fun(^ #owned a b: A).bool)(l1 l2 :<list A>)
 
 Define list_intersect : Fun(A:type)(eqA : Fun(^ #owned a b: A).bool)(l1 l2:<list A>) . <list A> :=
   fun list_intersect (A:type)(eqA:Fun(^ #owned a b:A).bool)(l1 l2:<list A>) : <list A> .
-                     (filter A fun(a:A).(member A a l2 eqA) l1).
+    let f = fun(^#owned l2:<list A>)(^#owned a:A).(member A a l2 eqA) in
+    (filter A <list A> l2 f l1).
 
 
 Define append_helper : Forall(A:type)(a:A)(eqA : Fun(^ #owned a b: A).bool)(l'' l' : <list A>). {(append l' (cons a l'')) = (append (append l' (cons a nil)) l'')} :=
