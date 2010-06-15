@@ -290,15 +290,40 @@ Define set_nth_other : Forall(A:type)(l:<list A>)(n m:nat)(b:A)
       end
   end.
 
-Define filter : Fun(A:type)(f:Fun(a:A).bool)(l1:<list A>) . <list A> :=
-  fun filter (A:type)(f:Fun(a:A).bool)(l1:<list A>) : <list A> .
-     match l1 with
-        nil _ => (nil A)
-     | cons _ a l' => match (f a) with 
-                        ff => (filter A f l')
-                      | tt => (cons A a (filter A f l'))
-                      end
-     end.
+Define filter :=
+  fun filter(A C:type)(^#owned c:C)(f:Fun(^#owned c:C)(^#owned a:A).bool)
+            (^#owned l:<list A>) : <list A> .
+    match l with
+       nil _ => (nil A)
+    | cons _ a l' => match (f c a) with 
+                       ff => (filter A C c f l')
+                     | tt => (cons A a (filter A C c f l'))
+                     end
+    end.
+
+Define filter_total :=
+  foralli(A C:type)
+         (c:C)
+         (f:Fun(c:C)(a:A).bool)
+         (f_total:Forall(c:C)(a:A).Exists(z:bool).{(f c a) = z}).
+  induction(l:<list A>) return Exists(l2:<list A>).{ (filter c f l) = l2 }
+  with
+    nil _ => existsi (nil A) { (filter c f l) = * }
+               hypjoin (filter c f l) nil by l_eq end
+  | cons _ a l' =>
+      existse [l_IH l']
+      foralli(l2':<list A>)(l2'_pf:{ (filter c f l') = l2' }).
+      existse [f_total c a]
+      foralli(z:bool)(z_pf:{ (f c a) = z }).
+      case z with
+        ff =>
+          existsi l2' { (filter c f l) = * }
+            hypjoin (filter c f l) l2' by l_eq l2'_pf z_pf z_eq end
+      | tt =>
+          existsi (cons A a l2') { (filter c f l) = * }
+            hypjoin (filter c f l) (cons a l2') by l_eq l2'_pf z_pf z_eq end
+      end
+  end.
 
 
 Inductive append_i : Fun(A:type).type :=
