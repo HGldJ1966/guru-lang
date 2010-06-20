@@ -388,6 +388,42 @@ Define word_clear_msb :=
 
 Define word_msb := word_read_msb.
 
+Define trusted word_read_bit_total :
+  Forall(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word).
+  Exists(b:bool).
+    { (word_read_bit i w) = b }
+  := truei.
+Total word_read_bit word_read_bit_total.
+
+Define trusted word_set_bit_total :
+  Forall(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word).
+  Exists(w':word).
+    { (word_set_bit i w) = w' }
+  := truei.
+Total word_set_bit word_set_bit_total.
+
+Define trusted word_clear_bit_total :
+  Forall(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word).
+  Exists(w':word).
+    { (word_clear_bit i w) = w' }
+  := truei.
+Total word_clear_bit word_clear_bit_total.
+
+Define trusted word_read_msb_total :
+  Forall(w:word).Exists(b:bool).{ (word_read_msb w) = b }
+  := truei.
+Total word_read_msb word_read_msb_total.
+
+Define trusted word_set_msb_total :
+  Forall(w:word).Exists(w':word).{ (word_set_msb w) = w' }
+  := truei.
+Total word_set_msb word_set_msb_total.
+
+Define trusted word_clear_msb_total :
+  Forall(w:word).Exists(w':word).{ (word_clear_msb w) = w' }
+  := truei.
+Total word_clear_msb word_clear_msb_total.
+
 Define trusted word0_set_bit_pow2
   : Forall(i:word)(u:{(lt (to_nat i) wordlen) = tt}).
       { (to_nat (word_set_bit i word0)) = (pow2 (to_nat i)) } :=
