@@ -45,6 +45,9 @@ Q1p:	test-queue1.c
 Q1d:	test-queue1.c
 	gcc -O0 -ggdb -w -o test-queue1-debug test-queue1.c
 
+test_list:	test_list.g
+	../bin/guru test_list.g
+
 test_queuec:	test_queuec.ml Makefile
 	ocamlopt test_queuec.ml -o test_queuec
 
