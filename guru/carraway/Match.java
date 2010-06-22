@@ -268,6 +268,10 @@ public class Match extends Expr {
 				  +"1. the case: "+C[i].c.toString(ctxt)
 				  +"\n\n2. the computed type: "+CT.toString(ctxt)
 				  +"\n\n3. the expected type: "+expected.toString(ctxt));
+
+        if (expected.construct == ABORT)
+            // propagate a non-abort type out of here if we have one
+            expected = CT;
 	}
 
 	rettype = expected;

@@ -22,7 +22,7 @@ public class Global extends Command {
 
 	ctxt.stage = 1;
 	Expr T = t.simpleType(ctxt);
-	boolean void_type = (T.construct == Expr.VOID); 
+    boolean void_type = (T.construct == Expr.VOID || T.construct == Expr.ABORT); 
 	ctxt.addGlobal(c,T,t);
 
 	ctxt.checkpointRefs();

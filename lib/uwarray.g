@@ -13,8 +13,8 @@ Define primitive type_family_abbrev uwarray := fun(A:type)(n:word).<vec A (word_
 END.
 
 Define primitive uwarray_new
- : Fun(A:type)(n:word)(#untracked a:A).#unique <uwarray A n> := 
-  fun(A:type)(n:word)(a:A). (mkvec A a (word_to_nat n)) <<END
+ : Fun(spec A:type)(n:word)(#untracked a:A).#unique <uwarray A n> := 
+  fun(spec A:type)(n:word)(a:A). (mkvec A a (word_to_nat n)) <<END
 void *guwarray_new(unsigned int n, int a) {
   void **h = (void **)guru_malloc(sizeof(int)*n);
   // fprintf(stdout,"gmk_uwarray(%x).\n", h);
