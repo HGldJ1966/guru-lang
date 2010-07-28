@@ -328,6 +328,23 @@ Define trusted word_inc_safe_implies_ltword :
 
 
 %=============================================================================
+% word decrementing
+%=============================================================================
+
+Define primitive word_dec_safe :=
+  fun(b:word)
+     (u:{ (ltword word0 b) = tt }).
+  (nat_to_word (minus (word_to_nat b) (S Z))) <<END
+  inline unsigned int gword_dec_safe( unsinged int b) { return b-1; }
+END.
+
+Define trusted ltword_implies_ltword_word0 :
+  Forall(w w':word)(u:{ (ltword w' w) = tt }).
+    { (ltword word0 w) = tt }
+  := truei.
+
+
+%=============================================================================
 % word individual bit operations
 %=============================================================================
 
