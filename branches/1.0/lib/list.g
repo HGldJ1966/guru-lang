@@ -1053,7 +1053,7 @@ Define member : Fun(A:type)
             (eqA:Fun(^#owned x1 x2:A).bool):bool.
   match l with
     nil A' => ff
-  | cons A' h t => (or (eqA x h) (member A x t eqA))
+  | cons A' h t => (or (eqA (clone_owned A x) h) (member A x t eqA))
   end.
 
 Define member_total : Forall(A:type)
