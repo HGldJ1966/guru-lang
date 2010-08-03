@@ -702,11 +702,18 @@ public class Context extends guru.FlagManager {
 	return (v.pinning.size() > 0);
     }
 
-    public Position wasDropped(Sym r) {
+    public boolean wasDropped(Sym r) {
 	RefStat s = (RefStat)refs.get(r);
 	if (s == null || s.dropping_expr == null)
-	    return null;
-	return s.dropping_expr.pos;
+	    return false;
+	return true;
+    }
+
+    public Position droppedPosition(Sym r) {
+        RefStat s = (RefStat)refs.get(r);
+        if (s == null || s.dropping_expr == null)
+            return null;
+        return s.dropping_expr.pos;
     }
 
     public RefStat refStatus(Sym r) {

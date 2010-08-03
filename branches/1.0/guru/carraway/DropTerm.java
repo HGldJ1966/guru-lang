@@ -48,11 +48,10 @@ public class DropTerm extends Expr {
     public Sym simulate_h(Context ctxt, Position p) {
 	Sym r = var.simulate(ctxt,pos);
 	
-	Position pp = ctxt.wasDropped(r);
-	if (pp != null)
+	if (ctxt.wasDropped(r))
 	    simulateError(ctxt,"The scrutinee of a match is already dropped by the time a match-case ends.\n\n"
-			  +"1. the scrutinee: "+var.toString(ctxt)
-			  +"\n\n2. it was dropped at: "+pp.toString());
+                      +"1. the scrutinee: "+var.toString(ctxt)
+                      +"\n\n2. reference information: "+r.refString(ctxt,ctxt.refStatus(r)));
 	Collection c = ctxt.dropRef(r,this,pos);
 
 	if (c != null && c.size() > 0) {
