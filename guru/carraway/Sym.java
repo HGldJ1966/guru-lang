@@ -134,6 +134,9 @@ public class Sym extends Expr {
 		return this;
 	    return ctxt.newRef(this,p,false);
 	}
+    if (ctxt.wasDropped(this)) 
+        simulateError(ctxt,"A reference is being used which has previously been consumed.\n\n"
+                      +"1. the reference: "+refString(ctxt,ctxt.refStatus(this)));
 	return (Sym)applySubst(ctxt);
     }
 

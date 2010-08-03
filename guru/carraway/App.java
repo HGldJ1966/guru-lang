@@ -135,101 +135,99 @@ public class App extends Expr {
     }
 
     public Sym simulate_h(Context ctxt, Position p) {
-	FunType f = (FunType) getHeadType(ctxt);
+        FunType f = (FunType) getHeadType(ctxt);
 
-	if (ctxt.getFlag("debug_simulate")) {
-	    ctxt.w.println("(Simulating an application: "+toString(ctxt));
-	    ctxt.w.flush();
-	}
+        if (ctxt.getFlag("debug_simulate")) {
+            ctxt.w.println("(Simulating an application: "+toString(ctxt));
+            ctxt.w.flush();
+        }
 
-	Sym[] rs = new Sym[args.length];
-	for (int i = 0, iend = args.length; i < iend; i++) {
-	    rs[i] = args[i].simulate(ctxt,pos);
+        Sym[] rs = new Sym[args.length];
+        for (int i = 0, iend = args.length; i < iend; i++) {
+            rs[i] = args[i].simulate(ctxt,pos);
 
-	    if (rs[i] == null) {
-		// an argument aborts
-		if (ctxt.getFlag("debug_simulate")) {
-		    ctxt.w.println(") aborting");
-		    ctxt.w.flush();
-		}
+            if (rs[i] == null) {
+                // an argument aborts
+                if (ctxt.getFlag("debug_simulate")) {
+                    ctxt.w.println(") aborting");
+                    ctxt.w.flush();
+                }
 
-		return null;
-	    }
-	}
+                return null;
+            }
+        }
 
-	Collection[] rs_pinnedby = new Collection[args.length];
-	Sym[] prev = new Sym[args.length];
-	for (int i = 0, iend = args.length; i < iend; i++) {
-	    Position pp = ctxt.wasDropped(rs[i]);
-	    if (pp != null) {
-		String s = ("A reference that was already consumed is being used later.\n\n"
-			    +"1. ");
-		s += (rs[i].refString(ctxt)
-		      +"\n\n2. used again by: "+toString(ctxt));
-		s+=", at "+pos.toString()+"\n";
-		simulateError(ctxt,s);
-	    }
-	    if ((f.consumps[i] == FunBase.CONSUMED_RET_OK || f.consumps[i] == FunBase.CONSUMED_NO_RET) 
-		&& f.types[i].consumable(ctxt)) {
-		// this is a reference we are supposed to consume
-		Context.RefStat u = ctxt.refStatus(rs[i]);
-		if (!u.consume)
-		    simulateError(ctxt,"A reference that is marked not to be consumed is being consumed.\n\n"
-				  +"1. "+rs[i].refString(ctxt)
-				  +"\n\n2. the consuming function: "+head.toString(ctxt));
-		if (u.non_ret && f.consumps[i] == FunBase.CONSUMED_RET_OK)
-		    simulateError(ctxt,"A reference that is marked not to be returned is being passed to a function that\n"
-				  +"might return it.\n\n"
-				  +"1. "+rs[i].refString(ctxt)
-				  +"\n\n2. the consuming function: "+head.toString(ctxt));
+        Collection[] rs_pinnedby = new Collection[args.length];
+        Sym[] prev = new Sym[args.length];
+        for (int i = 0, iend = args.length; i < iend; i++) {
+            if (ctxt.wasDropped(rs[i])) {
+                String s = ("A reference that was already consumed is being used later.\n\n"
+                            +"1. ");
+                s += (rs[i].refString(ctxt)
+                      +"\n\n2. used again by: "+toString(ctxt));
+                s+=", at "+pos.toString()+"\n";
+                simulateError(ctxt,s);
+            }
+            if ((f.consumps[i] == FunBase.CONSUMED_RET_OK || f.consumps[i] == FunBase.CONSUMED_NO_RET) 
+                && f.types[i].consumable(ctxt)) {
+                // this is a reference we are supposed to consume
+                Context.RefStat u = ctxt.refStatus(rs[i]);
+                if (!u.consume)
+                    simulateError(ctxt,"A reference that is marked not to be consumed is being consumed.\n\n"
+                                  +"1. "+rs[i].refString(ctxt)
+                                  +"\n\n2. the consuming function: "+head.toString(ctxt));
+                if (u.non_ret && f.consumps[i] == FunBase.CONSUMED_RET_OK)
+                    simulateError(ctxt,"A reference that is marked not to be returned is being passed to a function that\n"
+                                  +"might return it.\n\n"
+                                  +"1. "+rs[i].refString(ctxt)
+                                  +"\n\n2. the consuming function: "+head.toString(ctxt));
 
-		rs_pinnedby[i] = ctxt.dropRef(rs[i], this, pos);
-	    }
-	    prev[i] = ctxt.getSubst(f.vars[i]);
-	    ctxt.setSubst(f.vars[i],rs[i]);
-	}
+                rs_pinnedby[i] = ctxt.dropRef(rs[i], this, pos);
+            }
+            prev[i] = ctxt.getSubst(f.vars[i]);
+            ctxt.setSubst(f.vars[i],rs[i]);
+        }
 	
-	for (int i = 0, iend = args.length; i < iend; i++) 
-	    if (rs_pinnedby[i] != null && rs_pinnedby[i].size() > 0) {
-		Iterator it = rs_pinnedby[i].iterator();
-		simulateError(ctxt,"A pinned reference is being consumed.\n\n"
-			      +"1. the reference  "+rs[i].refString(ctxt)
-			      +"\n\n2. pinned by the  "+((Sym)it.next()).refString(ctxt));
-	    }
+        for (int i = 0, iend = args.length; i < iend; i++) 
+            if (rs_pinnedby[i] != null && rs_pinnedby[i].size() > 0) {
+                Iterator it = rs_pinnedby[i].iterator();
+                simulateError(ctxt,"A pinned reference is being consumed.\n\n"
+                              +"1. the reference  "+rs[i].refString(ctxt)
+                              +"\n\n2. pinned by the  "+((Sym)it.next()).refString(ctxt));
+            }
 
-	Expr rettype = f.rettype.applySubst(ctxt);
+        Expr rettype = f.rettype.applySubst(ctxt);
 
-	for (int i = 0, iend = args.length; i < iend; i++)
-	    ctxt.setSubst(f.vars[i],prev[i]);
+        for (int i = 0, iend = args.length; i < iend; i++)
+            ctxt.setSubst(f.vars[i],prev[i]);
 
-	if (rettype.construct == VOID ||
-	    rettype.construct == TYPE ||
-	    rettype.construct == UNTRACKED)
-	    return ctxt.voidref;
+        if (rettype.construct == VOID ||
+            rettype.construct == TYPE ||
+            rettype.construct == UNTRACKED)
+            return ctxt.voidref;
 
-	Sym ret = ctxt.newRef(this,rettype.isAffine(ctxt));
-	if (rettype.construct == PIN) {
-	    // we need to make sure this does not depend on any consumed references
+        Sym ret = ctxt.newRef(this,rettype.isAffine(ctxt));
+        if (rettype.construct == PIN) {
+            // we need to make sure this does not depend on any consumed references
 
-	    Pin pi = (Pin)rettype;
+            Pin pi = (Pin)rettype;
 
-	    for (int i = 0, iend = pi.pinned.length; i < iend; i++) {
-		Position pp = ctxt.wasDropped(pi.pinned[i]);
-		if (pp != null)
-		    simulateError(ctxt,"The return type of a function depends on a consumed reference.\n\n"
-				  +"1. the function: "+head.toString(ctxt)
-				  +"\n\n2. its type: "+f.toString(ctxt)
-				  +"\n\n3. "+pi.pinned[i].refString(ctxt));
-	    }
+            for (int i = 0, iend = pi.pinned.length; i < iend; i++) {
+                if (ctxt.wasDropped(pi.pinned[i]))
+                    simulateError(ctxt,"The return type of a function depends on a consumed reference.\n\n"
+                                  +"1. the function: "+head.toString(ctxt)
+                                  +"\n\n2. its type: "+f.toString(ctxt)
+                                  +"\n\n3. "+pi.pinned[i].refString(ctxt));
+            }
 
-	    ctxt.pin(ret,pi.pinned);
-	}
+            ctxt.pin(ret,pi.pinned);
+        }
 
-	if (ctxt.getFlag("debug_simulate")) {
-	    ctxt.w.println(") returning" + ret.refString(ctxt));
-	    ctxt.w.flush();
-	}
-	return ret;
+        if (ctxt.getFlag("debug_simulate")) {
+            ctxt.w.println(") returning" + ret.refString(ctxt));
+            ctxt.w.flush();
+        }
+        return ret;
     }
 
     public Expr linearize(Context ctxt, Position p, Sym dest, Collection decls, Collection defs) {
