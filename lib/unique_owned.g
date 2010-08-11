@@ -30,6 +30,16 @@ Init ginit_unique_owned_unowned(#unique_owned x)(#unowned y).#<owned x> <<END
   #define ginit_unique_owned_unowned(A,x,y) y
 END.
 
+% for unique subdata in unowned/owned data
+Init ginit_unowned_unique(#unowned x)(#unique y).#<unique_owned x> <<END
+  #define ginit_unowned_unique(A,x,y) y
+END.
+
+Init ginit_owned_unique(#owned x)(#unique y).#<unique_owned x> <<END
+  #define ginit_owned_unique(A,x,y) y
+END.
+
+
 Define primitive inspect_unique : Fun(spec A:type)(!#unique a:A).#<unique_owned a> A :=
   fun(spec A:type)(a:A).a <<END
 #define ginspect_unique(a) a
