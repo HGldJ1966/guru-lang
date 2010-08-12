@@ -1,0 +1,19 @@
+#summary List of Papers about Guru
+
+== 2010 ==
+
+  * Resource Typing in Guru. Aaron Stump and Evan Austin. PLPV 2010. [[http://www.cs.uiowa.edu/~astump/papers/plpv10.pdf PDF], [http://www.cs.uiowa.edu/~astump/talks/plpv10.pdf slides]]
+
+
+== 2009 ==
+
+  * Verified Programming in Guru. Aaron Stump, Morgan Deters, Adam Petcher, Todd Schiller, and Timothy Simpson. Programming Languages meets Program Verification (PLPV), 2009. [[http://www.cs.uiowa.edu/~astump/papers/plpv09.pdf PDF]]. 
+
+  * Deciding Joinability Modulo Ground Equations in Operational Type Theory. Adam Petcher and Aaron Stump. Proof Search in Type Theories (PSTT). [[http://www.cs.uiowa.edu/~astump/papers/hypjoin-pstt09.pdf PDF]]. 
+
+
+== 2008 ==
+
+  * Deciding Joinability Modulo Ground Equations in Operational Type Theory. Adam Petcher. Master's Thesis, Washington University in St. Louis, April 2008. [[http://www.cs.uiowa.edu/~astump/papers/petcher-thesis.pdf PDF]] 
+
+  * A Core Operational Type Theory. Aaron Stump and Edwin Westbrook, 2008 [[http://www.cs.uiowa.edu/~astump/papers/optt.pdf PDF]]
