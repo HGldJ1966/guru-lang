@@ -43,6 +43,11 @@ public class Include extends Command {
 	catch (Exception e) {
 	    handleError(ctxt, "Error opening file:\n"+e.toString());
 	}
+	
+	boolean did_trust_hypjoins = ctxt.getFlag("trust_hypjoins");
+	if( trusted && !did_trust_hypjoins )
+		ctxt.setFlag( "trust_hypjoins" );
+	
 	P.setContext(ctxt);
 	Command c = null;
 	
@@ -65,6 +70,8 @@ public class Include extends Command {
 	    }
 	}
     	h.finished(ctxt);
+    	if( trusted && !did_trust_hypjoins )
+    		ctxt.unsetFlag( "trust_hypjoins" );
     }
     
     public void print(java.io.PrintStream w, 
