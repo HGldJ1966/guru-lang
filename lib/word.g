@@ -335,7 +335,7 @@ Define primitive word_dec_safe :=
   fun(b:word)
      (u:{ (ltword word0 b) = tt }).
   (nat_to_word (minus (word_to_nat b) (S Z))) <<END
-  inline unsigned int gword_dec_safe( unsinged int b) { return b-1; }
+  inline unsigned int gword_dec_safe( unsigned int b) { return b-1; }
 END.
 
 Define trusted ltword_implies_ltword_word0 :
