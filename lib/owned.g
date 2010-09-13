@@ -15,7 +15,7 @@ Define primitive inspect : Fun(spec A:type)(!#unowned x:A).#<owned x> A
 END.
 
 Define trusted inspect_tot : Forall(A:type)(x:A).Exists(out:A).
-  {(inspect A x) = out} := truei.
+  {(inspect x) = out} := truei.
 
 Total inspect inspect_tot.
 
@@ -29,7 +29,7 @@ END.
 
 
 Define trusted inc_owned_tot : Forall(A:type)(x:A).Exists(out:A).
-  {(inc_owned A x) = out} := truei.
+  {(inc_owned x) = out} := truei.
 
 Total inc_owned inc_owned_tot.
 
