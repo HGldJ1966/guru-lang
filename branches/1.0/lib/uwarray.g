@@ -26,32 +26,32 @@ void *guwarray_new(unsigned int n, int a) {
 END.
 
 Define primitive uwarray_get
-   : Fun(A:type)(spec n:word)(! #unique_owned l:<uwarray A n>)
+   : Fun(spec A:type)(spec n:word)(! #unique_owned l:<uwarray A n>)
         (i:word)(u:{(ltword i n) = tt}). #untracked A := 
-  fun(A:type)(spec n:word)(l:<uwarray A n>)(i:word)(u:{(ltword i n) = tt}).
+  fun(spec A:type)(spec n:word)(l:<uwarray A n>)(i:word)(u:{(ltword i n) = tt}).
   abbrev p = hypjoin (lt (to_nat i) (to_nat n)) tt by u end in
     (vec_get A (word_to_nat n) l (word_to_nat i) p) <<END
 inline void* guwarray_get(void **l, unsigned int i) { return l[i]; }
 END.
 
 Define primitive uwarray_set 
-  : Fun(A:type)(spec n:word)(#unique l:<uwarray A n>)
+  : Fun(spec A:type)(spec n:word)(#unique l:<uwarray A n>)
        (i:word)(#untracked a:A)
        (u:{(ltword i n) = tt}). #unique <uwarray A n> :=
-  fun(A:type)(spec n:word)(l:<uwarray A n>)
+  fun(spec A:type)(spec n:word)(l:<uwarray A n>)
      (i:word)(a:A)
      (u:{(ltword i n) = tt}).
   abbrev p = hypjoin (lt (to_nat i) (to_nat n)) tt by u end in
    (vec_update A (word_to_nat n) l (word_to_nat i) a p) <<END
-void *guwarray_set(int A, void *l, unsigned int c, void *d) {
+void *guwarray_set(void *l, unsigned int c, void *d) {
   ((void **)l)[c] = d;
   return l;
 }
 END.
 
-Define primitive uwarray_free : Fun(A:type)(spec n:word)(^ #unique l:<uwarray A n>).void :=
-  fun(A:type)(spec n:word)(l:<uwarray A n>).voidi <<END
-void guwarray_free(int A, void *l) {
+Define primitive uwarray_free : Fun(spec A:type)(spec n:word)(^ #unique l:<uwarray A n>).void :=
+  fun(spec A:type)(spec n:word)(l:<uwarray A n>).voidi <<END
+void guwarray_free(void *l) {
   // fprintf(stdout,"guwarray_free(%x).\n", l);
   carraway_free(l);
 }
