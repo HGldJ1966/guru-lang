@@ -548,7 +548,8 @@ public class Context extends guru.FlagManager {
 	}
 	public void print(java.io.PrintStream w, Context ctxt) {
 	    w.println("  -- "+ref.toString(ctxt));
-	    w.println("     created by "+creating_expr.toString(ctxt)+" at "+creating_pos.toString());
+	    if (creating_expr != null && creating_pos != null)
+		w.println("     created by "+creating_expr.toString(ctxt)+" at "+creating_pos.toString());
 	    if (non_ret)
 		w.println("     not to be returned.");
 	    else

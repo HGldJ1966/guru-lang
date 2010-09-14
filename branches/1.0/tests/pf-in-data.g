@@ -7,5 +7,5 @@ Inductive Eq : Fun(a b:bool).type :=
 Define Eq_lem :=
   foralli(a b:bool)(pf:<Eq a b>).
   case pf with mk_eq _ _ u =>
-    u
+    hypjoin a b by u end
   end.

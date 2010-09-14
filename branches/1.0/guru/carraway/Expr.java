@@ -212,8 +212,12 @@ public abstract class Expr {
 	    ctxt.w.println(") simulated "+toString(ctxt));
 	    if (ret == null)
 		ctxt.w.println("  aborting");
-	    else
+	    else {
 		ctxt.w.println("  returning "+ret.refString(ctxt));
+		Context.RefStat uu = ctxt.refStatus(ret);
+		if (uu != null)
+		    ctxt.w.println(uu.toString(ctxt));
+	    }
 	    ctxt.w.flush();
 	}
 	return ret;
