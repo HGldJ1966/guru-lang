@@ -353,7 +353,7 @@ Define primitive word_read_bit
    fun(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word).
     (vec_get bool wordlen w (to_nat wordlen i) u) <<END
 inline unsigned int gword_read_bit(unsigned int i, unsigned int w) {
-    return  ((1 << i) & w);
+    return  (w >> i) & 1;
 }
 END.
 
