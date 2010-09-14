@@ -58,6 +58,13 @@ public class Case extends Expr {
 	    Sym[] fprev = new Sym[vars.length];
 	    Sym[] prev = new Sym[vars.length];
 	    for (int i = 0, iend = vars.length; i < iend; i++) {
+		if (vars[i].name.equals("_")) {
+		    if (ctxt.getFlag("debug_refs")) {
+			ctxt.w.println("Not adding a reference for pattern variable \"_\".");
+			ctxt.w.flush();
+		    }
+		    continue;
+		}
 		Expr T = f.types[i].applySubst(ctxt);
 		fprev[i] = ctxt.getSubst(f.vars[i]);
 		prev[i] = ctxt.getSubst(vars[i]);
