@@ -353,14 +353,18 @@ public class Match extends Expr {
 		if (rs[i] != null) {
 		    if (ret_data == null)
 			ret_data = ctxt.refStatus(rs[i]);
-		    else 
-			if (!ret_data.pinnedby.equals(s1.pinnedby) ||
-			    !ret_data.pinning.equals(s1.pinning))
-			    simulateError(ctxt,"The reference returned in a match-case has a different pinning/pinnedby profile than "
-					  +"\nthe earlier cases.\n\n"
-					  +"1. the case: "+C[i].c.toString(ctxt)
-					  +"\n\n2. its reference profile:\n"+s1.toString(ctxt)
-					  +"\n\n3. the earlier cases' reference profile:\n"+ret_data.toString(ctxt));
+		    else if (!ret_data.pinnedby.equals(s1.pinnedby) ||
+			     !ret_data.pinning.equals(s1.pinning))
+			simulateError(ctxt,"The reference returned in a match-case has a different pinning/pinnedby profile than "
+				      +"\nthe earlier cases.\n\n"
+				      +"1. the case: "+C[i].c.toString(ctxt)
+				      +"\n\n2. its reference profile:\n"+s1.toString(ctxt)
+				      +"\n\n3. the earlier cases' reference profile:\n"+ret_data.toString(ctxt));
+		    else if (s1.dropping_expr != null)
+			simulateError(ctxt,"A match-case is returning a reference that has already been dropped.\n\n"
+				      +"1. the case: "+C[i].c.toString(ctxt)
+				      +"\n\n2. the reference: "+rs[i].refString(ctxt)
+				      +"\n\n3. the reference data: "+s1.toString(ctxt));
 		    
 		    ctxt.dropRef(rs[i],C[i],C[i].lastpos);
 		}

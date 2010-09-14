@@ -10,7 +10,7 @@ Define test :=
   | S n' =>
       do
         (consume_unowned nat n')
-        one
+        (inc nat one)
       end
   end.
 
