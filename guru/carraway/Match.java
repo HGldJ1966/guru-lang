@@ -160,6 +160,8 @@ public class Match extends Expr {
             }
 
             for (int i = C.vars.length - 1; i >= 0; i--) {
+		if (C.vars[i].name.equals("_"))
+		    continue;
                 if (rf.types[i].construct != UNTRACKED) {
                     // we have a runtime type for this var
 
