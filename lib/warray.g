@@ -29,17 +29,19 @@ END.
 Define primitive warray_get
    : Fun(spec A:type)(spec n:word)(! #unique_owned l:<warray A n>)
         (i:word)
-        (u:{(lt (to_nat i) (to_nat n)) = tt}). #<owned l> A := 
-  fun(A:type)(spec n:word)(l:<warray A n>)(i:word)(u:{(lt (to_nat i) (to_nat n)) = tt}). 
-    (vec_get A (to_nat wordlen n) l (to_nat wordlen i) u) <<END
+        (u:{(ltword i n) = tt}). #<owned l> A := 
+  fun(A:type)(spec n:word)(l:<warray A n>)(i:word)(u:{(ltword i n) = tt}). 
+  abbrev p = hypjoin (lt (to_nat i) (to_nat n)) tt by u end in
+  (vec_get A (to_nat wordlen n) l (to_nat wordlen i) p) <<END
 inline void* gwarray_get(void **l, int i) { return l[i]; }
 END.
 
 Define primitive warray_set 
   : Fun(A:type)(i:word)(a:A)(spec n:word)(#unique l:<warray A n>)
-       (u:{(lt (to_nat i) (to_nat n)) = tt}). #unique <warray A n> :=
-  fun(A:type)(i:word)(a:A)(spec n:word)(l:<warray A n>)(u:{(lt (to_nat i) (to_nat n)) = tt}).
-   (vec_update A (to_nat wordlen n) l (to_nat wordlen i) a u) <<END
+       (u:{(ltword i n) = tt}). #unique <warray A n> :=
+  fun(A:type)(i:word)(a:A)(spec n:word)(l:<warray A n>)(u:{(ltword i n) = tt}).
+  abbrev p = hypjoin (lt (to_nat i) (to_nat n)) tt by u end in
+   (vec_update A (to_nat wordlen n) l (to_nat wordlen i) a p) <<END
 void *gwarray_set(int A, int c, void *d, void *l) {
   gdec(A,((void **)l)[c]);
   ((void **)l)[c] = d;

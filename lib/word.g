@@ -163,6 +163,20 @@ Define primitive leword : Fun(#untracked w1 w2:word).bool :=
   int gleword(unsigned int w1, unsigned int w2) { return (w1 <= w2); }
 END.
 
+Define trusted ltword_total :
+  Forall(w1 w2:word).Exists(b:bool).
+    { (ltword w1 w2) = b }
+  := truei.
+
+Total ltword ltword_total.
+
+Define trusted leword_total :
+  Forall(w1 w2:word).Exists(b:bool).
+    { (leword w1 w2) = b }
+  := truei.
+
+Total leword leword_total.
+
 Define leword_lem : Forall(w1 w2:word). { (le (word_to_nat w1) (word_to_nat w2)) = (leword w1 w2) } :=
   foralli(w1 w2:word).
     join (le (word_to_nat w1) (word_to_nat w2)) 
