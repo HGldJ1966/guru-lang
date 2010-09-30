@@ -280,6 +280,11 @@ Define chars_bounded3
    foralli(c:char). trans cong (lt * num_chars) [to_nat_c2w c]
                           [chars_bounded c].
 
+Define chars_bounded4
+ : Forall(c:char). { (ltword (c2w c) num_chars_word) = tt } :=
+   foralli(c:char).
+   hypjoin (ltword (c2w c) num_chars_word) tt by [chars_bounded3 c] end.
+
 Define char_inc_notfull
   : Forall(c d:char)(carry:bool)
           (u1: { (lt (which_char c) (to_nat CLast)) = tt})

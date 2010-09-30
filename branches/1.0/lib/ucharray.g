@@ -17,12 +17,12 @@ Define ucharray_new : Fun(spec A:type)(#untracked a:A).#unique <ucharray A> :=
 
 Define ucharray_get : Fun(spec A:type)(!#unique l:<ucharray A>)(#untracked c:char). #untracked A := 
   fun(spec A:type)(!#unique l:<ucharray A>)(#untracked c:char):#untracked A. 
-    (uwarray_get A num_chars_word l (c2w c) [chars_bounded3 c]).
+    (uwarray_get A num_chars_word l (c2w c) [chars_bounded4 c]).
 
 Define ucharray_set 
   : Fun(A:type)(#untracked c:char)(#untracked a:A)(#unique l:<ucharray A>). #unique <ucharray A> :=
-  fun(A:type)(#untracked c:char)(a:A)(#unique l:<ucharray A>):#unique <ucharray A>.
-   (uwarray_set A (c2w c) a num_chars_word l [chars_bounded3 c]).
+  fun(A:type)(#untracked c:char)(#untracked a:A)(#unique l:<ucharray A>):#unique <ucharray A>.
+   (uwarray_set A num_chars_word l (c2w c) a [chars_bounded4 c]).
 
 Define ucharray_free : Fun(A:type)(^ #unique l:<ucharray A>).void :=
   fun(A:type)(^ #unique l:<ucharray A>).
