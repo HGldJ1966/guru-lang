@@ -450,9 +450,13 @@ public class Case extends Expr{
 
 	    TermApp scruttp1 = (TermApp)(((TermApp)scruttp)
 					 .spineForm(ctxt,true,spec,true));
-	    if (scruttp1.head.construct == CONST
-		&& ctxt.isTermCtor((Const)scruttp1.head)
-		&& !pattp1.head.defEq(ctxt,scruttp1.head,spec))
+
+	    if (scruttp1.head.construct != CONST || 
+		!ctxt.isTermCtor((Const)scruttp1.head))
+		// head of scrutinee is not a constructor, so must stop
+		return true;
+
+	    if (!pattp1.head.defEq(ctxt,scruttp1.head,spec))
 		// different constructor applications
 		return false;
 	    
