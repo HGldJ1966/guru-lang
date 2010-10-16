@@ -20,26 +20,24 @@ Define assert_tt :
   		contra
 				trans symm u
 				trans	hypjoin (assert b) abort ! by b_eq end
-							clash abort ! tt
+							aclash tt
 				{ b = tt }
   | tt => b_eq
   end
   .
 
 % more general form might not care about the return value
-% this could be proved by induction when we have the one above
-% but, native support would save some efforts of users
 Define assert_terminates :
   Forall(b b':bool)(u:{ (assert b) = b' }).
   	{ b = tt }
   :=
-  foralli(b:bool)(u:{ (assert b) = tt }).
+  foralli(b b':bool)(u:{ (assert b) = b' }).
   case b with
   	ff =>
   		contra
 				trans symm u
 				trans	hypjoin (assert b) abort ! by b_eq end
-							clash abort ! b'
+							aclash b'
 				{ b = tt }
   | tt => b_eq
   end
