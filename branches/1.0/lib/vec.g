@@ -804,6 +804,59 @@ Define vec_update_get_distinct :
   end.
 
 
+Define vec_sz_Z_vecn :=
+  foralli(A:type)(l:<vec A Z>).
+  case l with
+  	vecn _ => l_eq
+  | vecc _ n' a l' =>
+  		abbrev Z_eq = inj <vec ** *> l_Eq in % Z = (S n')
+  		contra Z_eq { l = vecn }
+  end.
+
+Define all_vec_get_implies_eq :
+	Forall(A:type)(n:nat)(l m:<vec A n>)
+				(u:Forall(i:nat)(q:{ (lt i n) = tt }).{ (vec_get l i) = (vec_get m i) })
+			 .{ l = m }
+	:=
+  foralli(A:type).
+  induction(n:nat)(l:<vec A n>) return
+    Forall(m:<vec A n>)
+    			(u:Forall(i:nat)(q:{ (lt i n) = tt }).{ (vec_get l i) = (vec_get m i) })
+      .{ l = m }
+  with
+    vecn _ =>
+			foralli(m:<vec A n>)
+						 (u:Forall(i:nat)(q:{ (lt i n) = tt }).{ (vec_get l i) = (vec_get m i) })
+			.
+      abbrev n_eq = inj <vec A *> l_Eq in
+      abbrev m_eq = [vec_sz_Z_vecn A cast m by cong <vec A *> n_eq] in
+      hypjoin l m by l_eq m_eq end
+  | vecc _ n' a' l' =>
+			foralli(m:<vec A n>)
+						 (u:Forall(i:nat)(q:{ (lt i n) = tt }).{ (vec_get l i) = (vec_get m i) })
+			.
+      abbrev n_eq = inj <vec A *> l_Eq in
+      case m with
+      	vecn _ =>
+      		abbrev n_eq' = inj <vec ** *> m_Eq in
+      		contra trans symm n_eq'
+      					 trans n_eq
+      					 			 clash (S n') Z
+      			{ l = m }
+     	| vecc _ mn' ma' m' =>
+					abbrev n_eq' = inj <vec A *> m_Eq in
+					abbrev m'_1 = inj (S *) symm trans symm n_eq n_eq' in
+					abbrev m' = cast m' by cong <vec A *> m'_1 in
+					abbrev u' = foralli(i':nat)(q':{ (lt i' n') = tt }).
+											abbrev p1 = hypjoin (lt (S i') n) tt by q' n_eq end in
+											hypjoin (vec_get l' i') (vec_get m' i') by l_eq m_eq [u (S i') p1] end in
+					abbrev p1 = hypjoin (lt Z n) tt by n_eq end in
+					abbrev p2 = hypjoin a' ma' by l_eq m_eq [u Z p1] end in
+					abbrev ih = [l_IH n' l' m' u'] in
+					hypjoin l m by ih p2 l_eq m_eq end
+      end
+  end.
+
 Define all_vec_get_implies_mkvec :
 	Forall(A:type)(a:A)(n:nat)(l:<vec A n>)
 				(u:Forall(m:nat)(q:{ (lt m n) = tt }).{ (vec_get l m) = a })
@@ -828,3 +881,61 @@ Define all_vec_get_implies_mkvec :
                   hypjoin (vec_get l' m') a by l_eq [u (S m') p1] end in
       hypjoin l (mkvec a n) by [l_IH n' l' u'] l_eq a_eq n_eq end
   end.
+
+
+Define vec_update_twice :
+  Forall(A:type)(n:nat)(v:<vec A n>)
+        (i:nat)(a a':A)
+        (u:{ (lt i n) = tt }).
+    { (vec_update (vec_update v i a) i a') = (vec_update v i a') }
+  :=
+  foralli(A:type)(n:nat)(v:<vec A n>)
+        (i:nat)(a a':A)
+        (u:{ (lt i n) = tt }).
+	abbrev v' = (vec_update A n v i a u) in
+	abbrev v'' = (vec_update A n v' i a' u) in
+  abbrev p1 =
+		foralli(m:nat)(u2:{ (lt m n) = tt }).
+		case (eqnat m i) by q1 _ with
+			ff =>
+				abbrev u3 = [eqnat_ff_implies_neq m i q1] in
+			 	trans [vec_update_get_distinct A n v' m i a' u2 u u3]
+				trans [vec_update_get_distinct A n v m i a u2 u u3]
+				      symm [vec_update_get_distinct A n v m i a' u2 u u3]
+		| tt =>
+				abbrev p1 = [eqnatDef m i q1] in
+				trans cong (vec_get (vec_update (vec_update v i a) i a') *) p1
+				trans [vec_update_get A n v' i a' u]
+				trans symm [vec_update_get A n v i a' u]
+				      cong (vec_get (vec_update v i a') *) symm p1
+		end
+		in
+	[all_vec_get_implies_eq A n v'' (vec_update A n v i a' u) p1]
+	.
+
+Define vec_update_back :
+  Forall(A:type)(n:nat)(v:<vec A n>)
+        (i:nat)
+        (u:{ (lt i n) = tt }).
+    { (vec_update v i (vec_get v i)) = v }
+  :=
+  foralli(A:type)(n:nat)(v:<vec A n>)
+        (i:nat)
+        (u:{ (lt i n) = tt }).
+	abbrev x = (vec_get A n v i u) in
+	abbrev v' = (vec_update A n v i x u) in
+  abbrev p1 =
+		foralli(m:nat)(u2:{ (lt m n) = tt }).
+		case (eqnat m i) by q1 _ with
+			ff =>
+				abbrev u3 = [eqnat_ff_implies_neq m i q1] in
+				[vec_update_get_distinct A n v m i x u2 u u3]
+		| tt =>
+				abbrev p1 = [eqnatDef m i q1] in
+				trans cong (vec_get (vec_update v i (vec_get v i)) *) p1
+				trans [vec_update_get A n v i x u]
+							cong (vec_get v *) symm p1
+		end
+		in
+	[all_vec_get_implies_eq A n v' v p1]
+	.

@@ -22,6 +22,10 @@ Define trusted unboxWord_tot : Forall(bw:boxedWord).Exists(w:word).{(unboxWord b
 
 Total unboxWord unboxWord_tot.
 
+Define trusted unboxWord_boxWord :
+	Forall(b:boxedWord).{ (boxWord (unboxWord b)) = b } := truei.
+
+
 Define boxedWord_comp : Fun(^ #owned bw1 bw2:boxedWord) . comp :=
   fun(^ #owned bw1 bw2:boxedWord).
   match bw1 with

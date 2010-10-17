@@ -499,15 +499,28 @@ inline unsigned int gword_clear_bit(unsigned int i, unsigned int w) {
 }
 END.
 
+Define word_set_read :
+  Forall(w:word)
+        (i:word)
+        (u:{ (lt (to_nat i) wordlen) = tt }).
+    { (word_read_bit i (word_set_bit i w)) = tt }
+  :=
+  foralli(w:word)(i:word)
+         (u:{ (lt (to_nat i) wordlen) = tt }).
+  hypjoin (word_read_bit i (word_set_bit i w))
+          tt
+          by [vec_update_get bool wordlen w (to_nat wordlen i) tt u] end
+  .
+
 Define word_clear_read :
   Forall(w:word)
         (i:word)
         (u:{ (lt (to_nat i) wordlen) = tt }).
-    { (word_read_bit i u (word_clear_bit i u w)) = ff }
+    { (word_read_bit i (word_clear_bit i w)) = ff }
   :=
   foralli(w:word)(i:word)
          (u:{ (lt (to_nat i) wordlen) = tt }).
-  hypjoin (word_read_bit i u (word_clear_bit i u w))
+  hypjoin (word_read_bit i (word_clear_bit i w))
           ff
           by [vec_update_get bool wordlen w (to_nat wordlen i) ff u] end
   .
@@ -565,6 +578,46 @@ Define trusted word_clear_msb_total :
   := truei.
 Total word_clear_msb word_clear_msb_total.
 
+
+Define word_set_clear :
+  Forall(w:word)
+        (i:word)
+        (u:{ (lt (to_nat i) wordlen) = tt }).
+    { (word_clear_bit i (word_set_bit i w)) = (word_clear_bit i w) }
+  :=
+  foralli(w:word)(i:word)
+         (u:{ (lt (to_nat i) wordlen) = tt }).
+  abbrev p1 = [vec_update_twice bool wordlen w (word_to_nat i) tt ff u] in
+  hypjoin (word_clear_bit i (word_set_bit i w))
+          (word_clear_bit i w)
+    by p1 end
+  .
+
+Define word_clear_set :
+  Forall(w:word)
+        (i:word)
+        (u:{ (lt (to_nat i) wordlen) = tt }).
+    { (word_set_bit i (word_clear_bit i w)) = (word_set_bit i w) }
+  :=
+  foralli(w:word)(i:word)
+         (u:{ (lt (to_nat i) wordlen) = tt }).
+  abbrev p1 = [vec_update_twice bool wordlen w (word_to_nat i) ff tt u] in
+  hypjoin (word_set_bit i (word_clear_bit i w))
+          (word_set_bit i w)
+    by p1 end
+  .
+
+Define trusted word_msb_tt_set_msb :
+  Forall(w:word)(u:{ (word_msb w) = tt }).
+  	{ (word_set_msb w) = w }
+	:= truei.
+
+Define trusted word_msb_ff_clear_msb :
+  Forall(w:word)(u:{ (word_msb w) = ff }).
+  	{ (word_clear_msb w) = w }
+	:= truei.
+  
+  
 Define trusted word0_set_bit_pow2
   : Forall(i:word)(u:{(lt (to_nat i) wordlen) = tt}).
       { (to_nat (word_set_bit i word0)) = (pow2 (to_nat i)) } :=
