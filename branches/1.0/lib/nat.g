@@ -1034,7 +1034,34 @@ Define lt_pred : Forall(x y z:nat)(u:{ y = (S x) })(v:{ (lt z y) = tt }).{ (le z
       end
   end.
 
-Define trusted lt_S_le : Forall(x y:nat)(u:{(lt x y) = tt}). { (le (S x) y) = tt } := truei.  
+Define lt_S_le : Forall(x y:nat)(u:{(lt x y) = tt}). { (le (S x) y) = tt }
+	:=
+	induction(x y:nat) return
+	  Forall(u:{(lt x y) = tt}).{ (le (S x) y) = tt }
+	with
+	  Z =>
+	  	foralli(u:{(lt x y) = tt}).
+	  	contra
+	  		trans symm [lt_Z x]
+	  		trans	hypjoin (lt x Z) tt by y_eq u end
+	  					clash tt ff
+	  		{ (le (S x) y) = tt }
+	| S y' =>
+	  	foralli(u:{(lt x y) = tt}).
+			case x with
+				Z => hypjoin (le (S x) y) tt by x_eq y_eq [Z_le y'] end
+			| S x' =>
+					abbrev u' = hypjoin (lt x' y') tt by u [S_lt_S x' y'] x_eq y_eq end in
+					abbrev ih = [y_IH x' y' u'] in
+					hypjoin (le (S x) y) tt by ih [S_le_S x' y'] x_eq y_eq end
+			end
+	end.
+
+Define le_S_lt : Forall(x y:nat)(u:{(le (S x) y) = tt}). { (lt x y) = tt }
+	:=
+	foralli(x y:nat)(u:{(le (S x) y) = tt}).
+	[ltle_trans x (S x) y [lt_S x] u].  
+
 
 Define ltff_le : Forall(a b:nat)(u:{ (lt a b) = ff }).{ (le b a) = tt } :=
   induction(a:nat) by ap at IHa return Forall(b:nat)(u:{ (lt a b) = ff }).{ (le b a) = tt } with
@@ -1268,7 +1295,58 @@ Define eqnat_le : Forall(x y:nat)(u:{ (eqnat x y) = tt }).{ (le x y) = tt } :=
 Define eqnat_implies_le := eqnat_le.
 
 
+Define trusted eqnat_ff_implies_neq :
+	Forall(x y:nat)(u:{(eqnat x y) = ff}).{ x != y }
+	:= truei.
+
 Define trusted eqnat_ff_implies_lt : Forall(x y:nat)(u:{(eqnat x y) = ff})(v:{(le x y) = tt}).{(lt x y) = tt} := truei.
+
+Define neq_Z_implies_lt :
+	Forall(x:nat)(u:{ x != Z }).{ (lt Z x) = tt }
+	:=
+	foralli(x:nat)(u:{ x != Z }).
+	case x with
+	  Z => contra trans symm x_eq u { (lt Z x) = tt }
+	| S x' =>
+			abbrev p1 = [Z_le x'] in
+			abbrev p2 = hypjoin (lt x' x) tt by x_eq [lt_S x'] end in
+			[lelt_trans Z x' x p1 p2]
+	end.
+
+Define lt_ff_neq_implies_lt :
+	Forall(x y:nat)(u1:{ (lt x y) = ff })(u2:{ x != y }).
+		{ (lt y x) = tt }
+	:=
+	induction(x y:nat) return
+		Forall(u1:{ (lt x y) = ff })(u2:{ x != y }).{ (lt y x) = tt }
+	with
+		Z =>
+			foralli(u1:{ (lt x y) = ff })(u2:{ x != y }).
+			abbrev u2' = symm trans symm y_eq symm u2 in
+			abbrev p1 = [neq_Z_implies_lt x u2'] in
+			hypjoin (lt y x) tt by p1 y_eq end
+	| S y' =>
+			foralli(u1:{ (lt x y) = ff })(u2:{ x != y }).
+			case x with
+				Z =>
+					contra
+						trans symm hypjoin (lt x y) tt by x_eq y_eq end
+					  trans u1
+					  			clash ff tt
+					  { (lt y x) = tt }
+			| S x' =>
+					abbrev p1 = [S_lt_S x' y'] in
+					abbrev u1' = hypjoin (lt x' y') ff by u1 x_eq y_eq p1 end in
+					abbrev p2 = symm
+											trans symm y_eq
+														symm trans symm x_eq u2 % (S x') != y
+											in
+					abbrev u2' = [Sneq_neq x' y' p2] in
+					trans hypjoin (lt y x) (lt (S y') (S x')) by x_eq y_eq end
+					trans [S_lt_S y' x']
+								[y_IH x' y' u1' u2']
+			end
+	end.
 
 Define nat_comp := (comparator1 nat lt eqnat).
 

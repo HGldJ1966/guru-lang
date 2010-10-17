@@ -57,3 +57,115 @@ void guwarray_free(void *l) {
 }
 END.
 
+
+%=============================================================================
+% lemmas
+%=============================================================================
+
+Define uwarray_get_total :
+  Forall(A:type)(n:word)(l:<uwarray A n>)
+        (i:word)
+        (u:{(ltword i n) = tt}).
+  Exists(a:A).{ (uwarray_get l i) = a }
+  :=
+  foralli(A:type)(n:word)(l:<uwarray A n>)
+        (i:word)
+        (u:{(ltword i n) = tt}).
+  abbrev n' = (word_to_nat n) in
+  abbrev i' = (word_to_nat i) in
+  abbrev u' = trans symm [ltword_to_lt i n] u in
+  existse [vec_get_tot A n' l i' u']
+  foralli(a:A)(a_pf:{ (vec_get l i') = a }).
+  existsi a { (uwarray_get l i) = * }
+	hypjoin (uwarray_get l i) a by a_pf end
+  .
+
+Total uwarray_get uwarray_get_total.
+
+Define trusted uwarray_set_total :
+  Forall(A:type)(n:word)(l:<uwarray A n>)
+        (i:word)(a:A)
+        (u:{(ltword i n) = tt}).
+  Exists(r:<uwarray A n>).{ (uwarray_set l i a) = r }
+  :=
+  foralli(A:type)(n:word)(l:<uwarray A n>)
+        (i:word)(a:A)
+        (u:{(ltword i n) = tt}).
+  abbrev n' = (word_to_nat n) in
+  abbrev i' = (word_to_nat i) in
+  abbrev u' = trans symm [ltword_to_lt i n] u in
+  existse [vec_update_tot A n' l i' a u']
+  foralli(r:<vec A n'>)(r_pf:{ (vec_update l i' a) = r }).
+  existsi r { (uwarray_set l i a) = * }
+	hypjoin (uwarray_set l i a) r by r_pf end
+	.
+
+Total uwarray_set uwarray_set_total.
+
+% lemma to avoid evaluating to_nat
+Define uwarray_get_to_vec_get :
+  Forall(A:type)(n:word)(l:<uwarray A n>)(i:word)(u:{(ltword i n) = tt})
+    .{ (uwarray_get l i) = (vec_get l (to_nat i)) }
+  := 
+  foralli(A:type)(n:word)(l:<uwarray A n>)(i:word)(u:{(ltword i n) = tt})
+  .
+  join (uwarray_get l i) (vec_get l (to_nat i))
+  .
+
+Define uwarray_set_get :
+  Forall(A:type)(n:word)(l:<uwarray A n>)
+        (m:word)(a:A)
+        (u1:{ (ltword m n) = tt })
+    .{ (uwarray_get (uwarray_set l m a) m) = a }
+  :=
+  foralli(A:type)(n:word)(l:<uwarray A n>)
+        (m:word)(a:A)
+        (u1:{ (ltword m n) = tt })
+  .
+  abbrev u1' = hypjoin (lt (to_nat m) (to_nat n)) tt by u1 end in
+  abbrev p = [vec_update_get A (word_to_nat n) l (word_to_nat m) a u1'] in
+  hypjoin (uwarray_get (uwarray_set l m a) m) a by p end
+  .
+
+Define uwarray_set_get_distinct :
+  Forall(A:type)(n:word)(l:<uwarray A n>)
+        (m m':word)(a:A)
+        (u1:{ (ltword m n) = tt })
+        (u2:{ (ltword m' n) = tt })
+        (u3:{ m != m' })
+    .{ (uwarray_get (uwarray_set l m' a) m) = (uwarray_get l m) }
+  :=
+  foralli(A:type)(n:word)(l:<uwarray A n>)
+				(m m':word)(a:A)
+				(u1:{ (ltword m n) = tt })
+				(u2:{ (ltword m' n) = tt })
+				(u3:{ m != m' })
+  .
+  abbrev u1' = hypjoin (lt (to_nat m) (to_nat n)) tt by u1 end in
+  abbrev u2' = hypjoin (lt (to_nat m') (to_nat n)) tt by u2 end in
+  abbrev u3' = [word_neq_to_nat_neq m m' u3] in
+  abbrev p = [vec_update_get_distinct A (word_to_nat n) l
+					  	(word_to_nat m) (word_to_nat m') a u1' u2' u3'] in
+	hypjoin (uwarray_get (uwarray_set l m' a) m) (uwarray_get l m) by p end
+  .
+
+Define all_uwarray_get_implies_new :
+	Forall(A:type)(a:A)(n:word)(l:<uwarray A n>)
+				(u:Forall(m:word)(q:{ (ltword m n) = tt }).{ (uwarray_get l m) = a })
+			 .{ l = (uwarray_new n a) }
+  :=
+	foralli(A:type)(a:A)(n:word)(l:<uwarray A n>)
+				 (u:Forall(m:word)(q:{ (ltword m n) = tt }).{ (uwarray_get l m) = a }).
+ 
+  abbrev p1 =
+    foralli(m:nat)(q:{ (lt m (to_nat n)) = tt }).
+    abbrev p2 = [lt_to_nat_ltword m n q] in
+    abbrev p3 = [u (nat_to_word m) p2] in
+    abbrev p4 = [lt_word_implies_le_word_max m n q] in
+    trans cong (vec_get l *) symm [nat_to_word_to_nat m p4]
+    trans symm [uwarray_get_step A n l (nat_to_word m) p2]
+          p3
+    in
+  trans [all_vec_get_implies_mkvec A a (word_to_nat n) l p1]
+        join (mkvec a (to_nat n)) (uwarray_new n a)
+  .
