@@ -163,7 +163,7 @@ Define all_uwarray_get_implies_new :
     abbrev p3 = [u (nat_to_word m) p2] in
     abbrev p4 = [lt_word_implies_le_word_max m n q] in
     trans cong (vec_get l *) symm [nat_to_word_to_nat m p4]
-    trans symm [uwarray_get_step A n l (nat_to_word m) p2]
+    trans symm [uwarray_get_to_vec_get A n l (nat_to_word m) p2]
           p3
     in
   trans [all_vec_get_implies_mkvec A a (word_to_nat n) l p1]
