@@ -64,7 +64,7 @@ END.
 
 Define word_max := 0xffffffff.
 
-% DEPRICATED
+% DEPRECATED
 Define word1 := 0x1.
 Define word2 := 0x2.
 Define word3 := 0x3.
@@ -86,10 +86,15 @@ Define spec word_to_nat := (to_nat wordlen).
 Define word_to_nat_tot := [to_nat_tot wordlen].
 Total word_to_nat word_to_nat_tot.
 
-Define trusted word_neq_to_nat_neq :
+Define word_neq_to_nat_neq :
   Forall(w w':word)(u:{ w != w' }).
     { (to_nat w) != (to_nat w') }
-  := truei.
+  := foralli(w w':word)(u:{ w != w' }).
+       diseqi foralli(v: { (to_nat w) = (to_nat w') }).
+                contra
+                  trans [to_nat_inj wordlen w w' v]
+                        symm u
+                False.
 
 %-
  to_bv_trimmed : a different version of to_bv
@@ -162,11 +167,13 @@ Define eqword_eq := [eqbv_eq wordlen].
 Define eqword_tot := [eqbv_tot wordlen].
 Total eqword eqword_tot.
 Define eqword_refl := [eqbv_refl wordlen].
+Define eqword_neq := [eqbv_neq wordlen].
 
-Define trusted eqword_ff_neq :
+Define eqword_ff_neq :
   Forall(w w':word)(u:{ (eqword w w') = ff }).
     { w != w' }
-  := truei.
+  := foralli(w w':word)(u:{ (eqword w w') = ff }).
+       [eqword_neq w w' u].
 
 
 %=============================================================================
@@ -185,17 +192,23 @@ Define primitive leword : Fun(#untracked w1 w2:word).bool :=
   int gleword(unsigned int w1, unsigned int w2) { return (w1 <= w2); }
 END.
 
-Define trusted ltword_total :
+Define ltword_total :
   Forall(w1 w2:word).Exists(b:bool).
     { (ltword w1 w2) = b }
-  := truei.
+  := foralli(w1 w2:word).
+       existsi (lt (word_to_nat w1) (word_to_nat w2))
+         { (ltword w1 w2) = *}
+         join (ltword w1 w2) (lt (word_to_nat w1) (word_to_nat w2)).
 
 Total ltword ltword_total.
 
-Define trusted leword_total :
+Define leword_total :
   Forall(w1 w2:word).Exists(b:bool).
     { (leword w1 w2) = b }
-  := truei.
+  := foralli(w1 w2:word).
+       existsi (le (word_to_nat w1) (word_to_nat w2))
+         { (leword w1 w2) = *}
+         join (leword w1 w2) (le (word_to_nat w1) (word_to_nat w2)).
 
 Total leword leword_total.
 

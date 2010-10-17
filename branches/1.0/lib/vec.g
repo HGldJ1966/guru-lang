@@ -557,6 +557,28 @@ Define eqvec_eq
       end
   end.
 
+Define eqvec_neq 
+  : Forall(A:type)
+          (eqA:Fun(x y:A).bool)
+          (eqA_refl : Forall(x:A). {(eqA x x) = tt})
+          (n:nat)
+          (x y:<vec A n>)
+          (u: { (eqvec eqA x y) = ff }).
+          { x != y } :=
+  foralli(A:type)(eqA:Fun(x y:A).bool)
+          (eqA_refl : Forall(x:A). {(eqA x x) = tt})
+          (n:nat)
+          (x y:<vec A n>)
+          (u: { (eqvec eqA x y) = ff }).
+    diseqi foralli(v:{x = y}).
+           contra
+             transs symm u
+                    cong (eqvec eqA * y) v
+                    [eqvec_refl A eqA eqA_refl n y]
+                    clash tt ff
+             end
+           False.
+
 Define vec_exists : Fun(A C:type)( spec n : nat )(^#owned c:C)
                       (f:Fun(^#owned c:C)(^#owned a:A).bool)(^#owned l:<vec A n>).bool :=
 fun(A C:type)( spec n : nat )(^#owned c:C)(f:Fun(^#owned c:C)(^#owned a:A).bool).
