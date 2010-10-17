@@ -1294,10 +1294,18 @@ Define eqnat_le : Forall(x y:nat)(u:{ (eqnat x y) = tt }).{ (le x y) = tt } :=
 
 Define eqnat_implies_le := eqnat_le.
 
-
-Define trusted eqnat_ff_implies_neq :
+Define eqnat_ff_implies_neq :
 	Forall(x y:nat)(u:{(eqnat x y) = ff}).{ x != y }
-	:= truei.
+	:=
+ foralli(x y:nat)(u:{(eqnat x y) = ff}).
+   diseqi foralli(v:{x = y}).
+           contra
+             transs symm u
+                    cong (eqnat * y) v
+                    [eqnat_refl y]
+                    clash tt ff
+             end
+           False.
 
 Define trusted eqnat_ff_implies_lt : Forall(x y:nat)(u:{(eqnat x y) = ff})(v:{(le x y) = tt}).{(lt x y) = tt} := truei.
 

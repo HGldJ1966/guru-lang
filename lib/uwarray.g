@@ -82,7 +82,7 @@ Define uwarray_get_total :
 
 Total uwarray_get uwarray_get_total.
 
-Define trusted uwarray_set_total :
+Define uwarray_set_total :
   Forall(A:type)(n:word)(l:<uwarray A n>)
         (i:word)(a:A)
         (u:{(ltword i n) = tt}).

@@ -13,6 +13,7 @@ Define bv_get := (vec_get bool).
 Define bv_append := (vec_append bool).
 Define eqbv := (eqvec bool iff).
 Define eqbv_eq := [eqvec_eq bool iff iff_eq].
+Define eqbv_neq := [eqvec_neq bool iff iff_refl].
 Define eqbv_tot 
  : Forall(l:nat)(v1 v2:<bv l>). 
     Exists(b:bool). { (eqbv v1 v2) = b }
@@ -457,6 +458,17 @@ Define to_nat_inj : Forall(l:nat)(v1 v2:<bv l>)
      end
   end.
 
+Define to_nat_inj2 : Forall(l:nat)(v1 v2:<bv l>)
+                          (u:{ v1 != v2 }).
+                      { (to_nat v1) != (to_nat v2) } :=
+  foralli(l:nat)(v1 v2:<bv l>)
+         (u:{ v1 != v2 }).
+    diseqi foralli(v:{ (to_nat v1) = (to_nat v2) }).
+             contra 
+               trans [to_nat_inj l v1 v2 v]
+                     symm u
+             False.
+
 % the carry bit is set iff incrementing overflows.
 
 Inductive bv_inc_t : Fun(l:nat).type :=
@@ -699,9 +711,14 @@ Define to_nat_eq
           symm [eqbv_eq l v1 v2 u]
         [eqnat_refl (to_nat l v1)].
    
-Define trusted to_nat_neq1 : Forall(l:nat)(v1:<bv l>)(v2:<bv l>)
+Define to_nat_neq1 : Forall(l:nat)(v1:<bv l>)(v2:<bv l>)
                                    (u:{(eqbv v1 v2) = ff}).
-                               {(eqnat (to_nat v1) (to_nat v2)) = ff} := truei.
+                               {(eqnat (to_nat v1) (to_nat v2)) = ff} := 
+  foralli(l:nat)(v1:<bv l>)(v2:<bv l>)
+         (u:{(eqbv v1 v2) = ff}).
+    [neqEqnat (to_nat l v1) (to_nat l v2)
+      [to_nat_inj2 l v1 v2
+        [eqbv_neq l v1 v2 u]]].
 
 Define bv_shift: Fun(x:nat)(spec n:nat)(l:<bv (S n)>). <bv (S n)> :=
   fun bv_shift(x:nat)(spec n:nat)(l:<bv (S n)>): <bv (S n)>.

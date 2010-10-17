@@ -1,6 +1,9 @@
 warray-util:
 	time ../bin/guru warray-util.g
 
+uwarray:
+	time ../bin/guru uwarray.g
+
 pb_stdio:
 	time ../bin/guru pb_stdio.g
 
