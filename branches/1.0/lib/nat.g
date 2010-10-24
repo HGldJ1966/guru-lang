@@ -1034,6 +1034,13 @@ Define lt_pred : Forall(x y z:nat)(u:{ y = (S x) })(v:{ (lt z y) = tt }).{ (le z
       end
   end.
 
+Define lt_pred2 : Forall(x y:nat)(u:{ (lt x (S y)) = tt }).{ (le x y) = tt }
+	:=
+	foralli(x y:nat)(u:{ (lt x (S y)) = tt }).
+	abbrev sy_eq = refl (S y) in
+	[lt_pred y (S y) x sy_eq u]
+	.
+
 Define lt_S_le : Forall(x y:nat)(u:{(lt x y) = tt}). { (le (S x) y) = tt }
 	:=
 	induction(x y:nat) return
@@ -1307,7 +1314,9 @@ Define eqnat_ff_implies_neq :
              end
            False.
 
-Define trusted eqnat_ff_implies_lt : Forall(x y:nat)(u:{(eqnat x y) = ff})(v:{(le x y) = tt}).{(lt x y) = tt} := truei.
+Define trusted eqnat_ff_implies_lt :
+	Forall(x y:nat)(u:{(eqnat x y) = ff})(v:{(le x y) = tt}). {(lt x y) = tt}
+	:= truei.
 
 Define neq_Z_implies_lt :
 	Forall(x:nat)(u:{ x != Z }).{ (lt Z x) = tt }

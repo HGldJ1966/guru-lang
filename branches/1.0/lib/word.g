@@ -235,6 +235,22 @@ Define ltword_implies_leword :
   abbrev p1 = [lt_implies_le (word_to_nat a) (word_to_nat b) u'] in
   hypjoin (leword a b) tt by p1 end.
 
+Define ltword_implies_neq : Forall(a b:word)(u:{ (ltword a b) = tt }). { a != b }
+	:=
+	foralli(a b:word)(u:{ (ltword a b) = tt }).
+	case (eqword a b) by q1 _ with
+		ff =>
+			[eqword_ff_neq a b q1]
+	| tt =>
+			contra
+			abbrev p1 = trans symm [ltword_to_lt a b] u in
+			abbrev p2 = [lt_implies_neq (word_to_nat a) (word_to_nat b) p1] in
+			abbrev p3 = [eqword_eq a b q1] in
+			trans cong (to_nat *) p3
+						symm p2
+			{ a != b }
+	end.
+				
 Define leword_word0 : Forall(w:word).{ (leword word0 w) = tt }
 	:=
 	foralli(w:word).
@@ -687,6 +703,18 @@ Define lt_word_set_bit
    w 
    (to_nat wordlen i) 
    u].
+
+Define trusted word_msb_ff_implies_ltword_word_max :
+  Forall(w:word)(u:{ (word_msb w) = ff }).
+    { (ltword w word_max) = tt }
+  := truei.
+
+Define trusted leword_msb_ff_implies_msb_ff :
+  Forall(w w':word)
+  			(u1:{ (leword w w') = tt })
+  			(u2:{ (word_msb w') = ff }).
+    { (word_msb w) = ff }
+  := truei.
 
 
 %=============================================================================

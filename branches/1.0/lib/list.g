@@ -1043,6 +1043,16 @@ Define eqlistEq : Forall(A:type)
         end
     end.
 
+Define eqlist_refl :=
+	foralli(A:type)(eqA:Fun(x1 x2:A).bool)
+				 (eqA_refl:Forall(x:A).{ (eqA x x) = tt }).
+  induction(c:<list A>) return { (eqlist eqA c c) = tt } with
+    nil _ => hypjoin (eqlist eqA c c) tt by c_eq end
+  | cons _ l c' =>
+  		hypjoin (eqlist eqA c c) tt by c_eq [eqA_refl l] [c_IH c'] end
+  end.
+  
+
 Define member : Fun(A:type)
                    (^#owned x:A)
                    (^#owned l:<list A>)

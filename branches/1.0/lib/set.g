@@ -17,8 +17,10 @@ Define list_intersect : Fun(A:type)(eqA : Fun(^ #owned a b: A).bool)(l1 l2:<list
     (filter A <list A> l2 f l1).
 
 
-Define append_helper : Forall(A:type)(a:A)(eqA : Fun(^ #owned a b: A).bool)(l'' l' : <list A>). {(append l' (cons a l'')) = (append (append l' (cons a nil)) l'')} :=
-   foralli(A:type)(a:A)(eqA : Fun(^ #owned a b: A).bool)( l'' : <list A>).
+Define append_helper :
+	Forall(A:type)(a:A)(eqA : Fun(a b: A).bool)(l'' l' : <list A>).
+		{(append l' (cons a l'')) = (append (append l' (cons a nil)) l'')} :=
+   foralli(A:type)(a:A)(eqA : Fun(a b: A).bool)( l'' : <list A>).
      induction(l' : <list A>) return  {(append l' (cons a l'')) = (append (append l' (cons a nil)) l'')} with
          nil _ =>
                   trans cong (append * (cons a l'')) l'_eq
@@ -37,11 +39,14 @@ Define append_helper : Forall(A:type)(a:A)(eqA : Fun(^ #owned a b: A).bool)(l'' 
        end.
 
 
-Define list_setmember: Forall(A:type)(a:A)
-                         (eqA:Fun(^ #owned x y: A).bool)
-                         (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
-                         (u:{(eqA a a)= tt})(l'' l':<list A>).
-                         { (member a (append l' (cons a l'')) eqA) = tt } :=
+Define list_setmember:
+	Forall(A:type)(a:A)
+			  (eqA:Fun(^#owned x y: A).bool)
+			  (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+        (u:{ (eqA a a) = tt })
+        (l'' l':<list A>).
+    { (member a (append l' (cons a l'')) eqA) = tt }
+  :=
    foralli(A:type)(a:A)(eqA:Fun(^ #owned x y: A).bool)
           (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
           (u: {(eqA a a) = tt})(l'':<list A>).
@@ -66,11 +71,14 @@ Define list_setmember: Forall(A:type)(a:A)
     end.
 
 
-Define list_SubsetOfSelf : Forall(A:type)(eqA : Fun(^ #owned a b: A).bool)
-                            (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
-                            (u: Forall(a:A).{(eqA a a ) = tt})
-                            (l : <list A>).
-                            Forall(l': <list A>).{(list_subset A eqA l (append l' l)) = tt} :=
+Define list_SubsetOfSelf :
+	Forall(A:type)
+				(eqA : Fun(^#owned a b: A).bool)
+				(eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+				(eqA_refl: Forall(a:A).{ (eqA a a ) = tt })
+				(l l': <list A>).
+		{(list_subset A eqA l (append l' l)) = tt}
+	:=
    foralli(A:type)(eqA : Fun(^ #owned a b: A).bool)
           (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
           (u: Forall(a:A). {(eqA a a ) = tt}).
@@ -90,11 +98,16 @@ Define list_SubsetOfSelf : Forall(A:type)(eqA : Fun(^ #owned a b: A).bool)
            end.
 
 
-Define member_trans_lemma: Forall(A:type)(a:A)(eqA :Fun(^ #owned a b: A).bool)
-				 (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
-				 (l1 l2: <list A>) (u: {(member A a l1 eqA) = tt})(v:{(list_subset eqA l1 l2) = tt}) 
-				 (eqA_to_equals: Forall(a b:A)(k:{(eqA a b) = tt}).{ a = b}).
-					{(member A a l2 eqA) = tt} :=
+Define member_trans_lemma :
+	Forall(A:type)(a:A)
+				(eqA :Fun(^ #owned a b: A).bool)
+				(eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+				(l1 l2: <list A>)
+				(u:{ (member A a l1 eqA) = tt })
+				(v:{ (list_subset eqA l1 l2) = tt }) 
+				(eqA_to_equals: Forall(a b:A)(k:{(eqA a b) = tt}).{ a = b }).
+	 { (member A a l2 eqA) = tt }
+	:=
 	foralli (A:type)(a:A)(eqA :Fun(^ #owned a b: A).bool)
 		(eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z }).
 	   induction(l1: <list A>) return Forall(l2:<list A>)(u: {(member A a l1 eqA) = tt})
@@ -141,12 +154,17 @@ Define member_trans_lemma: Forall(A:type)(a:A)(eqA :Fun(^ #owned a b: A).bool)
 	  end.
 
 
-Define list_transitivity : Forall(A:type)(eqA: Fun(a b: A).bool)
-				 (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
-				 (l1 l2 l3: <list A>)(u:{(list_subset eqA l1 l2) = tt})
-				 (v:{(list_subset eqA l2 l3) = tt})(w:Forall(a:A).{(eqA a a) = tt})
-				 (eqA_to_equals: Forall(a b:A)(k:{(eqA a b) = tt}).{ a = b}).
-				 {(list_subset eqA l1 l3) = tt} :=
+Define list_transitivity :
+	Forall(A:type)
+				(eqA: Fun(a b: A).bool)
+				(eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+				(l1 l2 l3: <list A>)
+				(u:{(list_subset eqA l1 l2) = tt})
+				(v:{(list_subset eqA l2 l3) = tt})
+				(eqA_refl:Forall(a:A).{(eqA a a) = tt})
+				(eqA_to_equals: Forall(a b:A)(k:{(eqA a b) = tt}).{ a = b}).
+		{(list_subset eqA l1 l3) = tt}
+	:=
     foralli(A:type)(eqA: Fun(a b: A).bool)(eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z }).
 	induction(l1: <list A>) return Forall(l2 l3: <list A>)(u:{(list_subset eqA l1 l2) = tt})
 					     (v:{(list_subset eqA l2 l3) = tt})(w:Forall(a:A).{(eqA a a) = tt})
@@ -178,11 +196,6 @@ Define list_transitivity : Forall(A:type)(eqA: Fun(a b: A).bool)
 				[member_trans_lemma A a eqA eqA_total l2 l3 a_in_l2 v eqA_to_equals] end  in
 
 			hypjoin (list_subset eqA l1 l3) tt by l1_eq l1'_subset_l3 a_in_l3 end
-			
-
-
-			
-			
 	   end.
 
 Define list_subset_total :
