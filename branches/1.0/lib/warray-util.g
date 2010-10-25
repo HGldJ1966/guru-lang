@@ -22,6 +22,7 @@ Define warray_binary_search
     let mid = (word_plus first (word_div2 (word_minus last first))) by midu in
     abbrev midP = (word_to_nat (word_plus first (word_div2 (word_minus last first)))) in
     abbrev midProof = 
+           trans [ltword_to_lt mid n]
     	   trans cong (lt (to_nat *) (to_nat n)) midu
                  [lt_trans midP (word_to_nat last) (word_to_nat n)
                            [ltle_trans midP
@@ -35,7 +36,9 @@ Define warray_binary_search
     abbrev midMinusOneProof = [lt_trans (word_to_nat (word_minus mid word1)) midP (word_to_nat n)
                                 	trans cong (lt (to_nat (word_minus mid word1)) (to_nat *)) symm midu 
 				      	      [word_minus_shrink mid]
-                                	trans cong (lt (to_nat *) (to_nat n)) symm midu midProof] in
+                                	trans cong (lt (to_nat *) (to_nat n)) symm midu
+                                  trans symm [ltword_to_lt mid n]
+                                        midProof] in
     match (c (warray_get A n l mid midProof) (inspect A value)) with
       LT => match (leword (word_plus mid word1) last) by ltu ign with
               ff => do (consume_unique_owned <warray A n> l)
@@ -43,15 +46,16 @@ Define warray_binary_search
                        ff %not found
                     end
             | tt => 
-            abbrev ltuP = trans [leword_lem (word_plus mid word1) last]
-                                ltu in
-
+            abbrev ltuP = trans symm [leword_to_le (word_plus mid word1) last]
+								ltu
+				 in 
+			abbrev v' = trans [ltword_to_lt last n] v in
+			abbrev p1 = trans symm [ltword_to_lt (word_plus mid word1) n]
+							  [leltword_trans (word_plus mid word1) last n ltu v'] in
              (warray_binary_search 
                 A n l (word_plus mid word1)
-                     last value c [lelt_trans (word_to_nat (word_plus mid word1)) 
-		     	  	  	      (word_to_nat last) (word_to_nat n)
-                                   ltuP v]
-                     v ltuP)
+                     last value c 
+                     p1 v ltuP)
             end
     | EQ => do (consume_unique_owned <warray A n> l)
                (dec A value)
@@ -64,7 +68,7 @@ Define warray_binary_search
                     end
             | tt => (warray_binary_search A n l first (word_minus mid word1)
                      value c u midMinusOneProof 
-		     trans [leword_lem first (word_minus mid word1)] gtu)
+		     trans symm [leword_to_le first (word_minus mid word1)] gtu)
             end
     end.
 
@@ -82,7 +86,8 @@ Define warray_maxElement
      (max: A)(leA : Fun(x y:A).bool)
      (u:{(lt (to_nat i) (to_nat n)) = tt})
      : #<owned l> A.
-	let current = (warray_get A n l i u) in
+  abbrev u' = trans [ltword_to_lt i n] u in
+	let current = (warray_get A n l i u') in
 		match (leA max current) by leAp leAt with
 		    ff => let inc_i = (word_inc2 i) in
 			     match (eqword inc_i n) by eqwp eqwt with
@@ -126,7 +131,8 @@ Define warray_minElement
      (min: A)(leA : Fun(x y:A).bool)
      (u:{(lt (to_nat i) (to_nat n)) = tt})
      : #<owned l> A.
-        let current = (warray_get A n l i u) in
+        abbrev u' = trans [ltword_to_lt i n] u in
+        let current = (warray_get A n l i u') in
 		match (leA min current) by leAp leAt with
 		    ff => let inc_i = (word_inc2 i) in
 			     match (eqword inc_i n) by eqwp eqwt with
@@ -171,7 +177,8 @@ Define warray_isElement
      (key:A)(eqA : Fun(^ #owned a b: A).bool)
      (u:{(lt (to_nat i) (to_nat n)) = tt})
      : bool.
-	let current = (warray_get A n l i u) in
+  abbrev u' = trans [ltword_to_lt i n] u in
+	let current = (warray_get A n l i u') in
 	    match (eqA current key) by eqAp eqAt with
 		ff => let inc_i = (word_inc2 i) in
 			match (eqword inc_i n) by eqwp eqwt with
@@ -199,7 +206,8 @@ Define warray_indexOf
      (key:A)(eqA : Fun(^ #owned a b: A).bool)
      (u:{(lt (to_nat i) (to_nat n)) = tt})
      : <option word>.
-        let current = (warray_get A n l i u) in
+        abbrev u' = trans [ltword_to_lt i n] u in
+        let current = (warray_get A n l i u') in
 	    match (eqA current key) by eqAp eqAt with
 		ff => let inc_i = (word_inc2 i) in
 			match (eqword inc_i n) by eqwp eqwt with
@@ -230,7 +238,8 @@ Define warray_lastIndexOf
      (key:A)(max:word)(eqA : Fun(^ #owned a b: A).bool)
      (u:{(lt (to_nat i) (to_nat n)) = tt})
      : word.
-	let current = (warray_get A n l i u) in
+  abbrev u' = trans [ltword_to_lt i n] u in
+	let current = (warray_get A n l i u') in
 	    match (eqA current key) by eqAp eqAt with
 		 ff => let inc_i = (word_inc2 i) in
 			match (eqword inc_i n) by eqwp eqwt with
