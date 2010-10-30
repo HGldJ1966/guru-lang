@@ -3,8 +3,6 @@ Include "list.g".
 Include "mult.g".
 Include "bool.g".
 
-%Set "print_parsed".
-
 Inductive vec : Fun(A:type)(n:nat).type :=
   vecn : Fun(A:type).<vec A Z>
 | vecc : Fun(A:type)(spec n:nat)(a:A)(l:<vec A n>).
@@ -961,3 +959,19 @@ Define vec_update_back :
 		in
 	[all_vec_get_implies_eq A n v' v p1]
 	.
+
+Define vec_update_append :
+  Forall(A:type)(a:A)(n1 n2:nat)(l1:<vec A n1>)(l2:<vec A n2>).
+     { (vec_update (vec_append l1 l2) n1 a) = (vec_append l1 (vec_update l2 Z a)) } :=
+  foralli(A:type)(a:A).
+  induction(n1 n2:nat)(l1:<vec A n1>)
+  return Forall(l2:<vec A n2>).
+          { (vec_update (vec_append l1 l2) n1 a) = (vec_append l1 (vec_update l2 Z a)) } with
+  vecn _ => foralli(l2:<vec A n2>).
+              hypjoin (vec_update (vec_append l1 l2) n1 a) (vec_append l1 (vec_update l2 Z a))
+              by l1_eq inj <vec ** *> l1_Eq end
+| vecc _ n1' x l1' => 
+  foralli(l2:<vec A n2>).
+      hypjoin (vec_update (vec_append l1 l2) n1 a) (vec_append l1 (vec_update l2 Z a))
+      by l1_eq inj <vec ** *> l1_Eq [l1_IH n1' n2 l1' l2] end
+end.

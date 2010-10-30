@@ -329,41 +329,86 @@ public class App extends Expr{
     }
 
     public isInstC isInstance(Context ctxt, Expr ee) {
+	if (ctxt.getFlag("debug_isInstance")) {
+	    ctxt.w.println("(isInstance "+toString(ctxt)+" of "+ee.toString(ctxt));
+	    ctxt.w.flush();
+	}
 	ee = ee.defExpandTop(ctxt);
-	if (ee.construct != construct)
+	if (ee.construct != construct) {
+	    if (ctxt.getFlag("debug_isInstance")) {
+		ctxt.w.println("no)");
+		ctxt.w.flush();
+	    }
 	    return new isInstC();
+	}
 	Expr e1 = spineForm(ctxt,false,true,true);
 	Expr e2 = ((App)ee).spineForm(ctxt,false,true,true);
 
-	if (e1.construct == CONST)
-	    return e1.isInstance(ctxt,e2);
+	if (e1.construct == CONST) {
+	    isInstC ret = e1.isInstance(ctxt,e2);
+	    if (ctxt.getFlag("debug_isInstance")) {
+		ctxt.w.println(")");
+		ctxt.w.flush();
+	    }
+	    return ret;
+	}
 
-	if (e2.construct == CONST)
+	if (e2.construct == CONST) {
+	    if (ctxt.getFlag("debug_isInstance")) {
+		ctxt.w.println("no)");
+		ctxt.w.flush();
+	    }
 	    return new isInstC();
+	}
 
 	App a1 = (App)e1;
 	App a2 = (App)e2;
 
 	int iend = a1.X.length;
-	if (iend != a2.X.length)
+	if (iend != a2.X.length) {
+	    if (ctxt.getFlag("debug_isInstance")) {
+		ctxt.w.println("no)");
+		ctxt.w.flush();
+	    }
 	    return new isInstC();
+	}
 	isInstC q, found = null;
 	for (int i = 0; i < iend; i++) {
 	    q = a1.X[i].isInstance(ctxt, a2.X[i]);
-	    if (!q.is)
+	    if (!q.is) {
+		if (ctxt.getFlag("debug_isInstance")) {
+		    ctxt.w.println(")");
+		    ctxt.w.flush();
+		}
 		return q;
+	    }
 	    if (q.val != null)
 		found = q;
 	}
 	
 	q = a1.head.isInstance(ctxt, a2.head);
-	if (!q.is)
+	if (!q.is) {
+	    if (ctxt.getFlag("debug_isInstance")) {
+		ctxt.w.println("no)");
+		ctxt.w.flush();
+	    }
 	    return q;
+	}
 	if (q.val != null)
 	    found = q;
 
-	if (found == null)
+	if (found == null) {
+	    if (ctxt.getFlag("debug_isInstance")) {
+		ctxt.w.println("no)");
+		ctxt.w.flush();
+	    }
 	    return new isInstC(true);
+	}
+
+	if (ctxt.getFlag("debug_isInstance")) {
+	    ctxt.w.println(")");
+	    ctxt.w.flush();
+	}
 
 	return found;
     }
