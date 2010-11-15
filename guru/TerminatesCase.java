@@ -56,7 +56,10 @@ public class TerminatesCase extends Expr{
     }
 
     public Expr classify(Context ctxt, int approx, boolean spec) {
+	Expr cT = t.classify(ctxt,approx,spec);
+
 	ctxt.setClassifier(u, new Atom(true, t, x));
+	ctxt.setClassifier(x, cT);
 	Expr cP1 = p1.classify(ctxt,approx,spec);
 
 	ctxt.setClassifier(u, new Atom(true, t, new Abort(new Bang())));
