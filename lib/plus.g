@@ -66,7 +66,7 @@ Define plus_assoc : Forall(x y z:nat). { (plus (plus x y) z) = (plus x (plus y z
             trans cong (plus (plus * y) z) x1
             trans join (plus (plus (S x') y) z) (S (plus (plus x' y) z))
             trans cong (S *) [IH x' y z]
-            trans symm join (plus (S x') (plus y z)) (S (plus x' (plus y z)))
+            trans join (S (plus x' (plus y z))) (plus (S x') (plus y z))
                   cong (plus * (plus y z)) symm x1
 end.
 
