@@ -345,8 +345,8 @@ public class Match extends Expr {
 	    // consume the reference produced by the case (the case checks to make sure the reference is returnable).
 	    Context.RefStat s1 = ctxt.refStatus(rs[i]);
 	    if (s1 == null) {
-		// rs[i] must be untracked
-		if (ctxt.getFlag("debug_refs")) {
+		// rs[i] must be untracked (or abort)
+		if (ctxt.getFlag("debug_refs") && rs[i]!=null ) {
 		    ctxt.w.println("Reference "+rs[i].toString(ctxt)+" returned by case is untracked.");
 		    ctxt.w.flush();
 		}

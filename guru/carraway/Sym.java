@@ -49,7 +49,10 @@ public class Sym extends Expr {
 	if (s == null) 
 	    return ret;
 
-	ret += "\n"+s.creating_expr.pos.toString()+", created by:\n"+s.creating_expr.toString(ctxt);
+	if( s.creating_expr.pos != null )
+		ret += "\n"+s.creating_expr.pos.toString()+", created by:\n"+s.creating_expr.toString(ctxt);
+	else
+		ret += "\n created by:\n"+s.creating_expr.toString(ctxt);
 
 	if (s.dropping_expr != null) {
 	    ret += "\n\n";
