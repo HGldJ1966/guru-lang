@@ -213,15 +213,15 @@ public class TermApp extends App{
     }
 
     public Expr classify(Context ctxt, int approx, boolean spec) {
-	if (ctxt.getFlag("debug_classify_term_apps")) {
-	    ctxt.w.print("(Classifying ");
+	if (ctxt.getFlag("debug_classify_apps")) {
+	    ctxt.w.print("(Classifying term app ");
 	    print(ctxt.w,ctxt);
 	    ctxt.w.println("");
 	    ctxt.w.flush();
 	}
 	Expr cl = head.classify(ctxt,approx,spec).defExpandTop(ctxt,false,
 							       spec);
-	if (ctxt.getFlag("debug_classify_term_apps")) {
+	if (ctxt.getFlag("debug_classify_apps")) {
 	    ctxt.w.println("Head is "+head.toString(ctxt)+", with classifier "+cl.toString(ctxt));
 	    if (cl.construct == VAR)
 		ctxt.w.println("Macro-defined = "+(ctxt.isMacroDefined((Var)cl) ? "yes" : "no"));
@@ -257,7 +257,7 @@ public class TermApp extends App{
 
 	Expr ret = apply_classifier(FUN_TYPE, approx, spec, ctxt, cl, 0);
 
-	if (ctxt.getFlag("debug_classify_term_apps")) {
+	if (ctxt.getFlag("debug_classify_apps")) {
 	    ctxt.w.println(") Classifier is:");
 	    ret.print(ctxt.w,ctxt);
 	    ctxt.w.println("");
