@@ -279,6 +279,9 @@ public abstract class Expr {
 
     final public boolean defEq(Context ctxt, Expr e, int approx,
 			       boolean spec) {
+	if (approx == 2)
+	    return true;
+
 	if (ctxt.getFlag("debug_def_eq")) {
 	    ctxt.w.println("--------------------------------------------------");
 	    ctxt.w.println("Testing definitional equality (spec = "
@@ -303,9 +306,7 @@ public abstract class Expr {
 	    ctxt.w.println("");
 	    ctxt.w.flush();
 	}	    
-	if (approx == 2)
-	    return true;
-	else if (approx == 1)
+	if (approx == 1)
 	    return e1.defEqNoAnnoApprox(ctxt,e2,spec);
 	return e1.defEqNoAnno(ctxt,e2,spec);
     }
@@ -581,9 +582,10 @@ public abstract class Expr {
 	Expr tmp = defExpandTop(ctxt);
 
 	if (tmp.construct == VAR) {
-            if(ctxt.getClassifier((Var)tmp) == null)
-                System.err.println("NULL classifier for: "+tmp.toString(ctxt));
-	    return ctxt.getClassifier((Var)tmp).construct == TYPE;
+	    Expr c = ctxt.getClassifier((Var)tmp);
+            if (c == null) 
+                System.err.println("Internal error. Null classifier for: "+tmp.toString(ctxt));
+	    return c.construct == TYPE;
         }
 	if (tmp.construct == CONST) 
 	    return ctxt.isTypeCtor((Const)tmp) || ctxt.isTypeFamilyAbbrev((Const)tmp);

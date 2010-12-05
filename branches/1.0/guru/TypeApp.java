@@ -62,10 +62,26 @@ public class TypeApp extends ReducibleApp{
 
     public Expr classify(Context ctxt, int approx, boolean spec) {
 	if (approx > NO_APPROX) {
-
 	    return ctxt.type;
 	}
-	return super.classify(ctxt,approx,spec);
+
+	if (ctxt.getFlag("debug_classify_apps")) {
+	    ctxt.w.print("(Classifying type app ");
+	    print(ctxt.w,ctxt);
+	    ctxt.w.println("");
+	    ctxt.w.flush();
+	}
+
+	Expr ret = super.classify(ctxt,approx,spec);
+
+	if (ctxt.getFlag("debug_classify_apps")) {
+	    ctxt.w.println(") Classifier is:");
+	    ret.print(ctxt.w,ctxt);
+	    ctxt.w.println("");
+	    ctxt.w.flush();
+	}
+
+	return ret;
     }
 
     /* a type application is compiled to the head of its spine form,
