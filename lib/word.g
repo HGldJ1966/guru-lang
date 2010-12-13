@@ -260,26 +260,53 @@ Define leword_word0 : Forall(w:word).{ (leword word0 w) = tt }
 
 Define trusted leword_word_max : Forall(w:word).{ (leword w word_max) = tt } := truei.
 
-Define trusted ltword_trans :
+Define ltword_trans :
   Forall(a b c:word)
         (u1: { (ltword a b) = tt })
         (u2: { (ltword b c) = tt }).
     { (ltword a c) = tt }
-  := truei.
+  := 
+  foralli(a b c:word)
+         (u1: { (ltword a b) = tt })
+         (u2: { (ltword b c) = tt }).
+   hypjoin (ltword a c) tt
+   by
+     [lt_trans (word_to_nat a) (word_to_nat b) (word_to_nat c)
+       hypjoin (lt (word_to_nat a) (word_to_nat b)) tt by u1 end
+       hypjoin (lt (word_to_nat b) (word_to_nat c)) tt by u2 end]
+   end.
 
-Define trusted leltword_trans :
+Define leltword_trans :
   Forall(a b c:word)
         (u1: { (leword a b) = tt })
         (u2: { (ltword b c) = tt }).
     { (ltword a c) = tt }
-  := truei.
+  := 
+  foralli(a b c:word)
+         (u1: { (leword a b) = tt })
+         (u2: { (ltword b c) = tt }).
+   hypjoin (ltword a c) tt
+   by
+     [lelt_trans (word_to_nat a) (word_to_nat b) (word_to_nat c)
+       hypjoin (le (word_to_nat a) (word_to_nat b)) tt by u1 end
+       hypjoin (lt (word_to_nat b) (word_to_nat c)) tt by u2 end]
+   end.
 
-Define trusted ltleword_trans :
+Define ltleword_trans :
   Forall(a b c:word)
         (u1: { (ltword a b) = tt })
         (u2: { (leword b c) = tt }).
     { (ltword a c) = tt }
-  := truei.
+  := 
+  foralli(a b c:word)
+         (u1: { (ltword a b) = tt })
+         (u2: { (leword b c) = tt }).
+   hypjoin (ltword a c) tt
+   by
+     [ltle_trans (word_to_nat a) (word_to_nat b) (word_to_nat c)
+       hypjoin (lt (word_to_nat a) (word_to_nat b)) tt by u1 end
+       hypjoin (le (word_to_nat b) (word_to_nat c)) tt by u2 end]
+   end.
 
 Define word_comp := (ucomparator word ltword leword).
 
