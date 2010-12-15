@@ -1334,9 +1334,12 @@ Define eqnat_ff_implies_neq :
              end
            False.
 
-Define trusted eqnat_ff_implies_lt :
+Define eqnat_ff_implies_lt :
 	Forall(x y:nat)(u:{(eqnat x y) = ff})(v:{(le x y) = tt}). {(lt x y) = tt}
-	:= truei.
+	:= 
+  foralli(x y:nat)(u:{(eqnat x y) = ff})(v:{(le x y) = tt}).
+    trans hypjoin (lt x y) (le x y) by u [or_def2ff (lt x y)] end
+          v.
 
 Define neq_Z_implies_lt :
 	Forall(x:nat)(u:{ x != Z }).{ (lt Z x) = tt }

@@ -1,5 +1,5 @@
-Include trusted "minus.g".
-Include trusted "bv.g".
+Include "minus.g".
+Include "bv.g".
 Include "owned.g".
 
 Define wordlen := (mult2 (mult2 (S (S (S (S (S (S (S (S Z)))))))))).
@@ -598,40 +598,85 @@ Define word_clear_msb :=
 
 Define word_msb := word_read_msb.
 
-Define trusted word_read_bit_total :
+Define word_read_bit_total :
   Forall(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word).
   Exists(b:bool).
     { (word_read_bit i w) = b }
-  := truei.
+  := 
+  foralli(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word).
+    existse [vec_get_tot bool wordlen w (to_nat wordlen i) u]
+    foralli (b:bool)(b_eq: { (vec_get w (to_nat i)) = b }).
+      existsi b
+        { (word_read_bit i w) = * }
+        trans join (word_read_bit i w) (vec_get w (to_nat i))
+              b_eq.        
+
 Total word_read_bit word_read_bit_total.
 
-Define trusted word_set_bit_total :
+Define word_set_bit_total :
   Forall(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word).
   Exists(w':word).
     { (word_set_bit i w) = w' }
-  := truei.
+  := 
+  foralli(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word).
+    existse [vec_update_tot bool wordlen w (to_nat wordlen i) tt u]
+    foralli (l:<vec bool wordlen>)(l_eq: { (vec_update w (to_nat i) tt) = l }).
+      existsi l
+        { (word_set_bit i w) = * }
+        trans join (word_set_bit i w) (vec_update w (to_nat i) tt)
+              l_eq.        
+
 Total word_set_bit word_set_bit_total.
 
-Define trusted word_clear_bit_total :
+Define word_clear_bit_total :
   Forall(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word).
   Exists(w':word).
     { (word_clear_bit i w) = w' }
-  := truei.
+  := 
+  foralli(i:word)(u:{(lt (to_nat i) wordlen) = tt})(w:word).
+    existse [vec_update_tot bool wordlen w (to_nat wordlen i) ff u]
+    foralli (l:<vec bool wordlen>)(l_eq: { (vec_update w (to_nat i) ff) = l }).
+      existsi l
+        { (word_clear_bit i w) = * }
+        trans join (word_clear_bit i w) (vec_update w (to_nat i) ff)
+              l_eq.        
+
 Total word_clear_bit word_clear_bit_total.
 
-Define trusted word_read_msb_total :
+Define word_read_msb_total :
   Forall(w:word).Exists(b:bool).{ (word_read_msb w) = b }
-  := truei.
+  := 
+  foralli(w:word).
+  existse [word_read_bit_total word0x1f join (lt (to_nat word0x1f) wordlen) tt w]
+  foralli(b:bool)(b_eq:{ (word_read_bit word0x1f w) = b }).
+    existsi b
+    { (word_read_msb w) = * }
+    trans join (word_read_msb w) (word_read_bit word0x1f w)
+          b_eq.
 Total word_read_msb word_read_msb_total.
 
-Define trusted word_set_msb_total :
+Define word_set_msb_total :
   Forall(w:word).Exists(w':word).{ (word_set_msb w) = w' }
-  := truei.
+  := 
+  foralli(w:word).
+  existse [word_set_bit_total word0x1f join (lt (to_nat word0x1f) wordlen) tt w]
+  foralli(w':word)(w'_eq:{ (word_set_bit word0x1f w) = w' }).
+    existsi w'
+    { (word_set_msb w) = * }
+    trans join (word_set_msb w) (word_set_bit word0x1f w)
+          w'_eq.
 Total word_set_msb word_set_msb_total.
 
-Define trusted word_clear_msb_total :
+Define word_clear_msb_total :
   Forall(w:word).Exists(w':word).{ (word_clear_msb w) = w' }
-  := truei.
+  := 
+  foralli(w:word).
+  existse [word_clear_bit_total word0x1f join (lt (to_nat word0x1f) wordlen) tt w]
+  foralli(w':word)(w'_eq:{ (word_clear_bit word0x1f w) = w' }).
+    existsi w'
+    { (word_clear_msb w) = * }
+    trans join (word_clear_msb w) (word_clear_bit word0x1f w)
+          w'_eq.
 Total word_clear_msb word_clear_msb_total.
 
 
@@ -860,33 +905,4 @@ Define trusted word_mod10_tot :
 
 Total word_mod10 word_mod10_tot.
 
-
-%=============================================================================
-% WRONG lemmas
-%=============================================================================
-
-Define trusted word_div2_shrink :
-  Forall(x:word).{(lt (to_nat (word_div2 x)) (to_nat x)) = tt} 
-  := truei.
-  % doesn't look right. consider the case where x is zero.
-  % le, instead of lt, would fix it
-
-Define trusted word_plus_shrink :
-  Forall(x y y':word)
-        (u:{(lt (to_nat y) (to_nat y')) = tt}).
-  {(lt (to_nat (word_plus x y)) (to_nat (word_plus x y'))) = tt}
-  := truei.
-  % doesn't look right. consider the case where x + y' overflows.
-
-Define trusted word_plus_minus_shrink :
-  Forall(x y:word).
-  {(le (to_nat (word_plus x (word_minus y x))) (to_nat y)) = tt} 
-  := truei.
-  % doesn't look right. consider the case where y is less than x.
-
-Define trusted word_minus_shrink :
-  Forall(x:word).
-  {(lt (to_nat (word_minus x word1)) (to_nat x)) = tt}
-  := truei.
-  % doesn't look right. consider the case where x is zero.
 

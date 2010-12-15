@@ -30,8 +30,10 @@ Define primitive inc : Fun(spec A:type)(! #unowned y:A).#unowned A := fun(A:type
 // ginc included with resource type above
 END.
 
-Define trusted inc_tot : Forall(A:type)(x:A).Exists(out:A).
-  {(inc x) = out} := truei.
+Define inc_tot : Forall(A:type)(x:A).Exists(out:A).
+  {(inc x) = out} := 
+  foralli(A:type)(x:A).
+    existsi x { (inc x) = * } join (inc x) x.
 
 Total inc inc_tot.
 
