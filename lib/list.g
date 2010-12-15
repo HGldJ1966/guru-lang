@@ -1,6 +1,6 @@
 %Set "show_includes".
 
-Include trusted "plus.g".
+Include "plus.g".
 
 Inductive list : Fun(A:type).type :=
   nil : Fun(A:type).<list A>
