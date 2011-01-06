@@ -50,7 +50,8 @@ public class Define extends Command {
 
 	boolean spec_mode = G.isProof(ctxt) || spec || primitive || predicate || abbrev;
 
-	boolean dont_classify = abbrev || (trusted && (A != null) && G.isProof(ctxt));
+	boolean dont_classify = 
+	    abbrev || (trusted && (A != null) && G.isProof(ctxt));
 
 	Expr cG = null;
 	if (dont_classify) 

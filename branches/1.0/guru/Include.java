@@ -11,16 +11,19 @@ public class Include extends Command {
     public Include() {
 	super(INCLUDE);
 	h = new IncludeHelper();
+	trusted = false;
     }
 
     public Include(String filename) {
 	super(INCLUDE);
 	h = new IncludeHelper(filename);
+	trusted = false;
     }
 
     public Include(File f, File root) {
 	super(INCLUDE);
 	h = new IncludeHelper(f,root);
+	trusted = false;
     }
 
     public void process(Context ctxt) {
@@ -44,10 +47,6 @@ public class Include extends Command {
 	    handleError(ctxt, "Error opening file:\n"+e.toString());
 	}
 	
-	boolean did_trust_hypjoins = ctxt.getFlag("trust_hypjoins");
-	if( trusted && !did_trust_hypjoins )
-		ctxt.setFlag( "trust_hypjoins" );
-	
 	P.setContext(ctxt);
 	Command c = null;
 	
@@ -70,8 +69,6 @@ public class Include extends Command {
 	    }
 	}
     	h.finished(ctxt);
-    	if( trusted && !did_trust_hypjoins )
-    		ctxt.unsetFlag( "trust_hypjoins" );
     }
     
     public void print(java.io.PrintStream w, 

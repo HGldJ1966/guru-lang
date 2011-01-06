@@ -1463,6 +1463,7 @@ public class HypJoin extends Expr{
     	}
     	
 	if (ctxt.getFlag("trust_hypjoins")) {
+	    // ctxt.w.println("Trusting hypjoin at "+pos.toString());
 	    return new Atom(true, t1, t2);
 	}
 
