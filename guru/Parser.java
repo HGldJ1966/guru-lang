@@ -497,7 +497,7 @@ public class Parser extends ParserBase {
 
 	cmd.spec = false;
 	cmd.primitive = false;
-	cmd.trusted = trusted;
+	cmd.trusted = trusted && !ctxt.getFlag("ignore_trusted_flag_for_includes");
 	cmd.type_family_abbrev = false;
 	cmd.predicate = false;
 	cmd.abbrev = false;
