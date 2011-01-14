@@ -13,6 +13,9 @@ public class Parser extends ParserBase {
 
     boolean allow_stars, allow_type_fam_abbrev, allow_predicate, spec;
 
+    public static int num_proofs = 0;
+    public static int num_trusted = 0;
+
     protected static final boolean using_metavars = false;
 
     public Parser(boolean trusted) {
@@ -502,6 +505,9 @@ public class Parser extends ParserBase {
 	cmd.predicate = false;
 	cmd.abbrev = false;
 
+
+	boolean cmd_trusted = false;
+
 	// read the various flags that can be given to Define.
 	while (true) {
 	    
@@ -514,7 +520,7 @@ public class Parser extends ParserBase {
 		spec = true;
 	    }
 	    else if (tryToEat("trusted"))
-		cmd.trusted = true;
+		cmd.trusted = cmd_trusted = true;
 	    else if (tryToEat("type_family_abbrev")) {
 		cmd.type_family_abbrev = true;
 		allow_type_fam_abbrev = true;
@@ -593,6 +599,12 @@ public class Parser extends ParserBase {
 	spec = false;
 
 	eat(".", "Define");
+
+	if (ctxt.getFlag("count_proofs") && cmd.G.isProof(ctxt)) {
+	    num_proofs++;
+	    if (cmd_trusted)
+		num_trusted++;
+	}
 
 	return cmd;
     }

@@ -26,6 +26,10 @@ public class Main {
 		Include cmd = new Include(args[i]);
 		cmd.process(ctxt);
 	    }
+	if (ctxt.getFlag("count_proofs")) 
+	    ctxt.w.println("Counted "+(new Integer(Parser.num_proofs)).toString()+" proofs, of which "
+			   +(new Integer(Parser.num_trusted)).toString()+" are trusted.");
+
 	java.util.Collection trusted = ctxt.getTrustedDefs();
 	if (trusted.size() > 0) {
 	    ctxt.w.print("Trusting "+(new Integer(trusted.size())).toString());
