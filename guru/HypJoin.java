@@ -1462,18 +1462,20 @@ public class HypJoin extends Expr{
 			int i = 0;
     	}
     	
+
+	Atom[] proofAtoms = getAtomArray(ctxt, Ps);
+
 	if (ctxt.getFlag("trust_hypjoins")) {
 	    // ctxt.w.println("Trusting hypjoin at "+pos.toString());
 	    return new Atom(true, t1, t2);
 	}
 
-		Atom[] proofAtoms = getAtomArray(ctxt, Ps);
-		normalize(ctxt, proofAtoms);
-
-		Expr[] sourceExprs = new Expr[2];
-		sourceExprs[0] = t1;
-		sourceExprs[1] = t2;
-		Expr[] normExprs = normalize(ctxt, sourceExprs, proofAtoms);
+	normalize(ctxt, proofAtoms);
+	
+	Expr[] sourceExprs = new Expr[2];
+	sourceExprs[0] = t1;
+	sourceExprs[1] = t2;
+	Expr[] normExprs = normalize(ctxt, sourceExprs, proofAtoms);
         
         Stack emptyContext = new Stack();
         if(equalModEquations(ctxt, normExprs[0], normExprs[1], proofAtoms, emptyContext))
