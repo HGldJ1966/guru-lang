@@ -1238,6 +1238,32 @@ Define member_cons_ff_member :
         [or_ffr z1 z2 p1]
   .
 
+Define member_append_cons : 
+  Forall(A:type)(a:A)(l1 l2:<list A>)
+        (eq : Fun(a b:A).bool)
+        (eq_tot:Forall(a b:A).Exists(z:bool).{ (eq a b) = z })
+        (eq_refl : Forall(a:A). { (eq a a) = tt}).
+    { (member a (append l1 (cons a l2)) eq) = tt } :=
+  foralli(A:type)(a:A)(l1 l2:<list A>)
+         (eq : Fun(a b:A).bool)
+         (eq_tot:Forall(a b:A).Exists(z:bool).{ (eq a b) = z })
+         (eq_refl : Forall(a:A). { (eq a a) = tt}).
+    [member_tt_append_front A eq eq_tot a (cons A a l2) l1
+      hypjoin (member a (cons a l2) eq) tt by [eq_refl a] end].
+
+Define member_append_cons2 : 
+  Forall(A:type)(a:A)(l1 l2:<list A>)
+        (eq : Fun(a b:A).bool)
+        (eq_tot:Forall(a b:A).Exists(z:bool).{ (eq a b) = z })
+        (eq_refl : Forall(a:A). { (eq a a) = tt}).
+    { (member a (append (cons a l1) l2) eq) = tt } :=
+  foralli(A:type)(a:A)(l1 l2:<list A>)
+         (eq : Fun(a b:A).bool)
+         (eq_tot:Forall(a b:A).Exists(z:bool).{ (eq a b) = z })
+         (eq_refl : Forall(a:A). { (eq a a) = tt}).
+    [member_tt_append A eq eq_tot a (cons A a l1) l2
+      hypjoin (member a (cons a l1) eq) tt by [eq_refl a] end].
+
 Define list_exists : Fun(A C:type)(^#owned c:C)
 
                       (f:Fun(^#owned c:C)(^#owned a:A).bool)(^#owned l:<list A>).bool :=
