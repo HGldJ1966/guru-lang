@@ -586,7 +586,17 @@ Define vec_forall : Fun(A C:type)( spec n : nat )(^#owned c:C)
                       (f:Fun(^#owned c:C)(^#owned a:A).bool)(^#owned l:<vec A n>).bool :=
 fun(A C:type)( spec n : nat )(^#owned c:C)(f:Fun(^#owned c:C)(^#owned a:A).bool).
   (vec_foldr A bool C n c fun(^#owned c:C)(^#owned a:A)(b:bool).(and (f c a) b) tt).
-    
+
+Define vec_all : Fun(A:type)(spec n:nat)(f:Fun(a:A).bool)(v:<vec A n>).bool :=
+  fun vec_all (A:type)(spec n:nat)(f:Fun(a:A).bool)(v:<vec A n>) : bool.
+    match v with
+      vecn _ => tt
+    | vecc _ n' a v' => match (f a) with
+                          ff => ff
+                        | tt => (vec_all A n' f v')
+                        end
+    end.
+
 Define list_to_vec : Fun( A : type )( L : < list A > ). <vec A (length A L)> :=
 fun list_to_vec( A : type )( L : < list A > ) : <vec A (length A L)>.
   match L with
