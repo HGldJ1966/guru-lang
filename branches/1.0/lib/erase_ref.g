@@ -1,4 +1,4 @@
-Include "../guru-lang/lib/list.g".
+Include trusted "list.g".
 
 Define primitive eqref : Fun(spec A:type)(! #unowned x y:A).bool <<END
 inline unsigned geqref(void* x, void* y) {

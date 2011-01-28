@@ -1,6 +1,6 @@
-Include trusted "../guru-lang/lib/length_word.g".
-Include trusted "../guru-lang/lib/pb_stdio.g".
-Include trusted "erase_ref.g".
+Include trusted "../lib/erase_ref.g".
+Include trusted "../lib/length_word.g".
+Include trusted "../lib/stdio.g".
 
 Define print_word_ln :=
 	fun(#unique_point io:stdio_t)(w:word) : #unique_point stdio_t.
