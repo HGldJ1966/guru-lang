@@ -1282,7 +1282,7 @@ Define fill : Fun(A:type)(^#owned a:A)(^#owned n:nat).<list A> :=
   fun fill(A:type)(^#owned a:A)(^#owned n:nat):<list A>.
     match n with
       Z => (nil A)
-    | S n' => (cons A (inc A a) (fill A a n'))
+    | S n' => (cons A (inc_owned A a) (fill A a n'))
     end.
 
 
