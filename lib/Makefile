@@ -1,3 +1,6 @@
+length_word:
+	time ../bin/guru length_word.g
+
 warray-util:
 	time ../bin/guru warray-util.g
 
