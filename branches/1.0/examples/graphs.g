@@ -5,11 +5,16 @@ Include trusted "../lib/warray.g".
 
 Define node := word.
 
+% test if all nodes in a list of adjacent ones are bounded.
+Define spec adjlist_bounded :=
+  fun(l:<list node>)(N:word).
+   (list_all node fun(n:node):bool.(ltword n N) l).
+
 % use list_all in list.g, vec_all in vec.g
 Define spec nodes_bounded :=
   fun(N:word)(arr:<warray <list node> N>):bool.
     (vec_all <list node> (word_to_nat N) fun(l:<list node>):bool.
-       (list_all node fun(n:node):bool.(ltword n N) l) arr).
+       (adjlist_bounded l N) arr).
 
 Inductive graph : Fun(N:word).type :=
   mkgraph : Fun(N:word)(arr : <warray <list node> N>)
@@ -17,12 +22,12 @@ Inductive graph : Fun(N:word).type :=
 .
             <graph N>.
 
-% complains : "The classifier computed for the body of a case contains pattern variables from that case."
-% Define graph_to_warray :=
-%   fun(N:word)(g:<graph N>):<warray <list node> N>.
-%     match g with
-%       mkgraph _ arr _ => arr
-%     end.
+Define graph_to_warray :=
+  fun(N:word)(g:<graph N>):<warray <list node> N>.
+    match g with
+      mkgraph _ arr _ => cast arr by cong <warray <list node> *> 
+                                       symm inj <graph *> g_Eq 
+    end.
     
 Define get_neighbors :=
   fun(x:node)(N:word)(g:<graph N>)(u : { (ltword x N) = tt }):<list node>.
@@ -30,35 +35,58 @@ Define get_neighbors :=
       mkgraph _ arr _ => (warray_get <list node> N arr x u)
     end.
 
+Define trusted get_neighbors_bounded 
+  : Forall(x:node)(N:word)(g:<graph N>)(u : { (ltword x N) = tt }).
+          { (adjlist_bounded (get_neighbors x N g)) = tt } := truei.
 
-Define adjacent_h := 
+Define old_adjacent_h := 
   fun adjacent_h(x:node)(l:<list node>):bool.
     match l with
       nil _ => ff
     | cons _ v l' => (or (eqword x v) (adjacent_h x l'))
     end.
 
-Define adjacent :=
+Define spec adjacent_h := fun(x:node)(l:<list node>). (member node x l eqword).
+
+Define spec adjacent :=
   fun(x y:node)(N:word)(g:<graph N>)
      (ux : { (ltword x N) = tt })
      (uy : { (ltword y N) = tt }):bool.
     (or (eqword x y) (adjacent_h y (get_neighbors x N g ux))).
 
-% prove nodes are still bounded after adding an edge
-% Define add_edge :=
-%   fun(x y:node)(N:word)(g:<graph N>)
-%                (ux : { (ltword x N) = tt })
-%                (uy : { (ltword y N) = tt }):<graph N>.
-%     match (adjacent x y N g ux uy) with
-%       ff => let x_ns = (cons node y (get_neighbors x N g ux)) in % add y as a nieghbor of x
-%         let y_ns = (cons node x (get_neighbors y N g uy)) in % add x as a nieghbor of y
-%           match g with
-%            mkgraph _ arr _ => 
-%              let add_to_x = (warray_set <list word> x x_ns N arr ux) in
-%                (mkgraph N (warray_set <list word> y y_ns N add_to_x uy)) % prove nodes are still bounded
-%           end
-%     | tt => g
-%     end.
+% in vec.g, prove a lemma that says if vec_all holds for a vector V with some predicate f,
+% and f holds of an element, then vec_all with f holds for the vector we get by updating V (in bounds).
+
+% add directed edge, and prove nodes are still bounded after adding an edge
+ Define add_edge :=
+   fun(x y:node)(N:word)(g:<graph N>)
+                (ux : { (ltword x N) = tt })
+                (uy : { (ltword y N) = tt }):<graph N>.
+     match (adjacent x y N g ux uy) with
+       ff => let x_ns = (cons node y (get_neighbors x N g ux)) in % add y as a neighbor of x
+           match g with
+            mkgraph _ arr _ => 
+                (mkgraph N (warray_set <list word> x x_ns N arr ux)) % prove nodes are still bounded
+           end
+     | tt => g
+     end.
+
+%- prove nodes are still bounded after adding an edge
+ Define add_edge :=
+   fun(x y:node)(N:word)(g:<graph N>)
+                (ux : { (ltword x N) = tt })
+                (uy : { (ltword y N) = tt }):<graph N>.
+     match (adjacent x y N g ux uy) with
+       ff => let x_ns = (cons node y (get_neighbors x N g ux)) in % add y as a neighbor of x
+         let y_ns = (cons node x (get_neighbors y N g uy)) in % add x as a neighbor of y
+           match g with
+            mkgraph _ arr _ => 
+              let add_to_x = (warray_set <list word> x x_ns N arr ux) in
+                (mkgraph N (warray_set <list word> y y_ns N add_to_x uy)) % prove nodes are still bounded
+           end
+     | tt => g
+     end.
+-%
 
 % Define remove_edge :=
 
