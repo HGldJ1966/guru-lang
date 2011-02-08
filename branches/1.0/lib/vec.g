@@ -992,3 +992,106 @@ Define vec_update_append :
       hypjoin (vec_update (vec_append l1 l2) n1 a) (vec_append l1 (vec_update l2 Z a))
       by l1_eq inj <vec ** *> l1_Eq [l1_IH n1' n2 l1' l2] end
 end.
+
+
+Define vec_all_vecc_tt_head :
+  Forall(A:type)
+        (f:Fun(a:A).bool)
+        (a:A)(n:nat)(v:<vec A n>)
+        (u:{ (vec_all f (vecc a v)) = tt }).
+    { (f a) = tt }
+  :=
+  foralli(A:type)
+         (f:Fun(a:A).bool)
+         (a:A)(n:nat)(v:<vec A n>)
+         (u:{ (vec_all f (vecc a v)) = tt }).
+  abbrev p1 = eval (vec_all f (vecc a v)) in
+  abbrev p2 = cinv (f a) trans symm p1 u in
+  existse p2
+  foralli(z1:bool)(z1_pf:{ (f a) = z1 }).
+  case z1 with
+    ff => contra
+            trans symm u
+            trans hypjoin (vec_all f (vecc a v)) ff by z1_pf z1_eq end
+                  clash ff tt
+            { (f a) = tt }
+  | tt => hypjoin (f a) tt by z1_pf z1_eq end
+  end
+  .
+
+Define  vec_all_vecc_tt_tail :
+  Forall(A:type)
+        (f:Fun(a:A).bool)
+        (a:A)(n:nat)(v:<vec A n>)
+        (u:{ (vec_all f (vecc a v)) = tt }).
+    { (vec_all f v) = tt }
+  :=
+  foralli(A:type)
+        (f:Fun(a:A).bool)
+        (a:A)(n:nat)(v:<vec A n>)
+        (u:{ (vec_all f (vecc a v)) = tt }).
+  abbrev p1 = eval (vec_all f (vecc a v)) in
+  abbrev p2 = cinv (f a) trans symm p1 u in
+  existse p2
+  foralli(z1:bool)(z1_pf:{ (f a) = z1 }).
+  case z1 with
+    ff => contra
+            trans symm u
+            trans hypjoin (vec_all f (vecc a v)) ff by z1_pf z1_eq end
+                  clash ff tt
+            { (vec_all f v) = tt }
+  | tt => hypjoin (vec_all f v) tt by z1_pf z1_eq u end
+  end
+  .
+
+% prove a lemma that says if vec_all holds for a vector v with some predicate f,
+% and f holds for an element, then vec_all with f holds for the vector we get by updating v (in bounds).
+Define vec_all_update :
+  Forall(A:type)(n:nat)(m:nat)(v:<vec A n>)(a:A)
+        (f:Fun(a:A).bool)
+        (u1 : { (lt m n) = tt})
+        (u2 : { (vec_all f v) = tt})
+        (u3 : { (f a) = tt}).
+  { (vec_all f (vec_update v m a u1)) = tt } :=
+  foralli(A:type)(n:nat)(m:nat)(v:<vec A n>)(a:A)
+        (f:Fun(a:A).bool)
+        (u1 : { (lt m n) = tt})
+        (u2 : { (vec_all f v) = tt})
+        (u3 : { (f a) = tt}).
+  [induction(n:nat)(v:<vec A n>) return
+    Forall(m:nat)(u1 : { (lt m n) = tt }) 
+                 (u2 : { (vec_all f v) = tt }).
+      { (vec_all f (vec_update v m a u1)) = tt } with
+    vecn _ => foralli(m:nat)(u1 : { (lt m n) = tt })
+                     (u2 : { (vec_all f v) = tt }).
+      abbrev n_Z = inj <vec ** *> v_Eq in
+      abbrev p = hypjoin (lt m n) ff by n_Z [lt_Z m] end in
+      contra trans symm u1
+             trans p
+                   clash ff tt
+             { (vec_all f (vec_update v m a u1)) = tt }
+    | vecc _ n' x v' =>
+      foralli(m:nat)(u1 : { (lt m n) = tt })
+             (u2 : { (vec_all f v) = tt }).
+      abbrev P = trans symm cong (vec_all f *) v_eq u2 in	
+      case m with
+        Z => 
+            hypjoin (vec_all f (vec_update v m a u1)) tt
+            by m_eq v_eq u3
+               [vec_all_vecc_tt_tail A f x n' v' P]
+	    end
+      | S m' => 
+            abbrev n'_pf = inj <vec ** *> v_Eq in
+            abbrev p1 = hypjoin (lt (S m') (S n')) tt by m_eq u1 n'_pf end in
+            abbrev u1' = hypjoin (lt m' n') tt by [S_lt_S m' n'] p1 end in
+
+            hypjoin (vec_all f (vec_update v m a u1)) tt
+            by m_eq v_eq u3
+               [vec_all_vecc_tt_head A f x n' v' P]
+	       [v_IH n' v' m' hypjoin (lt m' n') tt
+                             by u1' m_eq v_eq end
+               [vec_all_vecc_tt_tail A f x n' v' P]]
+	     end
+        end
+    end n v m u1 u2].
+
