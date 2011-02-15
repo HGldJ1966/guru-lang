@@ -1095,3 +1095,9 @@ Define vec_all_update :
         end
     end n v m u1 u2].
 
+Define trusted vec_all_get :
+  Forall(A:type)(n:nat)(m:nat)(v:<vec A n>)
+        (f:Fun(a:A).bool)
+        (u1 : { (lt m n) = tt})
+        (u2 : { (vec_all f v) = tt}).
+  { (vec_all f (vec_get v m)) = tt } := truei.
