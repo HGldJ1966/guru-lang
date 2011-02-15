@@ -38,7 +38,13 @@ Define get_neighbors :=
 Define trusted get_neighbors_bounded 
   : Forall(x:node)(N:word)(g:<graph N>)(u : { (ltword x N) = tt }).
           { (adjlist_bounded (get_neighbors x N g)) = tt } :=
-	  truei.
+    foralli(x:node)(N:word)(g:<graph N>)(u : { (ltword x N) = tt }).
+    case g with
+      mkgraph _ arr _ =>
+	  show 
+            hypjoin (get_neighbors x N g) (vec_get arr (to_nat x)) by g_eq end
+          end
+    end.
 
 Define old_adjacent_h := 
   fun adjacent_h(x:node)(l:<list node>):bool.
@@ -68,23 +74,6 @@ Define spec adjacent :=
            end
      | tt => g
      end. -%
-
-%- prove nodes are still bounded after adding an edge
- Define add_edge :=
-   fun(x y:node)(N:word)(g:<graph N>)
-                (ux : { (ltword x N) = tt })
-                (uy : { (ltword y N) = tt }):<graph N>.
-     match (adjacent x y N g ux uy) with
-       ff => let x_ns = (cons node y (get_neighbors x N g ux)) in % add y as a neighbor of x
-         let y_ns = (cons node x (get_neighbors y N g uy)) in % add x as a neighbor of y
-           match g with
-            mkgraph _ arr _ => 
-              let add_to_x = (warray_set <list word> x x_ns N arr ux) in
-                (mkgraph N (warray_set <list word> y y_ns N add_to_x uy)) % prove nodes are still bounded
-           end
-     | tt => g
-     end.
--%
 
 Define remove_edge_h :=
   fun remove_edge_h(x:node)(l:<list word>):<list word>.
