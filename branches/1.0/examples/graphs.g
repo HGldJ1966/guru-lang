@@ -37,7 +37,8 @@ Define get_neighbors :=
 
 Define trusted get_neighbors_bounded 
   : Forall(x:node)(N:word)(g:<graph N>)(u : { (ltword x N) = tt }).
-          { (adjlist_bounded (get_neighbors x N g)) = tt } := truei.
+          { (adjlist_bounded (get_neighbors x N g)) = tt } :=
+	  truei.
 
 Define old_adjacent_h := 
   fun adjacent_h(x:node)(l:<list node>):bool.
@@ -54,10 +55,7 @@ Define spec adjacent :=
      (uy : { (ltword y N) = tt }):bool.
     (or (eqword x y) (adjacent_h y (get_neighbors x N g ux))).
 
-% in vec.g, prove a lemma that says if vec_all holds for a vector V with some predicate f,
-% and f holds of an element, then vec_all with f holds for the vector we get by updating V (in bounds).
-
-% add directed edge, and prove nodes are still bounded after adding an edge
+%- add directed edge, and prove nodes are still bounded after adding an edge
  Define add_edge :=
    fun(x y:node)(N:word)(g:<graph N>)
                 (ux : { (ltword x N) = tt })
@@ -69,7 +67,7 @@ Define spec adjacent :=
                 (mkgraph N (warray_set <list word> x x_ns N arr ux)) % prove nodes are still bounded
            end
      | tt => g
-     end.
+     end. -%
 
 %- prove nodes are still bounded after adding an edge
  Define add_edge :=
@@ -88,7 +86,29 @@ Define spec adjacent :=
      end.
 -%
 
-% Define remove_edge :=
+Define remove_edge_h :=
+  fun remove_edge_h(x:node)(l:<list word>):<list word>.
+    match l with
+      nil _ => (nil word)
+    | cons _ v l' =>
+      match (eqword x v) with
+        ff => (cons word v (remove_edge_h x l'))
+      | tt => l'
+    end
+  end.
+    
+%- Define remove_edge :=
+ fun(x y:node)(N:word)(g:<graph N>)
+              (ux : { (ltword x N) = tt })
+              (uy : { (ltword y N) = tt }):<graph N>.
+   match (adjacent x y N g ux uy) with
+     ff => g
+   | tt => let x_ns = (remove_edge_h y (get_neighbors x N g ux)) in % remove edge pointing from x to y
+       match g with
+         mkgraph _ arr _ => 
+           (mkgraph N (warray_set <list word> x x_ns N arr ux)) % prove nodes are still bounded
+       end
+  end. -%
 
 % Define connected_h :=
 %   fun connected_h(x y:node)(l:<list node>)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
