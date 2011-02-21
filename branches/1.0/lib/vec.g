@@ -1009,6 +1009,7 @@ Define vec_all_vecc_tt_head :
   abbrev p2 = cinv (f a) trans symm p1 u in
   existse p2
   foralli(z1:bool)(z1_pf:{ (f a) = z1 }).
+
   case z1 with
     ff => contra
             trans symm u
@@ -1073,7 +1074,7 @@ Define vec_all_update :
     | vecc _ n' x v' =>
       foralli(m:nat)(u1 : { (lt m n) = tt })
              (u2 : { (vec_all f v) = tt }).
-      abbrev P = trans symm cong (vec_all f *) v_eq u2 in	
+      abbrev P = trans symm cong (vec_all f *) v_eq u2 in
       case m with
         Z => 
             hypjoin (vec_all f (vec_update v m a u1)) tt
@@ -1095,9 +1096,38 @@ Define vec_all_update :
         end
     end n v m u1 u2].
 
-Define trusted vec_all_get :
+Define vec_all_get :
   Forall(A:type)(n:nat)(m:nat)(v:<vec A n>)
         (f:Fun(a:A).bool)
         (u1 : { (lt m n) = tt})
         (u2 : { (vec_all f v) = tt}).
-  { (vec_all f (vec_get v m)) = tt } := truei.
+  { (f (vec_get v m)) = tt } :=
+  foralli(A:type)(n:nat)(m:nat)(v:<vec A n>)
+        (f:Fun(a:A).bool)
+        (u1 : { (lt m n) = tt})
+        (u2 : { (vec_all f v) = tt}).
+  [induction(n:nat)(v:<vec A n>) return
+    Forall(m:nat)(u1 : { (lt m n) = tt }) 
+                 (u2 : { (vec_all f v) = tt }).
+      { (f (vec_get v m)) = tt } with
+    vecn _ => foralli(m:nat)(u1 : { (lt m n) = tt })
+                     (u2 : { (vec_all f v) = tt }).
+      abbrev n_Z = inj <vec ** *> v_Eq in
+      abbrev p = hypjoin (lt m n) ff by n_Z [lt_Z m] end in
+      contra trans symm u1
+             trans p
+                   clash ff tt
+             { (f (vec_get v m)) = tt }
+    | vecc _ n' x v' => 
+      foralli(m:nat)(u1 : { (lt m n) = tt })
+             (u2 : { (vec_all f v) = tt }).
+      abbrev P = trans symm cong (vec_all f *) v_eq u2 in
+      case m with
+        Z =>
+	    abbrev p1 = hypjoin (vec_get v m) x by m_eq v_eq end in
+
+	    trans cong (f *) p1 [vec_all_vecc_tt_head A f x n' v' P]
+      | S m' => 
+	    [v_IH n v m u1 u2]
+        end
+    end n v m u1 u2].

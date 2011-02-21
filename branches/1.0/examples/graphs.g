@@ -35,15 +35,23 @@ Define get_neighbors :=
       mkgraph _ arr _ => (warray_get <list node> N arr x u)
     end.
 
-Define trusted get_neighbors_bounded 
+Define get_neighbors_bounded 
   : Forall(x:node)(N:word)(g:<graph N>)(u : { (ltword x N) = tt }).
-          { (adjlist_bounded (get_neighbors x N g)) = tt } :=
+          { (adjlist_bounded (get_neighbors x N g) N) = tt } :=
     foralli(x:node)(N:word)(g:<graph N>)(u : { (ltword x N) = tt }).
     case g with
-      mkgraph _ arr _ =>
-	  show 
-            hypjoin (get_neighbors x N g) (vec_get arr (to_nat x)) by g_eq end
-          end
+      mkgraph _ arr g_u =>
+          abbrev p1 = hypjoin (get_neighbors x N g) (vec_get arr (to_nat x)) by g_eq end in
+
+	  abbrev p2_u1 = trans symm [ltword_to_lt x N] u in	  
+	  abbrev p2_u2 = hypjoin (vec_all <list node> fun(l:<list node>):bool.(adjlist_bounded l N) arr) tt by g_eq g_u end in
+          abbrev p2 = [vec_all_get <list node> (word_to_nat N) (word_to_nat x) arr fun(l:<list node>):bool.(adjlist_bounded l N) p2_u1 p2_u2] in
+
+          abbrev p3 = hypjoin (fun(l:<list node>):bool.(adjlist_bounded l N) (vec_get arr (word_to_nat x)))
+	                      (adjlist_bounded (vec_get arr (word_to_nat x)) N) by p1 end in
+
+	  trans cong (adjlist_bounded * N) p1
+	  trans symm p3 p2
     end.
 
 Define old_adjacent_h := 
