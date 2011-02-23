@@ -1,10 +1,11 @@
 %=============================================================================
 %- [debug logging]
-we would like to print to stderr without any side effects in the
-computation for debug purposes so, here's experimenting some printing
-functions, which return type is void. Effectively, these loggings are
-carraway resource annotations.
-And it would also be handy, we can control whether it really prints or
+We would like to print to stderr without any side effects in the
+computation for debug purposes. I'm experimenting with some printing
+functions, which return type is void. Technically, these loggings are
+carraway resource annotations. But, effectively, they can describe
+harmless side effects.
+Also, it would be handy if we can control whether it really prints or
 not using a compiler flag, namely DEBUG. (see Makefile)
 
 - basic functions
