@@ -11,13 +11,13 @@ not using a compiler flag, namely DEBUG. (see Makefile)
 - basic functions
 log_char, log_string
 log_word_d : format word in decimal
-log_nat : prints a nat in decimal
-log_nat' : prints a nat in decimal (this version does not consume it)
+log_nat : prints a nat in decimal (this version consumes it)
+log_nat' : prints a nat in decimal (this version does NOT consume it)
 
 - naming scheme
 "log_" ++ datatype ++ formatting option
-The ' mark (as in nat') means that the argument is not consumed.
-Usually, the input arguments are consumed. But, sometimes, we don't want
+The ' mark (as in nat') means that the argument is consumed.
+By default, the input arguments are consumed. But, sometimes, we don't want
 that behavior.
 
 - notes
@@ -51,14 +51,23 @@ Define primitive log_char := fun(#untracked c:char). voidi <<END
   #endif
 END.
 
-Define log_string := fun log_string(^s:string) : void.
+Define log_owned_string := fun log_owned_string(^#owned s:string) : void.
 	match s with
 		unil _ => noop
 	| ucons _ c s' =>
 			do (log_char c)
-				 (log_string s')
+				 (log_owned_string s')
 			end
 	end.
+
+Define log_string := fun(^s:string) : void.
+	do
+	(log_owned_string (inspect string s))
+	(consume_unowned string s)
+	end.
+
+Define log_string' := fun(!s:string) : void.
+	(log_owned_string (inspect string s)).
 
 Define log_word_d := fun(w:word) : void.
   (log_string (word_num_to_string w)).
@@ -74,8 +83,8 @@ Define inc_word_by_nat := fun inc_word_by_nat(w:word)(^#owned n:nat) : word.
 Define log_nat := fun(^n:nat) : void.
 	let w = (inc_word_by_nat word0 (inspect nat n)) in
 	do
-	(consume_unowned nat n)
 	(log_word_d w)
+	(consume_unowned nat n)
 	end.
 
 Define log_nat' := fun(!n:nat) : void.
@@ -104,10 +113,10 @@ Define sum := fun sum(n:nat) : nat.
   end.
   
 Define main :=
-	let	v = (sum three) in
-	let v' = (inc_word_by_nat word0 (inspect nat v)) in
+	let	v = (sum five) in
 	do
 	(log_string "---\n" )
+	let v' = (inc_word_by_nat word0 (inspect nat v)) in
 	let stdio = (print_string stdio (word_num_to_string v')) in
 	let stdio = (print_char stdio '\n') in
 	do
