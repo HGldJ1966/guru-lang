@@ -60,3 +60,40 @@ void gwarray_free(int A, int n, void *l) {
 }
 END.
 
+Define warray_all_set :
+  Forall(A:type)(i:word)(a:A)(n:word)(l:<warray A n>)
+        (f:Fun(a:A).bool)
+        (u1 : { (ltword i n) = tt})
+        (u2 : { (vec_all f l) = tt})
+        (u3 : { (f a) = tt}).
+  { (vec_all f (warray_set i a l u1)) = tt } :=
+  foralli(A:type)(i:word)(a:A)(n:word)(l:<warray A n>)
+        (f:Fun(a:A).bool)
+        (u1 : { (ltword i n) = tt})
+        (u2 : { (vec_all f l) = tt})
+        (u3 : { (f a) = tt}).
+  abbrev u1' = trans symm [ltword_to_lt i n] u1 in
+  
+  abbrev p1 = join (vec_update l (word_to_nat i) a u1') (warray_set i a l u1) in
+  abbrev p2 = [vec_all_update A (word_to_nat n) (word_to_nat i) l a f u1' u2 u3] in
+
+  trans symm cong (vec_all f *) p1 p2.
+        
+Define warray_all_get :
+  Forall(A:type)(n:word)(l:<warray A n>)
+        (i:word)
+        (f:Fun(a:A).bool)
+        (u1 : { (ltword i n) = tt})
+        (u2 : { (vec_all f l) = tt}).
+  { (f (warray_get l i)) = tt } :=
+  foralli(A:type)(n:word)(l:<warray A n>)
+        (i:word)
+        (f:Fun(a:A).bool)
+        (u1 : { (ltword i n) = tt})
+        (u2 : { (vec_all f l) = tt}).
+  abbrev u1' = trans symm [ltword_to_lt i n] u1 in
+
+  abbrev p1 = join (vec_get l (word_to_nat i)) (warray_get l i) in      
+  abbrev p2 = [vec_all_get A (word_to_nat n) (word_to_nat i) l f u1' u2] in
+
+  trans symm cong (f *) p1 p2.

@@ -68,7 +68,7 @@ Define spec adjacent :=
      (uy : { (ltword y N) = tt }):bool.
     (or (eqword x y) (adjacent_h y (get_neighbors x N g ux))).
 
-% add directed edge, and prove nodes are still bounded after adding an edge
+% add directed edge
  Define spec add_edge :=
    fun(x y:node)(N:word)(g:<graph N>)
                 (ux : { (ltword x N) = tt })
@@ -80,20 +80,17 @@ Define spec adjacent :=
             mkgraph _ arr g_u => 
                 (mkgraph N (warray_set <list word> x x_ns N arr ux) 
 
-	        abbrev up_eq_set = join (vec_update arr (word_to_nat x) x_ns) (warray_set x x_ns arr) in
-	        abbrev p_u1 = trans symm [ltword_to_lt x N] ux in
-		abbrev p_u2 = hypjoin (vec_all fun(l:<list node>):bool.(adjlist_bounded l N) arr) tt by g_u end in
-		abbrev p_u3 = hypjoin (fun(l:<list node>):bool.(adjlist_bounded l N) x_ns) tt by [get_neighbors_bounded x N g ux] uy end in %?????
-	        abbrev p = [vec_all_update <list word> (word_to_nat N) (word_to_nat x) arr x_ns
+		abbrev p1 = join (vec_all fun(l:<list node>):bool.(adjlist_bounded l N) (warray_set x x_ns arr))
+		                 (nodes_bounded N (warray_set x x_ns arr)) in
+		abbrev p2_u2 = hypjoin (vec_all fun(l:<list node>):bool.(adjlist_bounded l N) arr) tt by g_u end in
+		abbrev p2_u3 = hypjoin (fun(l:<list node>):bool.(adjlist_bounded l N) x_ns) tt by [get_neighbors_bounded x N g ux] uy end in
+		abbrev p2 = [warray_all_set <list word> x x_ns N arr
 		                     fun(l:<list node>):bool.(adjlist_bounded l N)
-				     p_u1
-				     p_u2
-				     p_u3] in
-				     
-	        symm trans symm p
-	        trans join (vec_all fun(l:<list node>):bool.(adjlist_bounded l N) (vec_update arr (word_to_nat x) x_ns))
-	        (nodes_bounded N (vec_update arr (word_to_nat x) x_ns))
-				     cong (nodes_bounded N *) up_eq_set
+				     ux
+				     p2_u2
+				     p2_u3] in
+
+	        symm trans symm p2 p1
                 )
            end
      | tt => g
