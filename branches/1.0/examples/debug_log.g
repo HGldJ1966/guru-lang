@@ -85,6 +85,7 @@ Define log_nat' := fun(!n:nat) : void.
 %=============================================================================
 % example
 %=============================================================================
+Include "../lib/stdio.g".
 
 Define sum := fun sum(n:nat) : nat.
   match !n with
@@ -102,6 +103,16 @@ Define sum := fun sum(n:nat) : nat.
   end.
   
 Define main :=
-	(sum three).
+	let	v = (sum three) in
+	let v' = (inc_word_by_nat word0 (inspect nat v)) in
+	do
+	(log_string "---\n" )
+	let stdio = (print_string stdio (word_num_to_string v')) in
+	let stdio = (print_char stdio '\n') in
+	do
+	(consume_unowned nat v)
+	(consume_unique_point stdio_t stdio)
+	end
+	end.
 
 Compile main to "debug_log.c".
