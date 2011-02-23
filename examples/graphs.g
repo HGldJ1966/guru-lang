@@ -46,9 +46,8 @@ Define get_neighbors_bounded
 	  abbrev p2_u1 = trans symm [ltword_to_lt x N] u in	  
 	  abbrev p2_u2 = hypjoin (vec_all <list node> fun(l:<list node>):bool.(adjlist_bounded l N) arr) tt by g_eq g_u end in
           abbrev p2 = [vec_all_get <list node> (word_to_nat N) (word_to_nat x) arr fun(l:<list node>):bool.(adjlist_bounded l N) p2_u1 p2_u2] in
-
-          abbrev p3 = hypjoin (fun(l:<list node>):bool.(adjlist_bounded l N) (vec_get arr (word_to_nat x)))
-	                      (adjlist_bounded (vec_get arr (word_to_nat x)) N) by p1 end in
+	  abbrev p3 = join (fun(l:<list node>):bool.(adjlist_bounded l N) (vec_get arr (word_to_nat x)))
+	                       (adjlist_bounded (vec_get arr (word_to_nat x)) N) in
 
 	  trans cong (adjlist_bounded * N) p1
 	  trans symm p3 p2
@@ -69,19 +68,36 @@ Define spec adjacent :=
      (uy : { (ltword y N) = tt }):bool.
     (or (eqword x y) (adjacent_h y (get_neighbors x N g ux))).
 
-%- add directed edge, and prove nodes are still bounded after adding an edge
- Define add_edge :=
+% add directed edge, and prove nodes are still bounded after adding an edge
+ Define spec add_edge :=
    fun(x y:node)(N:word)(g:<graph N>)
                 (ux : { (ltword x N) = tt })
                 (uy : { (ltword y N) = tt }):<graph N>.
      match (adjacent x y N g ux uy) with
-       ff => let x_ns = (cons node y (get_neighbors x N g ux)) in % add y as a neighbor of x
+       ff => abbrev x_ns = (cons node y (get_neighbors x N g ux)) in % add y as a neighbor of x
+
            match g with
-            mkgraph _ arr _ => 
-                (mkgraph N (warray_set <list word> x x_ns N arr ux)) % prove nodes are still bounded
+            mkgraph _ arr g_u => 
+                (mkgraph N (warray_set <list word> x x_ns N arr ux) 
+
+	        abbrev up_eq_set = join (vec_update arr (word_to_nat x) x_ns) (warray_set x x_ns arr) in
+	        abbrev p_u1 = trans symm [ltword_to_lt x N] ux in
+		abbrev p_u2 = hypjoin (vec_all fun(l:<list node>):bool.(adjlist_bounded l N) arr) tt by g_u end in
+		abbrev p_u3 = hypjoin (fun(l:<list node>):bool.(adjlist_bounded l N) x_ns) tt by [get_neighbors_bounded x N g ux] uy end in %?????
+	        abbrev p = [vec_all_update <list word> (word_to_nat N) (word_to_nat x) arr x_ns
+		                     fun(l:<list node>):bool.(adjlist_bounded l N)
+				     p_u1
+				     p_u2
+				     p_u3] in
+				     
+	        symm trans symm p
+	        trans join (vec_all fun(l:<list node>):bool.(adjlist_bounded l N) (vec_update arr (word_to_nat x) x_ns))
+	        (nodes_bounded N (vec_update arr (word_to_nat x) x_ns))
+				     cong (nodes_bounded N *) up_eq_set
+                )
            end
      | tt => g
-     end. -%
+     end.
 
 Define remove_edge_h :=
   fun remove_edge_h(x:node)(l:<list word>):<list word>.
