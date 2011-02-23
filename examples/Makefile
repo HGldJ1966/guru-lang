@@ -1,11 +1,13 @@
-CFLAGS=-w -m32
+CFLAGS=-w -m32 -DDEBUG
 
-all: print-uwarray
+all: print-uwarray debug_log.c debug_log
 
-print-array: print-uwarray.c
-	cc $(CFLAGS) -o $@ $<
+# general rules
 
-.SUFFIXES: .c .g
+.SUFFIXES: .c .g .
 
-.g.c:
+%.c: %.g
 	guru $<
+
+%: %.c
+	cc $(CFLAGS) -o $@ $<
