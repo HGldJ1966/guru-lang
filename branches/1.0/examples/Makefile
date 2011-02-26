@@ -17,3 +17,7 @@ debug_log_r : debug_log.c
 
 %: %.c
 	cc $(CFLAGS) -o $@ $<
+
+comb:	
+	../bin/guru comb.g
+
