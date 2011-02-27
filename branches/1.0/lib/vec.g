@@ -52,6 +52,33 @@ fun vec_append(A:type)(spec n m:nat)(l1 : <vec A n>)(l2 : <vec A m>):
                  symm inj <vec ** *> l1_Eq
     end.
 
+Define vec_append_total : Forall(A:type)(n m:nat)(l1 : <vec A n>)(l2 : <vec A m>).
+	Exists(l : <vec A (plus n m)>).{ (vec_append l1 l2) = l } :=
+  foralli(A:type).
+  induction(n m:nat)(l1:<vec A n>) return Forall
+  	(l2:<vec A m>)
+  	.Exists(l : <vec A (plus n m)>).{ (vec_append l1 l2) = l }
+  with
+  	vecn _ => foralli
+			(l2:<vec A m>).
+			abbrev n_eq = inj <vec ** *> l1_Eq in
+			abbrev p1 = hypjoin m (plus n m) by n_eq end in
+			abbrev l2' = cast l2 by cong <vec A *> p1 in
+  		existsi l2' { (vec_append l1 l2) = * }
+  		hypjoin (vec_append l1 l2) l2 by l1_eq end
+  | vecc _ n' a l1' => foralli
+			(l2:<vec A m>).
+			abbrev n_eq = inj <vec ** *> l1_Eq in
+  		existse [l1_IH n' m l1' l2]
+  		foralli(l':<vec A (plus n' m)>)(l'_pf:{ (vec_append l1' l2) = l' }).
+			abbrev p1 = hypjoin (S (plus n' m)) (plus n m) by n_eq end in
+			abbrev l = cast (vecc A (plus n' m) a l') by cong <vec A *> p1 in
+  		existsi l { (vec_append l1 l2) = * }
+  		hypjoin (vec_append l1 l2) l by l1_eq l'_pf end
+  end.
+
+Total vec_append vec_append_total.
+
 Define vec_cat :=
   fun vec_cat(A:type)(spec n m:nat)(l : <vec <vec A m> n>):
       <vec A (mult n m)>.
@@ -91,7 +118,7 @@ Define mkvec :=
     match n by un vn with
       Z => cast (vecn A) by cong <vec A *> symm un
     | S n' => cast (vecc A n' a (mkvec A a n')) by cong <vec A *> symm un
-    end.
+    end.	
 
 Define mkvec_tot : Forall(A:type)(a:A)(n:nat). 
                     Exists(r:<vec A n>). {(mkvec a n) = r} :=
