@@ -128,11 +128,17 @@ Define connected_h :=
     | cons _ v l' =>
       	abbrev p1_u = hypjoin (list_all fun(n:node):bool.(ltword n N) (cons v l')) tt by l_eq u end in
 	abbrev p1 = trans join (ltword v N) (fun(n:node):bool.(ltword n N) v) [list_all_cons_tt_head node fun(n:node):bool.(ltword n N) v l' p1_u] in
-        match (eqbool (uwarray_get bool N mv v p1) tt) with
-                       ff => (connected_f v y N g (uwarray_set bool N mv v tt p1) p1 uy) 
-                     | tt => (connected_h x y l' N g mv connected_f ux uy
+        let keep_searching = 
+            match (uwarray_get bool N mv v p1) with
+              ff => (not (connected_f v y N g (uwarray_set bool N mv v tt p1) p1 uy))
+            | tt => tt
+            end
+        in
+          match keep_searching with
+            ff => tt % (connected_f v y ...) returned true
+          | tt => (connected_h x y l' N g mv connected_f ux uy
                               hypjoin (adjlist_bounded l' N) tt by [list_all_cons_tt_tail node fun(n:node):bool.(ltword n N) v l' p1_u] end)
-                     end
+          end
     end.
 
 Define spec connected :=
@@ -146,7 +152,10 @@ Define spec connected :=
     | tt => tt
     end.
 
-%- will not compile when uncommented
+Set "print_parsed".
+Set "debug_hypjoin_normalize".
+
+%- will not compile when uncommented -%
 Define spec is_cyclic_h :=
   fun is_cyclic_h(N:word)(g:<graph N>)(n:nat)
                  (u : { (ltword (nat_to_word n) N) = tt }):bool.
@@ -167,7 +176,7 @@ Define spec is_cyclic :=
     | S n' => (is_cyclic_h N g (word_to_nat n')
                   join (ltword (nat_to_word n') N) tt)
     end.
--%
+
   
 Define no_edge_graph :=
   fun(N:word):<graph N>. 
@@ -182,9 +191,10 @@ Define no_edge_graph :=
 %%%%%%
 %  below we construct the following graph for testing:
 %
-%     0    3
-%      \
-%  1 -- 2
+%      0    3
+%       \
+%        v
+%  1 <-- 2
 %
 %%%%%
 
