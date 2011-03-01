@@ -53,13 +53,6 @@ Define get_neighbors_bounded
 	  trans symm p3 p2
     end.
 
-Define old_adjacent_h := 
-  fun adjacent_h(x:node)(l:<list node>):bool.
-    match l with
-      nil _ => ff
-    | cons _ v l' => (or (eqword x v) (adjacent_h x l'))
-    end.
-
 Define spec adjacent_h := fun(x:node)(l:<list node>). (member node x l eqword).
 
 Define spec adjacent :=
@@ -120,39 +113,71 @@ Define remove_edge_h :=
        end
   end. -%
 
-% Define connected_h :=
-%   fun connected_h(x y:node)(l:<list node>)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
-%     (connected_f : Fun(x' y':node)(N':word)(g':<graph N>)(mv' : <uwarray bool N>)(ux : { (ltword x N) = tt })(uy : { (ltword y N) = tt }).bool):bool.
-%     match l with
-%       nil _ => ff
-%     | cons _ v l' => match (eqbool (uwarray_get bool N mv v) tt) with % prove v < N 
-%                        ff => (connected_f x y N g (uwarray_set bool N mv v tt)) % prove v < N
-%                      | tt => (connected_h x y l' N g mv)
-%                      end
-%     end.
+Define connected_h :=
+  fun connected_h(x y:node)(l:<list node>)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
+                 (connected_f : Fun(x y:node)(N:word)(g:<graph N>)
+		 (mv : <uwarray bool N>)
+		 (ux : { (ltword x N) = tt })
+		 (uy : { (ltword y N) = tt }).bool)
+		 (ux : { (ltword x N) = tt })
+		 (uy : { (ltword y N) = tt })
+		 (u : { (adjlist_bounded l N) = tt }):bool.
 
-% Define connected :=
-%   fun connected(x y:node)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
-%                (ux : { (ltword x N) = tt })
-%                (uy : { (ltword y N) = tt }):bool.
-%     match (eqword x y) with
+    match l with
+      nil _ => ff
+    | cons _ v l' =>
+      	abbrev p1_u = hypjoin (list_all fun(n:node):bool.(ltword n N) (cons v l')) tt by l_eq u end in
+	abbrev p1 = trans join (ltword v N) (fun(n:node):bool.(ltword n N) v) [list_all_cons_tt_head node fun(n:node):bool.(ltword n N) v l' p1_u] in
+        match (eqbool (uwarray_get bool N mv v p1) tt) with
+                       ff => (connected_f v y N g (uwarray_set bool N mv v tt p1) p1 uy) 
+                     | tt => (connected_h x y l' N g mv connected_f ux uy
+                              hypjoin (adjlist_bounded l' N) tt by [list_all_cons_tt_tail node fun(n:node):bool.(ltword n N) v l' p1_u] end)
+                     end
+    end.
 
-%       ff => let neighbors = (get_neighbors x N g) in
-%               (connected_h x y neighbors N g mv connected)
-%     | tt => tt
-%     end.
-                                         
-% create 2 warrays; one which satisfies the nodes_bounded property,
-% one which does not
-Define warray_bounded := let l = (cons word word0 (cons word word2 (nil word))) in 
-  (warray_new <list word> word3 l).
-Define warray_unbounded := let l = (cons word word0 (cons word word3 (nil word))) in 
-  (warray_new <list word> word3 l).
+Define spec connected :=
+  fun connected(x y:node)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
+               (ux : { (ltword x N) = tt })
+               (uy : { (ltword y N) = tt }):bool.
+    abbrev x_ns = (get_neighbors x N g ux) in
+    match (member node y x_ns eqword) with
+      ff => (connected_h x y x_ns N g mv connected ux uy
+	      [get_neighbors_bounded x N g ux])
+    | tt => tt
+    end.
 
-% test nodes_bounded
-Interpret (nodes_bounded word3 warray_bounded).      
-Interpret (nodes_bounded word3 warray_unbounded).
-
+%- will not compile when uncommented
+Define spec is_cyclic_h :=
+  fun is_cyclic_h(N:word)(g:<graph N>)(n:nat)
+                 (u : { (ltword (nat_to_word n) N) = tt }):bool.
+    match (connected (nat_to_word n) (nat_to_word n) N g (uwarray_new bool N ff) u u) with
+      ff =>
+        match n with
+          Z => ff
+	| S n' => (is_cyclic_h N g n'
+	           hypjoin (ltword (nat_to_word n') N) tt by u n_eq end)
+        end
+    | tt => tt
+    end. 
+  
+Define spec is_cyclic :=
+  fun is_cyclic(N:word)(g:<graph N>):bool.
+    match (word_to_nat N) with
+      Z => ff
+    | S n' => (is_cyclic_h N g (word_to_nat n')
+                  join (ltword (nat_to_word n') N) tt)
+    end.
+-%
+  
+Define no_edge_graph :=
+  fun(N:word):<graph N>. 
+    abbrev arr = (warray_new <list word> N (nil word)) in
+      (mkgraph N arr
+               abbrev v = (mkvec <list word> (nil word) (word_to_nat N)) in
+	       abbrev v_eq = join v (mkvec <list word> (nil word) (word_to_nat N)) in
+               abbrev p1 = join (fun(l:<list node>):bool.(adjlist_bounded l N) nil) tt in
+	       hypjoin (nodes_bounded N arr) tt by [mkvec_implies_vec_all <list word> (nil word) (word_to_nat N) v fun(l:<list node>):bool.(adjlist_bounded l N) v_eq p1] end
+	       ). 
 
 %%%%%%
 %  below we construct the following graph for testing:
@@ -162,36 +187,30 @@ Interpret (nodes_bounded word3 warray_unbounded).
 %  1 -- 2
 %
 %%%%%
-% make lists of neighbors (adjacent nodes) for each the nodes of our graph
-Define node0_list := (cons word word2 (nil word)).
-Define node1_list := (cons word word2 (nil word)).
-Define node2_list := (cons word word2 (cons word word1 (nil word))).
-Define node3_list := (nil word).
 
-% populate an warray with lists of neighboring nodes
-Define nodes := let set_node0 = (warray_new <list word> word4 node0_list) in
-  let set_node1 = (warray_set <list word> word1 node1_list word4 set_node0 join (ltword word1 word4) tt) in
-    let set_node2 = (warray_set <list word> word2 node2_list word4 set_node1 join (ltword word2 word4) tt) in
-      (warray_set <list word> word3 node3_list word4 set_node2 join (ltword word3 word4) tt).
+Define spec g := (add_edge word2 word1
+                      word4
+                 (add_edge word0 word2
+		      word4 (no_edge_graph word4)
+		      join (ltword word0 word4) tt
+		      join (ltword word2 word4) tt)
+		 join (ltword word2 word4) tt
+		 join (ltword word1 word4) tt).
 
-Define test_graph := (mkgraph word4 nodes join (nodes_bounded word4 nodes) tt).
+% this should be true
+Interpret (connected word0 word1 word4 g (uwarray_new bool word4 ff)
+                     join (ltword word0 word4) tt
+		     join (ltword word1 word4) tt).
 
-% test get_neighbors
-Interpret (get_neighbors word0 word4 test_graph join (ltword word0 word4) tt). 
+% this should be false
+Interpret (connected word2 word3 word4 g (uwarray_new bool word4 ff)
+                     join (ltword word2 word4) tt
+		     join (ltword word3 word4) tt).
 
-% test adjacent
-Interpret (adjacent word0 word0 word4 test_graph).
-Interpret (adjacent word0 word2 word4 test_graph).
-Interpret (adjacent word0 word1 word4 test_graph).
-
-% test connected
-% Interpret (let mv = (uwarray_new bool word4 ff) in
-%   (connected word0 word2 word4 g mv 
-%     join (ltword word0 word4) tt 
-%     join (ltword word2 word4) tt)).
 
 %%%%% Ideas %%%%%
 % Define cyclic :=
 % Define bipartite :=
 % Define tree := % connected acyclic graph
 % Define shortest_path :=    
+
