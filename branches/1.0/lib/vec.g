@@ -921,6 +921,7 @@ Define all_vec_get_implies_eq :
       end
   end.
 
+
 Define all_vec_get_implies_mkvec :
 	Forall(A:type)(a:A)(n:nat)(l:<vec A n>)
 				(u:Forall(m:nat)(q:{ (lt m n) = tt }).{ (vec_get l m) = a })
@@ -1158,3 +1159,30 @@ Define vec_all_get :
 	    [v_IH n v m u1 u2]
         end
     end n v m u1 u2].
+
+Define trusted mkvec_implies_vec_all :
+  Forall(A:type)(a:A)(n:nat)(v:<vec A n>)
+        (f:Fun(a:A).bool)
+        (u1: { v = (mkvec a n) })
+        (u2: { (f a) = tt }).
+        { (vec_all f v) = tt } :=
+  foralli(A:type)(a:A)(f:Fun(a:A).bool).
+  induction(n:nat)(v:<vec A n>) return
+    Forall(u1: { v = (mkvec a n) })(u2: { (f a) = tt})
+        .{ (vec_all f v) = tt }
+  with
+    vecn _ =>
+      foralli(u1: { v = (mkvec a n) })(u2: { (f a) = tt}).
+      hypjoin (vec_all f v) tt by v_eq end
+  | vecc _ n' a' v' =>
+      foralli(u1: { v = (mkvec a n) })(u2: { (f a) = tt}).
+
+      abbrev n_eq = inj <vec A *> v_Eq in
+      abbrev p1 = hypjoin (mkvec a n) (vecc a (mkvec a n')) by n_eq end in
+      abbrev p2 = hypjoin (mkvec a n) (vecc a' v') by v_eq u1 end in
+      abbrev p3 = trans symm p1 p2 in
+      % show a = a'
+
+      truei
+
+  end.
