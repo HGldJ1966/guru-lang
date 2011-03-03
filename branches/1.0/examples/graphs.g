@@ -113,9 +113,39 @@ Define remove_edge_h :=
        end
   end. -%
 
-Define connected_h :=
-  fun connected_h(x y:node)(l:<list node>)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
-                 (connected_f : Fun(x y:node)(N:word)(g:<graph N>)
+Define spec connected_h :=
+  fun connected_h(x y:node)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
+                 (l:<list node>)
+		 (ux : { (ltword x N) = tt })
+		 (uy : { (ltword y N) = tt })
+		 (uz : { (adjlist_bounded l N) = tt }):bool.
+    match (eqword x y) with
+      ff =>
+        match l with
+          nil _ => ff
+        | cons _ v l' =>
+            abbrev uv_u = hypjoin (list_all fun(n:node):bool.(ltword n N) (cons v l')) tt by l_eq uz end in
+            abbrev uv = hypjoin (ltword v N) tt by [list_all_cons_tt_head node fun(n:node):bool.(ltword n N) v l' uv_u] end in
+	    abbrev uz' = [get_neighbors_bounded v N g uv] in
+	    abbrev uz'' = hypjoin (adjlist_bounded l' N) tt by [list_all_cons_tt_tail node fun(n:node):bool.(ltword n N) v l' uv_u] end in
+	    match (uwarray_get bool N mv v uv) with
+	      ff => (connected_h v y N g (uwarray_set bool N mv v tt uv) (get_neighbors v N g uv) uv uy uz')
+	    | tt => (connected_h v y N g mv l' uv uy uz'')
+	    end
+        end
+    | tt => tt
+    end.
+
+Define spec connected :=
+  fun connected(x y:node)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
+               (ux : { (ltword x N) = tt })
+	       (uy : { (ltword y N) = tt }):bool.
+    abbrev x_ns = (get_neighbors x N g ux) in
+      (connected_h x y N g mv x_ns ux uy [get_neighbors_bounded x N g ux]).
+
+Define connected2_h :=
+  fun connected2_h(x y:node)(l:<list node>)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
+                 (connected2_f : Fun(x y:node)(N:word)(g:<graph N>)
 		 (mv : <uwarray bool N>)
 		 (ux : { (ltword x N) = tt })
 		 (uy : { (ltword y N) = tt }).bool)
@@ -130,33 +160,33 @@ Define connected_h :=
 	abbrev p1 = trans join (ltword v N) (fun(n:node):bool.(ltword n N) v) [list_all_cons_tt_head node fun(n:node):bool.(ltword n N) v l' p1_u] in
         let keep_searching = 
             match (uwarray_get bool N mv v p1) with
-              ff => (not (connected_f v y N g (uwarray_set bool N mv v tt p1) p1 uy))
+              ff => (not (connected2_f v y N g (uwarray_set bool N mv v tt p1) p1 uy))
             | tt => tt
             end
         in
           match keep_searching with
-            ff => tt % (connected_f v y ...) returned true
-          | tt => (connected_h x y l' N g mv connected_f ux uy
+            ff => tt % (connected2_f v y ...) returned true
+          | tt => (connected2_h x y l' N g mv connected2_f ux uy
                               hypjoin (adjlist_bounded l' N) tt by [list_all_cons_tt_tail node fun(n:node):bool.(ltword n N) v l' p1_u] end)
           end
     end.
 
-Define spec connected :=
-  fun connected(x y:node)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
+Define spec connected2 :=
+  fun connected2(x y:node)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
                (ux : { (ltword x N) = tt })
                (uy : { (ltword y N) = tt }):bool.
     abbrev x_ns = (get_neighbors x N g ux) in
     match (member node y x_ns eqword) with
-      ff => (connected_h x y x_ns N g mv connected ux uy
+      ff => (connected2_h x y x_ns N g mv connected2 ux uy
 	      [get_neighbors_bounded x N g ux])
     | tt => tt
     end.
-
-Set "print_parsed".
-Set "debug_hypjoin_normalize".
+    
+%Set "print_parsed".
+%Set "debug_hypjoin_normalize".
 
 %- will not compile when uncommented -%
-Define spec is_cyclic_h :=
+%- Define spec is_cyclic_h :=
   fun is_cyclic_h(N:word)(g:<graph N>)(n:nat)
                  (u : { (ltword (nat_to_word n) N) = tt }):bool.
     match (connected (nat_to_word n) (nat_to_word n) N g (uwarray_new bool N ff) u u) with
@@ -176,7 +206,7 @@ Define spec is_cyclic :=
     | S n' => (is_cyclic_h N g (word_to_nat n')
                   join (ltword (nat_to_word n') N) tt)
     end.
-
+-%
   
 Define no_edge_graph :=
   fun(N:word):<graph N>. 
@@ -216,7 +246,6 @@ Interpret (connected word0 word1 word4 g (uwarray_new bool word4 ff)
 Interpret (connected word2 word3 word4 g (uwarray_new bool word4 ff)
                      join (ltword word2 word4) tt
 		     join (ltword word3 word4) tt).
-
 
 %%%%% Ideas %%%%%
 % Define cyclic :=
