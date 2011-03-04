@@ -76,3 +76,6 @@ Define eq_pair : Fun(A B:type)(eqA:Fun(x y : A). bool)(eqB:Fun(x y : B). bool)(^
   fun(A B:type)(eqA:Fun(x y : A). bool)(eqB:Fun(x y : B). bool)(^#owned p1 p2 : <pair A B>).
     (and (eqA (fst A B p1) (fst A B p2)) (eqB (snd A B p1) (snd A B p2))).
     
+Total fst fstTot.
+Total snd sndTot.
+Total mkpair pair_total.
