@@ -1,5 +1,6 @@
 Include trusted "../lib/word.g".
 Include trusted "../lib/list.g".
+Include trusted "../lib/pair.g".
 Include trusted "../lib/uwarray.g".
 Include trusted "../lib/warray.g".
 
@@ -22,13 +23,6 @@ Inductive graph : Fun(N:word).type :=
 .
             <graph N>.
 
-Define graph_to_warray :=
-  fun(N:word)(g:<graph N>):<warray <list node> N>.
-    match g with
-      mkgraph _ arr _ => cast arr by cong <warray <list node> *> 
-                                       symm inj <graph *> g_Eq 
-    end.
-    
 Define get_neighbors :=
   fun(x:node)(N:word)(g:<graph N>)(u : { (ltword x N) = tt }):<list node>.
     match g with
@@ -51,6 +45,91 @@ Define get_neighbors_bounded
 
 	  trans cong (adjlist_bounded * N) p1
 	  trans symm p3 p2
+    end.
+
+Define no_edge_graph :=
+  fun(N:word):<graph N>. 
+    abbrev arr = (warray_new <list word> N (nil word)) in
+      (mkgraph N arr
+               abbrev v = (mkvec <list word> (nil word) (word_to_nat N)) in
+	       abbrev v_eq = join v (mkvec <list word> (nil word) (word_to_nat N)) in
+               abbrev p1 = join (fun(l:<list node>):bool.(adjlist_bounded l N) nil) tt in
+	       hypjoin (nodes_bounded N arr) tt by [mkvec_implies_vec_all <list word> (nil word) (word_to_nat N) v fun(l:<list node>):bool.(adjlist_bounded l N) v_eq p1] end
+	       ). 
+
+Inductive edge : Fun(N:word).type :=
+  mkedge : Fun(N:word)(p:<pair word word>)
+              (ux : { (ltword (fst p) N) = tt })
+              (uy : { (ltword (snd p) N) = tt }).
+           <edge N>.
+
+%-
+Define get_edges_bounded : Forall(N:word)(l:<list <edge N>>).
+  { (list_all edge fun(e:edge):bool.(and (ltword (fst e) N) (ltword (snd e) N)) l) = tt } :=
+    foralli(N:word)(l:<list <edge N>>).
+    case e with
+      mkedge _ p ux uy =>
+          abbrev p1 = hypjoin (get_neighbors x N g) (vec_get arr (to_nat x)) by g_eq end in
+
+	  abbrev p2_u1 = trans symm [ltword_to_lt x N] u in	  
+	  abbrev p2_u2 = hypjoin (vec_all <list node> fun(l:<list node>):bool.(adjlist_bounded l N) arr) tt by g_eq g_u end in
+          abbrev p2 = [vec_all_get <list node> (word_to_nat N) (word_to_nat x) arr fun(l:<list node>):bool.(adjlist_bounded l N) p2_u1 p2_u2] in
+	  abbrev p3 = join (fun(l:<list node>):bool.(adjlist_bounded l N) (vec_get arr (word_to_nat x)))
+	                       (adjlist_bounded (vec_get arr (word_to_nat x)) N) in
+
+	  trans cong (adjlist_bounded * N) p1
+	  trans symm p3 p2
+    end.
+-%
+
+Define graph_from_edges_h :=
+  fun(N:word)(l:<list <edge N>>)(g:<graph N>):<graph N>.
+    match g with
+      mkgraph _ arr g_u =>
+        match l with
+	  nil _ => g
+	| cons _ v l' =>
+	    match v with
+	      mkedge _ p ux uy =>
+	        match p with
+		  mkpair _ _ x y =>
+		  % show (fst p) = x
+		  % show (snd p) = y
+
+		  abort <graph N>
+		    %-
+
+	            abbrev x_ns = (cons node y (get_neighbors x N g ux)) in % add y as a neighbor of x
+		    (mkgraph N (warray_set <list word> x x_ns N arr ux) 
+ 		    
+                      abbrev p1 = join (vec_all fun(l:<list node>):bool.(adjlist_bounded l N) (warray_set x x_ns arr))
+		                       (nodes_bounded N (warray_set x x_ns arr)) in
+		      abbrev p2_u2 = hypjoin (vec_all fun(l:<list node>):bool.(adjlist_bounded l N) arr) tt by g_u end in
+	              abbrev p2_u3 = hypjoin (fun(l:<list node>):bool.(adjlist_bounded l N) x_ns) tt by [get_neighbors_bounded x N g ux] uy end in
+		      abbrev p2 = [warray_all_set <list word> x x_ns N arr
+		                           fun(l:<list node>):bool.(adjlist_bounded l N)
+				           ux
+				           p2_u2
+				           p2_u3] in
+
+	              symm trans symm p2 p1
+                    )
+		    -%
+
+	        end
+	    end
+        end
+    end.
+  
+Define graph_from_edges :=
+  fun(N:word)(l:<list <edge N>>):<graph N>.
+    (graph_from_edges_h N l (no_edge_graph N)).
+    
+Define graph_to_warray :=
+  fun(N:word)(g:<graph N>):<warray <list node> N>.
+    match g with
+      mkgraph _ arr _ => cast arr by cong <warray <list node> *> 
+                                       symm inj <graph *> g_Eq 
     end.
 
 Define spec adjacent_h := fun(x:node)(l:<list node>). (member node x l eqword).
@@ -208,15 +287,6 @@ Define spec is_cyclic :=
     end.
 -%
   
-Define no_edge_graph :=
-  fun(N:word):<graph N>. 
-    abbrev arr = (warray_new <list word> N (nil word)) in
-      (mkgraph N arr
-               abbrev v = (mkvec <list word> (nil word) (word_to_nat N)) in
-	       abbrev v_eq = join v (mkvec <list word> (nil word) (word_to_nat N)) in
-               abbrev p1 = join (fun(l:<list node>):bool.(adjlist_bounded l N) nil) tt in
-	       hypjoin (nodes_bounded N arr) tt by [mkvec_implies_vec_all <list word> (nil word) (word_to_nat N) v fun(l:<list node>):bool.(adjlist_bounded l N) v_eq p1] end
-	       ). 
 
 %%%%%%
 %  below we construct the following graph for testing:
