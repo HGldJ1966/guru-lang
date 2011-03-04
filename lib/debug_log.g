@@ -25,9 +25,6 @@ Even if we can control printing, the printing code is still generated.
 But, unfortunately, I don't know how to completely eliminate the
 unnecessary computation when we decided not to print.
 -%
-
-%=============================================================================
-% logging
 %=============================================================================
 Include trusted "../lib/char.g".
 Include trusted "../lib/string.g".
@@ -90,39 +87,3 @@ Define log_nat := fun(^n:nat) : void.
 Define log_nat' := fun(!n:nat) : void.
 	let w = (inc_word_by_nat word0 (inspect nat n)) in
 	(log_word_d w).
-
-
-%=============================================================================
-% example
-%=============================================================================
-Include "../lib/stdio.g".
-
-Define sum := fun sum(n:nat) : nat.
-  match !n with
-  	Z =>
-  		do
-  		(consume_unowned nat n)
-  		Z
-  		end
-  | S n' =>
-  		do
-  		(log_nat' n)
-  		(log_char '\n')
-  		(plus n (sum n'))
-  		end
-  end.
-  
-Define main :=
-	let	v = (sum five) in
-	do
-	(log_string "---\n" )
-	let v' = (inc_word_by_nat word0 (inspect nat v)) in
-	let stdio = (print_string stdio (word_num_to_string v')) in
-	let stdio = (print_char stdio '\n') in
-	do
-	(consume_unowned nat v)
-	(consume_unique_point stdio_t stdio)
-	end
-	end.
-
-Compile main to "debug_log.c".

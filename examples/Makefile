@@ -1,6 +1,6 @@
 CFLAGS=-w -m32 -DDEBUG
 
-all: print-uwarray debug_log debug_log_r sort_example
+all: print-uwarray debug_log debug_log_r sort_example sort_example2
 
 # special rules
 

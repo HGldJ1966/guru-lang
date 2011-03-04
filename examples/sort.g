@@ -6,15 +6,15 @@ Include trusted "../lib/ulist.g".
 
 Define ufilter := fun ufilter
 	(A C:type)
-	(^#owned c:C)
 	(f:Fun(^#owned c:C)(#untracked a:A).bool)
+	(^#owned c:C)
 	(^#owned l:<ulist A>)
 	: <ulist A> .
     match l with
        unil _ => (unil A)
     | ucons _ a l' => match (f (clone_owned C c) a) with 
-                       ff => (ufilter A C c f l')
-                     | tt => (ucons A a (ufilter A C c f l'))
+                       ff => (ufilter A C f c l')
+                     | tt => (ucons A a (ufilter A C f c l'))
                      end
     end.
 
@@ -45,8 +45,8 @@ Define usort := fun usort
 				match c with usort_ctxt _ lt p => (lt p x) end in
 			
 			let c = (usort_ctxt A lt p) in
-      let	l1 = (ufilter A C (inspect C c) lte_p (clone_owned <ulist A> xs)) in
-      let l2 = (ufilter A C (inspect C c) gt_p xs) in
+      let	l1 = (ufilter A C lte_p (inspect C c) (clone_owned <ulist A> xs)) in
+      let l2 = (ufilter A C gt_p (inspect C c) xs) in
       let l1' = (usort A lt (inspect <ulist A> l1)) in
       let l2' = (usort A lt (inspect <ulist A> l2)) in
       let rval = (uappend A (inspect <ulist A> l1') (ucons A p l2')) in
