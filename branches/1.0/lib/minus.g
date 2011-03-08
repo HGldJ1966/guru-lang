@@ -364,3 +364,9 @@ Define minus_S_lt : Forall(x y z:nat)(u:{ (minus x y) = (S z)}).
             [x_IH x' y' z hypjoin (minus x' y') (S z) by x_eq y_eq u end]
     end
   end.
+
+Define trusted minus_lt : Forall(x y z:nat)
+                                (u1:{(le x z) = tt})
+                                (u2:{(lt z y) = tt}).
+                            { (lt (minus z x) (minus y x)) = tt} :=
+  truei.
