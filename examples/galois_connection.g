@@ -17,7 +17,7 @@ thm1 proves Def1 implies Def2.
 thm2_1 ... thm2_4 proves Def2 implies each of Def1.
 
 More discussion comes at the bottom of this file.
-%-
+-%
 
 Include "../lib/bool.g".
 
@@ -71,43 +71,43 @@ Define thm1 : Forall
 	
 	% proof starts
 	foralli(x:D)(y:E).
-	existse [a_tot x] foralli(ax:E)(ax_pf:{ (a x) = ax }).
-	existse [c_tot y] foralli(cy:D)(cy_pf:{ (c y) = cy }).
-	existse [ltE_tot ax y] foralli(lhs:bool)(lhs_pf:{ (ltE ax y) = lhs }).
-	existse [ltD_tot x cy] foralli(rhs:bool)(rhs_pf:{ (ltD x cy) = rhs }).
+	abbrev ax = terminates (a x) by [a_tot x] in
+	abbrev cy = terminates (c y) by [c_tot y] in
+	abbrev acy = terminates (a cy) by [a_tot cy] in
+	abbrev cax = terminates (c ax) by [c_tot ax] in
+	abbrev lhs = terminates (ltE ax y) by [ltE_tot ax y] in
+	abbrev rhs = terminates (ltD x cy) by [ltD_tot x cy] in
 	case lhs with
 		ff =>
 			case rhs with
 				ff =>
-					hypjoin (ltE (a x) y) (ltD x (c y)) by ax_pf cy_pf lhs_pf rhs_pf lhs_eq rhs_eq end
+					hypjoin (ltE (a x) y) (ltD x (c y)) by lhs_eq rhs_eq end
 			| tt =>
 					contra
-					abbrev p3 = hypjoin (ltE ax y) ff by lhs_pf lhs_eq end in
-					abbrev p1 = hypjoin (ltD x cy) tt by rhs_pf rhs_eq end in
-					% have p2: (ltE (a x) (a cy)) = tt
+					abbrev p3 = hypjoin (ltE ax y) ff by lhs_eq end in
+					abbrev p1 = hypjoin (ltD x cy) tt by rhs_eq end in
+					% p2: (ltE (a x) (a cy)) = tt
 					abbrev p2 = [u1 x cy p1] in
-					existse [a_tot cy] foralli(acy:E)(acy_pf:{ (a cy) = acy }).
 					
 					% want: (ltE (a (c y)) y) = tt
 					abbrev p4 = [u4 y] in
-					abbrev p4' = hypjoin (ltE acy y) tt by p4 cy_pf acy_pf end in
-					abbrev p2' = hypjoin (ltE ax acy) tt by p2 ax_pf acy_pf end in
+					abbrev p4' = hypjoin (ltE acy y) tt by p4 end in
+					abbrev p2' = hypjoin (ltE ax acy) tt by p2 end in
 					trans symm [ltE_tra ax acy y p2' p4']
 					trans p3
 								clash ff tt
 					{ (ltE (a x) y) = (ltD x (c y)) }
 			end
 	| tt =>
-			abbrev p1 = hypjoin (ltE ax y) tt by lhs_pf lhs_eq end in
+			abbrev p1 = hypjoin (ltE ax y) tt by lhs_eq end in
 			% p2: (ltD (c ax) (c y)) = tt
 			abbrev p2 = [u2 ax y p1] in
 			% p3: (ltD x (c (a x))) = tt
 			abbrev p3 = [u3 x] in
-			existse [c_tot ax] foralli(cax:D)(cax_pf:{ (c ax) = cax }).
-			abbrev p3' = hypjoin (ltD x cax) tt by p3 cax_pf ax_pf end in
-			abbrev p2' = hypjoin (ltD cax cy) tt by p2 cax_pf cy_pf end in
+			abbrev p3' = hypjoin (ltD x cax) tt by p3 end in
+			abbrev p2' = hypjoin (ltD cax cy) tt by p2 end in
 			abbrev p4 = [ltD_tra x cax cy p3' p2'] in
-			hypjoin (ltE (a x) y) (ltD x (c y)) by p4 ax_pf cy_pf lhs_pf lhs_eq end
+			hypjoin (ltE (a x) y) (ltD x (c y)) by p4 lhs_eq end
 	end
 	.
 
