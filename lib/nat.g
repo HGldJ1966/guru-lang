@@ -514,6 +514,28 @@ Define lt_Z : Forall(a:nat).{ (lt a Z) = ff } :=
 		join (lt (S a') Z) ff
 	end.
 
+Define lt_leff : Forall(a b:nat)(u:{ (lt a b) = tt }).{ (le b a) = ff }
+  :=
+  induction(a b:nat) return Forall(u:{ (lt a b) = tt }).{ (le b a) = ff }
+  with
+    Z =>
+      foralli(u:{ (lt a b) = tt }).
+      contra
+      trans symm u
+      trans hypjoin (lt a b) ff by [lt_Z a] b_eq end
+            clash ff tt
+      { (le b a) = ff }
+  | S b' =>
+      foralli(u:{ (lt a b) = tt }).
+      case a with
+        Z => hypjoin (le b a) ff by b_eq a_eq end
+      | S a' =>
+          abbrev u' = hypjoin (lt a' b') tt by u a_eq b_eq end in
+          abbrev p1 = [b_IH a' b' u'] in
+          hypjoin (le b a) ff by p1 a_eq b_eq end
+      end
+  end.
+
 Define lt_ltff : Forall(a b:nat)(u:{ (lt a b) = tt }).{ (lt b a) = ff }
   :=
   induction(a b:nat) return Forall(u:{ (lt a b) = tt }).{ (lt b a) = ff }
