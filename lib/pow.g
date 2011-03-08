@@ -100,6 +100,14 @@ Define pow2_add : Forall (e : nat).{(plus (pow2 e) (pow2 e)) = (pow2 (S e))} :=
 		cong (pow two (S *)) [plusZ e]
 	end.
 
+Define trusted pow_lt : Forall(base exp:nat)(u: {(lt one base) = tt}).
+  {(lt (pow base exp) (pow base (S exp))) = tt} :=
+    truei.
+
+Define trusted pow_gt_zero : Forall(b e : nat)(u:{ b != Z }).
+  {(lt Z (pow b e)) = tt} :=
+    truei.
+
 % return ff if even, tt if odd.
 Define mod2 :=
   fun mod2(n:nat):bool. 

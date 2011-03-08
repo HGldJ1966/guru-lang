@@ -1,6 +1,8 @@
 Include trusted "../lib/word.g".
 Include trusted "../lib/list.g".
 Include trusted "../lib/pair.g".
+Include trusted "../lib/pow.g".
+Include trusted "../lib/minus.g".
 Include trusted "../lib/uwarray.g".
 Include trusted "../lib/warray.g".
 
@@ -216,7 +218,61 @@ Define spec connected2 :=
 	      [get_neighbors_bounded x N g ux])
     | tt => tt
     end.
+%-
+Define spec mk_complete_bintree_h :=
+  fun mk_complete_bintree_h(N:word)(l:<list <edge N>>)(n:nat)
+			   (u1:{ (lt n (to_nat N)) = tt }) % n is bounded
+			   (u2:{ (lt (mult2 n) (to_nat N)) = tt }) % the nodes n are pointing to are bounded
+			   (u3:{ (le n (to_nat word_max)) = tt}):
+			   <list <edge N>>.
+    abbrev u' = hypjoin (ltword (nat_to_word n) N) tt by u [word_to_nat_to_word N] end in
+    match n with
+          Z => l
+	| S n' => % node n' has two edges one to node 2n'+1 and another to node 2n'+2
+	  (mk_complete_bintree_h N (cons edge (mkedge N (nat_to_word n') (nat_to_word (S (mult2 n')))
+	                             % (nat_to_word n') < N
+			             % (nat_to_word (S (mult2 n'))) < N
+			             )
+				     (cons (mkedge N (nat_to_word n') (nat_to_word (S (S (mult2 n'))))
+	                                % (nat_to_word n') < N
+				        % (nat_to_word (S (S (mult2 n')))) < N
+				     ) l))
+	    n'
+	    % n' < (to_nat N)
+	    % (mult2 n) < (to_nat N)
+           )
+    end.	          
 
+% constructs a complete binary-tree of height h
+Define spec mk_complete_bintree := 
+  fun mk_complete_bintree(h:nat)
+                         (u:{ (le (minus (pow two (S h)) one) (to_nat word_max)) = tt }):
+    <graph (nat_to_word (minus (pow two (S h)) one))>.
+    abbrev num_nodes = (minus (pow two (S h)) one) in % number of nodes in the tree
+    abbrev N = (nat_to_word num_nodes) in
+
+    abbrev nonleaf_nodes = (minus (pow two h) one) in % number of nodes without the leaves
+    abbrev nonleaf_nodes_lt_num_nodes =
+      hypjoin (lt nonleaf_nodes num_nodes) tt by
+	[minus_lt one (pow two (S h)) (pow two h)
+	  hypjoin (le one (pow two h)) tt by [lt_S_le Z (pow two h) [pow_gt_zero two h clash two Z]] end
+  	  [pow_lt two h join (lt one two) tt]] end in
+
+    %abbrev m2nonleaf_nodes_lt_num_nodes = 
+    
+    abbrev nonleaf_nodes_le_word_max = [lt_implies_le nonleaf_nodes (to_nat word_max)
+      [ltle_trans nonleaf_nodes num_nodes (to_nat word_max) nonleaf_nodes_lt_num_nodes u]] in
+
+    let edge_list = (mk_complete_bintree_h N (nil <edge N>) nonleaf_nodes
+      trans cong (lt nonleaf_nodes *) [nat_to_word_to_nat num_nodes u]
+        nonleaf_nodes_lt_num_nodes
+      % m2nonleaf < N
+      nonleaf_nodes_le_word_max) in
+
+
+      (graph_from_edges (nat_to_word num_nodes) edge_list).
+-%
+    
 %Set "print_parsed".
 %Set "debug_hypjoin_normalize".
 
