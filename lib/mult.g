@@ -223,6 +223,10 @@ Define mult_distr : Forall(x y z:nat).{ (mult (plus x y) z) = (plus (mult x z) (
           cong (plus (mult x z) *)
                [mult_comm z y].
 
+Define trusted mult_dist_minus : Forall(x y z:nat).
+  { (mult x (minus y z)) = (minus (mult x y) (mult x z)) } :=
+  truei.
+  
 Define mult_foil : Forall(a b c d:nat).{ (mult (plus a b) (plus c d)) = (plus (plus (plus (mult a c) (mult a d)) (mult b c)) (mult b d)) } :=
   foralli(a b c d:nat).
     trans [mult_dist terminates (plus a b) by plus_total c d]
@@ -255,6 +259,9 @@ Define mult_foil : Forall(a b c d:nat).{ (mult (plus a b) (plus c d)) = (plus (p
                                 (mult a d)
                                 (mult b c)].
 
+Define trusted mult_ge_x : Forall(x y:nat)(u:{ y != Z }).{ (le x (mult x y)) = tt } :=
+  truei.
+  
 Define mult_lt : Forall(x y z : nat)(u: { (lt y z) = tt}).
                  { (lt (mult (S x) y) (mult (S x) z)) = tt } :=
   foralli(x y z : nat)(u: { (lt y z) = tt}).
@@ -271,3 +278,5 @@ Define mult_lt : Forall(x y z : nat)(u: { (lt y z) = tt}).
            [plus_lt_both y z (mult (S x') y) (mult (S x') z) u [x_IH x']]
   end x].
 
+Define trusted mult_lt2 : Forall(x y : nat)(u1:{ x != Z })(u2: { (lt one x) = tt}).
+                 { (lt x (mult y x))  = tt } := truei.

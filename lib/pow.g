@@ -104,6 +104,10 @@ Define trusted pow_lt : Forall(base exp:nat)(u: {(lt one base) = tt}).
   {(lt (pow base exp) (pow base (S exp))) = tt} :=
     truei.
 
+Define trusted pow_lt2 : Forall(b e:nat)(u: {e !=  Z}).
+  {(le b (pow b e)) = tt} :=
+  truei.
+
 Define trusted pow_gt_zero : Forall(b e : nat)(u:{ b != Z }).
   {(lt Z (pow b e)) = tt} :=
     truei.
