@@ -351,6 +351,10 @@ Define lt_to_nat_ltword :
   			u
   .
 
+Define trusted le_to_nat_leword :
+  Forall(n:nat)(w:word)(u:{ (le n (to_nat w)) = tt }).
+    { (leword (nat_to_word n) w) = tt }
+  := truei.
 
 %=============================================================================
 % word incrementing
