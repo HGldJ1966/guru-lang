@@ -38,7 +38,8 @@ Define ks :=
     end.
 
 Define ks_even :
-  Forall(n:nat). Exists(u:{ (interp (ks (mult n two))) = k }). { (interp (ks (S (mult n two)))) = (app k k) } :=
+  Forall(n:nat). Exists(u:{ (interp (ks (mult n two))) = k }).
+                          { (interp (ks (S (mult n two)))) = (app k k) } :=
   induction(n:nat)
   return Exists(u:{ (interp (ks (mult n two))) = k }). { (interp (ks (S (mult n two)))) = (app k k) }
   with 

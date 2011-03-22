@@ -6,6 +6,8 @@ Include trusted "../lib/minus.g".
 Include trusted "../lib/uwarray.g".
 Include trusted "../lib/warray.g".
 
+%Set "trust_hypjoins".
+
 Define node := word.
 
 % test if all nodes in a list of adjacent ones are bounded.
@@ -235,12 +237,12 @@ Define spec mk_complete_bintree_h :=
 	  abbrev y1 = (nat_to_word (plus (mult two n') one)) in
 	  abbrev y2 = (nat_to_word (plus (mult two n') two)) in
 
-	  %-+++ x is bounded +++-%
+	  %---- x is bounded ----%
           abbrev p1 = [ltle_trans n' (S n') n [lt_S n'] [eq_le (S n') n symm n_eq]] in % n' <= n
 	  abbrev u1' = [lt_trans n' n (word_to_nat N) p1 u1] in
 	  abbrev x_bounded = [lt_to_nat_ltword n' N u1'] in
 
-	  %-+++ y2 is bounded +++-%	  
+	  %---- y2 is bounded ----%	  
 	  abbrev p2 = [minusS3 n n' n_eq] in % n' = n-1
 	  abbrev p3 = trans [mult_dist_minus two n one]
 	                cong (minus (mult two n) *) [multOne two] in % 2(n-1) = 2n-2
@@ -255,20 +257,20 @@ Define spec mk_complete_bintree_h :=
 	  abbrev y2_bounded_nat = [lelt_trans (plus (mult two n') two) (mult two n) (word_to_nat N) p5 u2] in  % y2 < N
 	  abbrev y2_bounded = [lt_to_nat_ltword (plus (mult two n') two) N y2_bounded_nat] in
 
-	  %-+++ y1 is bounded +++-%
+	  %---- y1 is bounded ----%
 	  abbrev p6 = [plus_lt (mult two n') one two join (lt one two) tt] in % 2n'+1 < 2n'+2
 	  
 	  abbrev y1_bounded_nat = [lt_trans (plus (mult two n') one) (plus (mult two n') two) (word_to_nat N) p6 y2_bounded_nat] in
 	  abbrev y1_bounded = [lt_to_nat_ltword (plus (mult two n') one) N y1_bounded_nat] in
 
-	  %-+++ 2*n' is bounded +++-%
+	  %---- 2*n' is bounded ----%
 	  abbrev p9 = [plus_lt (mult two n') Z one join (lt Z one) tt] in % 2n'+0 < 2n'+1
 	  abbrev p10 = [eq_le (mult two n') (plus (mult two n') Z) symm [plusZ (mult two n')]] in % 2n' <= 2n'+0
 	  abbrev p11 = [lelt_trans (mult two n') (plus (mult two n') zero) (plus (mult two n') one) p10 p9] in % 2n' < 2n'+1
 
 	  abbrev u2' = [lt_trans (mult two n') (plus (mult two n') one) (word_to_nat N) p11 y1_bounded_nat] in
 
-	  %-+++ n' <= word_max +++-%
+	  %---- n' <= word_max ----%
 	  abbrev p12 = symm trans symm [lt_S n']
 	                cong (lt n' *) symm n_eq in
 	  abbrev u3' = [lt_implies_le n' (word_to_nat word_max) [ltle_trans n' n (word_to_nat word_max) p12 u3]] in
@@ -303,14 +305,14 @@ Define spec mk_complete_bintree :=
     % number of nodes without leaves
     abbrev nonleaf_nodes = (minus (pow two h) one) in 
 
-    %-+++ non-leaf nodes are bounded by num_nodes +++-%
+    %---- non-leaf nodes are bounded by num_nodes ----%
     abbrev nonleaf_bounded = 
       hypjoin (lt nonleaf_nodes num_nodes) tt by
 	[minus_lt one (pow two (S h)) (pow two h)
 	  hypjoin (le one (pow two h)) tt by [lt_S_le Z (pow two h) [pow_gt_zero two h clash two Z]] end
   	  [pow_lt two h join (lt one two) tt]] end in 
 	  
-    %-+++ 2*(nonleaf_nodes) is bounded by num_nodes +++-%
+    %---- 2*(nonleaf_nodes) is bounded by num_nodes ----%
     abbrev p1 = trans cong (minus (mult * (pow two h)) one) symm [first_power two]
       cong (minus * one) [pow_mult h two one] in % 2(2^h)-1 = 2^(h+1)-1 
     abbrev p2 = symm [mult_dist_minus two (pow two h) one] in % 2(2^h)-2 = 2((2^h)-1)
@@ -330,7 +332,7 @@ Define spec mk_complete_bintree :=
     % rephrase proof in terms of N
     abbrev m2nonleaf_bounded = trans cong (lt (mult two nonleaf_nodes) *) [nat_to_word_to_nat num_nodes u] p9 in
     
-    %-++++ non-leaf nodes are bounded by word_max +++-%
+    %---- non-leaf nodes are bounded by word_max ----%
     abbrev nonleaf_le_word_max = [lt_implies_le nonleaf_nodes (word_to_nat word_max)
       [ltle_trans nonleaf_nodes num_nodes (word_to_nat word_max) nonleaf_bounded u]] in
 
@@ -343,7 +345,7 @@ Define spec mk_complete_bintree :=
 %Set "print_parsed".
 %Set "debug_hypjoin_normalize".
 
-%-+++ TODO +++
+%---- TODO ---
 Define spec is_cyclic_h :=
   fun is_cyclic_h(N:word)(g:<graph N>)(n:nat)
                  (u : { (ltword (nat_to_word n) N) = tt }):bool.
@@ -367,7 +369,7 @@ Define spec is_cyclic :=
 -%
   
 
-%++++++
+%------
 %  below we construct the following graph for testing:
 %
 %      0    3
@@ -375,7 +377,7 @@ Define spec is_cyclic :=
 %        v
 %  1 <-- 2
 %
-%++++++
+%------
 
 Define spec g := (add_edge word2 word1
                       word4
@@ -395,6 +397,8 @@ Define edge_list := (cons <edge word4> (mkedge word4 word2 word1
 				  
 Define spec g2 := (graph_from_edges word4 edge_list).
 
+%-
+
 % this should be true
 Interpret (connected word0 word1 word4 g (uwarray_new bool word4 ff)
                      join (ltword word0 word4) tt
@@ -411,8 +415,10 @@ Interpret (mk_complete_bintree one
    join (lt two (word_to_nat word_max)) tt
   clash one Z).
   
-%+++ Ideas +++%
+%--- Ideas ---%
 % Define cyclic :=
 % Define bipartite :=
 % Define tree := (connected acyclic graph)
 % Define shortest_path :=
+
+-%
