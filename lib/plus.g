@@ -111,7 +111,7 @@ Define plus_eq_Z1 : Forall(n m: nat)(u:{(plus n m) = Z}).{n = Z} :=
             contra
               trans
                 trans symm u hypjoin (plus n m) (S (plus n' m)) by un end
-                clash (S terminates (plus n' m) by plus_total) Z
+                clash (S (plus n' m)) Z
               { n = Z }
   end.
 

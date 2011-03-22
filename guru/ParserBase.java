@@ -329,9 +329,12 @@ public class ParserBase {
 		    }
 	    }
 	    else if (c == '-') {
-		// we are expecting this will end a nested comment
+		// this might be ending a nested comment
 		int j = getc();
 		if ((char)j == '%') {
+		    if (in_single_line_comment)
+			handleError("A comment is being closed with \"-%\" "
+				    +"inside a single-line comment.  This is not allowed.\n");
 		    if (comment_level == 0)
 			handleError("A comment is being closed with \"-%\" "
 				    +"where\nthe parser does not find a"
@@ -339,6 +342,8 @@ public class ParserBase {
 				    +"to start the comment.");
 		    comment_level--;
 		}
+		else 
+		    ungetc(j);
 	    }
 	    else if (comment_level == 0) {
 		// we have encountered a non-whitespace character that
