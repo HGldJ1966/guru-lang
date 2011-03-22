@@ -219,33 +219,75 @@ Define spec connected2 :=
     | tt => tt
     end.
 
+%Set "print_parsed".
+%Set "debug_hypjoin_normalize".
 Define spec mk_complete_bintree_h :=
   fun mk_complete_bintree_h(N:word)(g:<graph N>)(n:nat)
 			   (u1:{ (lt n (to_nat N)) = tt }) % n is bounded
 			   (u2:{ (lt (mult two n) (to_nat N)) = tt }) % the nodes n are pointing to are bounded
 			   (u3:{ (le n (to_nat word_max)) = tt}):
 			   <graph N>.
-    abbrev u' = hypjoin (ltword (nat_to_word n) N) tt by u1 [word_to_nat_to_word N] end in
     match n with
-          Z => g
-	| S n' => % node n' has two edges one to node 2n'+1 and another to node 2n'+2
-	  abort <graph N>
-%-
-	  (mk_complete_bintree_h N (cons edge (mkedge N (nat_to_word n') (nat_to_word (S (mult2 n')))
-	                             % (nat_to_word n') < N
-			             % (nat_to_word (S (mult2 n'))) < N
-			             )
-				     (cons (mkedge N (nat_to_word n') (nat_to_word (S (S (mult2 n'))))
-	                                % (nat_to_word n') < N
-				        % (nat_to_word (S (S (mult2 n')))) < N
-				     ) l))
-	    n'
-	    % n' < (to_nat N)
-	    % (mult2 n) < (to_nat N)
+      Z => g
+    | S n' => % node n' has two edges one to node 2n'+1 and another to node 2n'+2
 
+          abbrev x = (nat_to_word n') in
+	  abbrev y1 = (nat_to_word (plus (mult two n') one)) in
+	  abbrev y2 = (nat_to_word (plus (mult two n') two)) in
+
+	  %-+++ x is bounded +++-%
+          abbrev p1 = [ltle_trans n' (S n') n [lt_S n'] [eq_le (S n') n symm n_eq]] in % n' <= n
+	  abbrev u1' = [lt_trans n' n (word_to_nat N) p1 u1] in
+	  abbrev x_bounded = [lt_to_nat_ltword n' N u1'] in
+
+	  %-+++ y2 is bounded +++-%	  
+	  abbrev p2 = [minusS3 n n' n_eq] in % n' = n-1
+	  abbrev p3 = trans [mult_dist_minus two n one]
+	                cong (minus (mult two n) *) [multOne two] in % 2(n-1) = 2n-2
+
+	  abbrev p4 =  trans cong (plus (mult two *) two) p2 % 2n'+2 = 2(n-1)+2
+	                  trans cong (plus * two) p3 % 2(n-1)+2 = 2n-2+2
+			  trans [plus_comm (minus (mult two n) two) two] % (2n-2)+2 = 2+(2n-2)
+                          trans symm [minus_plus_order two (mult two n) two] % 2+(2n-2) = (2+2n)-2
+			  [minus_plus1 two (mult two n)] in % (2+2n)-2 = 2n
+	  abbrev p5 = [eq_le (plus (mult two n') two) (mult two n) p4] in % y2 <= 2n
+	  
+	  abbrev y2_bounded_nat = [lelt_trans (plus (mult two n') two) (mult two n) (word_to_nat N) p5 u2] in  % y2 < N
+	  abbrev y2_bounded = [lt_to_nat_ltword (plus (mult two n') two) N y2_bounded_nat] in
+
+	  %-+++ y1 is bounded +++-%
+	  abbrev p6 = [plus_lt (mult two n') one two join (lt one two) tt] in % 2n'+1 < 2n'+2
+	  
+	  abbrev y1_bounded_nat = [lt_trans (plus (mult two n') one) (plus (mult two n') two) (word_to_nat N) p6 y2_bounded_nat] in
+	  abbrev y1_bounded = [lt_to_nat_ltword (plus (mult two n') one) N y1_bounded_nat] in
+
+	  %-+++ 2*n' is bounded +++-%
+	  abbrev p9 = [plus_lt (mult two n') Z one join (lt Z one) tt] in % 2n'+0 < 2n'+1
+	  abbrev p10 = [eq_le (mult two n') (plus (mult two n') Z) symm [plusZ (mult two n')]] in % 2n' <= 2n'+0
+	  abbrev p11 = [lelt_trans (mult two n') (plus (mult two n') zero) (plus (mult two n') one) p10 p9] in % 2n' < 2n'+1
+
+	  abbrev u2' = [lt_trans (mult two n') (plus (mult two n') one) (word_to_nat N) p11 y1_bounded_nat] in
+
+	  %-+++ n' <= word_max +++-%
+	  abbrev p12 = symm trans symm [lt_S n']
+	                cong (lt n' *) symm n_eq in
+	  abbrev u3' = [lt_implies_le n' (word_to_nat word_max) [ltle_trans n' n (word_to_nat word_max) p12 u3]] in
+	  
+	  (mk_complete_bintree_h N
+	    (add_edge x y1 N 
+	      (add_edge x y2 N g
+	        x_bounded
+		y2_bounded
+	      )
+	      x_bounded
+	      y1_bounded
+            )
+	    n'
+	    u1'
+	    u2'
+	    u3'
            )
--%
-    end.	          
+    end.
 
 % constructs a complete binary-tree of height h
 Define spec mk_complete_bintree := 
@@ -261,14 +303,14 @@ Define spec mk_complete_bintree :=
     % number of nodes without leaves
     abbrev nonleaf_nodes = (minus (pow two h) one) in 
 
-    %%% non-leaf nodes are bounded by num_nodes %%%
+    %-+++ non-leaf nodes are bounded by num_nodes +++-%
     abbrev nonleaf_bounded = 
       hypjoin (lt nonleaf_nodes num_nodes) tt by
 	[minus_lt one (pow two (S h)) (pow two h)
 	  hypjoin (le one (pow two h)) tt by [lt_S_le Z (pow two h) [pow_gt_zero two h clash two Z]] end
-  	  [pow_lt two h join (lt one two) tt]] end in
+  	  [pow_lt two h join (lt one two) tt]] end in 
 	  
-    %%% 2*(nonleaf_nodes) is bounded by num_nodes %%%
+    %-+++ 2*(nonleaf_nodes) is bounded by num_nodes +++-%
     abbrev p1 = trans cong (minus (mult * (pow two h)) one) symm [first_power two]
       cong (minus * one) [pow_mult h two one] in % 2(2^h)-1 = 2^(h+1)-1 
     abbrev p2 = symm [mult_dist_minus two (pow two h) one] in % 2(2^h)-2 = 2((2^h)-1)
@@ -288,7 +330,7 @@ Define spec mk_complete_bintree :=
     % rephrase proof in terms of N
     abbrev m2nonleaf_bounded = trans cong (lt (mult two nonleaf_nodes) *) [nat_to_word_to_nat num_nodes u] p9 in
     
-    %%% non-leaf nodes are bounded by word_max %%%
+    %-++++ non-leaf nodes are bounded by word_max +++-%
     abbrev nonleaf_le_word_max = [lt_implies_le nonleaf_nodes (word_to_nat word_max)
       [ltle_trans nonleaf_nodes num_nodes (word_to_nat word_max) nonleaf_bounded u]] in
 
@@ -301,8 +343,8 @@ Define spec mk_complete_bintree :=
 %Set "print_parsed".
 %Set "debug_hypjoin_normalize".
 
-%- will not compile when uncommented -%
-%- Define spec is_cyclic_h :=
+%-+++ TODO +++
+Define spec is_cyclic_h :=
   fun is_cyclic_h(N:word)(g:<graph N>)(n:nat)
                  (u : { (ltword (nat_to_word n) N) = tt }):bool.
     match (connected (nat_to_word n) (nat_to_word n) N g (uwarray_new bool N ff) u u) with
@@ -325,7 +367,7 @@ Define spec is_cyclic :=
 -%
   
 
-%%%%%%
+%++++++
 %  below we construct the following graph for testing:
 %
 %      0    3
@@ -333,7 +375,7 @@ Define spec is_cyclic :=
 %        v
 %  1 <-- 2
 %
-%%%%%
+%++++++
 
 Define spec g := (add_edge word2 word1
                       word4
@@ -363,9 +405,14 @@ Interpret (connected word2 word3 word4 g (uwarray_new bool word4 ff)
                      join (ltword word2 word4) tt
 		     join (ltword word3 word4) tt).
 
-%%%%% Ideas %%%%%
+% get a "java.lang.StackOverflowError" when the code below is run
+Interpret (mk_complete_bintree one 
+  trans cong (lt * (word_to_nat word_max)) [first_power two]
+   join (lt two (word_to_nat word_max)) tt
+  clash one Z).
+  
+%+++ Ideas +++%
 % Define cyclic :=
 % Define bipartite :=
-% Define tree := % connected acyclic graph
-% Define shortest_path :=    
-
+% Define tree := (connected acyclic graph)
+% Define shortest_path :=

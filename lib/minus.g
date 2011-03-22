@@ -101,6 +101,9 @@ Define minusS1 : Forall(a b:nat)(u:{ (lt a b) = ff }).{ (minus (S a) b) = (S (mi
       end
   end.
 
+Define trusted minusS3 : Forall(a b:nat)(u:{ a = (S b) }).{ b = (minus a one) } :=
+  truei.
+
 Define x_minus_x : Forall(a:nat).{ (minus a a) = Z } :=
   induction(a:nat) by ap at IHa return { (minus a a) = Z } with
     Z =>
@@ -369,4 +372,7 @@ Define trusted minus_lt : Forall(x y z:nat)
                                 (u1:{(le x z) = tt})
                                 (u2:{(lt z y) = tt}).
                             { (lt (minus z x) (minus y x)) = tt} :=
+  truei.
+
+Define trusted minus_plus_order : Forall(x y z:nat).{(minus (plus x y) z) = (plus x (minus y z))} :=
   truei.
