@@ -23,8 +23,7 @@ Define spec nodes_bounded :=
 
 Inductive graph : Fun(N:word).type :=
   mkgraph : Fun(N:word)(arr : <warray <list node> N>)
-               (u : { (nodes_bounded N arr) = tt })
-.
+               (u : { (nodes_bounded N arr) = tt }).
             <graph N>.
 
 Define get_neighbors :=

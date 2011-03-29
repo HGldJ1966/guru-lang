@@ -1,3 +1,9 @@
+compile_as:	compile_as.g ../guru/Main.class Makefile
+	../bin/guru compile_as.g
+	gcc -O0 -ggdb -w -o compile_as compile_as.c
+	valgrind ./compile_as
+
+
 test-pb_stdio:	test-pb_stdio.g Makefile
 	../bin/guru test-pb_stdio.g
 	gcc -O2 -w -o test-pb_stdio test-pb_stdio.c

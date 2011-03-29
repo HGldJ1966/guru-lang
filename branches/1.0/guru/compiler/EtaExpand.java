@@ -418,6 +418,16 @@ public class EtaExpand {
 	    ret.pos = e.pos;
 	    return ret;
 	}
+	case Expr.COMPILE_AS: {
+	    CompileAs c = (CompileAs)e;
+	    Expr nt1 = expand(c.t1,false,null);
+	    Expr nt2 = expand(c.t2,false,null);
+	    if (c.t1 == nt1 && c.t2 == nt2)
+		return e;
+	    Expr ret = new CompileAs(nt1,nt2,c.P);
+	    ret.pos = e.pos;
+	    return ret;
+	}
 	case Expr.COMPRESS: {
 	    Compress c = (Compress)e;
 	    Expr nt = expand(c.t,false,null);

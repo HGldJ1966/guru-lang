@@ -146,6 +146,9 @@ public class Parser extends ParserBase {
 	    case Expr.CAST:
 		e = readCast();
 		break;
+	    case Expr.COMPILE_AS:
+		e = readCompileAs();
+		break;
 	    case Expr.TERMINATES:
 		e = readTerminates();
 		break;
@@ -2611,6 +2614,23 @@ protected TerminatesCase readTerminatesCase() throws IOException
         return e;
     }
 
+    protected CompileAs readCompileAs() throws IOException
+    {
+        CompileAs e = new CompileAs();
+
+        e.t1 = readTerm();
+
+        eat("as", "compiles-as term");
+
+        e.t2 = readTerm();
+
+        eat("by", "compiles-as term");
+
+        e.P = readProof();
+
+        return e;
+    }
+
     protected Compress readCompress() throws IOException
     {
         Compress e = new Compress();
@@ -2657,6 +2677,7 @@ protected TerminatesCase readTerminatesCase() throws IOException
 		keywordTree.add( "do", Expr.DO );
 		keywordTree.add( "fun", Expr.FUN_TERM );
 		keywordTree.add( "cast", Expr.CAST );
+		keywordTree.add( "compile", Expr.COMPILE_AS );
 		keywordTree.add( "terminates", Expr.TERMINATES );
 		keywordTree.add( "(", Expr.TERM_APP );
 		keywordTree.add( "abort", Expr.ABORT );

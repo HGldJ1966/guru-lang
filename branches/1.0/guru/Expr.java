@@ -101,6 +101,7 @@ public abstract class Expr {
     public static final int WORD_EXPR = 88; // term
     public static final int TERM_CASE = 89; // proof
 
+    public static final int COMPILE_AS = 90; // term
 
     public static final int LAST = 200;
 
@@ -534,6 +535,7 @@ public abstract class Expr {
 	case COMPRESS:
 	case FUN_TERM:
 	case CAST:
+	case COMPILE_AS:
 	case TERMINATES:
 	case TERM_APP:
 	case ABORT:
