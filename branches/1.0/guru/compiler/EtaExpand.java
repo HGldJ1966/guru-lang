@@ -420,11 +420,12 @@ public class EtaExpand {
 	}
 	case Expr.COMPILE_AS: {
 	    CompileAs c = (CompileAs)e;
-	    Expr nt1 = expand(c.t1,false,null);
+	    /* we do not eta-expand t1 since this is specificational
+	       and will be removed later as we compile to Carraway. */
 	    Expr nt2 = expand(c.t2,false,null);
-	    if (c.t1 == nt1 && c.t2 == nt2)
+	    if (c.t2 == nt2)
 		return e;
-	    Expr ret = new CompileAs(nt1,nt2,c.P);
+	    Expr ret = new CompileAs(c.t1,nt2,c.P);
 	    ret.pos = e.pos;
 	    return ret;
 	}
