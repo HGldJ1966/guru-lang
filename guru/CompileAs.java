@@ -37,7 +37,8 @@ public class CompileAs extends Expr{
     }
 
     public Expr classify(Context ctxt, int approx, boolean spec) {
-	Expr ct1 = t1.classify(ctxt, approx, spec);
+	Expr ct1 = t1.classify(ctxt, approx, true /* we allow t1 to be specificational, since we
+						     won't compile it. */);
 	Expr ct2 = t2.classify(ctxt, approx, spec);
 
 	if (approx != NO_APPROX) 
@@ -87,7 +88,7 @@ public class CompileAs extends Expr{
     }
 
     public void checkSpec(Context ctxt, boolean in_type, Position p){
-	t1.checkSpec(ctxt, in_type, pos);
+	// we do not check specificationality in t1, since we allow t1 to be specificational
 	t2.checkSpec(ctxt, in_type, pos);
     }
 
