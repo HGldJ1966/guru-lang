@@ -420,14 +420,12 @@ public class EtaExpand {
 	}
 	case Expr.COMPILE_AS: {
 	    CompileAs c = (CompileAs)e;
-	    /* we do not eta-expand t1 since this is specificational
-	       and will be removed later as we compile to Carraway. */
-	    Expr nt2 = expand(c.t2,false,null);
-	    if (c.t2 == nt2)
-		return e;
-	    Expr ret = new CompileAs(c.t1,nt2,c.P);
-	    ret.pos = e.pos;
-	    return ret;
+
+	    /* at this point we just switch to the second child of the compile-as
+	       term, as it is not necessary to retain the compile-as term at
+	       this point in the compilation. */
+
+	    return expand(c.t2,false,null);
 	}
 	case Expr.COMPRESS: {
 	    Compress c = (Compress)e;
