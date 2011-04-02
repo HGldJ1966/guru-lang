@@ -225,8 +225,7 @@ Define spec connected2 :=
 Define spec mk_complete_bintree_h :=
   fun mk_complete_bintree_h(N:word)(g:<graph N>)(n:nat)
 			   (u1:{ (lt n (to_nat N)) = tt }) % n is bounded
-			   (u2:{ (lt (mult two n) (to_nat N)) = tt }) % the nodes n are pointing to are bounded
-			   (u3:{ (le n (to_nat word_max)) = tt}):
+			   (u2:{ (lt (mult two n) (to_nat N)) = tt }): % the nodes n are pointing to are bounded
 			   <graph N>.
     match n with
       Z => g
@@ -268,11 +267,6 @@ Define spec mk_complete_bintree_h :=
 	  abbrev p11 = [lelt_trans (mult two n') (plus (mult two n') zero) (plus (mult two n') one) p10 p9] in % 2n' < 2n'+1
 
 	  abbrev u2' = [lt_trans (mult two n') (plus (mult two n') one) (word_to_nat N) p11 y1_bounded_nat] in
-
-	  %---- n' <= word_max ----%
-	  abbrev p12 = symm trans symm [lt_S n']
-	                cong (lt n' *) symm n_eq in
-	  abbrev u3' = [lt_implies_le n' (word_to_nat word_max) [ltle_trans n' n (word_to_nat word_max) p12 u3]] in
 	  
 	  (mk_complete_bintree_h N
 	    (add_edge x y1 N 
@@ -286,14 +280,13 @@ Define spec mk_complete_bintree_h :=
 	    n'
 	    u1'
 	    u2'
-	    u3'
            )
     end.
 
 % constructs a complete binary-tree of height h
 Define spec mk_complete_bintree := 
   fun mk_complete_bintree(h:nat)
-                         (u:{ (le (minus (pow two (S h)) one) (to_nat word_max)) = tt })
+                         (u1:{ (le (minus (pow two (S h)) one) (to_nat word_max)) = tt })
 			 (u2:{ h != Z }):
     <graph (nat_to_word (minus (pow two (S h)) one))>.
     
@@ -329,20 +322,12 @@ Define spec mk_complete_bintree :=
       [lt_S (minus (mult two (pow two h)) two)] end in
 
     % rephrase proof in terms of N
-    abbrev m2nonleaf_bounded = trans cong (lt (mult two nonleaf_nodes) *) [nat_to_word_to_nat num_nodes u] p9 in
+    abbrev m2nonleaf_bounded = trans cong (lt (mult two nonleaf_nodes) *) [nat_to_word_to_nat num_nodes u1] p9 in
     
-    %---- non-leaf nodes are bounded by word_max ----%
-    abbrev nonleaf_le_word_max = [lt_implies_le nonleaf_nodes (word_to_nat word_max)
-      [ltle_trans nonleaf_nodes num_nodes (word_to_nat word_max) nonleaf_bounded u]] in
-
     (mk_complete_bintree_h N (no_edge_graph N) nonleaf_nodes
-      trans cong (lt nonleaf_nodes *) [nat_to_word_to_nat num_nodes u]
+      trans cong (lt nonleaf_nodes *) [nat_to_word_to_nat num_nodes u1]
         nonleaf_bounded
-        m2nonleaf_bounded
-      nonleaf_le_word_max).
-    
-%Set "print_parsed".
-%Set "debug_hypjoin_normalize".
+        m2nonleaf_bounded).
 
 %---- TODO ---
 Define spec is_cyclic_h :=
@@ -368,7 +353,7 @@ Define spec is_cyclic :=
 -%
   
 
-%------
+%======
 %  below we construct the following graph for testing:
 %
 %      0    3
@@ -376,7 +361,7 @@ Define spec is_cyclic :=
 %        v
 %  1 <-- 2
 %
-%------
+%======
 
 Define spec g := (add_edge word2 word1
                       word4
@@ -395,8 +380,6 @@ Define edge_list := (cons <edge word4> (mkedge word4 word2 word1
 				  join (ltword word2 word4) tt) (nil <edge word4>))).
 				  
 Define spec g2 := (graph_from_edges word4 edge_list).
-
-%-
 
 % this should be true
 Interpret (connected word0 word1 word4 g (uwarray_new bool word4 ff)
@@ -419,5 +402,3 @@ Interpret (mk_complete_bintree one
 % Define bipartite :=
 % Define tree := (connected acyclic graph)
 % Define shortest_path :=
-
--%
