@@ -138,18 +138,33 @@ Define remove_edge_h :=
     end
   end.
     
-%- Define remove_edge :=
- fun(x y:node)(N:word)(g:<graph N>)
-              (ux : { (ltword x N) = tt })
-              (uy : { (ltword y N) = tt }):<graph N>.
-   match (adjacent x y N g ux uy) with
-     ff => g
-   | tt => let x_ns = (remove_edge_h y (get_neighbors x N g ux)) in % remove edge pointing from x to y
-       match g with
-         mkgraph _ arr _ => 
-           (mkgraph N (warray_set <list word> x x_ns N arr ux)) % prove nodes are still bounded
-       end
-  end. -%
+Define remove_edge :=
+  fun(x y:node)(N:word)(g:<graph N>)
+               (ux : { (ltword x N) = tt })
+      	       (uy : { (ltword y N) = tt }):<graph N>.
+    match g with
+      mkgraph _ arr _ =>
+        let x_ns = (filter word nat Z % Z is a dummy variable
+                     fun(c:nat)(a:word).(not (eqnat a y))
+		     (get_neighbors x N g ux)) in
+		     
+        (mkgraph N (warray_set <list word> x x_ns N arr ux [ltxy y N]))
+    end.
+		     
+Define trusted ltxy : Forall(x y:word).{ (ltword x y) = tt } :=
+ truei.
+
+ % fun(x y:node)(N:word)(g:<graph N>)
+ %              (ux : { (ltword x N) = tt })
+ %              (uy : { (ltword y N) = tt }):<graph N>.
+ %   match (adjacent x y N g ux uy) with
+ %     ff => g
+ %   | tt => let x_ns = (remove_edge_h y (get_neighbors x N g ux)) in % remove edge pointing from x to y
+ %       match g with
+ %         mkgraph _ arr _ => 
+ %           (mkgraph N (warray_set <list word> x x_ns N arr ux)) % prove nodes are still bounded
+ %       end
+ %  end. -%
 
 Define spec connected_h :=
   fun connected_h(x y:node)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
