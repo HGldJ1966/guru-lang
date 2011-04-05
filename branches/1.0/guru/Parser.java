@@ -174,6 +174,9 @@ public class Parser extends ParserBase {
 	    case Expr.TYPE:
 		e = ctxt.type;
 		break;
+	    case Expr.FORMULA:
+		e = ctxt.formula;
+		break;
 	    case Expr.TYPE_APP:
 		e = readTypeApp();
 		break;
@@ -2687,6 +2690,7 @@ protected TerminatesCase readTerminatesCase() throws IOException
 		keywordTree.add( "match", Expr.MATCH );
 		keywordTree.add( "Fun", Expr.FUN_TYPE );
 		keywordTree.add( "type", Expr.TYPE );
+		keywordTree.add( "formula", Expr.FORMULA );
 		keywordTree.add( "<", Expr.TYPE_APP );
 		keywordTree.add( "@<", Expr.PRED_APP );
 		keywordTree.add( "@", Expr.COMPRESS );	// prefix!
