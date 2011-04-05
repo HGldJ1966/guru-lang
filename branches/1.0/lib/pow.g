@@ -42,7 +42,7 @@ Total pow pow_total.
 Define pow_not_zero : Forall(b e : nat)(u:{ b != Z }).{(pow b e) != Z} :=
 	foralli(b:nat).induction(e:nat) by x1 x2 IH return Forall(u:{ b != Z }).{(pow b e) != Z} with
 	Z => 	foralli(u:{ b != Z }).
-		trans cong (pow b *) x1
+		trans cong (pow b *) x1 
 		trans join (pow b Z) one
 		clash one Z
 	| S e' => foralli(u:{ b != Z }). 
@@ -100,17 +100,6 @@ Define pow2_add : Forall (e : nat).{(plus (pow2 e) (pow2 e)) = (pow2 (S e))} :=
 		cong (pow two (S *)) [plusZ e]
 	end.
 
-Define trusted pow_lt : Forall(base exp:nat)(u: {(lt one base) = tt}).
-  {(lt (pow base exp) (pow base (S exp))) = tt} :=
-    truei.
-
-Define trusted pow_lt2 : Forall(b e:nat)(u: {e !=  Z}).
-  {(le b (pow b e)) = tt} :=
-  truei.
-
-Define trusted pow_gt_zero : Forall(b e : nat)(u:{ b != Z }).
-  {(lt Z (pow b e)) = tt} :=
-    truei.
 
 % return ff if even, tt if odd.
 Define mod2 :=
@@ -532,3 +521,61 @@ Define condplusff : Forall(n m:nat). { (condplus ff n m) = m } :=
  foralli(n m:nat). 
    join (condplus ff n m) m.
 
+Define pow_gt_zero : Forall(b e : nat)(u:{ b != Z }).
+  {(lt Z (pow b e)) = tt} :=
+  foralli(b e:nat)(u:{ b != Z }).
+    [not_zero_implies_lt (pow b e) [pow_not_zero b e u]].
+
+Define pow_lt : Forall(b e:nat)(u: {(lt one b) = tt}).
+  {(lt (pow b e) (pow b (S e))) = tt} :=
+  foralli(b:nat).induction(e:nat) by x1 x2 IH return Forall(u:{(lt one b) = tt}).{(lt (pow b e) (pow b (S e))) = tt} with
+    Z => foralli(u: {(lt one b) = tt}).
+         abbrev p1 = trans cong (pow b *) x1 % b^e = 0
+	             join (pow b Z) one in 
+         abbrev p2 = trans cong (pow b (S *)) x1 % b^(e+1) = b
+	             [first_power b] in
+         hypjoin (lt (pow b e) (pow b (S e))) tt by p1 p2 u end
+  | S e' => foralli(u: {(lt one b) = tt}).
+ 
+	    existse [not_zero_implies_S b [lt_implies_not_zero one b u]] foralli(b':nat)(v:{(S b') = b}).
+            abbrev p1 = [mult_lt b' (pow b e') (pow b (S e')) [IH e' u]] in % (S b')*b^e' < (S b')*b^(S e')
+
+	    abbrev p2 = trans cong (mult * (pow b e'))  v
+	                trans join (mult b (pow b e')) (pow b (S e'))
+			cong (pow b *) symm x1 in % (S b')*b^e' = b^e
+
+	    abbrev p3 = trans cong (mult * (pow b (S e'))) v
+	                trans join (mult b (pow b (S e'))) (pow b (S (S e')))
+			cong (pow b (S *)) symm x1 in % (S b')*b^(S e') = b^*(S e)
+
+	    hypjoin (lt (pow b e) (pow b (S e))) tt by p1 p2 p3 end
+  end.
+
+% for some reason guru is saying the computed classifier is incorrect
+Define pow_lt2 : Forall(b e:nat)(u: {e !=  Z}).
+  {(le b (pow b e)) = tt} :=
+  foralli(e:nat).induction(b:nat) by x1 x2 IH return Forall(u:{e != Z}).{(le b (pow b e)) = tt} with
+     Z => foralli(u:{e != Z}).
+  	  existse [not_zero_implies_S e u] foralli(e':nat)(v:{(S e') = e}).
+  	  abbrev p1 =
+  	    trans cong (pow b *) symm v 
+            trans cong (pow * (S e')) x1
+  	    trans join (pow Z (S e')) (mult Z (pow Z e'))
+  	    trans [mult_comm Z (pow Z e')]
+  	    [multZ (pow Z e')] in
+
+	  trans cong (le * (pow b e)) x1
+  	  trans cong (le Z *) p1
+  	  join (le Z Z) tt
+   | S b' => foralli(u:{e != Z}).
+             existse [not_zero_implies_S e u] foralli(e':nat)(v:{(S e') = e}).
+	     abbrev p1 = % b^e = b^(e-1)*b
+	       trans cong (pow b *) symm v
+	       trans join (pow b (S e')) (mult b (pow b e'))
+	       [mult_comm b (pow b e')] in
+	     abbrev p2 = % b <= b^(e-1)*b
+	       [mult_le (pow b e') b [pow_not_zero b e' trans x1 [S_not_zero b']]] in
+
+	     symm trans symm p2  
+	     cong (le b *) symm p1
+   end.

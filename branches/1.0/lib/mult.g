@@ -1,4 +1,5 @@
 Include "plus.g".
+Include "minus.g".
 
 Define mult :=
    fun mult(n m : nat) : nat.
@@ -280,3 +281,11 @@ Define mult_lt : Forall(x y z : nat)(u: { (lt y z) = tt}).
 
 Define trusted mult_lt2 : Forall(x y : nat)(u1:{ x != Z })(u2: { (lt one x) = tt}).
                  { (lt x (mult y x))  = tt } := truei.
+
+Define trusted mult_le : Forall(x y : nat)(u:{ x != Z }).
+  { (le y (mult x y)) = tt } := truei.
+
+
+
+
+
