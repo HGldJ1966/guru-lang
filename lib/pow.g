@@ -554,7 +554,8 @@ Define pow_lt : Forall(b e:nat)(u: {(lt one b) = tt}).
 % for some reason guru is saying the computed classifier is incorrect
 Define pow_lt2 : Forall(b e:nat)(u: {e !=  Z}).
   {(le b (pow b e)) = tt} :=
-  foralli(e:nat).induction(b:nat) by x1 x2 IH return Forall(u:{e != Z}).{(le b (pow b e)) = tt} with
+  foralli(b e:nat).
+  [induction(b:nat) by x1 x2 IH return Forall(u:{e != Z}).{(le b (pow b e)) = tt} with
      Z => foralli(u:{e != Z}).
   	  existse [not_zero_implies_S e u] foralli(e':nat)(v:{(S e') = e}).
   	  abbrev p1 =
@@ -578,4 +579,5 @@ Define pow_lt2 : Forall(b e:nat)(u: {e !=  Z}).
 
 	     symm trans symm p2  
 	     cong (le b *) symm p1
-   end.
+   end
+  b].

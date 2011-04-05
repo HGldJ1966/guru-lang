@@ -6,8 +6,10 @@ Include trusted "../lib/minus.g".
 Include trusted "../lib/uwarray.g".
 Include trusted "../lib/warray.g".
 
-%Set "trust_hypjoins".
+Set "trust_hypjoins".
 
+%- change to boxedWord, so that nodes will be tracked, and thus can
+   be stored in lists. -%
 Define node := word.
 
 % test if all nodes in a list of adjacent ones are bounded.
@@ -50,16 +52,16 @@ Define get_neighbors_bounded
 	  trans symm p3 p2
     end.
 
-Define spec adjacent_h := fun(x:node)(l:<list node>). (member node x l eqword).
+Define adjacent_h := fun(x:node)(l:<list node>). (member node x l eqword).
 
-Define spec adjacent :=
+Define adjacent :=
   fun(x y:node)(N:word)(g:<graph N>)
      (ux : { (ltword x N) = tt })
      (uy : { (ltword y N) = tt }):bool.
     (or (eqword x y) (adjacent_h y (get_neighbors x N g ux))).
 
 % add directed edge
- Define spec add_edge :=
+ Define add_edge :=
    fun(x y:node)(N:word)(g:<graph N>)
                 (ux : { (ltword x N) = tt })
                 (uy : { (ltword y N) = tt }):<graph N>.
@@ -165,7 +167,7 @@ Define remove_edge_h :=
  %       end
  %  end. 
 
-Define spec connected_h :=
+Define connected_h :=
   fun connected_h(x y:node)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
                  (l:<list node>)
 		 (ux : { (ltword x N) = tt })
@@ -188,7 +190,7 @@ Define spec connected_h :=
     | tt => tt
     end.
 
-Define spec connected :=
+Define connected :=
   fun connected(x y:node)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
                (ux : { (ltword x N) = tt })
 	       (uy : { (ltword y N) = tt }):bool.
@@ -239,7 +241,7 @@ Define spec connected2 :=
 Define spec mk_complete_bintree_h :=
   fun mk_complete_bintree_h(N:word)(g:<graph N>)(n:nat)
 			   (u1:{ (lt n (to_nat N)) = tt }) % n is bounded
-			   (u2:{ (lt (mult two n) (to_nat N)) = tt }): % the nodes n are pointing to are bounded
+			   (u2:{ (lt (mult two n) (to_nat N)) = tt }): % the nodes n is pointing to are bounded
 			   <graph N>.
     match n with
       Z => g
@@ -323,7 +325,7 @@ Define spec mk_complete_bintree :=
       cong (minus * one) [pow_mult h two one] in % 2(2^h)-1 = 2^(h+1)-1 
     abbrev p2 = symm [mult_dist_minus two (pow two h) one] in % 2(2^h)-2 = 2((2^h)-1)
     
-    abbrev p3 = [pow_lt2 two h clash two zero u2] in % 2 <= 2^h
+    abbrev p3 = [pow_lt2 two h u2] in % 2 <= 2^h
     abbrev p4 = [ltle_trans one two (pow two h) join (lt one two) tt p3] in % 1 < 2^h
     abbrev p5 = [mult_lt2 (pow two h) two [pow_not_zero two h clash two Z] p4] in % 2^h < 2(2^h)
     abbrev p6 = [lelt_trans two (pow two h) (mult two (pow two h)) p3 p5] in % 2 < 2(2^h)
@@ -377,7 +379,7 @@ Define spec is_cyclic :=
 %
 %======
 
-Define spec g := (add_edge word2 word1
+Define g := (add_edge word2 word1
                       word4
                  (add_edge word0 word2
 		      word4 (no_edge_graph word4)
@@ -396,17 +398,19 @@ Define edge_list := (cons <edge word4> (mkedge word4 word2 word1
 Define spec g2 := (graph_from_edges word4 edge_list).
 
 % this should be true
-Interpret (connected word0 word1 word4 g (uwarray_new bool word4 ff)
+Define test1 := (connected word0 word1 word4 g (uwarray_new bool word4 ff)
                      join (ltword word0 word4) tt
 		     join (ltword word1 word4) tt).
 
+Compile test1 to "test1.c".
+
 % this should be false
-Interpret (connected word2 word3 word4 g (uwarray_new bool word4 ff)
+Define spec test2 := (connected word2 word3 word4 g (uwarray_new bool word4 ff)
                      join (ltword word2 word4) tt
 		     join (ltword word3 word4) tt).
 
 % get a "java.lang.StackOverflowError" when the code below is run
-Interpret (mk_complete_bintree one 
+Define spec test3 := (mk_complete_bintree one 
   trans cong (lt * (word_to_nat word_max)) [first_power two]
    join (lt two (word_to_nat word_max)) tt
   clash one Z).
