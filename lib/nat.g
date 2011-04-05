@@ -322,7 +322,17 @@ Define le_total : Forall(x y:nat).Exists(z:bool).{(le x y) = z} :=
 		orr'.
 	
 Total le le_total.	
-		
+
+Define not_zero_implies_S : Forall(a:nat)(u:{a != Z}).Exists(a':nat).{(S a') = a} :=
+        induction(a:nat) by x1 x2 IH return Forall(u:{a != Z}).Exists(b:nat).{(S b) = a} with
+	Z => foralli(u:{a != Z}).
+	     contra
+	     trans x1 symm u
+	     Exists(b:nat).{(S b) = a}
+	| S b => foralli(u:{a != Z}).
+	         existsi b {(S *) = a} symm x1 
+	end.
+
 Define not_zero_implies_lt : Forall(a:nat)(u:{a != Z}).{ (lt Z a) = tt} :=
 	induction(a:nat) by x1 x2 IH return Forall(u:{a != Z}).{ (lt Z a) = tt} with
 	Z => foralli(u:{a != Z}). contra trans symm x1 u { (lt Z a) = tt} 

@@ -137,22 +137,21 @@ Define remove_edge_h :=
       | tt => l'
     end
   end.
-    
-Define remove_edge :=
-  fun(x y:node)(N:word)(g:<graph N>)
-               (ux : { (ltword x N) = tt })
-      	       (uy : { (ltword y N) = tt }):<graph N>.
-    match g with
-      mkgraph _ arr _ =>
-        let x_ns = (filter word nat Z % Z is a dummy variable
-                     fun(c:nat)(a:word).(not (eqnat a y))
-		     (get_neighbors x N g ux)) in
+
+
+% Define remove_edge :=
+%   fun(x y:node)(N:word)(g:<graph N>)
+%                (ux : { (ltword x N) = tt })
+%       	       (uy : { (ltword y N) = tt }):<graph N>.
+%     match g with
+%       mkgraph _ arr _ =>
+%         let x_ns = (filter word nat Z % Z is a dummy variable
+%                      fun(c:nat)(a:word).(not (eqnat a y))
+% 		     (get_neighbors x N g ux)) in
 		     
-        (mkgraph N (warray_set <list word> x x_ns N arr ux [ltxy y N]))
-    end.
-		     
-Define trusted ltxy : Forall(x y:word).{ (ltword x y) = tt } :=
- truei.
+%         (mkgraph N (warray_set <list word> x x_ns N arr ux [ltxy y N]))
+%     end.
+
 
  % fun(x y:node)(N:word)(g:<graph N>)
  %              (ux : { (ltword x N) = tt })
@@ -164,7 +163,7 @@ Define trusted ltxy : Forall(x y:word).{ (ltword x y) = tt } :=
  %         mkgraph _ arr _ => 
  %           (mkgraph N (warray_set <list word> x x_ns N arr ux)) % prove nodes are still bounded
  %       end
- %  end. -%
+ %  end. 
 
 Define spec connected_h :=
   fun connected_h(x y:node)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
@@ -324,7 +323,7 @@ Define spec mk_complete_bintree :=
       cong (minus * one) [pow_mult h two one] in % 2(2^h)-1 = 2^(h+1)-1 
     abbrev p2 = symm [mult_dist_minus two (pow two h) one] in % 2(2^h)-2 = 2((2^h)-1)
     
-    abbrev p3 = [pow_lt2 two h u2] in % 2 <= 2^h
+    abbrev p3 = [pow_lt2 two h clash two zero u2] in % 2 <= 2^h
     abbrev p4 = [ltle_trans one two (pow two h) join (lt one two) tt p3] in % 1 < 2^h
     abbrev p5 = [mult_lt2 (pow two h) two [pow_not_zero two h clash two Z] p4] in % 2^h < 2(2^h)
     abbrev p6 = [lelt_trans two (pow two h) (mult two (pow two h)) p3 p5] in % 2 < 2(2^h)
