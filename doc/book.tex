@@ -1531,11 +1531,12 @@ Now is not a bad time to see what classifies a formula:
 Classify { (plus Z three) = three }.
 \end{verbatim}
 
-\noindent \guru will print: \texttt{formula}.  If you ask \guru what
-the classifier of \texttt{formula} is, it will say: \texttt{fkind}.
-There is no classifier of \texttt{fkind}, as it is not considered an
-expression.  So we see that we have these classification relationships
-for proofs and formulas:
+\noindent \guru will print: \texttt{formula}.  \guru does not allow
+you to ask what the classifier of \texttt{formula} is (for some
+implementation reasons), but internally its classifier is
+\texttt{fkind}.  There is no classifier of \texttt{fkind}, as it is
+not considered an expression.  So we see that we have these
+classification relationships for proofs and formulas:
 
 \begin{verbatim}
 [Zplus three]  :  { (plus Z three) = three }  :  formula  :  fkind
