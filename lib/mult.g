@@ -288,9 +288,8 @@ Define mult_le : Forall(x y:nat)(u:{ y != Z }).{ (le x (mult x y)) = tt } :=
     cong (le x (mult x *)) v.
 
 Define trusted mult_lt2 : Forall(x y : nat)(u1:{ x != Z })(u2: { (lt one y) = tt}).
-  { (lt x (mult y x))  = tt } :=
-  foralli(x y:nat)(u1:{ x != Z})(u2:{ (lt one x) = tt}).
-    existse [not_zero_implies_S x u] foralli(x':nat)(v:{(S x') = x}).
+  { (lt x (mult y x))  = tt } := truei.
+
 
 
 
