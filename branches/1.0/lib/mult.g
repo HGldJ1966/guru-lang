@@ -259,9 +259,6 @@ Define mult_foil : Forall(a b c d:nat).{ (mult (plus a b) (plus c d)) = (plus (p
                symm [plus_assoc (mult a c)
                                 (mult a d)
                                 (mult b c)].
-
-Define trusted mult_ge_x : Forall(x y:nat)(u:{ y != Z }).{ (le x (mult x y)) = tt } :=
-  truei.
   
 Define mult_lt : Forall(x y z : nat)(u: { (lt y z) = tt}).
                  { (lt (mult (S x) y) (mult (S x) z)) = tt } :=
@@ -279,11 +276,21 @@ Define mult_lt : Forall(x y z : nat)(u: { (lt y z) = tt}).
            [plus_lt_both y z (mult (S x') y) (mult (S x') z) u [x_IH x']]
   end x].
 
-Define trusted mult_lt2 : Forall(x y : nat)(u1:{ x != Z })(u2: { (lt one x) = tt}).
-                 { (lt x (mult y x))  = tt } := truei.
+Define mult_le : Forall(x y:nat)(u:{ y != Z }).{ (le x (mult x y)) = tt } :=
+  foralli(x y:nat)(u:{ y != Z }).
+    existse [not_zero_implies_S y u] foralli(y':nat)(v:{(S y') = y}).
+    abbrev p1 =
+      trans join (plus x (mult y' x)) (mult (S y') x)
+      [mult_comm (S y') x] in
+      
+    symm trans symm [plus_implies_le x (mult y' x)]
+    trans cong (le x *) p1
+    cong (le x (mult x *)) v.
 
-Define trusted mult_le : Forall(x y : nat)(u:{ x != Z }).
-  { (le y (mult x y)) = tt } := truei.
+Define trusted mult_lt2 : Forall(x y : nat)(u1:{ x != Z })(u2: { (lt one y) = tt}).
+  { (lt x (mult y x))  = tt } :=
+  foralli(x y:nat)(u1:{ x != Z})(u2:{ (lt one x) = tt}).
+    existse [not_zero_implies_S x u] foralli(x':nat)(v:{(S x') = x}).
 
 
 
