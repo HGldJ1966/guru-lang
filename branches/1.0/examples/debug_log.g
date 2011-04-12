@@ -13,8 +13,7 @@ Define sum := fun sum(n:nat) : nat.
   		end
   | S n' =>
   		do
-  		(log_nat' n)
-  		(log_char '\n')
+  		(log_string (string_app1 (natToString' n) (inc string stringln)))
   		(plus n (sum n'))
   		end
   end.
