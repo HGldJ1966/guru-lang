@@ -79,3 +79,27 @@ Define word_num_to_string :=
 		ff => (ucons char '0' (unil char))
 	|	tt => (word_num_to_string_h w (unil char))
 	end.
+	
+
+%=============================================================================
+% more formatting functions
+%=============================================================================
+
+Define inc_word_by_nat := fun inc_word_by_nat(w:word)(^#owned n:nat) : word.
+	match n with
+		Z => w
+	| S n' =>
+			let w' = (word_inc2 w) in
+			(inc_word_by_nat w' n')
+	end.
+
+Define natToString := fun(^n:nat) : string.
+	let w = (inc_word_by_nat word0 (inspect nat n)) in
+	do
+	(consume_unowned nat n)
+	(word_num_to_string w)
+	end.
+
+Define natToString' := fun(!n:nat) : string.
+	let w = (inc_word_by_nat word0 (inspect nat n)) in
+	(word_num_to_string w).

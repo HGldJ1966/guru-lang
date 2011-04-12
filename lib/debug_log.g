@@ -10,13 +10,10 @@ not using a compiler flag, namely DEBUG. (see Makefile)
 
 - basic functions
 log_char, log_string
-log_word_d : format word in decimal
-log_nat : prints a nat in decimal (this version consumes it)
-log_nat' : prints a nat in decimal (this version does NOT consume it)
 
 - naming scheme
-"log_" ++ datatype ++ formatting option
-The ' mark (as in nat') means that the argument is consumed.
+"log_" ++ datatype
+The ' mark (as in nat') means that the argument is NOT consumed.
 By default, the input arguments are consumed. But, sometimes, we don't want
 that behavior.
 
@@ -65,25 +62,3 @@ Define log_string := fun(^s:string) : void.
 
 Define log_string' := fun(!s:string) : void.
 	(log_owned_string (inspect string s)).
-
-Define log_word_d := fun(w:word) : void.
-  (log_string (word_num_to_string w)).
-
-Define inc_word_by_nat := fun inc_word_by_nat(w:word)(^#owned n:nat) : word.
-	match n with
-		Z => w
-	| S n' =>
-			let w' = (word_inc2 w) in
-			(inc_word_by_nat w' n')
-	end.
-
-Define log_nat := fun(^n:nat) : void.
-	let w = (inc_word_by_nat word0 (inspect nat n)) in
-	do
-	(log_word_d w)
-	(consume_unowned nat n)
-	end.
-
-Define log_nat' := fun(!n:nat) : void.
-	let w = (inc_word_by_nat word0 (inspect nat n)) in
-	(log_word_d w).
