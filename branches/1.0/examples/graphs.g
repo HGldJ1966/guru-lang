@@ -1,4 +1,5 @@
 Include trusted "../lib/word.g".
+Include trusted "../lib/boxedword.g".
 Include trusted "../lib/list.g".
 Include trusted "../lib/pair.g".
 Include trusted "../lib/pow.g".
@@ -10,12 +11,12 @@ Set "trust_hypjoins".
 
 %- change to boxedWord, so that nodes will be tracked, and thus can
    be stored in lists. -%
-Define node := word.
+Define node := boxedWord.
 
 % test if all nodes in a list of adjacent ones are bounded.
 Define spec adjlist_bounded :=
   fun(l:<list node>)(N:word).
-   (list_all node fun(n:node):bool.(ltword n N) l).
+   (list_all node fun(n:node):bool.(ltword (unboxWord n) N) l).
 
 % use list_all in list.g, vec_all in vec.g
 Define spec nodes_bounded :=
@@ -29,15 +30,16 @@ Inductive graph : Fun(N:word).type :=
             <graph N>.
 
 Define get_neighbors :=
-  fun(x:node)(N:word)(g:<graph N>)(u : { (ltword x N) = tt }):<list node>.
+  fun(x:word)(N:word)(g:<graph N>)
+     (u : { (ltword x N) = tt }):<list node>.
     match g with
       mkgraph _ arr _ => (warray_get <list node> N arr x u)
     end.
 
 Define get_neighbors_bounded 
-  : Forall(x:node)(N:word)(g:<graph N>)(u : { (ltword x N) = tt }).
+  : Forall(x:word)(N:word)(g:<graph N>)(u : { (ltword x N) = tt }).
           { (adjlist_bounded (get_neighbors x N g) N) = tt } :=
-    foralli(x:node)(N:word)(g:<graph N>)(u : { (ltword x N) = tt }).
+    foralli(x:word)(N:word)(g:<graph N>)(u : { (ltword x N) = tt }).
     case g with
       mkgraph _ arr g_u =>
           abbrev p1 = hypjoin (get_neighbors x N g) (vec_get arr (to_nat x)) by g_eq end in
@@ -52,31 +54,31 @@ Define get_neighbors_bounded
 	  trans symm p3 p2
     end.
 
-Define adjacent_h := fun(x:node)(l:<list node>). (member node x l eqword).
+Define adjacent_h := fun(x:node)(l:<list node>). (member node x l boxedWord_eq).
 
 Define adjacent :=
-  fun(x y:node)(N:word)(g:<graph N>)
+  fun(x:word)(y:node)(N:word)(g:<graph N>)
      (ux : { (ltword x N) = tt })
-     (uy : { (ltword y N) = tt }):bool.
-    (or (eqword x y) (adjacent_h y (get_neighbors x N g ux))).
+     (uy : { (ltword (unboxWord y) N) = tt }):bool.
+    (or (eqword x (unboxWord y)) (adjacent_h y (get_neighbors x N g ux))).
 
 % add directed edge
  Define add_edge :=
-   fun(x y:node)(N:word)(g:<graph N>)
+   fun(x:word)(y:node)(N:word)(g:<graph N>)
                 (ux : { (ltword x N) = tt })
-                (uy : { (ltword y N) = tt }):<graph N>.
+                (uy : { (ltword (unboxWord y) N) = tt }):<graph N>.
      match (adjacent x y N g ux uy) with
        ff => abbrev x_ns = (cons node y (get_neighbors x N g ux)) in % add y as a neighbor of x
 
            match g with
             mkgraph _ arr g_u => 
-                (mkgraph N (warray_set <list word> x x_ns N arr ux) 
+                (mkgraph N (warray_set <list node> x x_ns N arr ux) 
 
 		abbrev p1 = join (vec_all fun(l:<list node>):bool.(adjlist_bounded l N) (warray_set x x_ns arr))
 		                 (nodes_bounded N (warray_set x x_ns arr)) in
 		abbrev p2_u2 = hypjoin (vec_all fun(l:<list node>):bool.(adjlist_bounded l N) arr) tt by g_u end in
 		abbrev p2_u3 = hypjoin (fun(l:<list node>):bool.(adjlist_bounded l N) x_ns) tt by [get_neighbors_bounded x N g ux] uy end in
-		abbrev p2 = [warray_all_set <list word> x x_ns N arr
+		abbrev p2 = [warray_all_set <list node> x x_ns N arr
 		                     fun(l:<list node>):bool.(adjlist_bounded l N)
 				     ux
 				     p2_u2
@@ -90,18 +92,18 @@ Define adjacent :=
 
 Define no_edge_graph :=
   fun(N:word):<graph N>. 
-    abbrev arr = (warray_new <list word> N (nil word)) in
+    abbrev arr = (warray_new <list node> N (nil node)) in
       (mkgraph N arr
-               abbrev v = (mkvec <list word> (nil word) (word_to_nat N)) in
-	       abbrev v_eq = join v (mkvec <list word> (nil word) (word_to_nat N)) in
+               abbrev v = (mkvec <list node> (nil node) (word_to_nat N)) in
+	       abbrev v_eq = join v (mkvec <list node> (nil node) (word_to_nat N)) in
                abbrev p1 = join (fun(l:<list node>):bool.(adjlist_bounded l N) nil) tt in
-	       hypjoin (nodes_bounded N arr) tt by [mkvec_implies_vec_all <list word> (nil word) (word_to_nat N) v fun(l:<list node>):bool.(adjlist_bounded l N) v_eq p1] end
+	       hypjoin (nodes_bounded N arr) tt by [mkvec_implies_vec_all <list node> (nil node) (word_to_nat N) v fun(l:<list node>):bool.(adjlist_bounded l N) v_eq p1] end
 	       ). 
 
 Inductive edge : Fun(N:word).type :=
-  mkedge : Fun(N:word)(x y:word)
+  mkedge : Fun(N:word)(x:word)(y:node)
               (ux : { (ltword x N) = tt })
-              (uy : { (ltword y N) = tt }).
+              (uy : { (ltword (unboxWord y) N) = tt }).
            <edge N>.
 
 Define spec graph_from_edges_h :=
@@ -129,16 +131,16 @@ Define graph_to_warray :=
     end.
 
 
-Define remove_edge_h :=
-  fun remove_edge_h(x:node)(l:<list word>):<list word>.
-    match l with
-      nil _ => (nil word)
-    | cons _ v l' =>
-      match (eqword x v) with
-        ff => (cons word v (remove_edge_h x l'))
-      | tt => l'
-    end
-  end.
+% Define remove_edge_h :=
+%   fun remove_edge_h(x:node)(l:<list word>):<list word>.
+%     match l with
+%       nil _ => (nil word)
+%     | cons _ v l' =>
+%       match (eqword x v) with
+%         ff => (cons word v (remove_edge_h x l'))
+%       | tt => l'
+%     end
+%   end.
 
 
 % Define remove_edge :=
@@ -168,52 +170,53 @@ Define remove_edge_h :=
  %  end. 
 
 Define connected_h :=
-  fun connected_h(x y:node)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
+  fun connected_h(x:word)(y:node)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
                  (l:<list node>)
 		 (ux : { (ltword x N) = tt })
-		 (uy : { (ltword y N) = tt })
+		 (uy : { (ltword (unboxWord y) N) = tt })
 		 (uz : { (adjlist_bounded l N) = tt }):bool.
-    match (eqword x y) with
+    match (eqword x (unboxWord y)) with
       ff =>
         match l with
           nil _ => ff
         | cons _ v l' =>
-            abbrev uv_u = hypjoin (list_all fun(n:node):bool.(ltword n N) (cons v l')) tt by l_eq uz end in
-            abbrev uv = hypjoin (ltword v N) tt by [list_all_cons_tt_head node fun(n:node):bool.(ltword n N) v l' uv_u] end in
-	    abbrev uz' = [get_neighbors_bounded v N g uv] in
-	    abbrev uz'' = hypjoin (adjlist_bounded l' N) tt by [list_all_cons_tt_tail node fun(n:node):bool.(ltword n N) v l' uv_u] end in
-	    match (uwarray_get bool N mv v uv) with
-	      ff => (connected_h v y N g (uwarray_set bool N mv v tt uv) (get_neighbors v N g uv) uv uy uz')
-	    | tt => (connected_h v y N g mv l' uv uy uz'')
+            abbrev uv_u = hypjoin (list_all fun(n:node):bool.(ltword (unboxWord n) N) (cons v l')) tt by l_eq uz end in
+            abbrev uv = hypjoin (ltword (unboxWord v) N) tt by [list_all_cons_tt_head node fun(n:node):bool.(ltword (unboxWord n) N) v l' uv_u] end in
+	    abbrev uz' = [get_neighbors_bounded (unboxWord v) N g uv] in
+	    abbrev uz'' = hypjoin (adjlist_bounded l' N) tt by [list_all_cons_tt_tail node fun(n:node):bool.(ltword (unboxWord n) N) v l' uv_u] end in
+	    match (uwarray_get bool N mv (unboxWord v) uv) with
+	      ff => (connected_h (unboxWord v) y N g (uwarray_set bool N mv (unboxWord v) tt uv) (get_neighbors (unboxWord v) N g uv) uv uy uz')
+	    | tt => (connected_h (unboxWord v) y N g mv l' uv uy uz'')
 	    end
         end
     | tt => tt
     end.
 
 Define connected :=
-  fun connected(x y:node)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
+  fun connected(x:word)(y:node)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
                (ux : { (ltword x N) = tt })
-	       (uy : { (ltword y N) = tt }):bool.
+	       (uy : { (ltword (unboxWord y) N) = tt }):bool.
     abbrev x_ns = (get_neighbors x N g ux) in
       (connected_h x y N g mv x_ns ux uy [get_neighbors_bounded x N g ux]).
 
+%-      
 Define connected2_h :=
-  fun connected2_h(x y:node)(l:<list node>)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
-                 (connected2_f : Fun(x y:node)(N:word)(g:<graph N>)
+  fun connected2_h(x:word)(y:node)(l:<list node>)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
+                 (connected2_f : Fun(x:word)(y:node)(N:word)(g:<graph N>)
 		 (mv : <uwarray bool N>)
 		 (ux : { (ltword x N) = tt })
-		 (uy : { (ltword y N) = tt }).bool)
+		 (uy : { (ltword (unboxWord y) N) = tt }).bool)
 		 (ux : { (ltword x N) = tt })
-		 (uy : { (ltword y N) = tt })
+		 (uy : { (ltword (unboxWord y) N) = tt })
 		 (u : { (adjlist_bounded l N) = tt }):bool.
 
     match l with
       nil _ => ff
     | cons _ v l' =>
-      	abbrev p1_u = hypjoin (list_all fun(n:node):bool.(ltword n N) (cons v l')) tt by l_eq u end in
-	abbrev p1 = trans join (ltword v N) (fun(n:node):bool.(ltword n N) v) [list_all_cons_tt_head node fun(n:node):bool.(ltword n N) v l' p1_u] in
+      	abbrev p1_u = hypjoin (list_all fun(n:node):bool.(ltword (unboxWord n) N) (cons v l')) tt by l_eq u end in
+	abbrev p1 = trans join (ltword v N) (fun(n:node):bool.(ltword (unboxWord n) N) v) [list_all_cons_tt_head node fun(n:node):bool.(ltword (unboxWord n) N) v l' p1_u] in
         let keep_searching = 
-            match (uwarray_get bool N mv v p1) with
+            match (uwarray_get bool N mv (unboxWord v) p1) with
               ff => (not (connected2_f v y N g (uwarray_set bool N mv v tt p1) p1 uy))
             | tt => tt
             end
@@ -226,9 +229,9 @@ Define connected2_h :=
     end.
 
 Define spec connected2 :=
-  fun connected2(x y:node)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
+  fun connected2(x:word)(y:node)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
                (ux : { (ltword x N) = tt })
-               (uy : { (ltword y N) = tt }):bool.
+               (uy : { (ltword (unboxWord y) N) = tt }):bool.
     abbrev x_ns = (get_neighbors x N g ux) in
     match (member node y x_ns eqword) with
       ff => (connected2_h x y x_ns N g mv connected2 ux uy
@@ -236,8 +239,11 @@ Define spec connected2 :=
     | tt => tt
     end.
 
+-%
+
 %Set "print_parsed".
 %Set "debug_hypjoin_normalize".
+%-
 Define spec mk_complete_bintree_h :=
   fun mk_complete_bintree_h(N:word)(g:<graph N>)(n:nat)
 			   (u1:{ (lt n (to_nat N)) = tt }) % n is bounded
@@ -248,8 +254,8 @@ Define spec mk_complete_bintree_h :=
     | S n' => % node n' has two edges one to node 2n'+1 and another to node 2n'+2
 
           abbrev x = (nat_to_word n') in
-	  abbrev y1 = (nat_to_word (plus (mult two n') one)) in
-	  abbrev y2 = (nat_to_word (plus (mult two n') two)) in
+	  abbrev y1 = (nat_to_boxedWord (plus (mult two n') one)) in
+	  abbrev y2 = (nat_to_boxedWord (plus (mult two n') two)) in
 
 	  %---- x is bounded ----%
           abbrev p1 = [ltle_trans n' (S n') n [lt_S n'] [eq_le (S n') n symm n_eq]] in % n' <= n
@@ -345,6 +351,7 @@ Define spec mk_complete_bintree :=
         nonleaf_bounded
         m2nonleaf_bounded).
 
+-%
 %---- TODO ---
 Define spec is_cyclic_h :=
   fun is_cyclic_h(N:word)(g:<graph N>)(n:nat)
@@ -379,28 +386,28 @@ Define spec is_cyclic :=
 %
 %======
 
-Define g := (add_edge word2 word1
+Define g := (add_edge word2 (boxWord word1)
                       word4
-                 (add_edge word0 word2
+                 (add_edge word0 (boxWord word2)
 		      word4 (no_edge_graph word4)
 		      join (ltword word0 word4) tt
-		      join (ltword word2 word4) tt)
+		      hypjoin (ltword (unboxWord (boxWord word2)) word4) tt by [word_to_boxedWord_to_word word2] join (ltword word2 word4) tt end)
 		 join (ltword word2 word4) tt
-		 join (ltword word1 word4) tt).
+		 hypjoin (ltword (unboxWord (boxWord word1)) word4) tt by [word_to_boxedWord_to_word word1] join (ltword word1 word4) tt end).
 
-Define edge_list := (cons <edge word4> (mkedge word4 word2 word1
-                                  join (ltword word2 word4) tt
-				  join (ltword word1 word4) tt)
-		          (cons <edge word4> (mkedge word4 word0 word2
-			          join (ltword word0 word4) tt
-				  join (ltword word2 word4) tt) (nil <edge word4>))).
+% Define edge_list := (cons <edge word4> (mkedge word4 word2 word1
+%                                   join (ltword word2 word4) tt
+% 				  join (ltword word1 word4) tt)
+% 		          (cons <edge word4> (mkedge word4 word0 word2
+% 			          join (ltword word0 word4) tt
+% 				  join (ltword word2 word4) tt) (nil <edge word4>))).
 				  
-Define spec g2 := (graph_from_edges word4 edge_list).
+% Define spec g2 := (graph_from_edges word4 edge_list).
 
 % this should be true
-Define test1 := (connected word0 word1 word4 g (uwarray_new bool word4 ff)
+Define test1 := (connected word0 (boxWord word1) word4 g (uwarray_new bool word4 ff)
                      join (ltword word0 word4) tt
-		     join (ltword word1 word4) tt).
+		     hypjoin (ltword (unboxWord (boxWord word1)) word4) tt by [word_to_boxedWord_to_word word1] join (ltword word1 word4) tt end).
 
 Compile test1 to "test1.c".
 
@@ -410,10 +417,10 @@ Define spec test2 := (connected word2 word3 word4 g (uwarray_new bool word4 ff)
 		     join (ltword word3 word4) tt).
 
 % get a "java.lang.StackOverflowError" when the code below is run
-Define spec test3 := (mk_complete_bintree one 
+%-Define spec test3 := (mk_complete_bintree one 
   trans cong (lt * (word_to_nat word_max)) [first_power two]
    join (lt two (word_to_nat word_max)) tt
-  clash one Z).
+  clash one Z).-%
   
 %--- Ideas ---%
 % Define cyclic :=
