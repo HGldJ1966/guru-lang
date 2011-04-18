@@ -68,12 +68,12 @@ Define nat_to_boxedWord : Fun(n:nat).boxedWord :=
  fun(n:nat).
    (boxWord word1).
 
-Define word_to_boxedWord_to_word :
+Define trusted word_to_boxedWord_to_word :
   Forall(w:word).
     { (unboxWord (boxWord w)) = w }
   := truei.
 
-Define boxedWord_to_word_to_boxedWord :
+Define trusted boxedWord_to_word_to_boxedWord :
   Forall(bw:boxedWord).
     { (boxWord (unboxWord bw)) = bw }
   := truei.
