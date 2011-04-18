@@ -551,33 +551,40 @@ Define pow_lt : Forall(b e:nat)(u: {(lt one b) = tt}).
 	    hypjoin (lt (pow b e) (pow b (S e))) tt by p1 p2 p3 end
   end.
 
-% for some reason guru is saying the computed classifier is incorrect
-Define pow_lt2 : Forall(b e:nat)(u: {e !=  Z}).
-  {(le b (pow b e)) = tt} :=
-  foralli(b e:nat).
-  [induction(b:nat) by x1 x2 IH return Forall(u:{e != Z}).{(le b (pow b e)) = tt} with
-     Z => foralli(u:{e != Z}).
-  	  existse [not_zero_implies_S e u] foralli(e':nat)(v:{(S e') = e}).
-  	  abbrev p1 =
-  	    trans cong (pow b *) symm v 
-            trans cong (pow * (S e')) x1
-  	    trans join (pow Z (S e')) (mult Z (pow Z e'))
-  	    trans [mult_comm Z (pow Z e')]
-  	    [multZ (pow Z e')] in
-
-	  trans cong (le * (pow b e)) x1
-  	  trans cong (le Z *) p1
-  	  join (le Z Z) tt
-   | S b' => foralli(u:{e != Z}).
-             existse [not_zero_implies_S e u] foralli(e':nat)(v:{(S e') = e}).
-	     abbrev p1 = % b^e = b^(e-1)*b
-	       trans cong (pow b *) symm v
-	       trans join (pow b (S e')) (mult b (pow b e'))
-	       [mult_comm b (pow b e')] in
-	     abbrev p2 = % b <= b^(e-1)*b
-	       [mult_le (pow b e') b [pow_not_zero b e' trans x1 [S_not_zero b']]] in
-
-	     symm trans symm p2  
-	     cong (le b *) symm p1
-   end
-  b].
+Define pow_lt2 : Forall(b e:nat)(u: {e !=  Z}).{ (le b (pow b e)) = tt } :=
+	foralli(b:nat).
+	induction(e:nat) return Forall(u: {e !=  Z}).{ (le b (pow b e)) = tt }
+	with
+		Z =>
+			foralli(u:{ e !=  Z }).
+			contra
+			trans symm e_eq
+						u
+			{ (le b (pow b e)) = tt }
+	| S e' =>
+			foralli(u:{ e !=  Z }).
+			case b with
+				Z =>
+					abbrev p1 = [mult_comm Z (pow Z e')] in
+					abbrev p2 = [multZ (pow Z e')] in
+					abbrev p3 = hypjoin (pow b e) Z by b_eq e_eq p1 p2 end in
+					hypjoin (le b (pow b e)) tt by b_eq p3 end
+			| S b' =>
+					case e' with
+						Z =>
+							abbrev p1 = [mult_comm b (S Z)] in
+							abbrev p2 = [plus_comm b Z] in
+							abbrev p3 = hypjoin (pow b e) b by e_eq e'_eq p1 p2 end in
+							abbrev p4 = [le_refl b] in
+							hypjoin (le b (pow b e)) tt by p3 p4 end
+					| S e'' =>
+							% ih: (le b (pow b e')) = tt
+							abbrev u' = trans e'_eq [S_not_zero e''] in
+							abbrev ih = [e_IH e' u'] in
+							abbrev p1_1 = hypjoin (pow b e) (plus (pow b e') (mult b' (pow b e'))) by b_eq e_eq end in
+							abbrev p1_2 = [plus_implies_le (pow b e') (mult b' (pow b e'))] in
+							abbrev p1 = hypjoin (le (pow b e') (pow b e)) tt by p1_2 p1_1 end in
+							[le_trans b (pow b e') (pow b e) ih p1]
+					end
+			end
+	end.
