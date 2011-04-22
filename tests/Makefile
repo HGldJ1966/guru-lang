@@ -324,3 +324,7 @@ xmlcr:	xmlcr.g
 
 X:
 	gcc -O0 -ggdb -o xmlcr xmlcr.c
+
+test_qlist: test_qlist.g
+	guru test_qlist.g
+	gcc -m32 -DDEBUG=1 -w -o test_qlist test_qlist.c

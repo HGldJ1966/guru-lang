@@ -2,6 +2,7 @@ Include "unique.g".
 Include "ref.g".
 Include "erase_ref.g".
 Include "unique_owned.g". % temporarily added by Duckki
+Include "debug_log.g".
 
 Inductive qlist : Fun(A:type).type :=
   qnil : Fun(A:type).#unique <qlist A>
@@ -77,11 +78,12 @@ Define qlist_erase_ref := fun
   end
   .
 
-Define main :=
-	let u = (mk_ref nat (inc nat one)) in
-	let l = (qcons <ref nat> u (qnil <ref nat>)) in
-	%(qlist_replace_ref nat one two l)
-	(qlist_erase_ref nat one l)
-	.
+Define qlength_word_h :=  fun qlength_word_h(A:type)(^#unique_owned l:<qlist A>)(i:word) : word.
+  match l with
+    qnil _ => i
+  | qcons _ _ l' =>
+      (qlength_word_h A l' (word_inc2 i))
+  end.
 
-Compile main to "qlist_test.c".
+Define qlength_word := fun(A:type)(!#unique l:<qlist A>).
+  (qlength_word_h A (inspect_unique <qlist A> l) word0).
