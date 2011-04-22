@@ -1,3 +1,8 @@
+test_ref:	test_ref.g ../guru/Main.class Makefile
+	../bin/guru test_ref.g
+	gcc -O0 -ggdb -w -o test_ref test_ref.c
+	valgrind ./test_ref
+
 compile_as:	compile_as.g ../guru/Main.class Makefile
 	../bin/guru compile_as.g
 	gcc -O0 -ggdb -w -o compile_as compile_as.c

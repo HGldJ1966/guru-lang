@@ -157,6 +157,13 @@ public class Match extends Expr {
                 ctxt.setSubst(f.vars[i],C.vars[i]);
                 /*		if (scrut_not_consumed)
                         ctxt.setNotConsumed(C.vars[i]); */
+		if (ctxt.getFlag("debug_carraway_match")) {
+		    C.vars[i].print(ctxt.w,ctxt);
+		    ctxt.w.print(" : ");
+		    vT.print(ctxt.w,ctxt);
+		    ctxt.w.println("");
+		    ctxt.w.flush();
+		}
             }
 
             for (int i = C.vars.length - 1; i >= 0; i--) {

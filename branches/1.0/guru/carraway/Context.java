@@ -547,7 +547,7 @@ public class Context extends guru.FlagManager {
 	    pinnedby = new HashSet(256);
 	}
 	public void print(java.io.PrintStream w, Context ctxt) {
-	    w.println("  -- "+ref.toString(ctxt));
+	    w.println("  -- "+ref.refString(ctxt));
 	    if (creating_expr != null && creating_pos != null)
 		w.println("     created by "+creating_expr.toString(ctxt)+" at "+creating_pos.toString());
 	    if (non_ret)
@@ -570,7 +570,7 @@ public class Context extends guru.FlagManager {
 	    while(it.hasNext()) {
 		Sym r = (Sym)it.next();
 		w.print(" ");
-		r.print(w,ctxt);
+		w.print(r.refString(ctxt));
 	    }
 	    w.println("");
 
@@ -579,7 +579,7 @@ public class Context extends guru.FlagManager {
 	    while(it.hasNext()) {
 		Sym r = (Sym)it.next();
 		w.print(" ");
-		r.print(w,ctxt);
+		w.print(r.refString(ctxt));
 	    }
 	    w.println("");
 	    
