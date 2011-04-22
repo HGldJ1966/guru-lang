@@ -42,10 +42,9 @@ Define primitive get_uniquew : Fun(A:type)(^ #unique a : A).#unique <get_uniquew
   }
 END.
 
-Define primitive unpin_unique : Fun(A:type)(#pinned_unique aa : A)(#<uniquew aa> a : A).#unique A :=
-  fun(A:type)(aa:A)(a:A).a <<END
-  inline void *gunpin_unique(int A, void *aa, void *a) {
-    return a;
+Define primitive unpin_unique : Fun(A:type)(#pinned_unique aa : A).#unique A  <<END
+  inline void *gunpin_unique(int A, void *aa) {
+    return aa;
   }
 END.
 
