@@ -107,8 +107,22 @@ public class App extends Expr {
                           +"1. the head: "+head.toString(ctxt)
                           +"\n2. its type: "+ctxt.getType(head).toString(ctxt)
                           +"\n3. the number of arguments: "+(new Integer(args.length)).toString());
+	if (ctxt.getFlag("debug_carraway_app")) {
+	    ctxt.w.println("Type checking application:(");
+	    ctxt.w.flush();
+	}
         for (int i = 0, iend = args.length; i < iend; i++) {
             Expr T = args[i].simpleType(ctxt);
+	    if (ctxt.getFlag("debug_carraway_app")) {
+		ctxt.w.print("argument ");
+		args[i].print(ctxt.w,ctxt);
+		ctxt.w.print(" : ");
+		T.print(ctxt.w,ctxt);
+		ctxt.w.print("\n");
+		ctxt.w.flush();
+	    }
+
+	    Expr origT = T;
             if ((F.consumps[i] == FunBase.CONSUMED_NO_RET ||
                  F.consumps[i] == FunBase.NOT_CONSUMED) && T.construct == PIN && F.types[i].construct == SYM)
                 T = ((Pin)T).s;
@@ -116,8 +130,8 @@ public class App extends Expr {
             if (!F.types[i].eqType(ctxt,hdT))
                 classifyError(ctxt,"The type computed for an argument does not match the expected type.\n\n"
                               +"1. the argument: "+args[i].toString(ctxt)
-                              +"\n\n2. its type: "+T.toString(ctxt)
-                              +"\n\n3. the expected type: "+F.types[i].toString(ctxt)
+                              +"\n\n2. its type: "+origT.toString(ctxt)
+                              +"\n\n3. the expected type: "+F.types[i].applySubst(ctxt).toString(ctxt)
                               +"\n\n4. the application: "+toString(ctxt));
             if (F.nonBindingOccurrence(ctxt, F.vars[i])) {
                 // dependent type here
@@ -130,6 +144,10 @@ public class App extends Expr {
                 ctxt.setSubst(F.vars[i],(Sym)args[i]);
             }
         }
+	if (ctxt.getFlag("debug_carraway_app")) {
+	    ctxt.w.println(")Finished type checking application.");
+	    ctxt.w.flush();
+	}
 
         return F.rettype.applySubst(ctxt);
     }

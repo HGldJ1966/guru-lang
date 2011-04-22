@@ -33,17 +33,39 @@ public class InitTerm extends Expr {
     }
 
     public Expr simpleType(Context ctxt) {
+	Expr T = ctxt.getType(var);
+
 	if (h != null) {
+	    /* we have an init-function to apply; if not, this variable is UNTRACKED (see Match.java). */
+
+	    // first, instantiate the init-function's return type (ret)
 	    Sym prev = ctxt.getSubst(h.F.vars[1]);
 	    ctxt.setSubst(h.F.vars[1], scrut);
-	
-	    // init terms are constructed internally by Match, so they do not need to be type checked.
 	    Expr ret = h.F.rettype.applySubst(ctxt);
 	    ctxt.setSubst(h.F.vars[1], prev);;
+
+	    // now see if we need to pin ret based on the variable's type T
+	    
+	    if (T.construct == PIN) {
+
+		if (h.F.rettype.construct == PIN) 
+		    classifyError(ctxt,
+				  "We are initializing a pattern variable "+var.toString(ctxt)
+				  +" which is pinning another pattern variable,\n"
+				  +"but the init-function requires us also to have "+var.toString(ctxt)+" pin the scrutinee.\n"
+				  +"We currently do not support one variable pinning multiple others.\n"
+				  +"\n1. the variable: "+var.toString(ctxt)
+				  +"\n2. its type: "+T.toString(ctxt)
+				  +"\n3. the init-function: "+h.init.toString(ctxt)
+				  +"\n4. its type: "+h.F.toString(ctxt));
+		
+		ret = new Pin((Sym)ret,((Pin)T).pinned[0]);
+	    }
+
 	    return ret;
 	}
 	
-	return ctxt.getType(var);
+	return T;
     }
 
     public void do_print(java.io.PrintStream w, Context ctxt) {

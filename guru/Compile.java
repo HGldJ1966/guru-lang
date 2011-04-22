@@ -120,7 +120,7 @@ public class Compile extends Command {
 			dc.types[j] = ret_stat.toCarrawayType(ctxt,c.pos);
 
 		    if (ctxt.getFlag("debug_to_carraway")) {
-			ctxt.w.println("Its resource type: "+dc.types[j].toString(cctxt)+".");
+			ctxt.w.println("Its resource type (Carraway type): "+dc.types[j].toString(cctxt)+".");
 			ctxt.w.flush();
 		    }
 
@@ -130,7 +130,7 @@ public class Compile extends Command {
 			dc.rttypes[j] = D.toCarrawayType(ctxt,true);
 
 		    if (ctxt.getFlag("debug_to_carraway")) {
-			ctxt.w.println("Its data type: "+dc.rttypes[j].toString(cctxt)+".");
+			ctxt.w.println("Its data type (runtime type): "+dc.rttypes[j].toString(cctxt)+".");
 			ctxt.w.println(") done translating term constructor \""+d.toString(ctxt)+"\".");
 			ctxt.w.flush();
 		    }
