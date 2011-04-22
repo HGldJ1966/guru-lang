@@ -19,17 +19,26 @@ Define qlist_replace_ref := fun qlist_replace_ref
   (y:A)  % replacement
   (^#uniquew l:<qlist <ref A>>)
   : bool. % success or not
-  match l with
-  	qnil _ => ff
+  match !l with
+  	qnil _ =>
+  		do
+  		(consume_unowned A y)
+  		ff
+  		end
   | qcons _ r l' =>
   		let a = (read_ref A (inspect_uniquew <ref A> r)) in
   		match (eqref A x a) with
-  			ff => (qlist_replace_ref A x y l')
+  			ff =>
+  				do
+  				(consume_unowned A a)
+  				(consume_uniquew <ref A> r)
+  				(qlist_replace_ref A x y l')
+  				end
   		| tt =>
-  				% cannot overwrite r because r is already uniquew, and no pinned_unique ref here
-					match (get_uniquew <ref A> r) with mk_get_uniquew_t _ rp rw =>
-					let rw' = (write_ref A y rp rw) in
-					let r' = (unpin_unique <ref A> rp) in
+					do
+  				(consume_unowned A a)
+					(consume_uniquew <qlist <ref A>> l')
+					(write_ref_once A y r)
 					tt
 					end
   		end
@@ -39,31 +48,39 @@ Define qlist_erase_ref := fun
   (A:type)
   (!x:A)
   (#unique l:<qlist <ref A>>)
-  .
+  :#unique <qlist <ref A>>.
   match l with
   	qnil _ => (qnil <ref A>)
   | qcons _ r l' =>
-  		let a = (read_ref A (inspect_uniquew <ref A> r)) in
+  		let a = (read_ref A (inspect_unique <ref A> r)) in
   		match (eqref A x a) with
   			ff =>
 					match (get_uniquew <qlist <ref A>> l') with mk_get_uniquew_t _ l'_pinned l'_w =>
 					match (qlist_replace_ref A x a l'_w) with
 						ff =>
 							let l'' = (unpin_unique <qlist <ref A>> l'_pinned) in
-							(qcons <ref A> r l')	% nothings erased, restore the original list
+							(qcons <ref A> r l'')	% nothings erased, restore the original list
 					| tt =>
+							do
+							(consume_unique <ref A> r)
 							(unpin_unique <qlist <ref A>> l'_pinned)
+							end
 					end
 					end
   		| tt =>
+  				do
+  				(consume_unowned A a)
+					(consume_unique <ref A> r)
   				l'
+  				end
   		end
   end
   .
 
 Define main :=
-	let u = (mk_ref nat one) in
+	let u = (mk_ref nat (inc nat one)) in
 	let l = (qcons <ref nat> u (qnil <ref nat>)) in
+	%(qlist_replace_ref nat one two l)
 	(qlist_erase_ref nat one l)
 	.
 

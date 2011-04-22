@@ -27,4 +27,14 @@ Define primitive write_ref : Fun(A:type)(#unowned a:A)(! #pinned_unique aa:<ref 
     return r;
   }
 END.
-  
+
+Define primitive write_ref_once : Fun(A:type)(#unowned a:A)(^#uniquew r:<ref A>).void <<END
+
+  inline void *gwrite_ref_once(int A, void *a, void *r) {
+    void **tmp = &select_ref_mk_ref_a(r);
+    gdec(A,*tmp);
+    *tmp = a;
+    ginc(a);
+    return r;
+  }
+END.
