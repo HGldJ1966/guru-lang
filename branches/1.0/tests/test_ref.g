@@ -9,12 +9,15 @@ Define test :=
   match (get_uniquew <ref nat> r) with
     mk_get_uniquew_t _ pinned r1  =>
       let r2 = (write_ref nat twoa pinned r1) in
-      let r3 = (unpin_unique <ref nat> pinned r2) in
-      let rr = (inspect_unique <ref nat> r3) in
-      let x = (read_ref nat rr) in
       do
-        (consume_unique <pb_stdio_t tt> (pb_print_nat pb_stdio x))
-        (consume_unique <ref nat> r3)
+        (consume_uniquew <ref nat> r2) 
+        let r3 = (unpin_unique <ref nat> pinned) in
+        let rr = (inspect_unique <ref nat> r3) in
+        let x = (read_ref nat rr) in
+        do
+          (consume_unique <pb_stdio_t tt> (pb_print_nat pb_stdio x))
+          (consume_unique <ref nat> r3)
+        end
       end
   end.
 
