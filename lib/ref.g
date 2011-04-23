@@ -11,7 +11,9 @@ Define primitive read_ref : Fun(spec A:type)(^ #unique_owned r:<ref A>).#unowned
     end <<END
 
   inline void *gread_ref(void *r) {
-    return select_ref_mk_ref_a(r);
+    void *tmp = select_ref_mk_ref_a(r);
+    ginc(tmp);
+    return tmp;
   }
 END.
   
@@ -23,7 +25,6 @@ Define primitive write_ref : Fun(A:type)(#unowned a:A)(! #pinned_unique aa:<ref 
     void **tmp = &select_ref_mk_ref_a(r);
     gdec(A,*tmp);
     *tmp = a;
-    ginc(a);
     return r;
   }
 END.
