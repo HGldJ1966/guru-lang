@@ -35,7 +35,6 @@ Define primitive write_ref_once : Fun(A:type)(#unowned a:A)(^#uniquew r:<ref A>)
     void **tmp = &select_ref_mk_ref_a(r);
     gdec(A,*tmp);
     *tmp = a;
-    ginc(a);
     return r;
   }
 END.
