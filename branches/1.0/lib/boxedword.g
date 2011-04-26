@@ -18,6 +18,12 @@ Define unboxWord : Fun(^ #owned bw:boxedWord) . word :=
     mk_uholder T w => cast w by symm inj <uholder *> x2 %mean trick that is required
   end.
 
+Define unboxWordu : Fun(bw:boxedWord) . word :=
+  fun(bw:boxedWord).
+  match bw by x1 x2 with
+    mk_uholder T w => cast w by symm inj <uholder *> x2 %mean trick that is required
+  end.
+
 Define trusted unboxWord_tot : Forall(bw:boxedWord).Exists(w:word).{(unboxWord bw) = w} := truei.
 
 Total unboxWord unboxWord_tot.
