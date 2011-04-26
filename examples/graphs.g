@@ -183,32 +183,38 @@ Define graph_to_warray :=
  %       end
  %  end. 
 
+%Unset "trust_hypjoins".
+
 Define connected_h :=
   fun connected_h(x:word)(^ #owned y:node)(N:word)(! #unique_owned g:<graph N>)(#unique mv : <uwarray bool N>)
                  (l:<list node>)
 		 (ux : { (ltword x N) = tt })
 		 (uy : { (ltword (unboxWord y) N) = tt })
 		 (uz : { (adjlist_bounded l N) = tt }):bool.
-    let mv_i = (inspect_unique <uwarray bool N> mv) in
     match (eqword x (unboxWord (clone_owned node y))) with
       ff =>
         match l with
-          nil _ => ff
+          nil _ => 
+          do 
+            (consume_unique <uwarray bool N> mv)
+            ff
+          end
         | cons _ v l' =>
-	    abbrev v_i = (inspect node v) in
-            abbrev uv_u = hypjoin (list_all fun(n:node):bool.(ltword (unboxWord n) N) (cons v_i l')) tt by l_eq uz end in
-            abbrev uv = hypjoin (ltword (unboxWord v_i) N) tt by [list_all_cons_tt_head node fun(n:node):bool.(ltword (unboxWord n) N) v_i l' uv_u] end in
-	    abbrev uz' = [get_neighbors_bounded (unboxWord v_i) N g uv] in
-	    abbrev uz'' = hypjoin (adjlist_bounded l' N) tt by [list_all_cons_tt_tail node fun(n:node):bool.(ltword (unboxWord n) N) v_i l' uv_u] end in
-	    match (uwarray_get bool N mv_i (unboxWord v_i) uv) with
+            let mv_i = (inspect_unique <uwarray bool N> mv) in
+	    let wv = (unboxWordu v) in
+            abbrev uv_u = hypjoin (list_all fun(n:node):bool.(ltword (unboxWord n) N) (cons v l')) tt by l_eq uz end in
+            abbrev uv = hypjoin (ltword wv N) tt by [list_all_cons_tt_head node fun(n:node):bool.(ltword (unboxWord n) N) v l' uv_u] wv_eq end in
+	    abbrev uz' = [get_neighbors_bounded wv N g uv] in
+	    abbrev uz'' = hypjoin (adjlist_bounded l' N) tt by [list_all_cons_tt_tail node fun(n:node):bool.(ltword (unboxWord n) N) v l' uv_u] end in
+	    match (uwarray_get bool N mv_i wv uv) with
 	      ff =>
 		  do (consume_unique_owned <uwarray bool N> mv_i)
 		     (consume_unowned <list node> l')
-                     (connected_h (unboxWord v_i) y N g (uwarray_set bool N mv (unboxWord v_i) tt uv) (get_neighbors (unboxWord v_i) N g uv) uv uy uz')
+                     (connected_h wv y N g (uwarray_set bool N mv wv tt uv) (get_neighbors wv N g uv) uv uy uz')
 		   end
 	    | tt =>
 	           do (consume_unique_owned <uwarray bool N> mv_i)
-	              (connected_h (unboxWord v_i) y N g mv l' uv uy uz'')
+	              (connected_h wv y N g mv l' uv uy uz'')
 		   end
 	    end
         end
