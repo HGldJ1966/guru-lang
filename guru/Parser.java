@@ -1804,10 +1804,10 @@ protected TerminatesCase readTerminatesCase() throws IOException
 	    e.x2.pos = getPos();
 	}
 
+	eatDelim("in", "let term");
+
 	ctxt.pushVar(e.x2);
 
-	eat("in", "let term");
-        
 	ctxt.pushVar(e.x1);
 
         e.t2 = readTerm();
@@ -1834,7 +1834,7 @@ protected TerminatesCase readTerminatesCase() throws IOException
 	    
 	U = readAny();
         
-	eat("in", "abbrev term");
+	eatDelim("in", "abbrev term");
         
 	ctxt.pushVar(x);
 	
