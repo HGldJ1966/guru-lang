@@ -230,6 +230,23 @@ public class ParserBase {
 	}
     }
 
+    // [Duckki] more flexible syntax:
+    // allows to omit delimiters like "in" when a new line starts.
+    protected void eatDelim(String kw, String parsing_what) throws IOException {
+    	boolean	delim_ok = false;
+    	if( lineBreakDelimiter )	// already satisfied a delimiter
+    		delim_ok = true;
+    	if (!eat_ws())
+    	    handleError("Unexpected end of input parsing "+parsing_what);
+    	if (!tryToEat(kw)) {
+    	    if (kw == "\n")
+    		handleError("Expected newline parsing "+parsing_what);
+        	if( delim_ok || lineBreakDelimiter )
+        		return;	// OK - a new line is considered a proper delimiter
+    	    handleError("Expected \""+kw+"\" (or line break) parsing "+parsing_what);
+    	}
+	}
+
     protected boolean tryToEat(String kw) throws IOException 
     {
 	return tryToEat(kw.toCharArray());
@@ -290,15 +307,19 @@ public class ParserBase {
 
 	/* System.out.println("ate "+java.util.Arrays.toString(kw));
 	  System.out.flush();*/
+	lineBreakDelimiter = false;	// an optional keyword disqualifies line-break delimiters
 	return true;
     }
 
+    boolean	lineBreakDelimiter = false;
+    
     // return false if we encounter end of file, true otherwise
     protected boolean eat_ws() throws java.io.IOException {
 	int i;
 	int comment_level = 0; // how far are we nested in comments
 	boolean in_single_line_comment = false;
 
+	lineBreakDelimiter = false;
 	while ((i = getc()) != -1) {
 	    char c = (char)i;
 	    if (Character.isWhitespace(c)) {
@@ -307,6 +328,7 @@ public class ParserBase {
 			comment_level--;
 			in_single_line_comment = false;
 		    }
+		    lineBreakDelimiter = true;	// A line break qualify a delimiter
 		}
 		continue; // with while loop
 	    }
