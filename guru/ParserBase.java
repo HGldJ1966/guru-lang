@@ -25,13 +25,17 @@ public class ParserBase {
 	prev_column = 0;
     }	
 
+    int tabwidth = 2;	// todo: should be configurable
+    
     protected int getc() throws IOException {
 	int c = pr.read();
 	if ((char)c == '\n') {
 	    prev_column = column;
 	    linenum++;
-	    column=0;
+	    column=1;
 	}
+	else if ((char)c == '\t')
+		column += tabwidth;
 	else
 	    column++;
 	return c;
