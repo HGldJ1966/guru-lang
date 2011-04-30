@@ -76,6 +76,17 @@ public class ParserBase {
         System.exit(1);
     }
 
+    protected void handleWarning(String msg)
+    {
+    	handleWarning(new Position(linenum, column, file), msg);
+    }
+    
+    protected void handleWarning(Position pos, String msg)
+    {
+    	pos.print(System.out);
+        System.out.println(": parse warning - "+msg);
+    }
+
     protected Position getPos() {
 	return new Position(linenum,column,file);
     }
@@ -379,6 +390,8 @@ public class ParserBase {
 		return true;
 	    }
 	}
+    if (comment_level != 0)
+    	handleWarning("A comment is not closed at the end of file\n");
 	return false; // we encountered EOF
     }
 
