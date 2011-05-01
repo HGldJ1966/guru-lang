@@ -36,7 +36,7 @@ public class ParserBase {
 	}
 	else if ((char)c == '\t')
 		column += tabwidth;
-	else
+	else if (c != -1)	// EOF doesn't count
 	    column++;
 	return c;
     }
@@ -251,14 +251,15 @@ public class ParserBase {
     	boolean	delim_ok = false;
     	if( lineBreakDelimiter )	// already satisfied a delimiter
     		delim_ok = true;
-    	if (!eat_ws())
-    	    handleError("Unexpected end of input parsing "+parsing_what);
+    	if( !eat_ws() )
+    		return;	// EOF is also considered a delimiter
     	if (!tryToEat(kw)) {
-    	    if (kw == "\n")
-    		handleError("Expected newline parsing "+parsing_what);
         	if( delim_ok || lineBreakDelimiter )
         		return;	// OK - a new line is considered a proper delimiter
-    	    handleError("Expected \""+kw+"\" (or line break) parsing "+parsing_what);
+    	    if (kw == "\n")
+        		handleError("Expected newline parsing "+parsing_what);
+    	    else
+    	    	handleError("Expected \""+kw+"\" (or line break) parsing "+parsing_what);
     	}
 	}
 
