@@ -9,7 +9,7 @@ public class ClassifyCmd extends Command {
 
     public void process(Context ctxt) {
 	e = G.classify(ctxt, Expr.NO_APPROX, true);
-	e.print(ctxt.w,ctxt);
+	e.dropAnnos(ctxt).print(ctxt.w,ctxt);
 	ctxt.w.println("");
 	ctxt.w.flush();
     }

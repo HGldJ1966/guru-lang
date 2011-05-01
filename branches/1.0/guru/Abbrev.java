@@ -18,15 +18,18 @@ public class Abbrev extends Expr{
 
     public void do_print(java.io.PrintStream w, Context ctxt)
     {
-	if (construct == EABBREV)
-	    w.print("eabbrev ");
-	else
-	    w.print("abbrev ");
-	x.abbrev_print(w,ctxt);
-	w.print(" = ");
-	U.print(w,ctxt);
-	w.print(" in ");
-	G.print(w,ctxt);
+		if (ctxt.getFlag("no_expand_vars") )
+		{
+			if (construct == EABBREV)
+			    w.print("eabbrev ");
+			else
+			    w.print("abbrev ");
+			x.abbrev_print(w,ctxt);
+			w.print(" = ");
+			U.print(w,ctxt);
+			w.print(" in ");
+		}
+		G.print(w,ctxt);
     }
 
     public Expr subst() {
