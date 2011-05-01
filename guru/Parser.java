@@ -1633,6 +1633,10 @@ protected TerminatesCase readTerminatesCase() throws IOException
 	Expr adefault = null;
 	Const tp = null;
 	
+	tryToEat("|");	// Duckki: first bar is optional
+	if (!eat_ws())
+	    handleError("Unexpected end of input parsing "+where+".");
+	
 	boolean first = true;
 	if (tryToEat("default")) {
 	    /* special case construct where we have a default value
