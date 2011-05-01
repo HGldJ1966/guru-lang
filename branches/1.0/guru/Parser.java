@@ -116,7 +116,10 @@ public class Parser extends ParserBase {
     }
 
     public Expr readAny() throws IOException {
-	return readAny(eatKeyword());
+    int construct = eatKeyword();
+    if (construct == Expr.INVALID)
+    	handleError("Unexpected end of file.");
+	return readAny(construct);
     }
 
     // call with value from eatKeyword() 
@@ -377,7 +380,7 @@ public class Parser extends ParserBase {
 
 	if (tryToEat("affine")) {
 	    a.drop = null;
-	    eat(".", "ResourceType");
+	    eatDelim(".", "ResourceType");
 	}
 	else {
 	    eat("with", "ResourceType");
@@ -427,7 +430,7 @@ public class Parser extends ParserBase {
 	eat("<<","Init");
 	a.delim = readID();
 	a.code = read_until_newline_delim(a.delim);
-	eat(".","Init");
+	eatDelim(".","Init");
 	return a;
     }
 
@@ -440,7 +443,7 @@ public class Parser extends ParserBase {
 
 	s.flag = readString();
 
-	eat(".", "Set");
+	eatDelim(".", "Set");
 
 	return s;
     }
@@ -457,7 +460,7 @@ public class Parser extends ParserBase {
 	    handleError("Unexpected end of input reading a Total-command.");
 	s.P = readProof();
 
-	eat(".", "Total");
+	eatDelim(".", "Total");
 
 	return s;
     }
@@ -490,7 +493,7 @@ public class Parser extends ParserBase {
 
 	s.flag = readString();
 
-	eat(".", "Unset");
+	eatDelim(".", "Unset");
 
 	return s;
     }
@@ -604,7 +607,7 @@ public class Parser extends ParserBase {
 	allow_predicate = false;
 	spec = false;
 
-	eat(".", "Define");
+	eatDelim(".", "Define");
 
 	if (ctxt.getFlag("count_proofs") && cmd.G.isProof(ctxt)) {
 	    num_proofs++;
@@ -622,7 +625,7 @@ public class Parser extends ParserBase {
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing an Interpret.");
 	cmd.t = readTerm();
-	eat(".", "Interpret");
+	eatDelim(".", "Interpret");
     	return cmd;
     }
 
@@ -632,7 +635,7 @@ public class Parser extends ParserBase {
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing an Interpret.");
 	cmd.G = readAny();
-	eat(".", "Type");
+	eatDelim(".", "Classify");
     	return cmd;
     }
 
@@ -642,7 +645,7 @@ public class Parser extends ParserBase {
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing an Untracked.");
 	cmd.d = readConst();
-	eat(".", "Untracked");
+	eatDelim(".", "Untracked");
     	return cmd;
     }
     protected DumpDependence readDumpDependence() throws IOException
@@ -691,7 +694,7 @@ public class Parser extends ParserBase {
             if (!eat_ws())
                 handleError("Unexpected end of input parsing a DumpDependence.");
         }
-        eat(".", "DumpDependence");
+        eatDelim(".", "DumpDependence");
         return cmd;
     }
     protected Compile readCompile() throws IOException
@@ -705,7 +708,7 @@ public class Parser extends ParserBase {
 	eat("to ","Compile");
 	c.f = new File(readString());
 	c.root = root;
-	eat(".", "Compile");
+	eatDelim(".", "Compile");
 	return c;
     
     }
@@ -736,7 +739,7 @@ public class Parser extends ParserBase {
 	}
 	Include cmd = new Include(new File(readString()), root);
 	cmd.trusted = t;
-	eat(".", "Include");
+	eatDelim(".", "Include");
 	return cmd;
     }
 
@@ -746,7 +749,7 @@ public class Parser extends ParserBase {
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing a Include.");
 	cmd.s = readString();
-	eat(".", "Echo");
+	eatDelim(".", "Echo");
 	return cmd;
     }
     
@@ -766,12 +769,14 @@ public class Parser extends ParserBase {
 	eat(":=", "Inductive");
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing an Inductive");
-	int c = getc();
+
 	ArrayList cs = new ArrayList();
 	ArrayList Ds = new ArrayList();
 	Ownership ret_stat = null;
-	while ((char)c != '.') {
-	    ungetc(c);
+	tryToEat("|");	// Duckki: first bar is now optional (like Coq)
+	while (true) {
+	    if (!eat_ws())
+			handleError("Unexpected end of input parsing an Inductive");
             Const cst = readBindingConst();
 	    cs.add(cst);
 	    eat(":", "Inductive");
@@ -793,14 +798,10 @@ public class Parser extends ParserBase {
 	    Ds.add(D);
 	    if (!eat_ws())
 		handleError("Unexpected end of input parsing an Inductive");
-	    if (!tryToEat("|")) {
-		eat(".", "Inductive");
+	    if (!tryToEat("|"))
 		break; // out of while 
-	    }
-	    if (!eat_ws())
-		handleError("Unexpected end of input parsing an Inductive");
-	    c = getc();
 	}
+	eatDelim(".", "Inductive");
 
 	cmd.ret_stat = ret_stat;
 	cmd.c = toConstArray(cs);
