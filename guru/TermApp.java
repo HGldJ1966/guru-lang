@@ -219,8 +219,7 @@ public class TermApp extends App{
 	    ctxt.w.println("");
 	    ctxt.w.flush();
 	}
-	Expr cl = head.classify(ctxt,approx,spec).defExpandTop(ctxt,false,
-							       spec);
+	Expr cl = head.classify(ctxt,approx,spec).dropAnnos(ctxt).defExpandTop(ctxt,false,spec);
 	if (ctxt.getFlag("debug_classify_apps")) {
 	    ctxt.w.println("Head is "+head.toString(ctxt)+", with classifier "+cl.toString(ctxt));
 	    if (cl.construct == VAR)
