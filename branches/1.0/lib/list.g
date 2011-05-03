@@ -635,7 +635,8 @@ Total length length_tot.
 
 Define length_append
   : Forall(A:type)(l1 l2:<list A>).
-     { (length (append l1 l2)) = (plus (length l1) (length l2)) } :=
+     { (length (append l1 l2)) = (plus (length l1) (length l2)) } 
+:=
   foralli(A:type)(l1 l2:<list A>).
     [induction(l1:<list A>) 
      return { (length (append l1 l2)) = (plus (length l1) (length l2)) }

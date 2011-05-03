@@ -1,6 +1,3 @@
-%Set "print_parsed".
-%Set "print_ref_annos".
-
 Include "bool.g".
 Include "owned.g".
 Include "comparator.g".

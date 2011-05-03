@@ -26,12 +26,12 @@ public class Compress extends Expr {
 	    classifyError(ctxt, "The subterm of a compress-term has a type which is not a pin-type.\n\n"
 			  +"1. the subterm: "+t.toString(ctxt)
 			  +"\n\n2. its type: "+T.toString(ctxt));
-	Pin P = (Pin)T;
-	if (P.pinned.length != 1)
+	Pin P1 = (Pin)T;
+	if (P1.pinned.length != 1)
 	    classifyError(ctxt, "The subterm of a compress-term does not pin exactly one other reference.\n\n"
 			  +"1. the subterm: "+t.toString(ctxt)
 			  +"\n\n2. its type: "+T.toString(ctxt));
-	p1 = P.pinned[0];
+	p1 = P1.pinned[0];
 
 	Expr T2 = ctxt.getType(p1);
 
@@ -49,7 +49,7 @@ public class Compress extends Expr {
 
 	p2 = P2.pinned[0];
 	    
-	return T2;
+	return new Pin(P1.s,p2);
     }
 
     public void do_print(java.io.PrintStream w, Context ctxt) {
