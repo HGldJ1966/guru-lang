@@ -17,10 +17,11 @@ Set "trust_hypjoins".
    be stored in lists. -%
 Define node := boxedWord.
 
+
 % test if all nodes in a list of adjacent ones are bounded.
 Define spec adjlist_bounded :=
   fun(l:<list node>)(N:word).
-   (list_all node fun(n:node):bool.(ltword (unboxWord n) N) l).
+    (list_all node fun(n:node):bool.(ltword (unboxWord n) N) l).
 
 % use list_all in list.g, vec_all in vec.g
 Define spec nodes_bounded :=
@@ -28,26 +29,28 @@ Define spec nodes_bounded :=
     (vec_all <list node> (word_to_nat N) fun(l:<list node>):bool.
        (adjlist_bounded l N) arr).
 
-% Inductive graph : Fun(N:word).type :=
-%   mkgraph : Fun(N:word)(arr : <warray <list node> N>)
-%                (u : { (nodes_bounded N arr) = tt }).
-%             <graph N>.
 
 Inductive graph : Fun(N:word).type :=
  mkgraph : Fun(N:word)(#unique arr : <warray <list node> N>)
               (u : {(nodes_bounded N arr) = tt }).
-	      #unique <graph N>.
-	      
-% Datatype graph : Fun(N:unowned & word).type :=
-%   mkgraph : Fun(N:unowned & word)(arr : <warray <list node> N>)
-%                (u : {(nodes_bounded N arr) = tt }).
-% 	       <graph N>.
+  	        #unique <graph N>.
+
+Define graph_to_warray :=
+  fun(N:word)(! #unique g:<graph N>): #<unique g> <warray <list node> N>.
+    match g with
+      mkgraph _ arr _ => cast arr by cong <warray <list node> *> 
+                                       symm inj <graph *> g_Eq 
+    end.
 	       
 Define get_neighbors :=
-  fun(x:word)(N:word)(! #unique_owned g:<graph N>)
-     (u : { (ltword x N) = tt }): <list node>. 
+  fun(x:word)(N:word)(^ #unique_owned g:<graph N>)
+     (u : { (ltword x N) = tt }): <list node>.
     match g with
-      mkgraph _ arr _ => (inc_owned <list node> (warray_get <list node> N arr x u))
+      mkgraph _ arr _ =>
+        let ret = @ (warray_get <list node> N arr x u) in
+          do (consume_unique_owned <warray <list node> N> arr)
+             (owned_to_unowned <list node> ret) 
+          end
     end.
 
 Define get_neighbors_bounded 
@@ -68,39 +71,59 @@ Define get_neighbors_bounded
 	  trans symm p3 p2
     end.
 
-Define adjacent_h := fun(x:node)(l:<list node>). (member node x l boxedWord_eq).
+Define adjacent_h :=
+  fun(^#owned x:node)(l:<list node>):bool.
+    let ret = (member node x (inspect <list node> l) boxedWord_eq) in
+    do
+      (consume_unowned <list node> l)
+      ret
+    end.
+
+
 
 Define adjacent :=
-  fun(x:word)(y:node)(N:word)(g:<graph N>)
+  fun(x:word)(^#owned y:node)(N:word)(^ #unique_owned g:<graph N>)
      (ux : { (ltword x N) = tt })
      (uy : { (ltword (unboxWord y) N) = tt }):bool.
-    (or (eqword x (unboxWord y)) (adjacent_h y (get_neighbors x N g ux))).
+       let y_c = (clone_owned node y) in
+       (or (eqword x (unboxWord y_c)) (adjacent_h y (get_neighbors x N g ux))).
 
-% add directed edge
+% add directed edges
  Define add_edge :=
-   fun(x:word)(y:node)(N:word)(g:<graph N>)
-                (ux : { (ltword x N) = tt })
-                (uy : { (ltword (unboxWord y) N) = tt }):<graph N>.
-     match (adjacent x y N g ux uy) with
-       ff => abbrev x_ns = (cons node y (get_neighbors x N g ux)) in % add y as a neighbor of x
-
-           match g with
-            mkgraph _ arr g_u => 
-                (mkgraph N (warray_set <list node> x x_ns N arr ux) 
-
-		abbrev p1 = join (vec_all fun(l:<list node>):bool.(adjlist_bounded l N) (warray_set x x_ns arr))
-		                 (nodes_bounded N (warray_set x x_ns arr)) in
-		abbrev p2_u2 = hypjoin (vec_all fun(l:<list node>):bool.(adjlist_bounded l N) arr) tt by g_u end in
-		abbrev p2_u3 = hypjoin (fun(l:<list node>):bool.(adjlist_bounded l N) x_ns) tt by [get_neighbors_bounded x N g ux] uy end in
-		abbrev p2 = [warray_all_set <list node> x x_ns N arr
-		                     fun(l:<list node>):bool.(adjlist_bounded l N)
-				     ux
-				     p2_u2
-				     p2_u3] in
-
+   fun(x:word)(^#owned y:node)(N:word)(#unique g:<graph N>)
+      (ux : { (ltword x N) = tt })
+      (uy : { (ltword (unboxWord y) N) = tt }):#unique <graph N>.
+     match (adjacent x (clone_owned node y) N (inspect_unique <graph N> g) ux 
+              trans cong (ltword (unboxWord *) N) 
+                      join (clone_owned node y) y
+                    uy) with
+       ff =>
+         abbrev x_ns =
+	   (cons node (inc_owned node y)
+	     (get_neighbors x N (inspect_unique <graph N> g) ux)) in % add y as a neighbor of x
+         match g with
+           mkgraph _ arr g_u =>
+             (mkgraph N (warray_set <list node> x x_ns N arr ux) 
+             abbrev p1 =
+	       join (vec_all fun(l:<list node>):bool.
+	         (adjlist_bounded l N) (warray_set x x_ns arr))
+		   (nodes_bounded N (warray_set x x_ns arr)) in
+	     abbrev p2_u2 =
+	       hypjoin (vec_all fun(l:<list node>):bool.
+	         (adjlist_bounded l N) arr) tt by g_u end in
+	     abbrev p2_u3 =
+	       hypjoin (fun(l:<list node>):bool.
+	         (adjlist_bounded l N) x_ns) tt by
+		   [get_neighbors_bounded x N g ux] uy end in
+	     abbrev p2 =
+	       [warray_all_set <list node> x x_ns N arr
+		fun(l:<list node>):bool.(adjlist_bounded l N)
+                ux
+                p2_u2
+		p2_u3] in
 	        symm trans symm p2 p1
-                )
-           end
+             )
+         end
      | tt => g
      end.
 
@@ -137,12 +160,6 @@ Define spec graph_from_edges :=
   fun(N:word)(l:<list <edge N>>):<graph N>.
     (graph_from_edges_h N l (no_edge_graph N)).
     
-Define graph_to_warray :=
-  fun(N:word)(g:<graph N>):<warray <list node> N>.
-    match g with
-      mkgraph _ arr _ => cast arr by cong <warray <list node> *> 
-                                       symm inj <graph *> g_Eq 
-    end.
 
 
 % Define remove_edge_h :=
@@ -186,7 +203,9 @@ Define graph_to_warray :=
 %Unset "trust_hypjoins".
 
 Define connected_h :=
-  fun connected_h(x:word)(^ #owned y:node)(N:word)(! #unique_owned g:<graph N>)(#unique mv : <uwarray bool N>)
+  fun connected_h(x:word)(^ #owned y:node)(N:word)
+                 (! #unique_owned g:<graph N>)
+		 (#unique mv : <uwarray bool N>)
                  (l:<list node>)
 		 (ux : { (ltword x N) = tt })
 		 (uy : { (ltword (unboxWord y) N) = tt })
@@ -195,22 +214,32 @@ Define connected_h :=
       ff =>
         match l with
           nil _ => 
-          do 
+          do
             (consume_unique <uwarray bool N> mv)
             ff
           end
         | cons _ v l' =>
             let mv_i = (inspect_unique <uwarray bool N> mv) in
 	    let wv = (unboxWordu v) in
-            abbrev uv_u = hypjoin (list_all fun(n:node):bool.(ltword (unboxWord n) N) (cons v l')) tt by l_eq uz end in
-            abbrev uv = hypjoin (ltword wv N) tt by [list_all_cons_tt_head node fun(n:node):bool.(ltword (unboxWord n) N) v l' uv_u] wv_eq end in
-	    abbrev uz' = [get_neighbors_bounded wv N g uv] in
-	    abbrev uz'' = hypjoin (adjlist_bounded l' N) tt by [list_all_cons_tt_tail node fun(n:node):bool.(ltword (unboxWord n) N) v l' uv_u] end in
+            abbrev uv_u = hypjoin (list_all fun(n:node):bool.
+	      (ltword (unboxWord n) N) (cons v l')) tt by l_eq uz end in
+            abbrev uv = hypjoin (ltword wv N) tt by
+	      [list_all_cons_tt_head node fun(n:node):bool.
+	        (ltword (unboxWord n) N) v l' uv_u] wv_eq end in
+            abbrev nbors = (get_neighbors wv N (clone_unique_owned <graph N> g) uv) in
+	    abbrev uz' = trans cong (adjlist_bounded * N) 
+                                 join nbors
+                                      (get_neighbors wv N g uv)
+                               [get_neighbors_bounded wv N g uv] in
+	    abbrev uz'' = hypjoin (adjlist_bounded l' N) tt by
+	      [list_all_cons_tt_tail node fun(n:node):bool.
+	        (ltword (unboxWord n) N) v l' uv_u] end in
 	    match (uwarray_get bool N mv_i wv uv) with
 	      ff =>
 		  do (consume_unique_owned <uwarray bool N> mv_i)
 		     (consume_unowned <list node> l')
-                     (connected_h wv y N g (uwarray_set bool N mv wv tt uv) (get_neighbors wv N g uv) uv uy uz')
+                     (connected_h wv y N g (uwarray_set bool N mv wv tt uv)
+		                  nbors uv uy uz')
 		   end
 	    | tt =>
 	           do (consume_unique_owned <uwarray bool N> mv_i)
@@ -218,15 +247,22 @@ Define connected_h :=
 		   end
 	    end
         end
-    | tt => tt
+    | tt =>
+          do 
+	    (consume_unowned <list node> l)
+            (consume_unique <uwarray bool N> mv)
+ 	    tt
+	  end
     end.
 
 Define connected :=
-  fun connected(x:word)(y:node)(N:word)(g:<graph N>)(mv : <uwarray bool N>)
+  fun connected(x:word)(^ #owned y:node)(N:word)(! #unique_owned g:<graph N>)(#unique mv : <uwarray bool N>)
                (ux : { (ltword x N) = tt })
 	       (uy : { (ltword (unboxWord y) N) = tt }):bool.
-    abbrev x_ns = (get_neighbors x N g ux) in
-      (connected_h x y N g mv x_ns ux uy [get_neighbors_bounded x N g ux]).
+    abbrev x_ns = (get_neighbors x N (clone_unique_owned <graph N> g) ux) in
+      (connected_h x y N g mv x_ns ux uy trans cong (adjlist_bounded * N) 
+                                                 join x_ns (get_neighbors x N g ux)
+                                         [get_neighbors_bounded x N g ux]).
 
 %-      
 Define connected2_h :=
