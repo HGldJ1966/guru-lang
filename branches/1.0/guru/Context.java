@@ -490,7 +490,7 @@ public class Context extends FlagManager {
 	if (s != null && !s.empty())
 	    return (Var)s.peek();
 
-	Expr d = (Expr)defs.get(name);
+	Expr d = (Const)defs.get(name);
 	if (d != null)
 	    return d;
 

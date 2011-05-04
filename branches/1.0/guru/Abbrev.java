@@ -3,14 +3,20 @@ package guru;
 import java.util.Stack;
 
 public class Abbrev extends Expr{
-
+	// flags
+	static final int	fAbbrevNone = 0x0;
+	static final int	fAbbrevEvaluate = 0x1;
+	static final int	fAbbrevClassify = 0x2;
+	
+	int	flags;
     public Var x;
     public Expr U;
     public Expr G;
-    protected Expr subst;
+    protected Expr subst;	// cache for substituted version of G
 
-    public Abbrev(boolean eabbrev, Var x, Expr U, Expr G) {
-	super(eabbrev ? EABBREV : ABBREV);
+    public Abbrev(int f, Var x, Expr U, Expr G) {
+	super(ABBREV);
+	flags = f;
 	this.x = x;
 	this.U = U;
 	this.G = G;
@@ -20,8 +26,10 @@ public class Abbrev extends Expr{
     {
 		if (ctxt.getFlag("no_expand_vars") )
 		{
-			if (construct == EABBREV)
+			if ((flags & fAbbrevEvaluate) != 0)
 			    w.print("eabbrev ");
+			else if ((flags & fAbbrevClassify) != 0)
+			    w.print("cabbrev ");
 			else
 			    w.print("abbrev ");
 			x.abbrev_print(w,ctxt);
@@ -47,12 +55,12 @@ public class Abbrev extends Expr{
 	Expr nU = U.subst(e,y);
 	if (x == y) {
 	    if (nU != U)
-		return new Abbrev(construct == EABBREV, x, nU, G);
+		return new Abbrev(flags, x, nU, G);
 	    return this;
 	}
 	Expr nG = G.subst(e,y);
 	if (nU != U || nG != G)
-	    return new Abbrev(construct == EABBREV, x, nU, nG);
+	    return new Abbrev(flags, x, nU, nG);
 	return this;
     }
     
@@ -61,14 +69,15 @@ public class Abbrev extends Expr{
 	return tmp.dropAnnos(ctxt);
     }
 
-    protected void add_def(Context ctxt, Expr def) {
-	if (construct == EABBREV)
-	    if (def.isTerm(ctxt))
-		def = def.eval(ctxt);
-	ctxt.macroDefine(x,def);
+    protected void add_def(Context ctxt) {
+    	Expr def = U;
+		if ((flags&fAbbrevEvaluate)!=0 && def.isTerm(ctxt))
+			def = def.eval(ctxt);
+		ctxt.macroDefine(x,def);
     }
 
     public Expr classify(Context ctxt, int approx, boolean spec) {
+    // [Duckki] if wanted, U can be classified here, otherwise:
 	// we do not classify U here.  If x is not used, garbage
 	// can appear for U.  That is needed, because U might not
 	// be classifiable; for example, if it is a term containing
@@ -78,11 +87,16 @@ public class Abbrev extends Expr{
 	// then classify the result is that classification assumes the
 	// expression being classified is an expression built by the
 	// parser (for purposes of reporting line number information).
-	add_def(ctxt, U);
+		if ((flags&fAbbrevClassify)!=0 && ctxt.getClassifier(x)==null) {
+			// copied from Let.java
+			Expr T = U.classify(ctxt, approx, spec);
+			ctxt.setClassifier(x,T);
+		}
+	add_def(ctxt);
 	Expr cG = G.classify(ctxt, approx, spec);
 	if (cG.numOcc(x) == 0)
 	    return cG;
-	return new Abbrev(construct == EABBREV, x, U, cG);
+	return new Abbrev(flags, x, U, cG);
     }
 
     public Expr evalStep(Context ctxt) {
@@ -94,7 +108,7 @@ public class Abbrev extends Expr{
     }
 
     public boolean defEqNoAnno(Context ctxt, Expr e, boolean spec) {
-	add_def(ctxt,U);
+	add_def(ctxt);
 	return G.defEqNoAnno(ctxt,e,spec);
     }
 

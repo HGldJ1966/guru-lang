@@ -68,6 +68,7 @@ public abstract class Expr {
     
     public static final int ABBREV = 53;
     public static final int EABBREV = 54;
+    public static final int CABBREV = 56;	// Duckki: abbrev with classification
     
     public static final int TRUE = 55;
 
