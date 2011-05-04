@@ -89,18 +89,19 @@ Define adjacent :=
        (or (eqword x (unboxWord y_c)) (adjacent_h y (get_neighbors x N g ux))).
 
 % add directed edges
- Define add_edge :=
+Define add_edge :=
    fun(x:word)(^#owned y:node)(N:word)(#unique g:<graph N>)
       (ux : { (ltword x N) = tt })
-      (uy : { (ltword (unboxWord y) N) = tt }):#unique <graph N>.
-     match (adjacent x (clone_owned node y) N (inspect_unique <graph N> g) ux 
+      (uy : { (ltword (unboxWord y) N) = tt }): #unique <graph N>.
+     let g_i = (inspect_unique <graph N> g) in
+     match (adjacent x (clone_owned node y) N (clone_unique_owned <graph N> g_i) ux 
               trans cong (ltword (unboxWord *) N) 
                       join (clone_owned node y) y
                     uy) with
        ff =>
-         abbrev x_ns =
+         let x_ns =
 	   (cons node (inc_owned node y)
-	     (get_neighbors x N (inspect_unique <graph N> g) ux)) in % add y as a neighbor of x
+	     (get_neighbors x N g_i ux)) in % add y as a neighbor of x
          match g with
            mkgraph _ arr g_u =>
              (mkgraph N (warray_set <list node> x x_ns N arr ux) 
@@ -124,18 +125,29 @@ Define adjacent :=
 	        symm trans symm p2 p1
              )
          end
-     | tt => g
+     | tt =>
+         let ret = g in
+	 do (consume_unique_owned <graph N> g_i)
+	    ret
+	 end
      end.
 
 Define no_edge_graph :=
-  fun(N:word):<graph N>. 
-    abbrev arr = (warray_new <list node> N (nil node)) in
-      (mkgraph N arr
-               abbrev v = (mkvec <list node> (nil node) (word_to_nat N)) in
-	       abbrev v_eq = join v (mkvec <list node> (nil node) (word_to_nat N)) in
-               abbrev p1 = join (fun(l:<list node>):bool.(adjlist_bounded l N) nil) tt in
-	       hypjoin (nodes_bounded N arr) tt by [mkvec_implies_vec_all <list node> (nil node) (word_to_nat N) v fun(l:<list node>):bool.(adjlist_bounded l N) v_eq p1] end
-	       ). 
+  fun(N:word): #unique <graph N>.
+    let n = (nil node) in
+    let n_i = (inspect <list node> n) in
+    abbrev arr = (warray_new <list node> N n_i) in
+    let ret = (mkgraph N arr
+                 abbrev v = (mkvec <list node> (nil node) (word_to_nat N)) in
+	         abbrev v_eq = join v (mkvec <list node> (nil node) (word_to_nat N)) in
+                 abbrev p1 = join (fun(l:<list node>):bool.(adjlist_bounded l N) nil) tt in
+	         hypjoin (nodes_bounded N arr) tt
+		   by [mkvec_implies_vec_all <list node> (nil node)
+		      (word_to_nat N) v fun(l:<list node>):bool.
+		      (adjlist_bounded l N) v_eq p1] end) in
+    do (consume_unowned <list node> n)
+       ret
+    end. 
 
 Inductive edge : Fun(N:word).type :=
   mkedge : Fun(N:word)(x:word)(y:node)
@@ -451,14 +463,18 @@ Define spec is_cyclic :=
 %
 %======
 
-Define g := (add_edge word2 (boxWord word1)
-                      word4
-                 (add_edge word0 (boxWord word2)
-		      word4 (no_edge_graph word4)
-		      join (ltword word0 word4) tt
-		      hypjoin (ltword (unboxWord (boxWord word2)) word4) tt by [word_to_boxedWord_to_word word2] join (ltword word2 word4) tt end)
-		 join (ltword word2 word4) tt
-		 hypjoin (ltword (unboxWord (boxWord word1)) word4) tt by [word_to_boxedWord_to_word word1] join (ltword word1 word4) tt end).
+Define g := (add_edge word2 (inspect boxedWord (boxWord word1))
+              word4
+              (add_edge word0 (boxWord word2)
+		word4 (no_edge_graph word4)
+	        join (ltword word0 word4) tt
+		hypjoin (ltword (unboxWord (boxWord word2)) word4) tt by
+		  [word_to_boxedWord_to_word word2]
+	          join (ltword word2 word4) tt end)
+	      join (ltword word2 word4) tt
+	      hypjoin (ltword (unboxWord (boxWord word1)) word4) tt by
+		[word_to_boxedWord_to_word word1]
+		join (ltword word1 word4) tt end).
 
 % Define edge_list := (cons <edge word4> (mkedge word4 word2 word1
 %                                   join (ltword word2 word4) tt
