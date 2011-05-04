@@ -165,9 +165,14 @@ public class Parser extends ParserBase {
 		e = readLet();
 		break;
 	    case Expr.ABBREV:
+	    	e = readAbbrev( Abbrev.fAbbrevNone );
+	    	break;
 	    case Expr.EABBREV:
-	    	e = readAbbrev(construct == Expr.EABBREV);
- 		break;
+	    	e = readAbbrev( Abbrev.fAbbrevEvaluate);
+	    	break;
+	    case Expr.CABBREV:
+	    	e = readAbbrev( Abbrev.fAbbrevClassify);
+	    	break;
 	    case Expr.MATCH:
 		e = readMatch();
 		break;
@@ -1824,7 +1829,7 @@ protected TerminatesCase readTerminatesCase() throws IOException
         return e;
     }
 
-    protected Abbrev readAbbrev(boolean eabbrev) throws IOException
+    protected Abbrev readAbbrev(int flags) throws IOException
     {
 	Var x;
 	Expr U, G;
@@ -1850,7 +1855,7 @@ protected TerminatesCase readTerminatesCase() throws IOException
 	
 	ctxt.popVar(x);
 	
-        Abbrev ret = new Abbrev(eabbrev, x,U,G);
+        Abbrev ret = new Abbrev(flags,x,U,G);
 	ret.pos = pos;
 	return ret;
     }
@@ -2692,6 +2697,7 @@ protected TerminatesCase readTerminatesCase() throws IOException
 		keywordTree.add( "let", Expr.LET );
 		keywordTree.add( "abbrev", Expr.ABBREV );
 		keywordTree.add( "eabbrev", Expr.EABBREV );
+		keywordTree.add( "cabbrev", Expr.CABBREV );
 		keywordTree.add( "match", Expr.MATCH );
 		keywordTree.add( "Fun", Expr.FUN_TYPE );
 		keywordTree.add( "type", Expr.TYPE );
