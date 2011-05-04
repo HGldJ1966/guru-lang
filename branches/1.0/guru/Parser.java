@@ -565,8 +565,6 @@ public class Parser extends ParserBase {
 	while(true) {
 	    if (tryToEat(":=")) {
 		cmd.G = readAny();
-		if (!eat_ws())
-		    handleError("Unexpected end of input parsing a Define.");
 		break;
 	    }
 	    else {
@@ -802,7 +800,7 @@ public class Parser extends ParserBase {
 				+"\n\n3. the previous constructors' resource type: "+ret_stat.toString(ctxt));
 	    Ds.add(D);
 	    if (!eat_ws())
-		handleError("Unexpected end of input parsing an Inductive");
+		break;
 	    if (!tryToEat("|"))
 		break; // out of while 
 	}
