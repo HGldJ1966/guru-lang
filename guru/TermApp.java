@@ -243,17 +243,6 @@ public class TermApp extends App{
 			+"\n\n2. its classifier: "+cl.toString(ctxt)
 			+"\n\n3. the number of arguments: "+(new Integer(X.length)).toString());
 
-	boolean check_spec_terminates = ctxt.getFlag("check_spec_terminates");
-	for (int i = 0;i < X.length; i++) {
-	    if (ch.owned[i].status == Ownership.SPEC) {
-		if (check_spec_terminates && !spec)
-		    X[i].checkTermination(ctxt);
-		specarg[i] = true;
-	    }
-	}
-
-	// now we can actually type check the arguments
-
 	Expr ret = apply_classifier(FUN_TYPE, approx, spec, ctxt, cl, 0);
 
 	if (ctxt.getFlag("debug_classify_apps")) {
@@ -261,6 +250,15 @@ public class TermApp extends App{
 	    ret.print(ctxt.w,ctxt);
 	    ctxt.w.println("");
 	    ctxt.w.flush();
+	}
+
+	boolean check_spec_terminates = ctxt.getFlag("check_spec_terminates");
+	for (int i = 0;i < X.length; i++) {
+	    if (ch.owned[i].status == Ownership.SPEC) {
+		if (check_spec_terminates && !spec)
+		    X[i].checkTermination(ctxt);
+		specarg[i] = true;
+	    }
 	}
 
 	return ret;
