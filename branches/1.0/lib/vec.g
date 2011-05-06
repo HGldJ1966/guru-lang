@@ -364,7 +364,8 @@ Define vec_append_assoc : Forall(A:type)(n1 : nat)(l1 : <vec A n1>)
   end.
 
 Define vec_reverse_h
-  : Fun(A:type)(spec n m:nat)(l1:<vec A n>)(l2:<vec A m>).<vec A (plus n m)> :=
+  : Fun(A:type)(spec n m:nat)(l1:<vec A n>)(l2:<vec A m>).
+       <vec A (plus n m)> :=
   fun vec_reverse_h(A:type)(spec n m:nat)(l1:<vec A n>)(l2:<vec A m>)
       :<vec A (plus n m)> .
     match l1 by ul1 vl1 with
@@ -381,7 +382,8 @@ Define vec_reverse_h
                  cong (plus * m) symm inj <vec ** *> vl1
     end.
 
-Define vec_reverse := 
+Define vec_reverse 
+  : Fun(A:type)(spec n:nat)(l:<vec A n>).<vec A n> := 
   fun(A:type)(spec n:nat)(l1:<vec A n>). 
     cast (vec_reverse_h A n Z l1 (vecn A)) by cong <vec A *> 
                                                 [plusZ n].

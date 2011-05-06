@@ -19,7 +19,9 @@ Define plusZ : Forall(n:nat). { (plus n Z) = n } :=
                   symm n_eq
   end.
 
-Define plusS : Forall(n m : nat). { (plus n (S m)) = (S (plus n m))} :=
+Define plusS 
+: Forall(n m : nat). { (plus n (S m)) = (S (plus n m))} 
+:=
 	induction (n:nat) return Forall(m:nat).{ (plus n (S m)) = (S (plus n m))} with
 		Z => foralli(m : nat).
 		     trans cong (plus * (S m)) n_eq
@@ -38,7 +40,8 @@ Define plusS_hop : Forall(n m : nat). {(plus (S n) m) = (plus n (S m))} :=
     hypjoin (plus (S n) m) (plus n (S m)) by [plusS n m] end.
 
 Define plus_comm : Forall (n m :nat). { (plus n m) = (plus m n) } :=
-induction (n : nat) return Forall(m : nat).{ (plus n m) = (plus m n) } with
+induction (n : nat) 
+return Forall(m : nat).{ (plus n m) = (plus m n) } with
   Z => foralli(m : nat).
        trans cong (plus * m) n_eq
        trans join (plus Z m) m
@@ -52,7 +55,8 @@ induction (n : nat) return Forall(m : nat).{ (plus n m) = (plus m n) } with
                 cong (plus m *) symm n_eq
 end.
 
-Define plus_assoc : Forall(x y z:nat). { (plus (plus x y) z) = (plus x (plus y z)) } :=
+Define plus_assoc : 
+Forall(x y z:nat). { (plus (plus x y) z) = (plus x (plus y z)) } :=
   induction(x:nat) by x1 x2 IH return
                    Forall(y z : nat).
                      { (plus (plus x y) z) = (plus x (plus y z)) }

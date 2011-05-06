@@ -76,7 +76,7 @@ public class CompileAs extends Expr{
     public Expr dropAnnos(Context ctxt) {
 	return t2.dropAnnos(ctxt);
     }
-    public void checkTermination(Context ctxt) { // I don't think this is needed. AS (March '11).
+    public void checkTermination(Context ctxt) { 
         t2.checkTermination(ctxt);
     }
 
