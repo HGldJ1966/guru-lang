@@ -1,0 +1,12 @@
+(
+	{
+		Identifier = sourcecode.guru;
+		BasedOn = sourcecode;
+		Name = "Guru Files";
+		Extensions = ("g");
+		MIMETypes = ("text/guru");
+		Language = "xcode.lang.guru";
+		IsTextFile = YES;
+		IsSourceFile = YES;
+	}
+)
