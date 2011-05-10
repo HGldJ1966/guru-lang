@@ -85,6 +85,7 @@
 		<string>Compile</string>
 		<string>Set</string>
 		<string>Unset</string>
+		<string>Interpret</string>
 	</array>
 	<key>BBLMSuffixMap</key>
 	<array>
