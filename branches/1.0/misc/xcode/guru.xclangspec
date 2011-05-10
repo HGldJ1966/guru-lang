@@ -25,9 +25,9 @@
 				"xcode.lang.guru.comment",
 				"xcode.lang.guru.comment.singleline",
 				"xcode.lang.guru.identifier",
-				//"xcode.lang.string",
-				//"xcode.lang.character",
-				//"xcode.lang.number",
+				"xcode.lang.string",
+				"xcode.lang.character",
+				"xcode.lang.number",
 				//"xcode.lang.guru.operators",
 			);
 		};
@@ -89,7 +89,7 @@
 		Identifier = "xcode.lang.guru.identifier";
 		Syntax = {
 			StartChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
-			Chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
+			Chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'";
 			Words = (
 				"type",
 				"type_family_abbrev",
@@ -168,6 +168,7 @@
 				//"to",
 				"Set",
 				"Unset",
+				"Interpret",
 			);
 			Type = "xcode.syntax.keyword";
 			AltType = "xcode.syntax.identifier";  // non-keywords are identifiers
