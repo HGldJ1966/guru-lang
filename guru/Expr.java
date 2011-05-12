@@ -348,7 +348,7 @@ public abstract class Expr {
 		return (drop_annos ? ctxt.getDefBodyNoAnnos(c) 
 			: ctxt.getDefBody(c));
 	}
-	else if (construct == ABBREV || construct == EABBREV) 
+	else if (construct == ABBREV) 
 	    return ((Abbrev)this).subst();
 	else if (construct == CUTOFF) {
 	    return ((Cutoff)this).get_nat_t(ctxt,spec);
@@ -477,6 +477,7 @@ public abstract class Expr {
 	case FORALL:
 	case EXISTS:
 	case EABBREV:
+	case CABBREV:
 	case ABBREV:
 	case ATOM:
 	case PRED_APP:
@@ -499,6 +500,7 @@ public abstract class Expr {
 	case ANDI:
 	case EXISTSE:
 	case EABBREV:
+	case CABBREV:
 	case ABBREV:
 	case JOIN:
 	case EVAL:
@@ -543,6 +545,7 @@ public abstract class Expr {
 	case LET:
 	case ABBREV:
 	case EABBREV:
+	case CABBREV:
 	case MATCH:
 	case CUTOFF:
 	case IMPOSSIBLE:
@@ -563,6 +566,7 @@ public abstract class Expr {
 	case BANG:
 	case ABBREV:
 	case EABBREV:
+	case CABBREV:
 	case FUN_TYPE:
 	case TYPE_APP:
 	case TYPE:
