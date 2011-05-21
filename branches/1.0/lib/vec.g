@@ -606,6 +606,30 @@ Define eqvec_neq
              end
            False.
 
+Define neq_vecneq
+  : Forall(A:type)
+          (eqA:Fun(x y:A).bool)
+          (eqA_eq : Forall(x y:A)(u:{(eqA x y) = tt}).{x = y})
+          (eqA_tot : Forall(x y:A).Exists(b:bool). {(eqA x y) = b})
+          (n:nat)
+          (x y:<vec A n>)
+          (u: { x != y }).
+          { (eqvec eqA x y) = ff } :=
+  foralli(A:type)
+         (eqA:Fun(x y:A).bool)
+         (eqA_eq : Forall(x y:A)(u:{(eqA x y) = tt}).{x = y})
+         (eqA_tot : Forall(x y:A).Exists(b:bool). {(eqA x y) = b})
+         (n:nat)
+         (x y:<vec A n>)
+         (u: { x != y }).
+    case terminates (eqvec A eqA n x y) by [eqvec_tot A eqA eqA_tot n x y] by v _ with
+      ff => v
+    | tt => contra
+              trans [eqvec_eq A eqA eqA_eq n x y v]
+                    symm u 
+            { (eqvec eqA x y) = ff }
+    end.
+
 Define vec_exists : Fun(A C:type)( spec n : nat )(^#owned c:C)
                       (f:Fun(^#owned c:C)(^#owned a:A).bool)(^#owned l:<vec A n>).bool :=
 fun(A C:type)( spec n : nat )(^#owned c:C)(f:Fun(^#owned c:C)(^#owned a:A).bool).

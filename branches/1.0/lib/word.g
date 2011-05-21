@@ -168,6 +168,7 @@ Define eqword_tot := [eqbv_tot wordlen].
 Total eqword eqword_tot.
 Define eqword_refl := [eqbv_refl wordlen].
 Define eqword_neq := [eqbv_neq wordlen].
+Define neq_wordneq := [neq_bvneq wordlen].
 
 Define eqword_ff_neq :
   Forall(w w':word)(u:{ (eqword w w') = ff }).
