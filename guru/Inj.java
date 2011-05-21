@@ -38,22 +38,24 @@ public class Inj extends Expr{
 	return this;
     }
 
-    protected Expr checkInst(Context ctxt, Expr Y, String which) {
+    protected Expr checkInst(Context ctxt, Atom f, Expr Y, String which) {
 	isInstC a = Ihat.isInstance(ctxt, Y);
 	if (!a.is)
 	    handleError(ctxt,
 			"The "+which+" of the equation proved by the"
 			+" subproof of an inj-proof is not\n"
 			+"an instance of the given context.\n"
-			+"1. The "+which+" : "+Y.toString(ctxt)+"\n"
-			+"2. The context: "+Ihat.toString(ctxt));
+			+"1. The equation: "+f.toString(ctxt)+"\n"
+			+"2. The "+which+": "+Y.toString(ctxt)+"\n"
+			+"3. The context: "+Ihat.toString(ctxt));
 	if (!a.val.isY(ctxt)) 
 	    handleError(ctxt,
 			"The expression extracted by an inj-proof from the"
 			+which+" of the equation proved by its\n"
 			+"subproof is not a term or a type\n"
-			+"an instance of the given context.\n"
-			+"1. The "+which+" : "+a.val.toString(ctxt));
+			+"1. The equation: "+f.toString(ctxt)+"\n"
+			+"2. The "+which+": "+Y.toString(ctxt)+"\n"
+			+"3. The extracted expression : "+a.val.toString(ctxt));
 
 	return a.val;
     }
@@ -63,8 +65,8 @@ public class Inj extends Expr{
 	if (cP.construct == ATOM) {
 	    Atom a = (Atom)cP;
 	    if (a.equality) {
-		Expr Y = checkInst(ctxt, a.Y1, "LHS");
-		Expr Yp = checkInst(ctxt, a.Y2, "RHS");
+		Expr Y = checkInst(ctxt, a, a.Y1, "LHS");
+		Expr Yp = checkInst(ctxt, a, a.Y2, "RHS");
 		Expr ret = new Atom(true, Y, Yp);
 		if (Y.isTypeOrKind(ctxt)) {
 		    // we need to check that we are not pulling an

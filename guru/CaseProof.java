@@ -20,6 +20,7 @@ public class CaseProof extends CasesExpr{
     }
 
     public Expr classify(Context ctxt, int approx, boolean spec) {
+	t.classify(ctxt,approx,spec);// do this first so we can drop annotations correctly in the termination check
 	t.checkTermination(ctxt);
 	return super.classify(ctxt,approx,spec);
     }

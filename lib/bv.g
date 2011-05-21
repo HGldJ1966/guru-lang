@@ -1,7 +1,7 @@
 %Unset "check_drop_annos_idem".
 
-Include "pow.g".
-Include "vec.g".
+Include trusted "pow.g".
+Include trusted "vec.g".
 
 Define bv := <vec bool>.
 Define bv_head := (vec_head bool).
@@ -14,6 +14,7 @@ Define bv_append := (vec_append bool).
 Define eqbv := (eqvec bool iff).
 Define eqbv_eq := [eqvec_eq bool iff iff_eq].
 Define eqbv_neq := [eqvec_neq bool iff iff_refl].
+Define neq_bvneq := [neq_vecneq bool iff iff_eq iff_tot].
 Define eqbv_tot 
  : Forall(l:nat)(v1 v2:<bv l>). 
     Exists(b:bool). { (eqbv v1 v2) = b }
@@ -748,3 +749,75 @@ Define bv_or : Fun(spec n:nat)(l1:<bv n>)(l2:<bv n>).<bv n> :=
       end
   end.
 
+Define bv_update := (vec_update bool).
+
+Define bv_clear_neq 
+  : Forall(i n:nat)(v:<bv n>)(u1:{ (lt i n) = tt })(u2:{ (eqbv (bv_update v i ff) (mkvec ff n)) = ff }).
+      { (eqbv v (mkvec ff n)) = ff } :=
+  induction(i:nat)
+  return Forall(n:nat)(v:<bv n>)(u1:{ (lt i n) = tt }) (u2:{ (eqbv (bv_update v i ff) (mkvec ff n)) = ff }).
+          { (eqbv v (mkvec ff n)) = ff } with
+    Z => 
+    foralli(n:nat)(v:<bv n>)(u1:{ (lt i n) = tt })(u2:{ (eqbv (bv_update v i ff) (mkvec ff n)) = ff }).
+    case n with
+      Z => contra
+             transs symm u1
+                    hypjoin (lt i n) ff by i_eq n_eq end
+                    clash ff tt
+             end
+           { (eqbv v (mkvec ff n)) = ff }
+    | S n' =>
+      case cast v by cong <bv *> n_eq by v_eq v_Eq with
+        vecn _ =>
+        contra
+          trans
+            inj <bv *> v_Eq
+            clash Z (S n') 
+        { (eqbv v (mkvec ff n)) = ff }
+      | vecc _ _ b v' =>
+         case b with
+           ff => 
+           symm
+           transs
+             symm u2
+             cong (eqbv * (mkvec ff n))
+               hypjoin (bv_update v i ff) v by n_eq i_eq v_eq b_eq end
+           end
+         | tt =>
+           hypjoin (eqbv v (mkvec ff n)) ff by v_eq b_eq n_eq end
+         end
+      end
+    end
+  | S i' =>
+    foralli(n:nat)(v:<bv n>)(u1:{ (lt i n) = tt })(u2:{ (eqbv (bv_update v i ff) (mkvec ff n)) = ff }).
+    case n with
+      Z => contra
+             transs symm u1
+                    hypjoin (lt i n) ff by i_eq n_eq end
+                    clash ff tt
+             end
+           { (eqbv v (mkvec ff n)) = ff }
+    | S n' =>
+      case cast v by cong <bv *> n_eq by v_eq v_Eq with
+        vecn _ =>
+        contra
+          trans
+            inj <bv *> v_Eq
+            clash Z (S n') 
+        { (eqbv v (mkvec ff n)) = ff }
+      | vecc _ _ b v' =>
+        case b with 
+          ff =>
+            hypjoin (eqbv v (mkvec ff n)) ff by v_eq b_eq n_eq 
+              [i_IH i' n' v'
+                hypjoin (lt i' n') tt by u1 i_eq n_eq end
+                symm trans 
+                       symm u2
+                       hypjoin (eqbv (bv_update v i ff) (mkvec ff n)) (eqbv (bv_update v' i' ff) (mkvec ff n')) by n_eq v_eq i_eq b_eq end]
+            end
+        | tt =>
+          hypjoin (eqbv v (mkvec ff n)) ff by v_eq b_eq n_eq end
+        end
+      end
+    end
+  end
