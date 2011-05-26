@@ -167,6 +167,8 @@ Define eqword_eq := [eqbv_eq wordlen].
 Define eqword_tot := [eqbv_tot wordlen].
 Total eqword eqword_tot.
 Define eqword_refl := [eqbv_refl wordlen].
+Define eqword_symm := [eqbv_symm wordlen].
+Define eqword_trans := [eqbv_trans wordlen].
 Define eqword_neq := [eqbv_neq wordlen].
 Define neq_wordneq := [neq_bvneq wordlen].
 

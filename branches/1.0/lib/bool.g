@@ -289,6 +289,16 @@ Define iff_refl : Forall(x:bool). {(iff x x) = tt} :=
     default bool => hypjoin (iff x x) tt by x_eq end
   end.
 
+Define trusted iff_symm : Forall(x y:bool). {(iff y x) = tt} :=
+  truei.
+
+Define trusted iff_trans :
+  Forall(x y z:bool)
+        (u1: { (iff x y) = tt })
+	(u2: { (iff y z) = tt }).
+  {(iff x z) = tt} :=
+  truei.
+
 Define neq_iff : Forall(x y : bool)(u: { x != y}).{ (iff x y) = ff} :=
    foralli(x:bool).
       case x with
