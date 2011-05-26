@@ -141,17 +141,18 @@ Define nat_to_word_total :=
 
 Total nat_to_word nat_to_word_total.
 
+%-
 Define trusted word_to_nat_to_word :
   Forall(b:word).
     { (nat_to_word (to_nat b)) = b }
   := truei.
+-%
 
 Define trusted nat_to_word_to_nat :
   Forall(n:nat)
         (u:{ (le n (to_nat word_max)) = tt }).
     { (to_nat (nat_to_word n)) = n }
   := truei.
-
 
 %=============================================================================
 % word equality
