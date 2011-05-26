@@ -508,19 +508,40 @@ Define eqvec_refl
 Define trusted eqvec_symm
   : Forall(A:type)
           (eqA:Fun(x y:A).bool)
-          (eqA_symm : Forall(x y:A). {(eqA y x) = tt})
+          (eqA_symm : Forall(x y:A). {(eqA x y) = (eqA y x)})
           (n:nat)
           (x y:<vec A n>).
-      { (eqvec eqA y x) = tt } :=
-      truei.
-  %     foralli(A:type)
-  %            (eqA:Fun(x y:A).bool)
-  %            (eqA_symm : Forall(x y:A). {(eqA y x) = tt}).
-  %         induction(n:nat)(x y:<vec A n>) return {(eqvec eqA x y) = tt} with
-  % 	    vecn ign => hypjoin (eqvec eqA x y) tt by x_eq end
-  % 	  | vecc ign1 n' a x' => hypjoin (eqvec eqA x y) tt
-  %                                by x_eq [x_IH n' x'] [eqA_symm a] end
-  % end.
+      { (eqvec eqA x y) = (eqvec eqA y x) } :=
+  foralli(A:type)
+         (eqA:Fun(x y:A).bool)
+         (eqA_symm : Forall(x y:A). {(eqA x y) = (eqA y x)}).
+  induction(n:nat)(x:<vec A n>) return Forall(y:<vec A n>).
+               { (eqvec eqA x y) = (eqvec eqA y x) } with
+    vecn A' => 
+      induction(y:<vec A n>) return {(eqvec eqA x y) = (eqvec eqA y x)} with
+        vecn A'' =>
+	  hypjoin (eqvec eqA x y) (eqvec eqA y x) by x_eq y_eq end
+      | vecc A'' n'' a'' x'' =>
+          contra
+          trans
+	    trans symm inj <vec ** *> x_Eq
+	          inj <vec ** *> y_Eq
+	    clash (S n'') Z
+	  { (eqvec eqA x y) = (eqvec eqA y x) }
+      end
+  | vecc A' n' a' x' => 
+      induction(y:<vec A n>) return {(eqvec eqA x y) = (eqvec eqA y x)} with
+        vecn A'' =>
+          contra
+	  trans
+	    trans symm inj <vec ** *> x_Eq
+	          inj <vec ** *> y_Eq
+	    clash Z (S n')
+	  { (eqvec eqA x y) = (eqvec eqA y x) }
+      | vecc A'' n'' a'' y'' => 
+	 truei
+      end
+  end.
 
 Define trusted eqvec_trans
   : Forall(A:type)
@@ -531,14 +552,6 @@ Define trusted eqvec_trans
 	  (u1: { (eqvec eqA x y) = tt })
           (u2: { (eqvec eqA y z) = tt }).
       { (eqvec eqA x z) = tt } :=
-  % foralli(A:type)
-  %        (eqA:Fun(x y:A).bool)
-  %        (eqA_refl : Forall(x:A). {(eqA x x) = tt}).
-  % induction(n:nat)(x:<vec A n>) return {(eqvec eqA x x) = tt} with
-  %   vecn ign => hypjoin (eqvec eqA x x) tt by x_eq end
-  % | vecc ign1 n' a x' => hypjoin (eqvec eqA x x) tt 
-  %                        by x_eq [x_IH n' x'] [eqA_refl a] end
-  % end.
   truei.
 
 Define eqvec_eq 
@@ -641,7 +654,6 @@ Define eqvec_neq
                     clash tt ff
              end
            False.
-
 Define neq_vecneq
   : Forall(A:type)
           (eqA:Fun(x y:A).bool)

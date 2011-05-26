@@ -289,15 +289,60 @@ Define iff_refl : Forall(x:bool). {(iff x x) = tt} :=
     default bool => hypjoin (iff x x) tt by x_eq end
   end.
 
-Define trusted iff_symm : Forall(x y:bool). {(iff y x) = tt} :=
-  truei.
+Define iff_symm : Forall(x y:bool). {(iff x y) = (iff y x)} :=
+  foralli(x:bool).
+  case x with
+    default bool => foralli(y:bool).
+      case y with
+        default bool => hypjoin (iff x y) (iff y x) by x_eq y_eq end
+      end
+  end.
 
-Define trusted iff_trans :
+Define iff_trans :
   Forall(x y z:bool)
         (u1: { (iff x y) = tt })
 	(u2: { (iff y z) = tt }).
   {(iff x z) = tt} :=
-  truei.
+  foralli(x:bool).
+    case x with
+      ff => foralli(y:bool).
+        case y with
+	  ff => foralli(z:bool).
+	    case z with
+	      ff => foralli(u1: { (iff x y) = tt })(u2: { (iff y z) = tt }).
+	        hypjoin (iff x z) tt by x_eq z_eq end
+	    | tt => foralli(u1: { (iff x y) = tt })(u2: { (iff y z) = tt }).
+		contra trans symm u2
+                       trans hypjoin (iff y z) ff by y_eq z_eq end
+		       clash ff tt
+		{ (iff x z) = tt}
+	    end
+	| tt => foralli(z:bool)(u1: { (iff x y) = tt })(u2: { (iff y z) = tt }).
+            contra trans symm u1
+                   trans hypjoin (iff x y) ff by x_eq y_eq end
+		   clash ff tt
+            { (iff x z) = tt}
+	end
+    | tt => foralli(y:bool).
+        case y with
+	  ff => foralli(z:bool)(u1: { (iff x y) = tt })(u2: { (iff y z) = tt }).
+            contra trans symm u1
+                   trans hypjoin (iff x y) ff by x_eq y_eq end
+		   clash ff tt
+            { (iff x z) = tt}
+	| tt => foralli(z:bool).
+	    case z with
+	      ff => foralli(u1: { (iff x y) = tt })(u2: { (iff y z) = tt }).
+		contra trans symm u2
+                       trans hypjoin (iff y z) ff by y_eq z_eq end
+		       clash ff tt
+		{ (iff x z) = tt}
+	    | tt => foralli(u1: { (iff x y) = tt })(u2: { (iff y z) = tt }).
+	        hypjoin (iff x z) tt by x_eq z_eq end
+	    end
+	 end
+     end.
+     
 
 Define neq_iff : Forall(x y : bool)(u: { x != y}).{ (iff x y) = ff} :=
    foralli(x:bool).
