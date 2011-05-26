@@ -23,7 +23,7 @@ Define interp :=
           | app v1aa v1ab =>
               match v1aa with
                 k => (app v1 v2) % should never happen
-              | s => (app (app v1ab v2) (app v2a v2))
+              | s => (interp (app (app v1ab v2) (app v2a v2)))
               | app _ _ => (app v1 v2)
               end
           end
