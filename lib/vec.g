@@ -505,6 +505,42 @@ Define eqvec_refl
                          by x_eq [x_IH n' x'] [eqA_refl a] end
   end.
 
+Define trusted eqvec_symm
+  : Forall(A:type)
+          (eqA:Fun(x y:A).bool)
+          (eqA_symm : Forall(x y:A). {(eqA y x) = tt})
+          (n:nat)
+          (x y:<vec A n>).
+      { (eqvec eqA y x) = tt } :=
+      truei.
+  %     foralli(A:type)
+  %            (eqA:Fun(x y:A).bool)
+  %            (eqA_symm : Forall(x y:A). {(eqA y x) = tt}).
+  %         induction(n:nat)(x y:<vec A n>) return {(eqvec eqA x y) = tt} with
+  % 	    vecn ign => hypjoin (eqvec eqA x y) tt by x_eq end
+  % 	  | vecc ign1 n' a x' => hypjoin (eqvec eqA x y) tt
+  %                                by x_eq [x_IH n' x'] [eqA_symm a] end
+  % end.
+
+Define trusted eqvec_trans
+  : Forall(A:type)
+          (eqA:Fun(x y:A).bool)
+          (eqA_trans : Forall(x y z:A)(u1:{ (eqA x y) = tt})(u2:{ (eqA y z) = tt}). {(eqA x z) = tt})
+          (n:nat)
+          (x y z:<vec A n>)
+	  (u1: { (eqvec eqA x y) = tt })
+          (u2: { (eqvec eqA y z) = tt }).
+      { (eqvec eqA x z) = tt } :=
+  % foralli(A:type)
+  %        (eqA:Fun(x y:A).bool)
+  %        (eqA_refl : Forall(x:A). {(eqA x x) = tt}).
+  % induction(n:nat)(x:<vec A n>) return {(eqvec eqA x x) = tt} with
+  %   vecn ign => hypjoin (eqvec eqA x x) tt by x_eq end
+  % | vecc ign1 n' a x' => hypjoin (eqvec eqA x x) tt 
+  %                        by x_eq [x_IH n' x'] [eqA_refl a] end
+  % end.
+  truei.
+
 Define eqvec_eq 
   : Forall(A:type)
           (eqA:Fun(x y:A).bool)
