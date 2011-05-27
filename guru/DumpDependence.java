@@ -130,7 +130,7 @@ public class DumpDependence extends Command {
         }
 
         TreeSet typeSet = new TreeSet();
-        TreeSet proofSet = new TreeSet();
+        LinkedList proofList = new LinkedList();
 
         LinkedList worklist = new LinkedList();
         worklist.addAll(all_trackedIDs);
@@ -193,12 +193,12 @@ public class DumpDependence extends Command {
                     if(ctxt.isTypeCtor((Const)cst))
                         typeSet.add((Const)cst);
                     else if(ctxt.getClassifier((Const)cst).isFormula(ctxt))
-                        proofSet.add(s);
+			proofList.add(s);
 
                     if(ctxt.isTypeCtor(c))
                         typeSet.add(c);
                     else if(ctxt.getClassifier(c).isFormula(ctxt))
-                        proofSet.add(c.name);
+                        proofList.add((Const)c);
                 }
             }
         }
@@ -214,10 +214,25 @@ public class DumpDependence extends Command {
                 out.println("}\"];");
             }
         }
-        for(Iterator proofs = proofSet.iterator(); proofs.hasNext();) {
-            String proof = (String) proofs.next();
-            output = true;
-            out.println(proof+" [shape=diamond];");
+
+        for(Iterator proofs = proofList.iterator(); proofs.hasNext();) {
+	    Object proof = proofs.next();
+	    String proof_str;
+	    boolean trusted = false;
+	    
+	    if (proof.getClass() == Const.class) {
+		Const c = (Const) proof;
+		proof_str = c.name;
+		if (ctxt.isTrusted(c))
+		    trusted = true;
+	    } else { // proof is a String
+		proof_str = (String) proof;
+	    }
+
+	    if (trusted)
+		out.println(proof_str+" [shape=circle];");
+	    else
+	        out.println(proof_str+" [shape=diamond];");
         }
 
         out.println("}");
