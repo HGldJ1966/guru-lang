@@ -21,8 +21,8 @@ Define eqbv_tot
  := [eqvec_tot bool iff iff_tot].
 Total eqbv eqbv_tot.
 Define eqbv_refl := [eqvec_refl bool iff iff_refl].
-Define eqbv_symm := [eqvec_symm bool iff iff_symm].
-Define eqbv_trans := [eqvec_trans bool iff iff_trans].
+Define eqbv_symm := [eqvec_symm bool iff iff_refl iff_eq iff_tot].
+Define eqbv_trans := [eqvec_trans bool iff iff_refl iff_eq iff_tot].
 
 % the least significant bit is first.
 

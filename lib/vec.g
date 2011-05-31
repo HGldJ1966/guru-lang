@@ -505,55 +505,6 @@ Define eqvec_refl
                          by x_eq [x_IH n' x'] [eqA_refl a] end
   end.
 
-Define trusted eqvec_symm
-  : Forall(A:type)
-          (eqA:Fun(x y:A).bool)
-          (eqA_symm : Forall(x y:A). {(eqA x y) = (eqA y x)})
-          (n:nat)
-          (x y:<vec A n>).
-      { (eqvec eqA x y) = (eqvec eqA y x) } :=
-  foralli(A:type)
-         (eqA:Fun(x y:A).bool)
-         (eqA_symm : Forall(x y:A). {(eqA x y) = (eqA y x)}).
-  induction(n:nat)(x:<vec A n>) return Forall(y:<vec A n>).
-               { (eqvec eqA x y) = (eqvec eqA y x) } with
-    vecn A' => 
-      induction(y:<vec A n>) return {(eqvec eqA x y) = (eqvec eqA y x)} with
-        vecn A'' =>
-	  hypjoin (eqvec eqA x y) (eqvec eqA y x) by x_eq y_eq end
-      | vecc A'' n'' a'' x'' =>
-          contra
-          trans
-	    trans symm inj <vec ** *> x_Eq
-	          inj <vec ** *> y_Eq
-	    clash (S n'') Z
-	  { (eqvec eqA x y) = (eqvec eqA y x) }
-      end
-  | vecc A' n' a' x' => 
-      induction(y:<vec A n>) return {(eqvec eqA x y) = (eqvec eqA y x)} with
-        vecn A'' =>
-          contra
-	  trans
-	    trans symm inj <vec ** *> x_Eq
-	          inj <vec ** *> y_Eq
-	    clash Z (S n')
-	  { (eqvec eqA x y) = (eqvec eqA y x) }
-      | vecc A'' n'' a'' y'' => 
-	 truei
-      end
-  end.
-
-Define trusted eqvec_trans
-  : Forall(A:type)
-          (eqA:Fun(x y:A).bool)
-          (eqA_trans : Forall(x y z:A)(u1:{ (eqA x y) = tt})(u2:{ (eqA y z) = tt}). {(eqA x z) = tt})
-          (n:nat)
-          (x y z:<vec A n>)
-	  (u1: { (eqvec eqA x y) = tt })
-          (u2: { (eqvec eqA y z) = tt }).
-      { (eqvec eqA x z) = tt } :=
-  truei.
-
 Define eqvec_eq 
   : Forall(A:type)
           (eqA:Fun(x y:A).bool)
@@ -654,6 +605,7 @@ Define eqvec_neq
                     clash tt ff
              end
            False.
+	   
 Define neq_vecneq
   : Forall(A:type)
           (eqA:Fun(x y:A).bool)
@@ -677,6 +629,70 @@ Define neq_vecneq
                     symm u 
             { (eqvec eqA x y) = ff }
     end.
+
+Define eqvec_symm
+  : Forall(A:type)
+          (eqA:Fun(x y:A).bool)
+          (eqA_refl : Forall(x:A). {(eqA x x) = tt})
+          (eqA_eq : Forall(x y:A)(u:{(eqA x y) = tt}).{x = y})
+          (eqA_tot : Forall(x y:A).Exists(b:bool). {(eqA x y) = b})
+          (n:nat)
+          (x y:<vec A n>).
+      { (eqvec eqA x y) = (eqvec eqA y x) } :=
+  foralli(A:type)
+         (eqA:Fun(x y:A).bool)
+         (eqA_refl : Forall(x:A). {(eqA x x) = tt})
+         (eqA_eq : Forall(x y:A)(u:{(eqA x y) = tt}).{x = y})
+         (eqA_tot : Forall(x y:A).Exists(b:bool). {(eqA x y) = b})
+	 (n:nat)
+	 (x y:<vec A n>).
+  case terminates (eqvec A eqA n x y) by [eqvec_tot A eqA eqA_tot n x y] by q1 _ with
+    ff => trans q1
+                symm [neq_vecneq A eqA eqA_eq eqA_tot n y x symm [eqvec_neq A eqA eqA_refl n x y q1]]
+  | tt => trans cong (eqvec eqA * y) [eqvec_eq A eqA eqA_eq n x y q1]
+                cong (eqvec eqA y *) symm [eqvec_eq A eqA eqA_eq n x y q1]
+  end.
+
+Define eqvec_trans
+  : Forall(A:type)
+          (eqA:Fun(x y:A).bool)
+          (eqA_refl : Forall(x:A). {(eqA x x) = tt})
+          (eqA_eq : Forall(x y:A)(u:{(eqA x y) = tt}).{x = y})
+          (eqA_tot : Forall(x y:A).Exists(b:bool). {(eqA x y) = b})
+          (n:nat)
+          (x y z:<vec A n>)
+          (u1: { (eqvec eqA x y) = tt })
+          (u2: { (eqvec eqA y z) = tt }).
+      { (eqvec eqA x z) = tt } :=
+  foralli(A:type)
+         (eqA:Fun(x y:A).bool)
+         (eqA_refl : Forall(x:A). {(eqA x x) = tt})
+         (eqA_eq : Forall(x y:A)(u:{(eqA x y) = tt}).{x = y})
+         (eqA_tot : Forall(x y:A).Exists(b:bool). {(eqA x y) = b})
+	 (n:nat)
+	 (x y z:<vec A n>)
+	 (u1: { (eqvec eqA x y) = tt })
+         (u2: { (eqvec eqA y z) = tt }).
+  case terminates (eqvec A eqA n x y) by [eqvec_tot A eqA eqA_tot n x y] by q1 _ with
+    ff =>
+      contra
+        trans
+	  trans symm q1 u1
+	  clash tt ff
+	{ (eqvec eqA x z) = tt }
+  | tt =>
+      case terminates (eqvec A eqA n y z) by [eqvec_tot A eqA eqA_tot n y z] by q2 _ with
+        ff => contra
+	        trans
+		  trans symm q2 u2
+		  clash tt ff
+		{ (eqvec eqA x z) = tt }
+      | tt => symm trans symm [eqvec_refl A eqA eqA_refl n x]
+                   cong (eqvec eqA x *)
+	           trans [eqvec_eq A eqA eqA_eq n x y q1]
+	                 [eqvec_eq A eqA eqA_eq n y z q2]
+      end
+  end.
 
 Define vec_exists : Fun(A C:type)( spec n : nat )(^#owned c:C)
                       (f:Fun(^#owned c:C)(^#owned a:A).bool)(^#owned l:<vec A n>).bool :=
