@@ -176,8 +176,7 @@ public class Induction extends Expr{
     }
 
     public java.util.Set getDependences() {
-        java.util.Set s = getDependences();
-        s.addAll(vl.getDependences());
+        java.util.Set s = vl.getDependences();
         s.addAll(F.getDependences());
         for(int i = 0, n = C.length; i < n; ++i)
             s.addAll(C[i].getDependences());
