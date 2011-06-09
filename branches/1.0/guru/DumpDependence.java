@@ -5,7 +5,7 @@ import java.util.*;
 public class DumpDependence extends Command {
     public String outfile;
     protected TreeSet trackedFiles;
-    protected TreeSet trackedIDs;
+    protected TreeSet tracked;
     protected TreeSet limitFiles;
     protected TreeSet limitIDs;
 
@@ -19,10 +19,10 @@ public class DumpDependence extends Command {
         limitIDs.add(id);
     }
 
-    public void trackID(String id) {
-        if(trackedIDs == null)
-            trackedIDs = new TreeSet();
-        trackedIDs.add(id);
+    public void trackID(Const c) {
+        if(tracked == null)
+            tracked = new TreeSet();
+        tracked.add(c);
     }
 
     public void limitFile(File root, String filename) {
@@ -97,10 +97,10 @@ public class DumpDependence extends Command {
         boolean output = false;
         boolean deps = false;
 
-        // keep a separate copy of trackedIDs so that the print()
+        // keep a separate copy of tracked so that the print()
         // method prints the input as it was initially
-        TreeSet all_trackedIDs =
-            (trackedIDs != null) ? (TreeSet)trackedIDs.clone() : new TreeSet();
+        TreeSet all_tracked =
+            (tracked != null) ? (TreeSet)tracked.clone() : new TreeSet();
 
         try {
             out = new PrintStream(
@@ -111,6 +111,9 @@ public class DumpDependence extends Command {
             System.exit(4);
         }
 
+	out.println("/*");
+	out.println(" * Note that _trusted_ lemmas are displayed as circles and _untrusted_ lemmas as diamonds.");
+	out.println(" */");
         out.println("digraph dependence {");
 
         if(trackedFiles != null) {
@@ -118,40 +121,40 @@ public class DumpDependence extends Command {
             for(Iterator i = csts.iterator(); i.hasNext();) {
                 Const cst = ((Const)i.next());
                 if(trackedFiles.contains(cst.pos.file))
-                    all_trackedIDs.add(cst.name);
+                    all_tracked.add(cst);
             }
         }
 
-        if(all_trackedIDs.isEmpty()) {
+        if(all_tracked.isEmpty()) {
             for(Iterator i = ctxt.getTypeCtors().iterator(); i.hasNext();)
-                all_trackedIDs.add(((Const)i.next()).name);
+                all_tracked.add(((Const)i.next()));
             for(Iterator i = ctxt.getDefinedConsts().iterator(); i.hasNext();)
-                all_trackedIDs.add(((Const)i.next()).name);
+                all_tracked.add(((Const)i.next()));
         }
 
         TreeSet typeSet = new TreeSet();
-        LinkedList proofList = new LinkedList();
+        TreeSet proofSet = new TreeSet();
 
         LinkedList worklist = new LinkedList();
-        worklist.addAll(all_trackedIDs);
+        worklist.addAll(all_tracked);
         TreeSet finished = new TreeSet();
 
         while(!worklist.isEmpty()) {
-            String s = (String)worklist.removeFirst();
+	    Const c1 = (Const)worklist.removeFirst();
 
-            if(finished.contains(s))
+            if(finished.contains(c1))
                 continue;
-            finished.add(s);
+            finished.add(c1);
 
-            Expr cst = ctxt.lookup(s);
+            Expr cst = ctxt.lookup(c1.name);
             if(cst == null) {
-                handleError(ctxt, "DumpDependence: identifier `" + s + "' "
+                handleError(ctxt, "DumpDependence: identifier `" + c1.name + "' "
                             +"not found in context.");
                 continue;
             }
             if(cst.construct != Expr.CONST) {
                 handleError(ctxt, "DumpDependence: can't handle identifier "
-                            + "`" + s + "', which is a "
+                            + "`" + c1.name + "', which is a "
                             + cst.getClass().getName() + ".");
                 continue;
             }
@@ -178,27 +181,28 @@ public class DumpDependence extends Command {
                     typedeps.add(ex);
                 }
             }
+
             depset.addAll(typedeps);
             for(Iterator j = depset.iterator(); j.hasNext();) {
                 Const c = (Const)j.next();
                 // NOTE you can get a disconnected graph when tracking
                 // one specific ID if a (transitive) dependence leaves
                 // the limited set of IDs/files then re-enters it
-                if(!finished.contains(c.name))
-                    worklist.addFirst(c.name);
+                if(!finished.contains(c))
+                    worklist.addFirst(c);
                 if(inTheLimit((Const)cst, c)) {
-                    out.println(s + " -> " + c.name + ";");
+                    out.println(c1.name + " -> " + c.name + ";");
                     deps = output = true;
 
                     if(ctxt.isTypeCtor((Const)cst))
                         typeSet.add((Const)cst);
                     else if(ctxt.getClassifier((Const)cst).isFormula(ctxt))
-			proofList.add(s);
+                        proofSet.add(c1);
 
                     if(ctxt.isTypeCtor(c))
                         typeSet.add(c);
                     else if(ctxt.getClassifier(c).isFormula(ctxt))
-                        proofList.add((Const)c);
+                        proofSet.add(c);
                 }
             }
         }
@@ -214,25 +218,13 @@ public class DumpDependence extends Command {
                 out.println("}\"];");
             }
         }
-
-        for(Iterator proofs = proofList.iterator(); proofs.hasNext();) {
-	    Object proof = proofs.next();
-	    String proof_str;
-	    boolean trusted = false;
-	    
-	    if (proof.getClass() == Const.class) {
-		Const c = (Const) proof;
-		proof_str = c.name;
-		if (ctxt.isTrusted(c))
-		    trusted = true;
-	    } else { // proof is a String
-		proof_str = (String) proof;
-	    }
-
-	    if (trusted)
-		out.println(proof_str+" [shape=circle];");
+        for(Iterator proofs = proofSet.iterator(); proofs.hasNext();) {
+            Const proof = (Const) proofs.next();
+            output = true;
+	    if (ctxt.isTrusted(proof))
+		out.println(proof.name+" [shape=circle];");
 	    else
-	        out.println(proof_str+" [shape=diamond];");
+		out.println(proof.name+" [shape=diamond];");
         }
 
         out.println("}");
@@ -251,11 +243,11 @@ public class DumpDependence extends Command {
 
     public void print(java.io.PrintStream w, Context ctxt) {
 	w.print("DumpDependence to \""+outfile+"\"");
-        if(trackedIDs != null || trackedFiles != null) {
+        if(tracked != null || trackedFiles != null) {
             w.print(" track");
-            if(trackedIDs != null)
-                for(Iterator i = trackedIDs.iterator(); i.hasNext();)
-                    w.print(" " + i.next());
+            if(tracked != null)
+                for(Iterator i = tracked.iterator(); i.hasNext();)
+                    w.print(" " + ((Const)i.next()).name);
             if(trackedFiles != null)
                 for(Iterator i = trackedFiles.iterator(); i.hasNext();)
                     w.print(" \"" + i.next() + "\"");

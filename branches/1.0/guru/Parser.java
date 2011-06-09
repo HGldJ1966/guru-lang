@@ -670,7 +670,7 @@ public class Parser extends ParserBase {
                 if (c == '"') {
                     cmd.trackFile(root, readString());
                 } else {
-                    cmd.trackID(readID());
+                    cmd.trackID(readConst());
                 }
                 if (!eat_ws())
                     handleError("Unexpected end of input parsing a DumpDependence `track' clause.");
