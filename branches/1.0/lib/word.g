@@ -521,8 +521,11 @@ Define trusted word_inc_safe_word_to_nat
 
 Define primitive word_dec_safe :=
   fun(b:word)
-     (u:{ (ltword word0 b) = tt }).
-  (nat_to_word (minus (word_to_nat b) (S Z))) <<END
+     (u:{ (ltword word0 b) = tt }) : word.
+  match (bv_dec wordlen b) by _ u with
+    mk_bv_dec_t _ nonzero r => cast r by cong <bv *> symm inj <bv_dec_t *> u
+  end
+ <<END
   inline unsigned int gword_dec_safe( unsigned int b) { return b-1; }
 END.
 

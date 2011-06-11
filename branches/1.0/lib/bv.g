@@ -823,3 +823,70 @@ Define bv_clear_neq
       end
     end
   end
+
+
+% subtract one from a bitvector, keeping the same length.
+% The field "nonzero" is true iff the starting bitvector is greater than 0.
+
+Inductive bv_dec_t : Fun(l:nat).type :=
+  mk_bv_dec_t : Fun(spec l:nat)(nonzero:bool)(v:<bv l>).<bv_dec_t l>.
+
+Define bv_dec : Fun(spec l:nat)(v:<bv l>).<bv_dec_t l> :=
+  fun bv_dec(spec l:nat)(v:<bv l>):<bv_dec_t l>.
+    match v with
+      vecn _ => cast (mk_bv_dec_t Z ff
+                        bvn)
+                by cong <bv_dec_t *> symm inj <vec ** *> v_Eq
+    | vecc _ l' x v' => 
+      match x with
+        ff => match (bv_dec l' v') with
+                mk_bv_dec_t _ nonzero r =>
+                  cast
+                    match nonzero with
+                      ff => 
+                       (mk_bv_dec_t (S l') ff (bvc l' ff r))
+                    | tt =>
+                       (mk_bv_dec_t (S l') tt (bvc l' tt r))
+                    end
+                  by cong <bv_dec_t *> symm inj <vec ** *> v_Eq
+                end
+      | tt => (mk_bv_dec_t l tt 
+                 cast (bvc l' ff v')
+                 by cong <bv *> symm inj <vec ** *> v_Eq)
+      end
+    end.
+
+Define bv_dec_total : Forall(l:nat)(v:<bv l>).Exists(r:<bv_dec_t l>). { (bv_dec v) = r } :=
+  induction(l:nat)(v:<bv l>) return Exists(r:<bv_dec_t l>). { (bv_dec v) = r } with
+    vecn _ => existsi cast (mk_bv_dec_t Z ff
+                             bvn)
+                      by cong <bv_dec_t *> symm inj <vec ** *> v_Eq
+                { (bv_dec v) = * }
+                hypjoin (bv_dec v) (mk_bv_dec_t ff bvn)
+                by v_eq end
+  | vecc _ l' x v' => 
+    case x with
+      ff => 
+        case terminates (bv_dec l' v') by [v_IH l' v'] by call_eq _ with
+          mk_bv_dec_t _ nonzero r =>
+            case nonzero with
+              ff => 
+              existsi cast (mk_bv_dec_t (S l') ff (bvc l' ff r)) by cong <bv_dec_t *> symm inj <vec ** *> v_Eq     
+                { (bv_dec v) = * }
+                hypjoin (bv_dec v) (mk_bv_dec_t ff (bvc ff r))
+                  by v_eq x_eq nonzero_eq call_eq end
+            | tt => 
+              existsi cast (mk_bv_dec_t (S l') tt (bvc l' tt r)) by cong <bv_dec_t *> symm inj <vec ** *> v_Eq     
+                { (bv_dec v) = * }
+                hypjoin (bv_dec v) (mk_bv_dec_t tt (bvc tt r))
+                  by v_eq x_eq nonzero_eq call_eq end
+            end
+        end
+    | tt => existsi (mk_bv_dec_t l tt 
+                      cast (bvc l' ff v')
+                      by cong <bv *> symm inj <vec ** *> v_Eq)
+              { (bv_dec v) = * }
+              hypjoin (bv_dec v) (mk_bv_dec_t tt (bvc ff v'))
+                by v_eq x_eq end
+    end
+  end.
