@@ -1250,6 +1250,38 @@ Define vec_all_get :
         end
     end n v m u1 u2].
 
+Define mkvec_implies_vec_get : Forall
+	(A:type)(a:A)(n:nat)(v:<vec A n>)(i:nat)(u:{ (lt i n) = tt})
+	.{ (vec_get (mkvec a n) i) = a }
+	:=
+	foralli(A:type)(a:A).
+	induction(n:nat)(v:<vec A n>) return Forall
+		(i:nat)(u:{ (lt i n) = tt})
+		.{ (vec_get (mkvec a n) i) = a }
+	with
+	| vecn _ => foralli
+		(i:nat)(u:{ (lt i n) = tt})
+		.
+		cabbrev n_eq = inj <vec ** *> v_Eq
+		contra
+		trans symm u
+		trans hypjoin (lt i n) ff by n_eq [lt_Z i] end
+					clash ff tt
+		{ (vec_get (mkvec a n) i) = a }
+	| vecc _ n' x v' => foralli
+		(i:nat)(u:{ (lt i n) = tt})
+		.
+		cabbrev n_eq = inj <vec ** *> v_Eq
+		case i with
+		| Z =>
+			hypjoin (vec_get (mkvec a n) i) a by i_eq n_eq end
+		| S i' =>
+			cabbrev u' = hypjoin (lt i' n') tt by u i_eq n_eq end
+			cabbrev ih = [v_IH n' v' i' u']
+			hypjoin (vec_get (mkvec a n) i) a by i_eq n_eq ih end
+		end
+	end
+
 Define trusted mkvec_implies_vec_all :
   Forall(A:type)(a:A)(n:nat)(v:<vec A n>)
         (f:Fun(a:A).bool)
