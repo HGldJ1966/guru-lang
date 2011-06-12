@@ -62,6 +62,12 @@ END.
 % lemmas
 %=============================================================================
 
+Define uwarray_new_total := foralli(A:type)(n:word)(a:A).
+	existsi (mkvec A a (word_to_nat n)) { (uwarray_new A n a) = * }
+	join (uwarray_new A n a) (mkvec A a (word_to_nat n))
+
+Total uwarray_new uwarray_new_total
+
 Define uwarray_get_total :
   Forall(A:type)(n:word)(l:<uwarray A n>)
         (i:word)
@@ -147,25 +153,4 @@ Define uwarray_set_get_distinct :
   abbrev p = [vec_update_get_distinct A (word_to_nat n) l
 					  	(word_to_nat m) (word_to_nat m') a u1' u2' u3'] in
 	hypjoin (uwarray_get (uwarray_set l m' a) m) (uwarray_get l m) by p end
-  .
-
-Define all_uwarray_get_implies_new :
-	Forall(A:type)(a:A)(n:word)(l:<uwarray A n>)
-				(u:Forall(m:word)(q:{ (ltword m n) = tt }).{ (uwarray_get l m) = a })
-			 .{ l = (uwarray_new n a) }
-  :=
-	foralli(A:type)(a:A)(n:word)(l:<uwarray A n>)
-				 (u:Forall(m:word)(q:{ (ltword m n) = tt }).{ (uwarray_get l m) = a }).
- 
-  abbrev p1 =
-    foralli(m:nat)(q:{ (lt m (to_nat n)) = tt }).
-    abbrev p2 = [lt_to_nat_ltword m n q] in
-    abbrev p3 = [u (nat_to_word m) p2] in
-    abbrev p4 = [lt_word_implies_le_word_max m n q] in
-    trans cong (vec_get l *) symm [nat_to_word_to_nat m p4]
-    trans symm [uwarray_get_to_vec_get A n l (nat_to_word m) p2]
-          p3
-    in
-  trans [all_vec_get_implies_mkvec A a (word_to_nat n) l p1]
-        join (mkvec a (to_nat n)) (uwarray_new n a)
   .
