@@ -1,5 +1,7 @@
 %Unset "check_drop_annos_idem".
 
+% Set "trust_hypjoins".
+
 Include trusted "pow.g".
 Include trusted "vec.g".
 
@@ -889,4 +891,113 @@ Define bv_dec_total : Forall(l:nat)(v:<bv l>).Exists(r:<bv_dec_t l>). { (bv_dec 
               hypjoin (bv_dec v) (mk_bv_dec_t tt (bvc ff v'))
                 by v_eq x_eq end
     end
+  end.
+
+Total bv_dec bv_dec_total.
+
+%Unset "trust_hypjoins".
+
+Define bv_dec_inc :
+	Forall(l:nat)(v ret:<bv l>)(u:{ (bv_dec v) = (mk_bv_dec_t tt ret) }).
+	      { (bv_inc ret) = (mk_bv_inc_t v ff) }
+	:= 
+  induction(l:nat)(v:<bv l>)
+    return Forall(ret:<bv l>)(u:{ (bv_dec v) = (mk_bv_dec_t tt ret) }).
+             { (bv_inc ret) = (mk_bv_inc_t v ff) } with
+    vecn _ =>
+    foralli(ret:<bv l>)(u:{ (bv_dec v) = (mk_bv_dec_t tt ret) }).
+      contra
+        trans
+          inj (mk_bv_dec_t * **)
+            trans symm u
+                  hypjoin (bv_dec v) (mk_bv_dec_t ff bvn)
+                  by v_eq end
+          clash ff tt
+      { (bv_inc ret) = (mk_bv_inc_t v ff) }      
+  | vecc _ l' x v' => 
+    foralli(ret:<bv l>)(u:{ (bv_dec v) = (mk_bv_dec_t tt ret) }).
+      case x with
+        ff => 
+        case (bv_dec l' v') by u2 _ with
+          mk_bv_dec_t _ nonzero r =>
+            case nonzero with
+               ff =>
+               contra
+                  trans
+                    inj (mk_bv_dec_t * **)
+                      trans symm u
+                         hypjoin (bv_dec v) (mk_bv_dec_t ff (bvc ff r))
+                         by u2 x_eq nonzero_eq v_eq end
+                    clash ff tt
+                  { (bv_inc ret) = (mk_bv_inc_t v ff) }
+            | tt => 
+              transs
+                 cong (bv_inc *)
+                     inj (mk_bv_dec_t tt *)
+                       trans symm u 
+                         hypjoin (bv_dec v) (mk_bv_dec_t tt (bvc tt r)) by v_eq x_eq u2 nonzero_eq end
+                  hypjoin (bv_inc (bvc tt r)) (mk_bv_inc_t (bvc ff v') ff) by [v_IH l' v' r trans u2 cong (mk_bv_dec_t * r) nonzero_eq] end
+                  cong (mk_bv_inc_t * ff)
+                    symm trans v_eq cong (bvc * v') x_eq
+              end
+            end
+        end
+      | tt => 
+           trans
+              cong (bv_inc *)
+                inj (mk_bv_dec_t ** *)
+                  trans symm u
+                    hypjoin (bv_dec v) (mk_bv_dec_t tt (bvc ff v')) by v_eq x_eq end 
+              hypjoin (bv_inc (bvc ff v')) (mk_bv_inc_t v ff) by v_eq x_eq end
+      end
+  end. 
+
+Define neq_bv0_implies_bv_dec_nonzero :
+  Forall(l:nat)
+        (v ret:<bv l>)
+        (nonzero:bool)
+        (u:{ (eqbv v (mkvec ff l)) = ff })
+        (u2:{ (bv_dec v) = (mk_bv_dec_t nonzero ret) }).
+    { nonzero = tt } :=
+  induction(l:nat)(v:<bv l>)
+    return Forall(ret:<bv l>)
+                  (nonzero:bool)
+                  (u:{ (eqbv v (mkvec ff l)) = ff })
+                  (u2:{ (bv_dec v) = (mk_bv_dec_t nonzero ret) }).
+              { nonzero = tt } with
+    vecn _ => 
+    foralli(ret:<bv l>)
+           (nonzero:bool)
+           (u:{ (eqbv v (mkvec ff l)) = ff })
+           (u2:{ (bv_dec v) = (mk_bv_dec_t nonzero ret) }).
+      contra
+         transs v_eq
+           hypjoin vecn (mkvec ff l) by inj <bv *> v_Eq end
+           symm [eqbv_neq l v (mkvec bool ff l) u]
+         end
+      { nonzero = tt }
+  | vecc _ l' x v' => 
+    foralli(ret:<bv l>)
+           (nonzero:bool)
+           (u:{ (eqbv v (mkvec ff l)) = ff })
+           (u2:{ (bv_dec v) = (mk_bv_dec_t nonzero ret) }).
+      case x with
+        ff => 
+        case (bv_dec l' v') by u3 _ with
+          mk_bv_dec_t _ nonzero' r =>
+             inj (mk_bv_dec_t * **)
+               trans symm u2
+                 hypjoin (bv_dec v) (mk_bv_dec_t tt (bvc tt r)) 
+                 by v_eq x_eq u3 
+                    [v_IH l' v' r nonzero'
+                       symm trans symm u
+                              hypjoin (eqbv v (mkvec ff l)) (eqbv v' (mkvec ff l')) by v_eq inj <bv *> v_Eq x_eq end
+                        u3]
+                 end
+        end
+      | tt =>
+          inj (mk_bv_dec_t * **)
+            trans symm u2
+              hypjoin (bv_dec v) (mk_bv_dec_t tt (bvc ff v')) by v_eq x_eq end
+      end
   end.
