@@ -538,6 +538,8 @@ Define bv_inc_tot : Forall(l:nat)(v:<bv l>).Exists(r:<bv_inc_t l>).
       end
    end.
 
+Total bv_inc bv_inc_tot.
+
 Define to_nat_bv_inc : Forall(l:nat)(v:<bv l>)(v2:<bv l>)(carry:bool)
                              (u: { (bv_inc v) = (mk_bv_inc_t v2 carry) }).
                              { (S (to_nat v)) = (condplus carry (pow2 l)
