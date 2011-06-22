@@ -400,12 +400,6 @@ Define word_inc_tot :=
 
 Total word_inc word_inc_tot.
 
-Define trusted word_inc_implies_ltword :
-  Forall(w w':word)(u:{ (word_inc w) = (mk_word_inc_t w' ff) }).
-    { (ltword w w') = tt }
-  := truei.
-
-
 Define word_inc2 :=
   fun(b:word).
     match (word_inc b) with
@@ -434,14 +428,6 @@ Define word_inc2_word_inc
 				{ (word_inc w) = (mk_word_inc_t w' ff) }
 	end end.
 
-Define word_inc2_implies_ltword :
-  Forall(w w':word)(u:{ w' = (word_inc2 w) }).{ (ltword w w') = tt }
-  :=
-  foralli(w w':word)(u:{ w' = (word_inc2 w) }).
-	abbrev p1 = [word_inc2_word_inc w w' u] in
-	[word_inc_implies_ltword w w' p1].
-
-
 Define primitive word_inc_safe :=
   fun(b:word)(u:{ (ltword b word_max) = tt }).
   (word_inc2 b) <<END
@@ -455,15 +441,6 @@ Define trusted word_inc_safe_total :
   := truei.
 
 Total word_inc_safe word_inc_safe_total.
-
-Define word_inc_safe_implies_ltword :
-  Forall(w w':word)(u:{ w' = (word_inc_safe w) }).
-    { (ltword w w') = tt }
-  :=
-  foralli(w w':word)(u:{ w' = (word_inc_safe w) }).
-  abbrev u' = hypjoin w' (word_inc2 w) by u end in
-  [word_inc2_implies_ltword w w' u'].
-
 
 Define word_to_nat_inc
    : Forall(w w2:word)(carry:bool)
@@ -511,6 +488,32 @@ Define word_inc2_word_to_nat
   abbrev p = [word_inc2_word_inc w w2 u] in
   [word_to_nat_inc2 w w2 p]
   .
+
+Define word_inc_implies_ltword :
+  Forall(w w':word)(u:{ (word_inc w) = (mk_word_inc_t w' ff) }).
+    { (ltword w w') = tt } := 
+  foralli(w w':word)(u:{ (word_inc w) = (mk_word_inc_t w' ff) }).
+    transs
+         join (ltword w w') (lt (to_nat w) (to_nat w'))
+         cong (lt (to_nat w) *)
+           symm [word_to_nat_inc2 w w' u]
+         [lt_S (to_nat wordlen w)]
+    end.
+      
+Define word_inc2_implies_ltword :
+  Forall(w w':word)(u:{ w' = (word_inc2 w) }).{ (ltword w w') = tt }
+  :=
+  foralli(w w':word)(u:{ w' = (word_inc2 w) }).
+	abbrev p1 = [word_inc2_word_inc w w' u] in
+	[word_inc_implies_ltword w w' p1].
+
+Define word_inc_safe_implies_ltword :
+  Forall(w w':word)(u:{ w' = (word_inc_safe w) }).
+    { (ltword w w') = tt }
+  :=
+  foralli(w w':word)(u:{ w' = (word_inc_safe w) }).
+  abbrev u' = hypjoin w' (word_inc2 w) by u end in
+  [word_inc2_implies_ltword w w' u'].
 
 Define trusted word_inc_safe_word_to_nat
   : Forall(w:word)

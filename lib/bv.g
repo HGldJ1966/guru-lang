@@ -1,6 +1,6 @@
 %Unset "check_drop_annos_idem".
 
-% Set "trust_hypjoins".
+%Set "trust_hypjoins".
 
 Include trusted "pow.g".
 Include trusted "vec.g".
@@ -1003,3 +1003,60 @@ Define neq_bv0_implies_bv_dec_nonzero :
               hypjoin (bv_dec v) (mk_bv_dec_t tt (bvc ff v')) by v_eq x_eq end
       end
   end.
+
+Define bv_dec_nonzero_ff_implies_eq_bv0 :
+  Forall(l:nat)
+        (v ret:<bv l>)
+        (u:{ (bv_dec v) = (mk_bv_dec_t ff ret) }).
+          { v = (mkvec ff l) } :=
+  induction(l:nat)(v:<bv l>)
+    return Forall(ret:<bv l>)
+                 (u:{ (bv_dec v) = (mk_bv_dec_t ff ret) }).
+             { v = (mkvec ff l) } with
+    vecn _ => 
+      foralli(ret:<bv l>)
+             (u:{ (bv_dec v) = (mk_bv_dec_t ff ret) }).
+        trans v_eq hypjoin vecn (mkvec ff l) by inj <vec ** *> v_Eq end
+  | vecc _ l' x v' => 
+      foralli(ret:<bv l>)
+             (u:{ (bv_dec v) = (mk_bv_dec_t ff ret) }).
+      case x with
+        ff => 
+        case (bv_dec l' v') by u2 _ with
+          mk_bv_dec_t _ nonzero r => 
+            case nonzero with
+              ff =>
+                hypjoin v (mkvec ff l) 
+                by inj <vec ** *> v_Eq 
+                   v_eq x_eq
+                   [v_IH l' v' r trans u2 cong (mk_bv_dec_t * r) nonzero_eq]
+                end
+            | tt => 
+                contra
+                  trans
+                    inj (mk_bv_dec_t * **)
+                      trans symm u
+                        hypjoin (bv_dec v) (mk_bv_dec_t tt (bvc tt r)) by v_eq u2 x_eq nonzero_eq end
+                    clash tt ff
+                { v = (mkvec ff l) }
+            end
+        end
+     | tt => 
+        contra
+           trans
+              inj (mk_bv_dec_t * **)
+                trans symm u
+                  hypjoin (bv_dec v) (mk_bv_dec_t tt (bvc ff v')) by v_eq x_eq end
+              clash tt ff
+         { v = (mkvec ff l) }
+     end
+  end.
+
+Define bv_dec_zero :
+  Forall(l:nat).{ (bv_dec (mkvec ff l)) = (mk_bv_dec_t ff (mkvec ff l)) } :=
+  induction(l:nat)
+    return { (bv_dec (mkvec ff l)) = (mk_bv_dec_t ff (mkvec ff l)) } with
+  | Z => hypjoin (bv_dec (mkvec ff l)) (mk_bv_dec_t ff (mkvec ff l)) by l_eq end
+  | S l' => hypjoin (bv_dec (mkvec ff l)) (mk_bv_dec_t ff (mkvec ff l)) by l_eq [l_IH l'] end
+  end.
+
