@@ -76,11 +76,7 @@ Define eqnatTot : Forall(n m:nat).Exists(x:bool). { (eqnat n m) = x } :=
                     join (eqnat (S n') Z) ff
         | S m' => existse [IH n' m'] foralli(x:bool)(u:{(eqnat n' m') = x}).
                     existsi x {(eqnat n m) = *}
-                      trans cong (eqnat * m) x1
-                      trans cong (eqnat (S n') *) y1
-                      trans join (eqnat (S n') (S m'))
-                                 (eqnat n' m')
-                            u
+                      hypjoin (eqnat n m) x by u x1 y1 end
         end
 end.
 

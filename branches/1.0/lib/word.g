@@ -1,6 +1,8 @@
-Include "minus.g".
-Include "bv.g".
-Include "owned.g".
+Include trusted "minus.g".
+Include trusted "bv.g".
+Include trusted "owned.g".
+
+% Set "trust_hypjoins".
 
 Define wordlen := (mult2 (mult2 (S (S (S (S (S (S (S (S Z)))))))))).
 
@@ -217,10 +219,13 @@ Define leword_total :
 
 Total leword leword_total.
 
-Define ltword_to_lt :=	% useful to avoid evaluating subterms
-  foralli(w1 w2:word).
-  join (ltword w1 w2) (lt (to_nat w1) (to_nat w2))
-  .
+
+% useful to avoid evaluating subterms
+%
+Define ltword_to_lt :
+  Forall(w1 w2:word). {(ltword w1 w2) = (lt (to_nat w1) (to_nat w2))}  :=	
+foralli(w1 w2:word).
+  join (ltword w1 w2) (lt (to_nat w1) (to_nat w2)).
 
 Define leword_to_le :=	% useful to avoid evaluating subterms
   foralli(w1 w2:word).
@@ -515,11 +520,33 @@ Define word_inc_safe_implies_ltword :
   abbrev u' = hypjoin w' (word_inc2 w) by u end in
   [word_inc2_implies_ltword w w' u'].
 
-Define trusted word_inc_safe_word_to_nat
+Define word_inc_safe_word_to_nat
   : Forall(w:word)
           (u:{ (ltword w word_max) = tt}).
       { (to_nat (word_inc_safe w)) = (S (to_nat w)) }
-  := truei.
+  := 
+foralli(w:word)
+       (u:{ (ltword w word_max) = tt}).
+  case (bv_inc wordlen w) by u2 _ with
+    mk_bv_inc_t _ w' carry =>
+      cabbrev u2w = hypjoin (word_inc w) (mk_word_inc_t w' carry) by u2 end in
+      cabbrev carry_eq =
+           [bv_inc_notfull wordlen w w' carry 
+             transs
+               symm [ltword_to_lt w (bv_full wordlen)]
+               cong (ltword w *) join (bv_full wordlen) word_max
+               u
+             end
+             u2] in
+      symm
+      transs
+        [word_to_nat_inc w w' carry u2w]
+        cong (condplus * (pow2 wordlen) (to_nat w'))
+          carry_eq
+        [condplusff (pow2 wordlen) (to_nat wordlen w')]
+        cong (to_nat *) hypjoin w' (word_inc_safe w) by u2w carry_eq end
+      end
+  end.
 
 
 %=============================================================================
