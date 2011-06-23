@@ -828,6 +828,9 @@ Define bv_clear_neq
     end
   end
 
+%======================================================================
+% decrementing a bitvector
+%======================================================================
 
 % subtract one from a bitvector, keeping the same length.
 % The field "nonzero" is true iff the starting bitvector is greater than 0.
