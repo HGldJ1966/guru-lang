@@ -757,12 +757,17 @@ Define trusted word_msb_tt_set_msb :
   Forall(w:word)(u:{ (word_msb w) = tt }).
   	{ (word_set_msb w) = w }
 	:= truei.
-
-Define trusted word_msb_ff_clear_msb :
+  
+Define word_msb_ff_clear_msb :
   Forall(w:word)(u:{ (word_msb w) = ff }).
   	{ (word_clear_msb w) = w }
-	:= truei.
-  
+	:=
+  foralli(w:word)(u:{ (word_msb w) = ff }).
+  abbrev msb_lt_wordlen = join (lt (to_nat word0x1f) wordlen) tt in
+  hypjoin (word_clear_msb w) w by
+    u
+    [vec_update_back bool wordlen w (word_to_nat word0x1f) msb_lt_wordlen]
+  end.
   
 Define trusted word0_set_bit_pow2
   : Forall(i:word)(u:{(lt (to_nat i) wordlen) = tt}).
