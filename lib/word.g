@@ -268,7 +268,18 @@ Define leword_word0 : Forall(w:word).{ (leword word0 w) = tt }
 				[leZ (word_to_nat w)]
 	.
 
-Define trusted leword_word_max : Forall(w:word).{ (leword w word_max) = tt } := truei.
+Define leword_word_max : Forall(w:word).{ (leword w word_max) = tt } := 
+  foralli(w:word).
+    trans
+      [leword_to_le w word_max]
+      [lt_pred2 (to_nat wordlen w) (to_nat wordlen word_max)
+         symm
+         trans
+           symm [lt_to_nat wordlen w] 
+           cong (lt (to_nat w) *) 
+             trans 
+               symm [to_nat_inc_bv_full wordlen]
+               cong (S (to_nat *)) join (bv_full wordlen) word_max].
 
 Define ltword_trans :
   Forall(a b c:word)
@@ -320,10 +331,13 @@ Define ltleword_trans :
 
 Define word_comp := (ucomparator word ltword leword).
 
-Define trusted ltword_implies_ltword_word_max :
+Define ltword_implies_ltword_word_max :
   Forall(a b:word)(u:{ (ltword a b) = tt }).
-    { (ltword a word_max) = tt }
-  := truei.
+    { (ltword a word_max) = tt } := 
+  foralli(a b:word)(u:{ (ltword a b) = tt }).
+     [ltleword_trans a b word_max
+       u 
+       [leword_word_max b]].
 
 Define trusted ltword_implies_lt_word_max :
   Forall(a b:word)(u:{ (ltword a b) = tt }).
@@ -350,7 +364,7 @@ Define lt_word_implies_le_word_max :
   abbrev p1 = [lt_implies_le n (word_to_nat w) u] in
   [le_word_implies_le_word_max n w p1].
 
-%- 'nat_to_word' IS EVIL
+%- trying to avoid 'nat_to_word'
 Define lt_to_nat_ltword :
   Forall(n:nat)(w:word)(u:{ (lt n (to_nat w)) = tt }).
     { (ltword (nat_to_word n) w) = tt }
@@ -757,7 +771,7 @@ Define trusted word_msb_tt_set_msb :
   Forall(w:word)(u:{ (word_msb w) = tt }).
   	{ (word_set_msb w) = w }
 	:= truei.
-  
+
 Define word_msb_ff_clear_msb :
   Forall(w:word)(u:{ (word_msb w) = ff }).
   	{ (word_clear_msb w) = w }
@@ -954,5 +968,3 @@ Define trusted word_mod10_tot :
   := truei.
 
 Total word_mod10 word_mod10_tot.
-
-
