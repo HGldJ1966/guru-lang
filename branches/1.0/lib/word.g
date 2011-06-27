@@ -580,7 +580,23 @@ END.
 Define trusted ltword_implies_ltword_word0 :
   Forall(w w':word)(u:{ (ltword w' w) = tt }).
     { (ltword word0 w) = tt }
-  := truei.
+  :=
+  foralli(w w': word)(u:{ (ltword w' w) = tt }).
+  abbrev nw = (word_to_nat w) in
+  abbrev nw' = (word_to_nat w') in  
+  abbrev nw'_lt_nw = 
+    hypjoin (lt nw' nw) tt by
+      join (lt nw' nw) 
+           (ltword w' w)
+      u
+    end 
+  in
+
+  abbrev nw_not_zero = [lt_implies_not_zero nw' nw nw'_lt_nw] in
+  abbrev zero_lt_nw = [not_zero_implies_lt nw nw_not_zero] in
+
+  trans join (ltword word0 w) (lt Z nw)
+        zero_lt_nw
 
 
 %=============================================================================
@@ -770,7 +786,13 @@ Define word_clear_set :
 Define trusted word_msb_tt_set_msb :
   Forall(w:word)(u:{ (word_msb w) = tt }).
   	{ (word_set_msb w) = w }
-	:= truei.
+	:=
+  foralli(w:word)(u:{ (word_msb w) = tt }).
+  abbrev msb_lt_wordlen = join (lt (to_nat word0x1f) wordlen) tt in
+  hypjoin (word_set_msb w) w by
+    u
+    [vec_update_back bool wordlen w (word_to_nat word0x1f) msb_lt_wordlen]
+  end.
 
 Define word_msb_ff_clear_msb :
   Forall(w:word)(u:{ (word_msb w) = ff }).
