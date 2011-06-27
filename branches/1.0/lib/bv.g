@@ -828,6 +828,45 @@ Define bv_clear_neq
     end
   end
 
+Define bv_inc_bv_full :
+  Forall(l:nat).
+    { (bv_inc (bv_full l)) = (mk_bv_inc_t (mkvec ff l) tt) } :=
+  induction(l:nat)
+    return { (bv_inc (bv_full l)) = (mk_bv_inc_t (mkvec ff l) tt) } with
+    Z =>
+      hypjoin (bv_inc (bv_full l)) (mk_bv_inc_t (mkvec ff l) tt) by l_eq end
+  | S l' => 
+      case (bv_inc l' (bv_full l')) by u _ with 
+        mk_bv_inc_t _ r carry => 
+        cabbrev P = trans symm u [l_IH l'] in
+         transs 
+              hypjoin (bv_inc (bv_full l)) (mk_bv_inc_t (bvc ff r) carry) 
+              by u l_eq end
+              cong (mk_bv_inc_t (bvc ff *) carry) inj (mk_bv_inc_t * **) P
+              cong (mk_bv_inc_t (bvc ff (mkvec ff l')) *) inj (mk_bv_inc_t ** *) P
+              cong (mk_bv_inc_t * tt) hypjoin (bvc ff (mkvec ff l')) (mkvec ff l) by l_eq end
+         end
+      end
+  end.
+      
+Define normalize_mkvec_ff :
+  Forall(l:nat). { (normalize (mkvec ff l)) = (mk_to_bv_t bvn) } :=
+  induction(l:nat)
+    return { (normalize (mkvec ff l)) = (mk_to_bv_t bvn) } with
+    Z => hypjoin (normalize (mkvec ff l)) (mk_to_bv_t bvn) by l_eq end
+  | S l' => hypjoin (normalize (mkvec ff l)) (mk_to_bv_t bvn) by l_eq [l_IH l'] end
+  end.
+
+Define to_nat_inc_bv_full :
+  Forall(l:nat). { (S (to_nat (bv_full l))) = (pow2 l) } :=
+  foralli(l:nat).
+    transs
+      [to_nat_bv_inc l (bv_full l) (mkvec bool ff l) tt [bv_inc_bv_full l]]
+      cong (condplus tt (pow2 l) *) [to_nat_eq_Z2 l (mkvec bool ff l) [normalize_mkvec_ff l]]
+      join (condplus tt (pow2 l) Z) (plus (pow2 l) Z)
+      [plusZ (pow2 l)]
+    end.
+
 %======================================================================
 % decrementing a bitvector
 %======================================================================
