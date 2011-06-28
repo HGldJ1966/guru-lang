@@ -1,6 +1,9 @@
 length_word:
 	time ../bin/guru length_word.g
 
+boxedword:
+	time ../bin/guru boxedword.g
+
 warray-util:
 	time ../bin/guru warray-util.g
 
