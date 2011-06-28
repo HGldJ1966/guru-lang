@@ -577,7 +577,7 @@ Define primitive word_dec_safe :=
   inline unsigned int gword_dec_safe( unsigned int b) { return b-1; }
 END.
 
-Define trusted ltword_implies_ltword_word0 :
+Define ltword_implies_ltword_word0 :
   Forall(w w':word)(u:{ (ltword w' w) = tt }).
     { (ltword word0 w) = tt }
   :=
@@ -585,11 +585,7 @@ Define trusted ltword_implies_ltword_word0 :
   abbrev nw = (word_to_nat w) in
   abbrev nw' = (word_to_nat w') in  
   abbrev nw'_lt_nw = 
-    hypjoin (lt nw' nw) tt by
-      join (lt nw' nw) 
-           (ltword w' w)
-      u
-    end 
+    hypjoin (lt nw' nw) tt by u end 
   in
 
   abbrev nw_not_zero = [lt_implies_not_zero nw' nw nw'_lt_nw] in
@@ -783,7 +779,7 @@ Define word_clear_set :
     by p1 end
   .
 
-Define trusted word_msb_tt_set_msb :
+Define word_msb_tt_set_msb :
   Forall(w:word)(u:{ (word_msb w) = tt }).
   	{ (word_set_msb w) = w }
 	:=
@@ -799,7 +795,7 @@ Define word_msb_ff_clear_msb :
   	{ (word_clear_msb w) = w }
 	:=
   foralli(w:word)(u:{ (word_msb w) = ff }).
-  abbrev msb_lt_wordlen = join (lt (to_nat word0x1f) wordlen) tt in
+  abbrev msb_lt_wordlen = join (lt (to_nat 0x1f) wordlen) tt in
   hypjoin (word_clear_msb w) w by
     u
     [vec_update_back bool wordlen w (word_to_nat word0x1f) msb_lt_wordlen]

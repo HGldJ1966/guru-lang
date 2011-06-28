@@ -28,9 +28,12 @@ Define trusted unboxWord_tot : Forall(bw:boxedWord).Exists(w:word).{(unboxWord b
 
 Total unboxWord unboxWord_tot.
 
-Define trusted unboxWord_boxWord :
-	Forall(b:boxedWord).{ (boxWord (unboxWord b)) = b } := truei.
-
+Define unboxWord_boxWord :
+	Forall(b:boxedWord).{ (boxWord (unboxWord b)) = b } := 
+  foralli(b:boxedWord).
+    case b with
+      mk_uholder _ w => hypjoin (boxWord (unboxWord b)) b by b_eq end
+    end.
 
 Define boxedWord_comp : Fun(^ #owned bw1 bw2:boxedWord) . comp :=
   fun(^ #owned bw1 bw2:boxedWord).
