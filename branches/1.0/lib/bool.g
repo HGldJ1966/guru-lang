@@ -268,7 +268,11 @@ Define not_tt : Forall(x:bool)(u:{(not x) = tt}). {x = ff} :=
               clash ff tt
           { x = ff }
   end.
-            
+
+Define not_invertible : Forall(x y: bool)(u: { (not x) = (not y) }). { x = y } :=
+  foralli(x y: bool)(u: { (not x) = (not y) }).
+  hypjoin x y by [not_not x] [not_not y] u end.   
+
 Define iff_eq : Forall(x y : bool)(u:{(iff x y) = tt}). { x = y } :=
   induction(x:bool) by ux ign ign 
   return Forall(y : bool)(u:{(iff x y) = tt}). { x = y } with
