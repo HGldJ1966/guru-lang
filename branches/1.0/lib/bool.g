@@ -269,7 +269,7 @@ Define not_tt : Forall(x:bool)(u:{(not x) = tt}). {x = ff} :=
           { x = ff }
   end.
 
-Define not_invertible : Forall(x y: bool)(u: { (not x) = (not y) }). { x = y } :=
+Define not_injective : Forall(x y: bool)(u: { (not x) = (not y) }). { x = y } :=
   foralli(x y: bool)(u: { (not x) = (not y) }).
   hypjoin x y by [not_not x] [not_not y] u end.   
 
