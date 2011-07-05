@@ -567,15 +567,66 @@ foralli(w:word)
 % word decrementing
 %=============================================================================
 
+Define ltword_wordneq : Forall(w:word)(u:{ (ltword word0 w) = tt }). { (eqword w word0) = ff } := 
+  foralli(w:word)(u:{ (ltword word0 w) = tt }).
+    [neq_wordneq w word0 symm [ltword_implies_neq word0 w u]].
+
+Define bv_dec_safe_nonzero
+  : Forall(w r:word)(nonzero:bool)
+          (u1:{(ltword word0 w) = tt})
+          (u2:{(bv_dec w) = (mk_bv_dec_t nonzero r)}).
+      { nonzero = tt } :=
+  foralli(w r:word)(nonzero:bool)
+         (u1:{(ltword word0 w) = tt})
+         (u2:{(bv_dec w) = (mk_bv_dec_t nonzero r)}).
+    case nonzero with
+      ff =>
+        contra
+          transs
+            symm nonzero_eq
+            [neq_bv0_implies_bv_dec_nonzero 
+                 wordlen w r nonzero 
+                 [ltword_wordneq w u1]
+                 u2]
+            clash tt ff
+          end
+        { nonzero = tt }
+    | tt =>
+      nonzero_eq
+    end.
+
 Define primitive word_dec_safe :=
   fun(b:word)
      (u:{ (ltword word0 b) = tt }) : word.
-  match (bv_dec wordlen b) by _ u with
-    mk_bv_dec_t _ nonzero r => cast r by cong <bv *> symm inj <bv_dec_t *> u
-  end
+  match (bv_dec wordlen b) by u1 u2 with
+    mk_bv_dec_t _ nonzero r => 
+    match nonzero with
+      ff =>
+      impossible 
+        transs symm nonzero_eq [bv_dec_safe_nonzero b r nonzero u u1] clash tt ff end
+      word
+    | tt =>
+      cast r by cong <bv *> symm inj <bv_dec_t *> u2
+    end
+ end
  <<END
   inline unsigned int gword_dec_safe( unsigned int b) { return b-1; }
 END.
+
+Define word_dec_safe_total
+  : Forall(w:word)
+          (u1:{(ltword word0 w) = tt}).
+      Exists(r:word). {(word_dec_safe w) = r} :=
+  foralli(w:word)
+         (u1:{(ltword word0 w) = tt}).
+    case (bv_dec wordlen w) by u2 u3 with
+      mk_bv_dec_t _ nonzero r =>
+        existsi cast r by cong <bv *> symm inj <bv_dec_t *> u3
+          { (word_dec_safe w) = * }
+          hypjoin (word_dec_safe w) r by u2 [bv_dec_safe_nonzero w r nonzero u1 u2] end
+    end.
+
+Total word_dec_safe word_dec_safe_total
 
 Define ltword_implies_ltword_word0 :
   Forall(w w':word)(u:{ (ltword w' w) = tt }).
