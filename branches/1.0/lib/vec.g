@@ -529,7 +529,7 @@ Define vec_all_but_last :
             abbrev Z_eq_n' = inj <vec A *> symm l'_Eq in
             abbrev Z_eq_m = trans Z_eq_n' n'_eq_m in
             cong <vec A *> Z_eq_m                
-        | vecc _ n'' _ l'' =>
+        | vecc _ n'' _ _ =>
           abbrev n'_eq_Sn'' = inj <vec ** *> l'_Eq in
           abbrev n_eq_Sn' = inj <vec ** *> l_Eq in
           abbrev rest_all_but_last =
@@ -548,61 +548,33 @@ Define vec_all_but_last :
       end
   end.
 
-%-
 Define vec_back_cons :
   Forall(A: type)(n: nat)(u: { n != Z })(v: <vec A n>).
     { (vec_append (vec_all_but_last v) (vecc (vec_last v) vecn)) = v }
   :=
-  foralli(A: type)(n: nat)(u: { n != Z })(v: <vec A n>).
-  hypjoin (vec_append (vec_all_but_last v) (vecc (vec_last v) vecn)) v by end.
-
   foralli(A: type).
-  induction(n: nat)
-  return
-    Forall(u: { n != Z })(v: <vec A n>). 
-      { (vec_append (vec_all_but_last v) (vec_last v)) = v }
-  with
-    | Z =>
-      foralli(u: { n != Z })(v: <vec A n>).
-        contra
-          trans n_eq
-                symm u
-
-          { (vec_append (vec_all_but_last v) (vec_last v)) = v }
-    | S n' =>
-      foralli(u: { n != Z })(v: <vec A n>).
-      case v with
-        | vecn _ =>
-          contra
-            transs
-              symm n_eq 
-              inj <vec A *> v_Eq
-              clash Z (S n)
-            end
-
-            { (vec_append (vec_all_but_last v) (vec_last v)) = v }
-        | vecc A restLen a rest =>
-          abbrev Sn'_eq_SrestLen =
-            trans symm n_eq
-                  inj <vec A *> v_Eq
-          end
-          abbrev n'_eq_restLen = inj (S *) Sn'_eq_SrestLen in
-          
-          case n' with
-            | Z =>
-              
-          
-      end
-
-      %case n' with
-      %  | Z =>
-      %    case v with
-      %  | S n'' =>
-      %end      
+  induction(n: nat)(u: { n != Z })(v: <vec A n>)
+    return { (vec_append (vec_all_but_last v) (vecc (vec_last v) vecn)) = v } with
+    vecn _ => 
+      contra 
+        trans
+          symm inj <vec ** *> v_Eq
+          u
+      { (vec_append (vec_all_but_last v) (vecc (vec_last v) vecn)) = v }
+  | vecc _ n' a v' =>
+    case v' with
+      vecn _ =>
+        hypjoin (vec_append (vec_all_but_last v) (vecc (vec_last v) vecn)) v by v_eq v'_eq end
+    | vecc _ n'' a2 v'' =>
+        transs
+          hypjoin (vec_append (vec_all_but_last v) (vecc (vec_last v) vecn))
+                  (vecc a (vec_append (vec_all_but_last v') (vecc (vec_last v') vecn))) by v_eq v'_eq end
+          cong (vecc a *) 
+            [v_IH n' [S_implies_not_zero n' n'' inj <vec ** *> v'_Eq] v']
+          symm v_eq
+        end
+    end
   end.
-  -%
-   
-  %hypjoin (vec_append (vec_all_but_last v) (vec_last v)) v by end.
 
 Define vec_vecc_shift : 
   Forall(A: type)
