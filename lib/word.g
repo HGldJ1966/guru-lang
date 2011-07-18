@@ -702,7 +702,6 @@ Define word_clear_read :
           ff
           by [vec_update_get bool wordlen w (to_nat wordlen i) ff u] end
   .
-
 Define word_read_msb :=
   fun(w:word).
     abbrev p = join (lt (to_nat word0x1f) wordlen) tt in
@@ -913,6 +912,20 @@ Define trusted word_msb_ff_implies_ltword_word_max :
   Forall(w:word)(u:{ (word_msb w) = ff }).
     { (ltword w word_max) = tt }
   := truei.
+
+Define msb_is_last :
+  Forall(w: word). { (word_msb w) = (vec_last w) }
+  :=
+  foralli(w: word).
+  hypjoin (word_msb w) (vec_last w) by
+    [last_eq_get_pred_n
+      bool
+      wordlen
+      (word_to_nat 0x1f)
+      join (S (word_to_nat 0x1f)) wordlen
+      w
+    ]
+  end.
 
 Define trusted leword_msb_ff_implies_msb_ff :
   Forall(w w':word)
