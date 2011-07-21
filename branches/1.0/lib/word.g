@@ -79,6 +79,27 @@ Define word9 := 0x9.
 Define word0x1f := 0x1f.
 Define word0x20 := 0x20.
 
+Define wordlen_neq_Z : 
+  { wordlen != Z }
+  :=
+  abbrev sixteen = (mult two eight) in
+  abbrev sixteen_not_Z = 
+    [mult_not_zero 
+      two 
+      eight 
+      clash two Z
+      clash eight Z
+  ] 
+  in
+  transs 
+    join wordlen (mult two sixteen)
+    [mult_not_zero 
+      two 
+      sixteen 
+      clash two Z 
+      sixteen_not_Z
+    ]
+  end.
 
 %=============================================================================
 % word and nat
@@ -918,7 +939,7 @@ Define msb_is_last :
   :=
   foralli(w: word).
   hypjoin (word_msb w) (vec_last w) by
-    [last_eq_get_pred_n
+    [vec_last_eq_get_pred_n
       bool
       wordlen
       (word_to_nat 0x1f)
@@ -927,12 +948,175 @@ Define msb_is_last :
     ]
   end.
 
-Define trusted leword_msb_ff_implies_msb_ff :
+Define leword_msb_ff_implies_msb_ff :
   Forall(w w':word)
   			(u1:{ (leword w w') = tt })
   			(u2:{ (word_msb w') = ff }).
     { (word_msb w) = ff }
-  := truei.
+  :=
+  foralli(w w': word)(u1: { (leword w w') = tt })(u2: { (word_msb w') = ff }).
+  % { (vecc (vec_last w') vecn) = (vecc ff vecn) }
+  abbrev bvc_last_eq_ff =  
+    hypjoin (vecc (vec_last w') vecn) (vecc ff vecn) by 
+      u2 
+      [msb_is_last w'] 
+    end 
+  in
+  % { (vec_append (vec_all_but_last w') (vecc (vec_last w') vecn)) = w' }
+  abbrev w'_back_cons = 
+    [vec_back_cons 
+      bool
+      wordlen
+      wordlen_neq_Z
+      w'
+    ]
+  in
+  abbrev last_w'_bv = (vecc bool Z (vec_last bool wordlen wordlen_neq_Z w') bvn) in 
+  case wordlen with
+    | Z =>
+      contra
+        trans symm wordlen_neq_Z
+              wordlen_eq
+
+        { (word_msb w) = ff }
+    | S wordlen' =>
+      %  { (to_nat w') = (to_nat (vec_all_but_last w')) }
+      abbrev w'_eq_all_but_last_w' =
+        transs
+          cong (to_nat *) symm w'_back_cons
+
+          [to_nat_append 
+            wordlen' 
+            one 
+            (vec_all_but_last bool wordlen wordlen' wordlen_eq w') 
+            last_w'_bv
+          ]
+
+          cong (plus (to_nat (vec_all_but_last bool w')) (mult (pow2 wordlen') *))
+               cong (to_nat *) bvc_last_eq_ff
+
+          cong (plus (to_nat (vec_all_but_last bool w')) (mult (pow2 wordlen') *))
+               join (to_nat (vecc ff vecn)) Z
+
+          cong (plus (to_nat (vec_all_but_last bool w')) *)
+               [multZ (pow2 wordlen')]
+
+          [plusZ (to_nat wordlen' (vec_all_but_last bool wordlen wordlen' wordlen_eq w'))]
+        end
+      in
+      %  { (lt (to_nat w') (pow2 wordlen')) = tt }
+      abbrev w'_lt_pow2_wordlen' =
+        trans
+          %(lt (to_nat w') (pow2 wordlen')) = (lt (to_nat (vec_all_but_last w')) (pow2 wordlen'))
+          cong (lt * (pow2 wordlen')) w'_eq_all_but_last_w'
+
+          %(lt (to_nat (vec_all_but_last w')) (pow2 wordlen')) = tt
+          [lt_to_nat 
+            wordlen' 
+            (vec_all_but_last bool wordlen wordlen' wordlen_eq w')
+          ]  
+      in
+      % { (lt (to_nat w) (pow2 wordlen')) = tt }
+      abbrev w_lt_pow2_wordlen' =
+        [lelt_trans 
+          (to_nat wordlen w) 
+          (to_nat wordlen w') 
+          (pow2 wordlen') 
+          trans symm [leword_to_le w w'] 
+                u1
+          w'_lt_pow2_wordlen'
+        ]
+      in
+      case (word_msb w) by msb_eq msb_Eq with
+        | ff =>
+          msb_eq
+        | tt =>
+          contra
+            % { (vec_last w) = tt }
+            abbrev last_eq_tt = 
+              hypjoin (vec_last w) tt by 
+                msb_eq 
+                [msb_is_last w] 
+              end
+            in
+            % { w = (vec_append (vec_all_but_last w) (vecc tt vecn)) }
+            abbrev p = 
+              trans
+                symm [vec_back_cons 
+                  bool
+                  wordlen
+                  wordlen_neq_Z
+                  w
+                ]
+                
+                cong (vec_append (vec_all_but_last w) (vecc * vecn))
+                      last_eq_tt
+            in
+            %{ (to_nat w) = (plus (to_nat (vec_all_but_last w)) (pow2 wordlen')) }
+            abbrev z = 
+              transs
+                cong (to_nat *) p
+                [to_nat_append
+                  wordlen'
+                  one
+                  (vec_all_but_last bool wordlen wordlen' wordlen_eq w) 
+                  (vecc bool Z tt (vecn bool))
+                ]
+
+                abbrev nat_tt_eq_one = join (to_nat (vecc tt vecn)) one in
+                cong (plus (to_nat (vec_all_but_last w)) (mult (pow2 wordlen') *))
+                      nat_tt_eq_one
+
+                cong (plus (to_nat (vec_all_but_last w)) *)
+                      [multOne (pow2 wordlen')]
+              end
+            in
+            abbrev all_but_last_w =
+              (vec_all_but_last bool wordlen wordlen' wordlen_eq w)
+            in
+            % { (le (pow2 wordlen') (to_nat w)) = tt }
+            abbrev pow2_wordlen'_le_w =
+              [le_trans
+                (pow2 wordlen')
+                (plus (to_nat wordlen' all_but_last_w) (pow2 wordlen'))
+                (to_nat wordlen w)
+
+                [le_trans
+                  (pow2 wordlen')
+                  (plus (pow2 wordlen') (to_nat wordlen' all_but_last_w))
+                  (plus (to_nat wordlen' all_but_last_w) (pow2 wordlen'))
+
+                  [plus_implies_le (pow2 wordlen') (to_nat wordlen' all_but_last_w)]
+
+                  [eq_le
+                    (plus (pow2 wordlen') (to_nat wordlen' all_but_last_w))
+                    (plus (to_nat wordlen' all_but_last_w) (pow2 wordlen'))
+                    [plus_comm (pow2 wordlen') (to_nat wordlen' all_but_last_w)]
+                  ]
+                ]
+
+                [eq_le 
+                  (plus (to_nat wordlen' all_but_last_w) (pow2 wordlen'))
+                  (to_nat wordlen w) 
+                  symm z
+                ]
+              ]
+            in
+            transs
+              symm [le_tt_implies_lt_ff
+                (pow2 wordlen')
+                (to_nat wordlen w)
+                pow2_wordlen'_le_w
+              ]
+
+              w_lt_pow2_wordlen'
+
+              clash tt ff
+            end
+
+          { (word_msb w) = ff }
+      end
+  end.
 
 
 %=============================================================================
