@@ -389,8 +389,8 @@ Define vec_reverse
                                                 [plusZ n].
 
 %-
-Returns the last element of a vector. This function is defined recursively,
-rather than in terms of other functions such as reverse, so that it is 
+Returns the last element of a vector. This function is defined recursively
+rather than in terms of other functions such as reverse so that it is 
 easy to reason about.
 -%
 Define vec_last :
@@ -420,80 +420,12 @@ Define vec_last :
 
           (vec_last A n' n'_neq_Z l')
       end
-  end.
-
-Define vec_first_n :
-  Fun(A: type)
-     (spec inputVecLength: nat)
-     (v: <vec A inputVecLength>)
-     (n: nat)
-     (u: { (le n inputVecLength) = tt } ). <vec A n>
-  :=
-  fun vec_first_n(A: type)    
-                 (spec inputVecLength: nat)
-                 (v: <vec A inputVecLength>)
-                 (n: nat)
-                 (u: { (le n inputVecLength) = tt } ) 
-                 : <vec A n>.
-  match n with
-    | Z =>
-      cast (vecn A) by cong <vec A *> symm n_eq
-    | S n' =>
-      match v with
-        | vecn _ =>
-          impossible
-            abbrev inputVecLength_eq_Z = inj <vec A *> v_Eq in
-            abbrev n_le_Z = 
-              trans cong (le n *) symm inputVecLength_eq_Z
-                    u
-            in
-            abbrev n_eq_Z = [le_Z1 n n_le_Z] in
-            transs 
-              symm n_eq
-              n_eq_Z
-              clash Z (S n')
-            end
-
-            <vec A n>
-        | vecc A restLength a rest =>
-          abbrev inputVecLength_eq_SrestLength =
-            inj <vec A *> v_Eq
-          in
-          abbrev n'_lt_n =
-            [ltle_trans 
-              n'
-              (S n')
-              n
-              [lt_S n']
-              [eq_le (S n') n symm n_eq]
-            ]
-          in
-          abbrev n'_lt_inputVecLength =
-            [ltle_trans n' n inputVecLength n'_lt_n u]
-          in
-          abbrev n'_le_restLength =
-            hypjoin (le n' restLength) tt by
-              inputVecLength_eq_SrestLength
-              n'_lt_inputVecLength
-              [le_eq_lt_S n' restLength]
-            end
-          in
-          abbrev ret = 
-            (vecc
-              A
-              n'
-              a 
-              (vec_first_n A restLength rest n' n'_le_restLength)   
-            )
-          in
-          cast ret by cong <vec A *> symm n_eq
-      end
-  end.         
+  end.     
 
 %-
 Returns a list containing all elements of a vector except the last. 
-This function is defined recursively, rather than in terms of other functions 
-such as reverse, so that it is easy to reason about.
+This function is defined recursively rather than in terms of other functions 
+such as reverse so that it is easy to reason about.
 -%
 Define vec_all_but_last :
   Fun(A: type)(spec n: nat)(spec m: nat)(u: { n = (S m) } )(l: <vec A n>). <vec A m>
@@ -547,6 +479,79 @@ Define vec_all_but_last :
             cong <vec A *> Sn''_eq_m 
       end
   end.
+
+Define vec_all_but_last_tot :
+  Forall(A: type)(n: nat)(m: nat)(u: { n = (S m) } )(v: <vec A n>). 
+  Exists(v': <vec A m>). { (vec_all_but_last A v) = v' }
+  :=
+  foralli(A: type).
+  induction(n: nat)(m: nat)(u: { n = (S m) })(v: <vec A n>)
+  return Exists(v': <vec A m>). { (vec_all_but_last A v) = v' }
+  with
+    | vecn _ =>
+      contra
+        transs
+          symm u
+          inj <vec ** *> v_Eq
+          clash Z (S m)
+        end
+
+        Exists(v': <vec A m>). { (vec_all_but_last A v) = v' }
+    | vecc _ n' a v' =>
+      abbrev n'_eq_m =
+        inj
+          (S *)
+          trans symm inj <vec ** *> v_Eq
+                u
+      in
+      case v' with
+        | vecn _ =>
+
+          abbrev witness =
+            cast (vecn A) by
+              transs 
+                symm v'_Eq
+                cong <vec A *> n'_eq_m
+              end
+          in
+          existsi witness
+                  { (vec_all_but_last v) = * }
+                  hypjoin (vec_all_but_last A v) (vecn A) by 
+                    v_eq 
+                    v'_eq 
+                  end 
+        | vecc _ n'' a' v'' =>
+          abbrev p = %used as the second subterm in existse
+            foralli(x: <vec A n''>)(q: { (vec_all_but_last v') = x} ).
+              abbrev Sn''_eq_m =
+                trans
+                  symm inj <vec ** *> v'_Eq
+                  n'_eq_m
+              in
+              abbrev witness =
+                cast (vecc A n'' a x) by
+                  cong <vec A *> Sn''_eq_m
+              in
+              existsi 
+                witness
+                { (vec_all_but_last A v) = * }
+                hypjoin (vec_all_but_last A v) (vecc A a x) by 
+                  v_eq
+                  v'_eq 
+                  q 
+                end
+          in 
+          existse
+            [v_IH
+               n'
+               n''
+               inj <vec ** *> v'_Eq
+               v']
+            p
+      end
+  end    
+
+Total vec_all_but_last vec_all_but_last_tot.
 
 Define vec_back_cons :
   Forall(A: type)(n: nat)(u: { n != Z })(v: <vec A n>).
@@ -646,7 +651,7 @@ Define vec_vecc_last_invariant :
       hypjoin (vec_last v) (vec_last v') by v_eq end
   end.
 
-Define last_eq_get_pred_n :
+Define vec_last_eq_get_pred_n :
   Forall(A: type)
         (n: nat)
         (m: nat)
@@ -677,7 +682,6 @@ Define last_eq_get_pred_n :
               n_eq
       in
       abbrev m_eq_n' = inj (S *) Sn'_eq_Sm in
-        
       case v with
         | vecn _ =>
           contra
@@ -697,8 +701,6 @@ Define last_eq_get_pred_n :
 
           case m with
             | Z =>
-              %we need to know rest = vecn in this case ****************
-              
               case rest with
                 | vecn _ =>
                   hypjoin (vec_get v m) (vec_last v) by v_eq m_eq rest_eq end
@@ -742,29 +744,12 @@ Define last_eq_get_pred_n :
                   a
                 ]
               in
-
-              % { (vec_get rest m') = (vec_get (vecc a rest) (S m')) }
-              % hypjoin makes this unnecessary. however, if we use this as a
-              % hypjoin lemma, guru claims that it doesn't prove an equation.
-              % is this a bug?
-              abbrev rest_shift =
-                [vec_vecc_shift
-                  A
-                  n'
-                  cast rest by cong <vec A *> restLen_eq_n'
-                  m'
-                  m'_lt_n'
-                  a
-                ]
-              in
-
               hypjoin (vec_get v m) (vec_last v) by 
                 indStep
                 last_rest_eq_last_v
                 v_eq
                 m_eq
               end
-              
           end
       end
   end.
