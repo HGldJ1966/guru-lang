@@ -1,10 +1,5 @@
 Include trusted "list.g".
-
-Define primitive eqref : Fun(spec A:type)(! #unowned x y:A).bool <<END
-inline unsigned geqref(void* x, void* y) {
-	return (x == y)? gtt(): gff();
-}
-END.
+Include trusted "eqref.g".
 
 Define erase_ref := fun erase_ref
   (A:type)

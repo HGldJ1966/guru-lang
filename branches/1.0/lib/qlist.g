@@ -1,8 +1,7 @@
 Include "unique.g".
 Include "ref.g".
-Include "erase_ref.g".
-Include "unique_owned.g". % temporarily added by Duckki
-Include "debug_log.g".
+Include "eqref.g".
+Include trusted "word.g".
 
 Inductive qlist : Fun(A:type).type :=
   qnil : Fun(A:type).#unique <qlist A>
@@ -13,6 +12,13 @@ Define primitive inspect_uniquew : Fun(spec A:type)(!#uniquew a:A).#<unique_owne
   fun(spec A:type)(a:A).a <<END
 #define ginspect_uniquew(a) a
 END.
+
+Define qappend : Fun(A:type)(#unique l1 l2:<qlist A>). #unique <qlist A> :=
+	fun qappend(A:type)(#unique l1 l2:<qlist A>) : #unique <qlist A>.
+	match l1 with
+	| qnil _ => l2
+	| qcons _ a l1' => (qcons A a (qappend A l1' l2))
+	end
 
 Define qlist_replace_ref := fun qlist_replace_ref
   (A:type)
