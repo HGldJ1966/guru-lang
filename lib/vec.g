@@ -329,6 +329,40 @@ Define vec_tail : Fun(A:type)(spec n:nat)(l:<vec A (S n)>). <vec A n> :=
 	| vecc _ _ _ l' => cast l' by refl <vec A n> 
 	end.
 
+Define vec_tail_tot : 
+  Forall(A:type)(n:nat)(l:<vec A (S n)>).
+  Exists(l':<vec A n>). { (vec_tail l) = l' } 
+  :=
+  foralli(A:type)(n: nat)(l: <vec A (S n)>).
+  case l with
+    | vecn _ =>
+      contra
+        trans l_Eq
+              clash Z (S n)
+
+        Exists(l': <vec A n>). { (vec_tail l) = l' }
+    | vecc B m _ rest =>
+      % { <vec B (S m)> = <vec A (S n)> }
+      abbrev casted_rest = 
+        abbrev n_eq_m =
+          inj <vec ** (S *)> l_Eq
+        in
+        abbrev A_eq_B =
+          inj <vec * **> l_Eq
+        in
+
+        cast rest by 
+          trans
+            cong <vec A *> symm n_eq_m
+            cong <vec * n> symm A_eq_B
+      in
+      existsi casted_rest
+              { (vec_tail l) = * } 
+              hypjoin (vec_tail l) rest by l_eq end
+  end.
+
+Total vec_tail vec_tail_tot.
+
 Define vec_append_assoc : Forall(A:type)(n1 : nat)(l1 : <vec A n1>)
                       (n2 n3 : nat)(l2 : <vec A n2>)(l3 : <vec A n3>).
                       { (vec_append (vec_append l1 l2) l3) =

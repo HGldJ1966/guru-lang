@@ -1102,3 +1102,200 @@ Define bv_dec_zero :
   | S l' => hypjoin (bv_dec (mkvec ff l)) (mk_bv_dec_t ff (mkvec ff l)) by l_eq [l_IH l'] end
   end.
 
+Define bv_tail_le :
+  Forall(n: nat)(l: <bv (S n)>).
+  { (le (to_nat (bv_tail l)) (to_nat l)) = tt }
+  :=
+  induction(n: nat)(l: <bv (S n)>)
+  return { (le (to_nat (bv_tail l)) (to_nat l)) = tt }
+  with
+    | vecn _ =>
+      contra
+        trans
+          inj <bv *> l_Eq
+          clash (S n) Z
+
+        { (le (to_nat (bv_tail l)) (to_nat l)) = tt }
+    | vecc _ n' a l' =>
+      abbrev nat_l = (to_nat (S n) l) in
+      abbrev nat_tail_l = (to_nat n (bv_tail n l)) in
+      % { (le nat_tail_l (mult2 nat_tail_l)) = tt }
+      abbrev p0 =
+        % { (le nat_tail_l (mult nat_tail_l two)) = tt }
+        abbrev p00 = 
+          [mult_le 
+            nat_tail_l
+            two
+            clash two Z
+          ]
+        in
+        % { (le (mult two nat_tail_l) (mult nat_tail_l two)) = tt }
+        abbrev p01 =
+          [eq_le
+            (mult nat_tail_l two)
+            (mult two nat_tail_l)
+            [mult_comm
+              nat_tail_l
+              two
+            ]
+          ]
+        in
+        [le_trans
+          nat_tail_l
+          (mult nat_tail_l two)
+          (mult two nat_tail_l)
+          p00
+          p01
+        ]
+      in
+      % { (le (mult2 nat_tail_l) (condS a (mult2 nat_tail_l))) = tt }
+      abbrev p1 = [condS_le a (mult2 nat_tail_l)] in
+      % { (le nat_tail_l (condS a (mult2 nat_tail_l))) = tt }
+      abbrev p2 = 
+        [le_trans
+          nat_tail_l
+          (mult2 nat_tail_l)
+          (condS a (mult2 nat_tail_l))
+          p0
+          p1
+        ]
+      in
+      % { (le (condS a (mult2 nat_tail_l)) (to_nat l)) = tt }
+      abbrev p3 =
+        abbrev p30 = 
+          hypjoin (condS a (mult2 nat_tail_l)) nat_l  by
+            l_eq
+          end
+        in
+        [eq_le
+          (condS a (mult2 nat_tail_l))
+          nat_l
+          p30
+        ]
+      in
+      [le_trans
+        nat_tail_l
+        (condS a (mult2 nat_tail_l))
+        nat_l
+        p2
+        p3
+      ]
+  end.
+
+Define bv_shift_le :
+  Forall(x n : nat)(l: <bv (S n)>). 
+  { (le (to_nat (bv_shift x l)) (to_nat l)) = tt }
+  :=
+  induction(x : nat) 
+  return 
+    Forall(n: nat)(l: <bv (S n)>). 
+    { (le (to_nat (bv_shift x l)) (to_nat l)) = tt }
+  with
+    | Z =>
+      foralli(n: nat)(l: <bv (S n)>).
+      [eq_le
+        (to_nat (S n) (bv_shift x n l))
+        (to_nat (S n) l)
+        hypjoin (to_nat (bv_shift x l)) (to_nat l) by x_eq end
+      ]
+    | S x' =>
+      foralli(n: nat)(l: <bv (S n)>).
+      case l with
+        | vecn _ =>
+          contra
+            trans
+              l_Eq
+              clash Z (S n)
+
+            { (le (to_nat (bv_shift x l)) (to_nat l)) = tt }
+        | vecc _ n' a l' =>
+          abbrev shifted_once =
+            cast
+              (bv_append 
+                n 
+                (S Z) 
+                (bv_tail n l) 
+                (bvc Z ff bvn)
+              )
+            by
+              cong <bv *>
+                    trans [plusS n Z]
+                          cong (S *) [plusZ n]
+          in
+          % { (to_nat (bv_shift x l)) = (to_nat (bv_shift x' shifted_once)) }
+          abbrev p0 =
+            abbrev so_erased = 
+              (vec_append (vec_tail l) (vecc ff vecn))
+            in
+            hypjoin 
+              (to_nat (bv_shift x l)) 
+              (to_nat (bv_shift x' so_erased)) 
+            by
+              x_eq
+            end
+          in
+          % { (le (to_nat (bv_shift x l)) (to_nat (bv_shift x' shifted_once)) = tt }
+          abbrev p1 =
+            [eq_le
+              (to_nat (S n) (bv_shift x n l))
+              (to_nat (S n) (bv_shift x' n shifted_once))
+              p0
+            ]
+          in
+          % { (le (to_nat (bv_shift x l)) (to_nat shifted_once)) = tt }
+          abbrev p2 = 
+            [le_trans
+              (to_nat (S n) (bv_shift x n l))
+              (to_nat (S n) (bv_shift x' n shifted_once))
+              (to_nat (S n) shifted_once)
+              p1
+              [x_IH x' n shifted_once]
+            ]
+          in
+          % { (to_nat shifted_once) = (plus (to_nat (bv_tail n l) (mult (pow2 n (to_nat (bvc Z ff bvn))) }
+          abbrev p3 =
+            [to_nat_append
+              n
+              one
+              (bv_tail n l)
+              (bvc Z ff bvn)
+            ]
+          in
+          % { (to_nat shifted_once) = (to_nat (bv_tail l)) }
+          abbrev p4 =
+            abbrev z = 
+              hypjoin (mult (pow2 n) (to_nat (vecc ff vecn))) Z by
+                [multZ (pow2 n)]
+              end
+            in
+            transs
+              p3
+              cong (plus (to_nat (bv_tail l)) *) z
+              [plusZ (to_nat n (bv_tail n l))]
+            end
+          in
+          % { (le (to_nat shifted_once) (to_nat l)) = tt }
+          abbrev one_shift_decreases =
+            [le_trans
+              (to_nat (S n) shifted_once)
+              (to_nat n (bv_tail n l))
+              (to_nat (S n) l)
+              [eq_le 
+                (to_nat (S n) shifted_once)
+                (to_nat n (bv_tail n l))
+                p4
+              ]
+              [bv_tail_le n l]
+            ]
+          in
+          [le_trans
+            (to_nat (S n) (bv_shift x n l))
+            (to_nat (S n) shifted_once)
+            (to_nat (S n) l)
+            p2
+            one_shift_decreases
+          ]
+      end
+  end.
+
+

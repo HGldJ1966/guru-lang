@@ -369,6 +369,31 @@ Define condS_tot :=
 
 Total condS condS_tot.
 
+Define condS_le :
+  Forall(b: bool)(n: nat). { (le n (condS b n)) = tt }
+  :=
+  foralli(b: bool)(n: nat).
+  case b with
+    | ff =>
+      [eq_le
+        n
+        (condS b n)
+        hypjoin n (condS b n) by b_eq end
+      ]
+    | tt =>
+      [le_trans
+        n
+        (S n)
+        (condS b n)
+        [le_S n]
+        [eq_le
+          (S n)
+          (condS b n)
+          hypjoin (S n) (condS b n) by b_eq end
+        ]
+      ]
+  end.
+
 Define condS_Z1 : Forall(b:bool)(n:nat)(u:{(condS b n) = Z}).{b = ff} :=
   induction(b:bool) by ub ign ign 
   return Forall(n:nat)(u:{(condS b n) = Z}).{b = ff} with
