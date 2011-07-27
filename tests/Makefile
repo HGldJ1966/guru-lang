@@ -329,3 +329,7 @@ X:
 test_qlist: test_qlist.g
 	guru test_qlist.g
 	gcc -m32 -DDEBUG=1 -w -o test_qlist test_qlist.c
+
+test_qappend: test_qappend.g
+	guru $<
+	gcc -m32 -DDEBUG=1 -w -o $@ test_qappend.c
