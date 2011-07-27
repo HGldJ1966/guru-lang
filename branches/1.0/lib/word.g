@@ -4,7 +4,8 @@ Include trusted "owned.g".
 
 % Set "trust_hypjoins".
 
-Define wordlen := (mult2 (mult2 (S (S (S (S (S (S (S (S Z)))))))))).
+Define wordlen_pred := (S (mult five six)) 
+Define wordlen := (S wordlen_pred).
 
 Define primitive word := <bv wordlen> <<END
 #define gdelete_word(x)
@@ -82,24 +83,7 @@ Define word0x20 := 0x20.
 Define wordlen_neq_Z : 
   { wordlen != Z }
   :=
-  abbrev sixteen = (mult two eight) in
-  abbrev sixteen_not_Z = 
-    [mult_not_zero 
-      two 
-      eight 
-      clash two Z
-      clash eight Z
-  ] 
-  in
-  transs 
-    join wordlen (mult two sixteen)
-    [mult_not_zero 
-      two 
-      sixteen 
-      clash two Z 
-      sixteen_not_Z
-    ]
-  end.
+  clash (S wordlen_pred) Z.
 
 %=============================================================================
 % word and nat
