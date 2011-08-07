@@ -209,7 +209,7 @@ public abstract class Expr {
     //  to x will be replaced with e. 
     final public Expr rewrite(Context ctxt, Expr e, Expr x, Stack boundVars)
     {
-    	if(defEq(ctxt, x, 0, true) && 
+    	if(defEq(ctxt, x, NO_APPROX, true) && 
     	   !x.containsVars(boundVars) && 
     	   !e.containsVars(boundVars))
     	{
@@ -230,7 +230,7 @@ public abstract class Expr {
     }
 
     public Expr classify(Context ctxt, int approx, boolean spec) {
-	if (approx > 0) {
+	if (approx > NO_APPROX) {
 	    System.out.println("Approximate classification for this construct "
 			       +"unimplemented: "
 			       +(new Integer(construct)));
@@ -243,7 +243,7 @@ public abstract class Expr {
        a stack overflow.  We will treat this as specificational (use the
        other classify() method to specify non-specificational). */
     public Expr classify(Context ctxt) {
-	return classify(ctxt,0,true);
+	return classify(ctxt,NO_APPROX,true);
     }
 
     // is e definitionally equal to this expr in the given ctxt.
@@ -264,12 +264,12 @@ public abstract class Expr {
     }
 
     final public boolean defEq(Context ctxt, Expr e, boolean spec) {
-	return defEq(ctxt,e,0,spec);
+	return defEq(ctxt,e,NO_APPROX,spec);
     }
 
     // specificational by default
     final public boolean defEq(Context ctxt, Expr e) {
-	return defEq(ctxt,e,0,true);
+	return defEq(ctxt,e,NO_APPROX,true);
     }
 
     /* approx level 2 means all types are considered equal; 1 means we
@@ -308,7 +308,7 @@ public abstract class Expr {
 	    ctxt.w.println("");
 	    ctxt.w.flush();
 	}	    
-	if (approx == 1)
+	if (approx == APPROX_NO_INDICES)
 	    return e1.defEqNoAnnoApprox(ctxt,e2,spec);
 	return e1.defEqNoAnno(ctxt,e2,spec);
     }
