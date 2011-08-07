@@ -333,3 +333,9 @@ test_qlist: test_qlist.g
 test_qappend: test_qappend.g
 	guru $<
 	gcc -m32 -DDEBUG=1 -w -o $@ test_qappend.c
+
+test-qwarray: test-qwarray.g
+	guru $<
+	gcc -m32 -DDEBUG=1 -w -o $@ test-qwarray.c
+	./test-qwarray
+
