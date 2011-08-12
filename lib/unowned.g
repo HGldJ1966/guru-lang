@@ -17,6 +17,9 @@ ResourceType unowned with
     if (op(r) < 256)
       release(A,r,1);
   }
+
+  #define gconsume_unowned__match gconsume_unowned
+
 END.
 
 Init ginit_unowned_unowned(#unowned x)(#unowned y).#unowned <<END

@@ -10,6 +10,8 @@ ResourceType uniquew with
   Define primitive consume_uniquew : Fun(A:type)(^#uniquew x:A).void
     := fun(A:type)(x:A).voidi <<END
   inline void gconsume_uniquew(int A, void *x) { }
+
+  #define gconsume_uniquew__match gconsume_uniquew
 END.
 
 ResourceType pinned_unique with

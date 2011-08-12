@@ -7,6 +7,7 @@ ResourceType owned affine.
 Define primitive consume_owned : Fun(spec A:type)(^#owned a:A).void :=
   fun(A:type)(a:A).voidi <<END
 #define gconsume_owned(a) a
+#define gconsume_owned__match gconsume_owned
 END.
 
 Define primitive inspect : Fun(spec A:type)(!#unowned x:A).#<owned x> A 
