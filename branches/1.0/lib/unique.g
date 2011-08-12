@@ -4,7 +4,11 @@ ResourceType unique with
   Define primitive consume_unique : Fun(A:type)(^#unique x:A).void
     := fun(A:type)(x:A).voidi <<END
   inline void gconsume_unique(int A, void *x) {
-    release(A,x,0);
+    release(A,x,1);
+  }
+
+  inline void gconsume_unique__match(int A, void *x) {
+    release(A,x,0); // we have already taken ownership of subdata when pattern-matching
   }
 END.
 

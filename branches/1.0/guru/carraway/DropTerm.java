@@ -37,7 +37,7 @@ public class DropTerm extends Expr {
 	}
 	else {
 	    del.print(w,ctxt);
-	    w.print("(");
+	    w.print("__match(");
 	    rttype.print(w,ctxt);
 	    w.print(", ");
 	    var.print(w,ctxt);
