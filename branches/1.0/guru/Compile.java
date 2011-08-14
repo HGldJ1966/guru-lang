@@ -456,7 +456,7 @@ public class Compile extends Command {
 
 	copy_needed_init_cmds(ctxt,trans_ctxt);
 
-	guru.carraway.Context cctxt = new guru.carraway.Context(".g");
+	guru.carraway.Context cctxt = new guru.carraway.Context();
 	trans_ctxt.carraway_ctxt = cctxt;
 	cctxt.copyFlags(trans_ctxt);
 
@@ -475,7 +475,7 @@ public class Compile extends Command {
 
 	Collection resource_decls = cmds_for_resource_types(trans_ctxt, cctxt);
 
-	cctxt.setFile(ifile);
+	cctxt.initOutputFiles(ifile);
 
 	guru.carraway.Command cmd;
 

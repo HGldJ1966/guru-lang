@@ -28,17 +28,14 @@ public class Context extends guru.FlagManager {
     protected HashMap dels;
     protected HashSet not_consumed;
 
-
     protected HashMap refs;
     protected Vector changed_refs;
     protected Stack refs_stack;
     protected Stack changed_refs_stack;
     protected int refnum;
 
-    public PrintStream cw;
-    public String file_suffix;
-    public Stack open_files;
-
+    public PrintStream cw; // for main output
+    public PrintStream cw2; // for output related to release_no_clear
     Sym voidref;
     Sym returnf;
     Sym zerof;    
@@ -54,8 +51,7 @@ public class Context extends guru.FlagManager {
 
     protected Vector new_typedefs;
 
-    public Context(String file_suffix) {
-	this.file_suffix = file_suffix;
+    public Context() {
 	consts = new HashMap(256);
 	vars = new HashMap(256);
 	globals = new HashMap(256);
@@ -90,7 +86,6 @@ public class Context extends guru.FlagManager {
 	global_inits = new Vector();
 
 	cw = null;
-	open_files = new Stack();
 
 	stage = 0;
 	type_num = 1; // we assume elsewhere that this is 1
@@ -98,70 +93,21 @@ public class Context extends guru.FlagManager {
 	new_typedefs = new Vector();
     }
 
-    // set the file for emitted code.  Do not mix with pushFile().
-    public String setFile(java.io.File f) {
+    public String initOutputFiles(java.io.File f) {
+	java.io.File r = new java.io.File(f.getParentFile() + "/release_no_clear.c");
 	try {
 	    cw = new PrintStream(new BufferedOutputStream(new FileOutputStream(f)));
+	    cw2 = new PrintStream(new BufferedOutputStream(new FileOutputStream(r)));
 	}
 	catch(FileNotFoundException e) {
-	    return new String("Could not open the included file.");
+	    return new String("Could not open files for writing during compilation.");
 	}
-	if (getFlag("output_ocaml"))
-	    cw.println("(* produced by carraway *)\n");
-	else {
-	    cw.println("// produced by carraway\n");
-	    cw.println("#include <stdio.h>\n");
-	    cw.println("#include <stdlib.h>\n");
-	}
-	return null;
-    }
-
-
-    // return an error message if there was a problem opening the compiler output file determined by f.
-    public String pushFile(String f) {
-	if (f.length() < 3)
-	    return new String("The included file name is too short.");
-	String suf = f.substring(f.length() - 2, f.length());
-	if (!suf.equals(file_suffix))
-	    return new String("The included file does not end with the expected suffix."
-			      +"\n\n1. the expected suffix: "+file_suffix
-			      +"\n\n2. the file name: "+f);
 	
-	String new_suf = (getFlag("output_ocaml") ? ".ml" : ".c");
-	String n = f.substring(0, f.length() - 2) + new_suf;
+	cw.println("// produced by carraway\n");
+	cw.println("#include <stdio.h>\n");
+	cw.println("#include <stdlib.h>\n");
 	
-	if (cw != null) {
-	    if (getFlag("output_ocaml"))
-		cw.println("(* Including "+n+" *)");
-	    else
-		cw.println("#include \""+n+"\"");
-	    cw.flush();
-	}
-	if (!getFlag("output_ocaml") || cw == null) {
-	    open_files.push(cw);
-	    try {
-		cw = new PrintStream(new BufferedOutputStream(new FileOutputStream(n)));
-	    }
-	    catch(FileNotFoundException e) {
-		return new String("Could not open the included file.");
-	    }
-	    if (getFlag("output_ocaml"))
-		cw.println("(* produced by carraway *)\n");
-	    else {
-		cw.println("// produced by carraway\n");
-		cw.println("#include <stdio.h>\n");
-		cw.println("#include <stdlib.h>\n");
-	    }
-	}
-
 	return null;
-    }
-
-    public void popFile() {
-	if (!getFlag("output_ocaml")) {
-	    cw.close();
-	    cw = (PrintStream)open_files.pop();
-	}
     }
 
     public void commentBox(String s) {

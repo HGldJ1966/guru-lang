@@ -66,7 +66,9 @@ public class Datatype extends Command {
         ctxt.stage = 3;
 	
         if (!ctxt.getFlag("output_ocaml")) 
-            ctxt.cw.println("#define "+tp.toString(ctxt)+" "+(new Integer(ctxt.type_num++)).toString()+"\n");
+	    // this goes in the release_no_clear.c file because both release_no_clear dependents and
+	    // release dependents need it
+            ctxt.cw2.println("#define "+tp.toString(ctxt)+" "+(new Integer(ctxt.type_num++)).toString()+"\n");
 
         if (del == null) {
 
@@ -106,19 +108,20 @@ public class Datatype extends Command {
                 // emit definition of tags for ctors
 	    
                 for (int i = 0; i < num_ctors; i++) 
-                    ctxt.cw.println("#define op_"+ctors[i].toString(ctxt)+" "+(new Integer(i)).toString()+"\n");
+                    ctxt.cw2.println("#define op_"+ctors[i].toString(ctxt)+" "+(new Integer(i)).toString()+"\n");
 	    
                 if (num_untracked == num_ctors) {
                     // this is a special case, since we do no allocation or deallocation
 		
                     for (int i = 0; i < num_ctors; i++) {
                         String ctr = ctors[i].toString(ctxt);
-                        ctxt.cw.println("#define "+ctr+"() op_"+ctr);
-                        ctxt.cw.println("#define clear_"+tpstr+"_"+ctr+"(x) \n");
+                        ctxt.cw2.println("#define "+ctr+"() op_"+ctr);
+                        ctxt.cw2.println("#define clear_"+tpstr+"_"+ctr+"(x) \n");
                     }
 		
-                    ctxt.cw.println("#define delete_"+tpstr+"(x,clear) \n"); 
-                    ctxt.cw.flush();
+                    ctxt.cw.println("#define delete_"+tpstr+"_clear(x) \n"); 
+                    ctxt.cw2.println("#define delete_"+tpstr+"_no_clear(x) \n"); 
+                    ctxt.cw2.flush();
                     return;
                 }
 	    
@@ -138,26 +141,26 @@ public class Datatype extends Command {
                         process_new_typedefs(ctxt);
                         jend = R.vars.length;
                     }
-                    ctxt.cw.println("typedef struct {");
-                    ctxt.cw.println("  int opval;");
+                    ctxt.cw2.println("typedef struct {");
+                    ctxt.cw2.println("  int opval;");
 
                     if (R != null) 
                         for (int j = 0; j < jend; j++) {
-                            F.types[j].print(ctxt.cw,ctxt);
-                            ctxt.cw.println(" "+R.vars[j].toString(ctxt)+";");
+                            F.types[j].print(ctxt.cw2,ctxt);
+                            ctxt.cw2.println(" "+R.vars[j].toString(ctxt)+";");
                         }
 
                     String ctor_tp = tpstr+"_"+ctors[i].toString(ctxt);
-                    ctxt.cw.println("} "+ctor_tp+";\n");
+                    ctxt.cw2.println("} "+ctor_tp+";\n");
 
                     // emit selectors for the ctor's struct
 
                     if (R != null) {
                         for (int j = 0; j < jend; j++) {
-                            ctxt.cw.print("#define select_"+tp.name+"_"+ctors[i].name+"_"+R.vars[j].name+"(x) ");
-                            ctxt.cw.println("((("+ctor_tp+" *)x)->"+R.vars[j].toString(ctxt)+")");
+                            ctxt.cw2.print("#define select_"+tp.name+"_"+ctors[i].name+"_"+R.vars[j].name+"(x) ");
+                            ctxt.cw2.println("((("+ctor_tp+" *)x)->"+R.vars[j].toString(ctxt)+")");
                         }
-                        ctxt.cw.println("");
+                        ctxt.cw2.println("");
                     }
 
                     String fl = "free_"+ctor_tp;
@@ -167,7 +170,7 @@ public class Datatype extends Command {
 
                     if (R == null)
                         // nothing to clear for 0-ary ctor
-                        ctxt.cw.println("#define clear_"+ctor_tp+"(x) \n");
+                        ctxt.cw2.println("#define clear_"+ctor_tp+"(x) \n");
                     else {
                         ctxt.cw.println("inline void clear_"+ctor_tp+"(void *_x) {");
                         ctxt.cw.println("  "+ctor_tp+" *x = ("+ctor_tp+" *)_x;");
@@ -187,36 +190,35 @@ public class Datatype extends Command {
                         ctxt.cw.println("}\n");
                     }
 			
-                    // emit the free list and delete function
+                    // emit the free list and delete functions (delete_clear and delete_no_clear)
 
-                    ctxt.cw.println("int "+fl+"_len = 0;");
-                    ctxt.cw.println("void *"+fl+" = (void *)0;\n");
                     ctxt.cw.println("int "+cfl+"_len = 0;");
                     ctxt.cw.println("void *"+cfl+" = (void *)0;\n");
-                    ctxt.cw.println("void delete_"+ctor_tp+"(void *_x, int clear) {");
-                    ctxt.cw.println("  if (clear) {");
-                    ctxt.cw.println("    if ("+cfl+"_len > "+FREE_LIST_MAX+") {");
-                    ctxt.cw.println("      clear_"+ctor_tp+"(_x);");
-                    ctxt.cw.println("      carraway_free(_x);");
-                    ctxt.cw.println("    }");
-                    ctxt.cw.println("    else {");
-                    ctxt.cw.println("      void **x = (void **)_x;");
-                    ctxt.cw.println("      x[0] = "+cfl+";");
-                    ctxt.cw.println("      "+cfl+" = x;");
-                    ctxt.cw.println("      "+cfl+"_len++;");
-                    ctxt.cw.println("    }");
+                    ctxt.cw.println("void delete_"+ctor_tp+"_clear(void *_x) {");
+                    ctxt.cw.println("  if ("+cfl+"_len > "+FREE_LIST_MAX+") {");
+                    ctxt.cw.println("    clear_"+ctor_tp+"(_x);");
+                    ctxt.cw.println("    carraway_free(_x);");
                     ctxt.cw.println("  }");
                     ctxt.cw.println("  else {");
-                    ctxt.cw.println("    if ("+fl+"_len > "+FREE_LIST_MAX+") ");
-                    ctxt.cw.println("      carraway_free(_x);");
-                    ctxt.cw.println("    else {");
-                    ctxt.cw.println("      void **x = (void **)_x;");
-                    ctxt.cw.println("      x[0] = "+fl+";");
-                    ctxt.cw.println("      "+fl+" = x;");
-                    ctxt.cw.println("      "+fl+"_len++;");
-                    ctxt.cw.println("    }");
+                    ctxt.cw.println("    void **x = (void **)_x;");
+                    ctxt.cw.println("    x[0] = "+cfl+";");
+                    ctxt.cw.println("    "+cfl+" = x;");
+                    ctxt.cw.println("    "+cfl+"_len++;");
                     ctxt.cw.println("  }");
                     ctxt.cw.println("}\n");
+		    
+                    ctxt.cw2.println("int "+fl+"_len = 0;");
+                    ctxt.cw2.println("void *"+fl+" = (void *)0;\n");
+                    ctxt.cw2.println("void delete_"+ctor_tp+"_no_clear(void *_x) {");
+                    ctxt.cw2.println("  if ("+fl+"_len > "+FREE_LIST_MAX+") ");
+                    ctxt.cw2.println("    carraway_free(_x);");
+                    ctxt.cw2.println("  else {");
+                    ctxt.cw2.println("    void **x = (void **)_x;");
+                    ctxt.cw2.println("    x[0] = "+fl+";");
+                    ctxt.cw2.println("    "+fl+" = x;");
+                    ctxt.cw2.println("    "+fl+"_len++;");
+                    ctxt.cw2.println("  }");
+                    ctxt.cw2.println("}\n");
 		    
                     // emit function to build data
 
@@ -259,21 +261,31 @@ public class Datatype extends Command {
 
                 }
 
-                // now emit the delete function for the datatype
+                // now emit the delete functions for the datatype
 
-                ctxt.cw.println("void delete_"+tpstr+"(void *x, int clear) {");
-                ctxt.cw.println("  switch ctor(x) {");
-                for (int i = 0; i < num_ctors; i++) {
-                    String ctr = ctors[i].toString(ctxt);
-                    ctxt.cw.println("  case op_"+ctr+": ");
-                    ctxt.cw.println("    delete_"+tpstr+"_"+ctr+"(x,clear);");
-                    ctxt.cw.println("    break;\n");
-                }
-                ctxt.cw.println("}");
-                ctxt.cw.println("}\n");
+		emitDeleteFunction(ctxt,tpstr,true);
+		emitDeleteFunction(ctxt,tpstr,false);
             }
             ctxt.cw.flush();
         } 
+    }
+
+    protected void emitDeleteFunction(Context ctxt, String tpstr, boolean clear) {
+	java.io.PrintStream cw = clear ? ctxt.cw : ctxt.cw2;
+
+	String clear_str = clear ? "_clear" : "_no_clear";
+
+	cw.println("void delete_"+tpstr+clear_str+"(void *x) {");
+        cw.println("  switch ctor(x) {");
+	for (int i = 0, num_ctors = ctors.length; i < num_ctors; i++) {
+	    String ctr = ctors[i].toString(ctxt);
+	    cw.println("  case op_"+ctr+": ");
+	    cw.println("    delete_"+tpstr+"_"+ctr+clear_str+"(x);");
+	    cw.println("    break;\n");
+	}
+	cw.println("}");
+	cw.println("}\n");
+	cw.flush();
     }
 
     public void print(java.io.PrintStream w, Context ctxt) {

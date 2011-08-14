@@ -54,8 +54,8 @@ public class Parser extends guru.ParserBase {
             c = readSet();
         else if (tryToEat("Unset"))
             c = readUnset();
-	else if (tryToEat("Include"))
-	    c = readInclude();
+	/*	else if (tryToEat("Include"))
+		c = readInclude(); */
 	else
 	    handleError("Unexpected start of a command.");
 	c.pos = pos;
@@ -177,14 +177,14 @@ public class Parser extends guru.ParserBase {
 	return s;
     }
     
-    protected Include readInclude() throws IOException
+    /*protected Include readInclude() throws IOException
     {
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing a Include.");
 	Include cmd = new Include(new File(readString()), root);
 	eat(".", "Include");
 	return cmd;
-    }
+	}*/
 
     static public Sym[] toSymArray(ArrayList a) {
 	int iend = a.size();
