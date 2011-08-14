@@ -163,13 +163,29 @@ public class Datatype extends Command {
                     String fl = "free_"+ctor_tp;
                     String cfl = "clear_free_"+ctor_tp;
 		
-                    // emit prototype for the clear() function
-		    
+                    // emit the clear function
+
                     if (R == null)
                         // nothing to clear for 0-ary ctor
                         ctxt.cw.println("#define clear_"+ctor_tp+"(x) \n");
-                    else 
-                        ctxt.cw.println("void clear_"+ctor_tp+"(void *_x);");
+                    else {
+                        ctxt.cw.println("inline void clear_"+ctor_tp+"(void *_x) {");
+                        ctxt.cw.println("  "+ctor_tp+" *x = ("+ctor_tp+" *)_x;");
+                        for (int j = 0; j < jend; j++) {
+                            String v = R.vars[j].toString(ctxt);
+                            Expr Tj = F.types[j];
+                            if (Tj.consumable(ctxt)) {
+                                Sym Tjh = (Tj.construct == Expr.PIN ? ((Pin)Tj).s : (Sym)Tj);
+                                Sym df = ctxt.getDropFunction(Tjh);
+                                Expr rttype = R.types[j];
+                                String rttypestr = rttype.toString(ctxt);
+                                if (ctxt.isVar((Sym)rttype))
+                                    rttypestr = "x->"+rttypestr;
+                                ctxt.cw.println("  "+df.toString(ctxt)+"("+rttypestr+", x->"+v+");");
+                            }
+                        }
+                        ctxt.cw.println("}\n");
+                    }
 			
                     // emit the free list and delete function
 
@@ -202,27 +218,6 @@ public class Datatype extends Command {
                     ctxt.cw.println("  }");
                     ctxt.cw.println("}\n");
 		    
-                    // emit the clear function
-
-                    if (R != null)  {
-                        ctxt.cw.println("void clear_"+ctor_tp+"(void *_x) {");
-                        ctxt.cw.println("  "+ctor_tp+" *x = ("+ctor_tp+" *)_x;");
-                        for (int j = 0; j < jend; j++) {
-                            String v = R.vars[j].toString(ctxt);
-                            Expr Tj = F.types[j];
-                            if (Tj.consumable(ctxt)) {
-                                Sym Tjh = (Tj.construct == Expr.PIN ? ((Pin)Tj).s : (Sym)Tj);
-                                Sym df = ctxt.getDropFunction(Tjh);
-                                Expr rttype = R.types[j];
-                                String rttypestr = rttype.toString(ctxt);
-                                if (ctxt.isVar((Sym)rttype))
-                                    rttypestr = "x->"+rttypestr;
-                                ctxt.cw.println("  "+df.toString(ctxt)+"("+rttypestr+", x->"+v+");");
-                            }
-                        }
-                        ctxt.cw.println("}\n");
-                    }
-
                     // emit function to build data
 
                     ctxt.cw.print("void *"+ctors[i].toString(ctxt)+"(");

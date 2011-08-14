@@ -18,7 +18,7 @@ ResourceType unowned with
       release(A,r,1);
   }
 
-  #define gconsume_unowned__match gconsume_unowned
+  inline void gconsume_unowned__match(int A, void *r) { gconsume_unowned(A,r); }
 
 END.
 

@@ -27,8 +27,8 @@ public class Include extends Command {
 
     public static void start_emit(Context ctxt) {
 	ctxt.cw.println("void release(int tp, void *x, int clear);\n");
-	ctxt.cw.println("#define carraway_malloc(x) malloc(x)");
-	ctxt.cw.println("#define carraway_free(x) free(x)");
+	ctxt.cw.println("void *carraway_malloc(int x) { return malloc(x); }");
+	ctxt.cw.println("void carraway_free(void *x) { free(x); }");
 	ctxt.cw.println("#define guru_malloc(x) carraway_malloc(x)");
 	ctxt.cw.println("#define guru_free(x) carraway_free(x)");
 	
