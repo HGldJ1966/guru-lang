@@ -5,8 +5,6 @@ public class ResourceType extends Command {
 
     public Primitive drop;
 
-    protected static boolean first_attribute = true;
-
     public ResourceType() {
 	super(ATTRIBUTE);
     }
@@ -51,23 +49,6 @@ public class ResourceType extends Command {
 	else
 	    ctxt.addResourceType(s);
 
-	if (first_attribute) {
-	    if (!ctxt.getFlag("output_ocaml")) {
-		ctxt.cw.println("#include <limits.h>\n\n"
-				+"#define ctor(x) (*((int *)x) & 255)\n"
-				+"#define op(x) (*((int *)x))\n\n"
-				+"void inc(void *x) {\n"
-				+"  unsigned tmp = *((int *)x) | 255;\n"
-				+"  if (tmp != UINT_MAX) *((int *)x) = *((int *)x) + 256;\n"
-				+"}\n\n"
-				+"void dec(void *x) {\n"
-				+"  unsigned tmp = *((int *)x) | 255;\n"
-				+"  if (tmp != UINT_MAX) *((int *)x) = *((int *)x) - 256;\n"
-				+"}\n");
-		ctxt.cw.flush();
-	    }
-	    first_attribute = false;
-	}
 	if (drop != null)
 	    drop.process(ctxt);
     }

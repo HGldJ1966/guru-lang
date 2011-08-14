@@ -6,7 +6,7 @@ public class Main {
 
     public static void main(String[] args)
     {
-	Context ctxt = new Context(".w");
+	Context ctxt = new Context();
 
 	boolean processed_one = false;
 
@@ -22,8 +22,10 @@ public class Main {
 		    System.out.println("Command-line error: multiple input files were given on the command line.\n");
 		    System.exit(1);
 		}
-		Include cmd = new Include(args[i], true);
-		cmd.process(ctxt);
+		// Include cmd = new Include(args[i], true);
+		// cmd.process(ctxt);
+		System.out.println("Direct compilation for carraway is currently disabled.  Please go through Guru.\n");
+		System.exit(1);
 	    }
     }
 }

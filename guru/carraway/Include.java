@@ -7,80 +7,99 @@ import java.util.Hashtable;
 import java.util.Collection;
 import java.util.Iterator;
 
-public class Include extends Command {
-    protected IncludeHelper h;
-    public boolean the_cmd_line_file;
-    
+public class Include {
     public static int MAX_RELEASE_CALL_DEPTH = 1024;
 
-    public Include(String filename, boolean the_cmd_line_file) {
-	super(INCLUDE);
-	h = new IncludeHelper(filename);
-	this.the_cmd_line_file = the_cmd_line_file;
-    }
-
-    public Include(File f, File root) {
-	super(INCLUDE);
-	h = new IncludeHelper(f,root);
-	the_cmd_line_file = false;
-    }
-
     public static void start_emit(Context ctxt) {
-	ctxt.cw.println("void release(int tp, void *x, int clear);\n");
 	ctxt.cw.println("void *carraway_malloc(int x) { return malloc(x); }");
 	ctxt.cw.println("void carraway_free(void *x) { free(x); }");
 	ctxt.cw.println("#define guru_malloc(x) carraway_malloc(x)");
 	ctxt.cw.println("#define guru_free(x) carraway_free(x)");
+	ctxt.cw.println("void release_clear(int tp, void *x);\n\n");
 	
+	if (!ctxt.getFlag("output_ocaml")) 
+	    ctxt.cw.println("#include <limits.h>\n\n"
+			    +"#define ctor(x) (*((int *)x) & 255)\n"
+			    +"#define op(x) (*((int *)x))\n\n"
+			    +"void inc(void *x) {\n"
+			    +"  unsigned tmp = *((int *)x) | 255;\n"
+			    +"  if (tmp != UINT_MAX) *((int *)x) = *((int *)x) + 256;\n"
+			    +"}\n\n"
+			    +"void dec(void *x) {\n"
+			    +"  unsigned tmp = *((int *)x) | 255;\n"
+			    +"  if (tmp != UINT_MAX) *((int *)x) = *((int *)x) - 256;\n"
+			    +"}\n");
+
+	ctxt.cw.println("#include \"release_no_clear.c\"\n\n");
+
 	ctxt.cw.flush();
     }
 
+    protected static void emit_release_switch_statement(Context ctxt, boolean clear, String eol) {
+	java.io.PrintStream cw = clear ? ctxt.cw : ctxt.cw2;
+
+	String clear_str = clear ? "_clear" : "_no_clear";
+
+	Collection opaque_dtps = ctxt.getOpaqueDatatypes();
+	Collection ind_dtps = ctxt.getInductiveDatatypes();
+
+	cw.println("switch (tp) {"+eol);
+
+	Iterator it = null;
+
+	if (clear) {
+	    it = opaque_dtps.iterator();
+	    while (it.hasNext()) {
+		Sym tp = (Sym)it.next();
+		cw.println("  case "+tp.toString(ctxt)+": "+ctxt.getDeleteFunction(tp).toString(ctxt)+"(x); break;"+eol);
+	    }
+	}
+	// we do not delete primitive types when releasing but not clearing
+
+	it = ind_dtps.iterator();
+	while (it.hasNext()) {
+	    Sym tp = (Sym)it.next();
+	    String tpstr = tp.toString(ctxt);
+	    cw.println("  case "+tpstr+": delete_"+tpstr+clear_str+"(x); break;"+eol);
+	}
+	cw.println("}"+eol);
+	cw.flush();
+    }
+
     public static void finish_emit(Context ctxt) {
-	// define release()
+	// define release() and release_no_clear()
 
 	ctxt.stage = 3;
 	
-	Collection opaque_dtps = ctxt.getOpaqueDatatypes();
-	Collection ind_dtps = ctxt.getInductiveDatatypes();
+	//	ctxt.cw2.println("inline void release_no_clear(int tp, void *x) {\n");
+	ctxt.cw2.println("#define release_no_clear(tp, x) do {\\");
+	emit_release_switch_statement(ctxt,false,"\\");
+	ctxt.cw2.println("} while(0)\n\n");
 
 	ctxt.cw.println("void **release_worklist = 0;");
 	ctxt.cw.println("int release_call_depth = 0;");
 	ctxt.cw.println("");
-	ctxt.cw.println("void release(int tp, void *x, int clear) {");
+	ctxt.cw.println("void release_clear(int tp, void *x) {");
 	ctxt.cw.println("int worklist_initially_empty;\n"+
 			"void **node;\n"+
 			"if (release_call_depth > "+MAX_RELEASE_CALL_DEPTH+") {\n"+
 			"  // we must queue this release request\n"+
-			"  node = guru_malloc(4*sizeof(void *));\n"+
+			"  node = guru_malloc(3*sizeof(void *));\n"+
 			"  node[0] = tp;\n"+
-			"  node[1] = clear;\n"+
-			"  node[2] = x;\n"+
-			"  node[3] = release_worklist;\n"+
+			"  node[1] = x;\n"+
+			"  node[2] = release_worklist;\n"+
 			"  release_worklist = node;\n"+
 			"  return;\n"+
 			"}\n"+
 			"\n"+
 			"release_call_depth++;\n"+
 			"do {\n");
-	ctxt.cw.println("switch (tp) {");
-	Iterator it = opaque_dtps.iterator();
-	while (it.hasNext()) {
-	    Sym tp = (Sym)it.next();
-	    ctxt.cw.println("  case "+tp.toString(ctxt)+": "+ctxt.getDeleteFunction(tp).toString(ctxt)+"(x); break;");
-	}
-	it = ind_dtps.iterator();
-	while (it.hasNext()) {
-	    Sym tp = (Sym)it.next();
-	    String tpstr = tp.toString(ctxt);
-	    ctxt.cw.println("  case "+tpstr+": delete_"+tpstr+"(x,clear); break;");
-	}
-	ctxt.cw.println("}");
+	emit_release_switch_statement(ctxt,true,"");
 	ctxt.cw.println("if (release_worklist) {\n"+
 			"  node = release_worklist;\n"+
 			"  tp = node[0];\n"+
-			"  clear = node[1];\n"+
-			"  x = node[2];\n"+
-			"  release_worklist = node[3];\n"+
+			"  x = node[1];\n"+
+			"  release_worklist = node[2];\n"+
 			"  carraway_free(node);\n"+
 			"}\n"+
 			"else\n"+
@@ -92,7 +111,7 @@ public class Include extends Command {
 	// write main() to call all the inits.
 
 	Collection inits = ctxt.getGlobalInits();
-	it = inits.iterator();
+	Iterator it = inits.iterator();
 	ctxt.cw.println("int main(int argc, char **argv) {");
 
 	while(it.hasNext()) {
@@ -102,68 +121,8 @@ public class Include extends Command {
 	ctxt.cw.println("return 0;");
 	ctxt.cw.println("}\n");
 	ctxt.cw.flush();
+	ctxt.cw2.flush();
     }
 
-    public void process(Context ctxt) {
-	String err = h.process(ctxt);
 
-	if (err != null)
-	    handleError(ctxt,err);
-
-	pos = new Position(0,0,h.f.getName());
-
-	if (h.included)
-	    // we have already included this file
-	    return;
-
-	Parser P = new Parser(false);
-
-	try {
-	    String s = h.ifile.getPath();
-	    P.openFile(s);
-	    String err1 = ctxt.pushFile(s);
-	    if (err1 != null)
-		handleError(ctxt, err1);
-	} 
-	catch (Exception e) {
-	    handleError(ctxt, "Error opening file:\n"+e.toString());
-	}
-	P.setContext(ctxt);
-
-	Command c = null;
-
-	// initial declarations go in the top-level output file
-
-	if (the_cmd_line_file && !ctxt.getFlag("output_ocaml")) 
-	    start_emit(ctxt);
-	
-	while(true) {
-	    try {
-		c = P.readCommand();
-	    } 
-	    catch (Exception e) {
-                e.printStackTrace();
-		handleError(ctxt, "Error reading file:\n"+e.toString());
-	    }
-
-	    if (c == null)
-		break;
-	    c.process(ctxt);
-	    if (ctxt.getFlag("print_parsed")) {
-		c.print(ctxt.w, ctxt);
-		ctxt.w.println("");
-		ctxt.w.flush();
-	    }
-	}
-	if (the_cmd_line_file) 
-	    finish_emit(ctxt);
-
-	ctxt.popFile();
-    	h.finished(ctxt);
-    }
-    
-    public void print(java.io.PrintStream w, 
-		      Context ctxt) {
-	if (h.included) w.println("Include \"" + h.ifile.getPath() + "\".");
-    }
 }
