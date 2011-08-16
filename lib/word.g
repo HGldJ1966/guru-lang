@@ -410,6 +410,10 @@ void *gword_inc(unsigned int c) {
 }
 END.
 
+Define primitive word_inc_wrap : Fun(w:word).word <<END
+#define gword_inc_wrap(c) (c+1)
+END.
+
 Define word_inc_tot :=
   foralli(b:word).
     abbrev r = terminates (bv_inc spec wordlen b) by bv_inc_tot in
@@ -424,7 +428,7 @@ Define word_inc_tot :=
 
 Total word_inc word_inc_tot.
 
-Define word_inc2 :=
+Define primitive word_inc2 :=
   fun(b:word).
     match (word_inc b) with
       mk_word_inc_t b' carry => 
@@ -432,7 +436,17 @@ Define word_inc2 :=
           ff => b'
         | tt => abort word
         end
-    end.
+    end
+<<END
+#include <limits.h>
+inline unsigned int gword_inc2(unsigned int c) {
+  if (c == UINT_MAX) {
+    fprintf(stderr,"Overflow from word_inc2.\n");
+    exit(1);
+  }
+  return (c+1);
+}
+END.
 
 Define word_inc2_word_inc
   : Forall(w w':word)(u:{ w' = (word_inc2 w) }).
