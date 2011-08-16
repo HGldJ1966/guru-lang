@@ -254,6 +254,7 @@ public class Datatype extends Command {
                     if (R != null) 
                         for (int j = 0; j < jend; j++) {
                             String v = R.vars[j].toString(ctxt);
+                            //ctxt.cw.print("  if (x->"+v+" != "+v+")");
                             ctxt.cw.println("  x->"+v+" = "+v+";");
                         }
                     ctxt.cw.println("  return x;");
