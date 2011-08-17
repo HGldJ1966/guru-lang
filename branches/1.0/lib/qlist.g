@@ -1,17 +1,12 @@
 Include "unique.g".
+Include "unique_owned.g".
 Include "ref.g".
-Include "eqref.g".
+%Include "eqref.g".
 Include trusted "word.g".
 
 Inductive qlist : Fun(A:type).type :=
   qnil : Fun(A:type).#unique <qlist A>
 | qcons : Fun(A:type)(#unique a:A)(#unique l:<qlist A>). #unique <qlist A>.
-
-% temporarily added by Duckki
-Define primitive inspect_uniquew : Fun(spec A:type)(!#uniquew a:A).#<unique_owned a> A :=
-  fun(spec A:type)(a:A).a <<END
-#define ginspect_uniquew(a) a
-END.
 
 Define qappend : Fun(A:type)(#unique l1 l2:<qlist A>). #unique <qlist A> :=
 	fun qappend(A:type)(#unique l1 l2:<qlist A>) : #unique <qlist A>.
@@ -33,17 +28,14 @@ Define qlist_replace_ref := fun qlist_replace_ref
   		ff
   		end
   | qcons _ r l' =>
-  		let a = (read_ref A (inspect_uniquew <ref A> r)) in
-  		match (eqref A x a) with
+  		match (test_ref A (inspect_uniquew <ref A> r) x) with
   			ff =>
   				do
-  				(consume_unowned A a)
   				(consume_uniquew <ref A> r)
   				(qlist_replace_ref A x y l')
   				end
   		| tt =>
 					do
-  				(consume_unowned A a)
 					(consume_uniquew <qlist <ref A>> l')
 					(write_ref_once A y r)
 					tt
@@ -59,10 +51,10 @@ Define qlist_erase_ref := fun
   match l with
   	qnil _ => (qnil <ref A>)
   | qcons _ r l' =>
-  		let a = (read_ref A (inspect_unique <ref A> r)) in
-  		match (eqref A x a) with
+  		match (test_ref A (inspect_unique <ref A> r) x) with
   			ff =>
 					match (get_uniquew <qlist <ref A>> l') with mk_get_uniquew_t _ l'_pinned l'_w =>
+			  	let a = (read_ref A (inspect_unique <ref A> r)) in
 					match (qlist_replace_ref A x a l'_w) with
 						ff =>
 							let l'' = (unpin_unique <qlist <ref A>> l'_pinned) in
@@ -76,13 +68,11 @@ Define qlist_erase_ref := fun
 					end
   		| tt =>
   				do
-  				(consume_unowned A a)
 					(consume_unique <ref A> r)
   				l'
   				end
   		end
   end
-  .
 
 Define qlength_word_h :=  fun qlength_word_h(A:type)(^#unique_owned l:<qlist A>)(i:word) : word.
   match l with

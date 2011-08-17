@@ -1,5 +1,6 @@
 Include "uniquew.g".
 Include "unique_owned.g".
+Include "bool.g"
 
 Inductive ref : Fun(A:type).type :=
   mk_ref : Fun(A:type)(#unowned a:A).#unique <ref A>.
@@ -37,4 +38,11 @@ Define primitive write_ref_once : Fun(A:type)(#unowned a:A)(^#uniquew r:<ref A>)
     *tmp = a;
     return r;
   }
+END.
+
+Define primitive test_ref : Fun(spec A:type)(^#unique_owned r:<ref A>)(!#unowned a:A).bool <<END
+inline unsigned gtest_ref(void* r, void* a) {
+	void* tmp = select_ref_mk_ref_a(r);
+	return (tmp == a)? gtt(): gff();
+}
 END.
