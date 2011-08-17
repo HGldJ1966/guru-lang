@@ -5,6 +5,7 @@
 % nodes.n
 
 Include "unique.g".
+Include "unique_owned.g".
 
 ResourceType uniquew with
   Define primitive consume_uniquew : Fun(A:type)(^#uniquew x:A).void
@@ -50,3 +51,7 @@ Define primitive unpin_unique : Fun(A:type)(#pinned_unique aa : A).#unique A  <<
   }
 END.
 
+Define primitive inspect_uniquew : Fun(spec A:type)(!#uniquew a:A).#<unique_owned a> A :=
+  fun(spec A:type)(a:A).a <<END
+#define ginspect_uniquew(a) a
+END.
