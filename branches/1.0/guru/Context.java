@@ -37,6 +37,10 @@ public class Context extends FlagManager {
     protected HashMap drop_func_defs;
     protected HashMap deps_to_name;
 
+	// The set of all unnamed lemmas established
+	// in the current context using the lemma construct
+    final public LemmaSet lemmaSet;
+    
     public Vector initCmds;
     public guru.carraway.Context carraway_ctxt;
 
@@ -83,6 +87,8 @@ public class Context extends FlagManager {
 	drop_func_defs = new HashMap(256);
         deps_to_name = new HashMap(1024);
 
+    lemmaSet = new LemmaSet(this);
+    
 	star = new Star();
 	starstar = new StarStar();
 	type = new Type();

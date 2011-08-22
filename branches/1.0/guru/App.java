@@ -130,7 +130,7 @@ public class App extends Expr{
 	}
 
 	cl = cl.defExpandTop(ctxt, false, spec);
-	Expr err_tgt = ((X[arg].construct == VAR || X[arg].construct == CONST)
+	Expr err_tgt = ((X[arg].construct == VAR || X[arg].construct == CONST || X[arg].construct == LEMMA_MARK)
 			? this : X[arg]);
 	if (cl.construct != expected_construct)
 	    err_tgt.handleError
@@ -145,7 +145,7 @@ public class App extends Expr{
 	// if we are doing approximate checking and the argument is a proof
 	// (including !, which could also be for a dropped type), then
 	// we do not type check that argument.
-
+	
 	if (approx == NO_APPROX || (!isTypeOrKind(ctxt)
 				    && !X[arg].isProof(ctxt)
 				    && X[arg].construct != BANG)) {
@@ -164,6 +164,11 @@ public class App extends Expr{
 		ctxt.w.flush();
 	    }
 
+	    if (X[arg].construct == LEMMA_MARK)
+	    {
+	    	LemmaMark lm = (LemmaMark)X[arg];
+	    	lm.formula = e.types[0];
+	    }
 	    Expr xc = apply_classifier_classify_arg(ctxt,arg,X[arg], approx, spec);
 	    
 	    if (ctxt.getFlag("debug_classify_apps")) {
@@ -172,7 +177,7 @@ public class App extends Expr{
 			       +"\n2. "+xc.toString(ctxt));
 		ctxt.w.flush();
 	    }
-
+	    
 	    if (!apply_classifier_types_defeq(ctxt, arg, e.types[0], xc, approx, spec))
 		err_tgt.handleError
 		    (ctxt,
