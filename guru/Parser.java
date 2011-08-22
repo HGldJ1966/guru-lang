@@ -173,6 +173,12 @@ public class Parser extends ParserBase {
 	    case Expr.CABBREV:
 	    	e = readAbbrev( Abbrev.fAbbrevClassify);
 	    	break;
+	    case Expr.LEMMA:
+	    	e = readLemma();
+	    	break;
+	    case Expr.LEMMA_MARK:
+	    	e = readLemmaMark();
+	    	break;
 	    case Expr.MATCH:
 		e = readMatch();
 		break;
@@ -866,15 +872,23 @@ public class Parser extends ParserBase {
     {
 	int construct = eatKeyword();
 	if (!isX(construct))
-	    handleError("Expected a term, type, or proof.");
+	    handleError("Expected a term, type, kind, or proof.");
         return readAny(construct);
+    }
+    
+    protected Expr readArg() throws IOException
+    {
+    	int construct = eatKeyword();
+    	if(!isX(construct) && construct != Expr.LEMMA_MARK)
+    		handleError("Expected a term, type, kind, proof, or lemma mark.");
+    	return readAny(construct);
     }
     
     protected Expr readY() throws IOException
     {
 	int construct = eatKeyword();
 	if (!isY(construct))
-	    handleError("Expected a term, type, or proof.");
+	    handleError("Expected a type, kind, or term.");
         return readAny(construct);
     }
     
@@ -1254,7 +1268,7 @@ public class Parser extends ParserBase {
         
         while(!tryToEat("]"))
         {
-            theT.add(readX());
+            theT.add(readArg());
         
 	    if (!eat_ws())
 		handleError("Unexpected end of input parsing a proof"
@@ -1856,6 +1870,32 @@ protected TerminatesCase readTerminatesCase() throws IOException
         Abbrev ret = new Abbrev(flags,x,U,G);
 	ret.pos = pos;
 	return ret;
+    }
+    
+    protected Lemma readLemma() throws IOException 
+    {
+    	Position pos = getPos();
+    	
+    	if (!eat_ws())
+    	    handleError("Unexpected end of input parsing a abbrev term.");
+
+    	Expr lemma = readProof();
+    	
+    	eat("in", "lemma term");
+    	
+    	Expr body = readProof();
+    	
+    	Lemma ret = new Lemma(lemma, body);
+    	ret.pos = pos;
+    	return ret;    	
+    }
+    
+    protected LemmaMark readLemmaMark()
+    {
+    	Position pos = getPos();
+    	LemmaMark ret = new LemmaMark();
+    	ret.pos = pos;
+    	return ret;
     }
     
     protected Const readBindingConst() throws IOException
@@ -2696,6 +2736,8 @@ protected TerminatesCase readTerminatesCase() throws IOException
 		keywordTree.add( "abbrev", Expr.ABBREV );
 		keywordTree.add( "eabbrev", Expr.EABBREV );
 		keywordTree.add( "cabbrev", Expr.CABBREV );
+		keywordTree.add( "lemma", Expr.LEMMA );
+		keywordTree.add( "##", Expr.LEMMA_MARK );
 		keywordTree.add( "match", Expr.MATCH );
 		keywordTree.add( "Fun", Expr.FUN_TYPE );
 		keywordTree.add( "type", Expr.TYPE );

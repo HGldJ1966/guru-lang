@@ -9,10 +9,15 @@ public class Abbrev extends Expr{
 	static final int	fAbbrevClassify = 0x2;
 	
 	int	flags;
+	// The name of the abbreviation.
     public Var x;
+    // The expression that the abbreviation has been defined as.
     public Expr U;
+    // The scope of the abbreviation i.e. the expression in which 
+    // the abbreviation may be used.
     public Expr G;
-    protected Expr subst;	// cache for substituted version of G
+    // cache for substituted version of G
+    protected Expr subst;	
 
     public Abbrev(int f, Var x, Expr U, Expr G) {
 	super(ABBREV);
