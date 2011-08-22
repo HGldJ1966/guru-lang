@@ -86,7 +86,11 @@ public class Lemma extends Expr {
 	protected void do_print(PrintStream w, Context ctxt) {
 	  w.print("lemma ");
 	  lemmaProof.print(w, ctxt);
-	  //body.print(w,ctxt.addTermCtor(c, d, type))
+	  w.print(" in ");
+	  Expr formula = lemmaProof.classify(ctxt);
+	  ctxt.lemmaSet.addLemma(formula);
+	  body.print(w,ctxt);
+	  ctxt.lemmaSet.removeLemma(formula);
 	}
 
 	//Override from Expr
