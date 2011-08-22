@@ -10,7 +10,7 @@ import java.io.PrintStream;
  * A lemma proof appears in source code as "lemma p0 in p1", where p0 and 
  * p1 are proofs.
  * 
- * Let F be the type of p0 under context P. If p1 has type T under context
+ * Let F be the type of p0 under context C. If p1 has type T under context
  * C,F, then the lemma term has type T under context C.
  * 
  * As an example, suppose we have a proof div_le, which proves the
