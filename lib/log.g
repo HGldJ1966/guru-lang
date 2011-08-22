@@ -1,12 +1,12 @@
 %=============================================================================
-%- [debug logging]
+%- [logging to stderr stream]
 We would like to print to stderr without any side effects in the
-computation for debug purposes. I'm experimenting with some printing
-functions, which return type is void. Technically, these loggings are
-carraway resource annotations. But, effectively, they can describe
-harmless side effects.
+computation for debugging or other purposes. I'm experimenting with some
+printing functions, which return type is void. Technically, these
+loggings are carraway resource annotations. But, effectively, they can
+describe harmless side effects.
 Also, it would be handy if we can control whether it really prints or
-not using a compiler flag, namely DEBUG. (see Makefile)
+not using a compiler flag, namely GURU_LOG.
 
 - basic functions
 log_char, log_string
@@ -38,7 +38,7 @@ Define primitive log_char := fun(#untracked c:char). voidi <<END
     if (c == '\n')
       fflush( stderr );	// automatic flushing inspired by clog in C++
   }
-  #ifdef DEBUG
+  #ifdef GURU_LOG
   #define glog_char( c )		do_log_char( c )
   #else
   #define glog_char( c )
