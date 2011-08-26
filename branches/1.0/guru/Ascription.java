@@ -20,9 +20,9 @@ import java.io.PrintStream;
  * of the proof from the details.
  * 
  * An ascription can also be used to refer to a subproof by formula rather than
- * a programmer-given name. Instead of creating an abbreviation for a subproof, 
- * one could insert the subproof into the context using the lemma construct. 
- * The subproof could then be referred to inside the lemma body using an 
+ * by programmer-given name. Instead of creating an abbreviation for a subproof, 
+ * one can insert the subproof into the context using the lemma construct. 
+ * The subproof can then be referred to inside the lemma body using an 
  * ascripted lemma mark.
  */
 public class Ascription extends Expr {
