@@ -5,13 +5,13 @@ import java.io.PrintStream;
 /* 
  * A proof construct which allows allows an unnamed lemma to be proven
  * and referenced later; such referencing is done by putting the lemma mark 
- * token, ##, in positions where proofs of the unnamed lemma is expected.
+ * token, ##, in positions where proofs of the unnamed lemma are expected.
  * 
  * A lemma proof appears in source code as "lemma p0 in p1", where p0 and 
  * p1 are proofs.
  * 
- * Let F be the type of p0 under context C. If p1 has type T under context
- * C,F, then the lemma term has type T under context C.
+ * Let F be the classifier of p0 under context C. If p1 has classifeir T under 
+ * context C,F, then the lemma expression has classifier T under context C.
  * 
  * As an example, suppose we have a proof div_le, which proves the
  * formula "Forall(a b: nat)(u: { b != Z} ). { (le (div a b) a) = tt }". 
@@ -28,9 +28,9 @@ import java.io.PrintStream;
  * In the above code, div_le is instantiated using ## as its third argument.
  * Since div_le expects a proof of the formula "{ two != Z }" in that position,
  * [div_le a two ##] will only be considered well typed if an unnamed proof
- * of formula { two != Z } is in the context that [div_le a two ##] is typechecked
+ * of formula { two != Z } is in the context that [div_le a two ##] is classified
  * under. Such a formula does exist in the context due to our use of the lemma
- * construct; hence, our proof is well typed.
+ * construct; hence, our proof is well classified.
 */
 public class Lemma extends Expr {
 	

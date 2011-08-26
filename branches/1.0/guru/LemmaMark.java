@@ -2,22 +2,34 @@ package guru;
 
 import java.io.PrintStream;
 
-/* A syntactic construct which can be used in proof argument positions in order
- * to reference proofs of formulas which have been established earlier using
- * the lemma construct (see Lemma.java).
+/* A construct, appearing in source as "##", which can be used to reference 
+ * proofs of unnamed formulas that are contained in the current context's 
+ * lemma set. (See LemmaSet.java.)
  *   
- * When an application is typechecked, an occurrence of ## in an argument 
- * position will be considered well-typed iff the formal parameter for that
- * position is a proof of some formula that is currently in the context as 
- * an unnamed lemma.
+ * Before ## is classified, it inherits an expected formula from its parent
+ * in the syntax tree. This is only possible if the lemma mark's parent
+ * determines the classifier of the expression which must appear in the position
+ * that the lemma mark occupies; this is the case when the mark's parent expression
+ * is either an ascription or an application.
  * 
- * Occurrences of ## outside of applications are illegal.
+ * For example, in the expression
+ * ": { (S (S n')) != Z } ##"
+ * the lemma mark inherits the classifer { (S (S n')) != Z } from its 
+ * parent node, which is an ascription.
+ * 
+ * In the expression
+ * "[lt_implies_le b' a' ##]"
+ * the lemma mark inherits a classifier from the application.
+ * 
+ * If the lemma mark's inherited classifer is a formula contained in the classifying 
+ * context's lemma set, the lemma mark's classifier is its inherited classifier. 
+ * Otherwise, the lemma mark is not considered well typed.
 */
 public class LemmaMark extends Expr {
 
-	// The formula type that this lemma mark must have in order to typecheck, 
-	// inherited from the application that this lemma mark occurs as an argument
-	// in.
+	// The formula type that this lemma mark must have in order to classify, 
+	// inherited from the expression that this lemma mark is a direct subexpression 
+	// of.
 	public Expr formula;
 	
 	public LemmaMark()

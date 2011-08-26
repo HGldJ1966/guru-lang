@@ -106,6 +106,7 @@ public abstract class Expr {
 	public static final int COMPILE_AS = 90; // term
 
 	public static final int LEMMA_MARK = 91;
+	public static final int ASCRIPTION = 92;
 
 	public static final int LAST = 200;
 
@@ -493,6 +494,7 @@ public abstract class Expr {
 
 	public static boolean isProof(int construct) {
 		switch (construct) {
+		case ASCRIPTION:
 		case VAR:
 		case BANG:
 		case CONST:
@@ -535,6 +537,7 @@ public abstract class Expr {
 
 	public static boolean isTerm(int construct) {
 		switch (construct) {
+		case ASCRIPTION:
 		case VAR:
 		case CONST:
 		case VOIDI:
@@ -581,6 +584,8 @@ public abstract class Expr {
 		Expr tmp = defExpandTop(ctxt);
 		if (tmp.construct == VAR)
 			return ctxt.getClassifier((Var) tmp).isTypeOrKind(ctxt);
+		if (tmp.construct == ASCRIPTION)
+			return ((Ascription)tmp).target.isTerm(ctxt);
 		if (tmp.construct == CONST)
 			return ctxt.isTermCtor((Const) tmp);
 
@@ -608,6 +613,8 @@ public abstract class Expr {
 		Expr tmp = defExpandTop(ctxt);
 		if (tmp.construct == VAR)
 			return ctxt.isAssumption((Var) tmp);
+		if (tmp.construct == ASCRIPTION)
+			return ((Ascription)tmp).target.isProof(ctxt);
 		if (tmp.construct == CONST)
 			return false;
 
