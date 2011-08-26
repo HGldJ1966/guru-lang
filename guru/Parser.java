@@ -128,6 +128,9 @@ public class Parser extends ParserBase {
 	Position pos = getPos();
 	switch(construct)
             {
+        case Expr.ASCRIPTION:
+		e = readAscription();
+		break;
 	    case Expr.VAR:
 		e = readIdentifier(false);
 		break;
@@ -1936,6 +1939,13 @@ protected TerminatesCase readTerminatesCase() throws IOException
 	return (Var)readIdentifier(true);
     }
 
+    protected Expr readAscription() throws IOException
+    {
+    	Expr classifier = readA();
+    	Expr target = readArg();
+    	return new Ascription(classifier, target);
+    }
+    
     protected Expr readIdentifier(boolean binding_occurrence) 
 	throws IOException
     {
@@ -2723,6 +2733,7 @@ protected TerminatesCase readTerminatesCase() throws IOException
 	
 	static {
 		keywordTree = new DiscriminationTree();
+		keywordTree.add( ":", Expr.ASCRIPTION);
 		keywordTree.add( "**", Expr.STARSTAR );
 		keywordTree.add( "*", Expr.STAR );
 		keywordTree.add( "do", Expr.DO );
