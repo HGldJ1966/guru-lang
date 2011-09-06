@@ -7,11 +7,10 @@ import java.io.PrintStream;
  * and referenced later; such referencing is done by putting the lemma mark 
  * token, ##, in positions where proofs of the unnamed lemma are expected.
  * 
- * A lemma proof appears in source code as "lemma p0 in p1", where p0 and 
- * p1 are proofs.
- * 
- * Let F be the classifier of p0 under context C. If p1 has classifeir T under 
- * context C,F, then the lemma expression has classifier T under context C.
+ * A lemma abstract syntax node has the form "lemma p in b", where p and b are 
+ * proofs. Let F be the classifier of p under context C. If b has classifeir T 
+ * under context C,F, then the lemma expression has classifier T under context 
+ * C.
  * 
  * As an example, suppose we have a proof div_le, which proves the
  * formula "Forall(a b: nat)(u: { b != Z} ). { (le (div a b) a) = tt }". 
@@ -31,6 +30,18 @@ import java.io.PrintStream;
  * of formula { two != Z } is in the context that [div_le a two ##] is classified
  * under. Such a formula does exist in the context due to our use of the lemma
  * construct; hence, our proof is well classified.
+ * 
+ * Lemma is implemented as a derived form. In source code, it appears as
+ * "lemma p+ in b", where p+ is a sequence of one or more proofs p1 ... pn
+ * and b is also a proof.
+ * 
+ * An occurrence of "lemma p1 ... pn in b" elaborates to the following syntax:
+ * lemma p1 in (lemma p2 in (... (lemma pn in b)...))
+ * 
+ * This derived form allows us--with only one occurrence of the "lemma" keyword
+ * and one occurrence of the "in" keyword--to establish a sequence of unnamed 
+ * lemmas, where the proof of each additional lemma can reference all of the 
+ * previously defined lemmas using lemma marks.  
 */
 public class Lemma extends Expr {
 	
@@ -59,8 +70,8 @@ public class Lemma extends Expr {
 		if (!formula.isFormula(ctxt))
 		{
 			handleError(ctxt,
-					"Classifier for lemma is not a formula." +
-					"Computed classifier: " + formula.toString(ctxt));
+					"Classifier for lemma is not a formula.\n" +
+					"1. computed classifier: " + formula.toString(ctxt));
 			
 			return null;
 		}
@@ -68,7 +79,8 @@ public class Lemma extends Expr {
 		if (ctxt.lemmaSet.hasLemma(formula))
 		{
 			handleError(ctxt,
-					"Lemma formula already contained in context.");
+					"Lemma formula already contained in context.\n" +
+					"1. formula: " + formula.toString(ctxt));
 			
 			return null;
 		}
