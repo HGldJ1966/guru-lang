@@ -1880,17 +1880,26 @@ protected TerminatesCase readTerminatesCase() throws IOException
     	Position pos = getPos();
     	
     	if (!eat_ws())
-    	    handleError("Unexpected end of input parsing a abbrev term.");
+    	    handleError("Unexpected end of input parsing a lemma term.");
 
-    	Expr lemma = readProof();
+    	Expr lemmaProof = readProof();
     	
-    	eat("in", "lemma term");
+    	eat_ws();
     	
-    	Expr body = readProof();
-    	
-    	Lemma ret = new Lemma(lemma, body);
-    	ret.pos = pos;
-    	return ret;    	
+    	if (tryToEat("in", true))
+    	{
+        	Expr body = readProof();
+        	Lemma ret = new Lemma(lemmaProof, body);
+        	ret.pos = pos;
+        	return ret;    
+    	}
+    	else
+    	{
+    		Expr body = readLemma();
+    		Lemma ret = new Lemma(lemmaProof, body);
+    		ret.pos = pos;
+    		return ret;
+    	}
     }
     
     protected LemmaMark readLemmaMark()

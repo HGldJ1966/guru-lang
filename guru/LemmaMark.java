@@ -39,7 +39,7 @@ public class LemmaMark extends Expr {
 
 	//Overridden from Expr
 	protected void do_print(PrintStream w, Context ctxt) {
-		w.print("lemma mark");
+		w.print("##");
 	}
 
 	//Overridden from Expr
@@ -49,7 +49,8 @@ public class LemmaMark extends Expr {
     	if (formula == null)
     	{
     		handleError(pos,
-    				"Lemma mark used in a position that is not a proof argument.");
+    				"Lemma mark used in an illegal position.\n" +
+    				"Unascribed lemma marks can only be used as proof arguments.\n");
     		
     		return null;
     	}
@@ -57,7 +58,8 @@ public class LemmaMark extends Expr {
     	{	
     		handleError(pos,
     				"Lemma mark used in a position whose expected classifier is" +
-    				" not a formula.\n");
+    				" not a formula.\n" +
+    				"1. expected classifier: " + formula.toString(ctxt));
     		
     		return null;
     	}
@@ -65,7 +67,7 @@ public class LemmaMark extends Expr {
     	{
     		handleError(pos,
     			    "Lemma mark used without the expected lemma in context.\n"
-    			    +"Missing lemma: " + formula.toString(ctxt));    	
+    			    +"1. expected lemma: " + formula.toString(ctxt));    	
     		
     		return null;
     	}

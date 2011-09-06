@@ -61,7 +61,8 @@ public class Ascription extends Expr {
 			handleError(ctxt,
 					"Ascription classifier does not match the computed classifer" +
 					" of the ascription target.\n" +
-					"Computed Classifier: " + computed.toString(ctxt));
+					"1. ascription classifier: " + classifier.toString(ctxt) +
+					"\n2. computed classifier: " + computed.toString(ctxt));
 			
 			return null;
 		}
@@ -94,8 +95,14 @@ public class Ascription extends Expr {
 		return target.dropAnnos(ctxt);
 	}
 	
+	// overridden from Expr
 	public void checkTermination(Context ctxt, Expr IH, int arg, Var[] vars)
 	{
 		target.checkTermination(ctxt, IH, arg, vars);
 	}
+	
+	// overridden from Expr
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
+      target.checkSpec(ctxt, in_type, p);
+    }
 }
