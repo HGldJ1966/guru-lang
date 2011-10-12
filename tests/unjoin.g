@@ -63,7 +63,6 @@ Define eqnatEq2 : Forall(n m:nat)(u:{(eqnat n m) = tt}). { n = m } :=
       end
   end.
 
-%-    
 Define minus_lt2 : Forall
 	(a b:nat)(u1:{ (le b a) = tt })(u2:{ (lt Z b) = tt }).{ (lt (minus a b) a) = tt }
 	:=
@@ -71,6 +70,13 @@ Define minus_lt2 : Forall
   induction (b:nat) return
     Forall(u1:{ (le b a) = tt })(u2:{ (lt Z b) = tt }).{ (lt (minus a b) a) = tt }
   with
+
+    %- Z =>
+       unjoin u2 by b_eq proving Forall(u1:{ (le b a) = tt })(u2:{ (lt Z b) = tt }).{ (lt (minus a b) a) = tt }
+     | S b' => ...
+
+     -%
+
     | default nat =>
       foralli(u1:{ (le b a) = tt })(u2:{ (lt Z b) = tt }).
       unjoin u2 by with
@@ -132,7 +138,7 @@ Define minus_lt2 : Forall
         end 
       end
   end.
--%
+
 
 %-
     | Z =>
