@@ -107,6 +107,7 @@ public abstract class Expr {
 
 	public static final int LEMMA_MARK = 91;
 	public static final int ASCRIPTION = 92;
+	public static final int UNJOIN = 93;
 
 	public static final int LAST = 200;
 
@@ -508,6 +509,7 @@ public abstract class Expr {
 		case CABBREV:
 		case ABBREV:
 		case JOIN:
+		case UNJOIN:
 		case EVAL:
 		case EVALTO:
 		case HYPJOIN:
@@ -772,6 +774,25 @@ public abstract class Expr {
 	// get all the constants in this Expr.
 	public java.util.Set getDependences() {
 		return new TreeSet();
+	}
+	
+	// Given a target term, target, and a set of enclosing functions calls,
+	// funCalls, returns an unjoin deduction representing all possible
+	// evaluation paths for this term which could result in joining with
+	// the target term. (If eq is false, then we instead return the set of 
+	// all possible evaluation paths which do not join this term with the
+	// target term.)
+	public UnjoinDeduction Unjoin(
+			Expr target, 
+			UnjoinContext uCtxt,
+			Context baseCtxt,
+			boolean eq
+	)
+	{
+		//Unjoin has not been implemented for this construct.
+		assert(false);
+		
+		return null;
 	}
 
 	/*

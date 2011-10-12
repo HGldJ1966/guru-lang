@@ -18,7 +18,7 @@ public class LemmaSet {
 	// The context used to decide definitional equality
 	final private Context ctxt;
 	
-	// A set of definitionally unique formulas currently contained in this lemma set.
+	// The set of definitionally unique formulas currently contained in this lemma set.
 	final private ArrayList formulas; 
 	
 	public LemmaSet(Context ctxt)
@@ -34,7 +34,6 @@ public class LemmaSet {
 	// determine whether or not an equivalent lemma is already in the set.) 
 	public void addLemma(Expr newLemma)
 	{
-		assert(newLemma != null);
 		assert(newLemma.isFormula(ctxt));
 		assert(!hasLemma(newLemma));
 		
@@ -44,7 +43,6 @@ public class LemmaSet {
 	// Removes a lemma from the set.
 	public void removeLemma(Expr toRemove)
 	{
-		assert(toRemove != null);
 		assert(toRemove.isFormula(ctxt));
 		assert(hasLemma(toRemove));
 		
@@ -55,7 +53,6 @@ public class LemmaSet {
 	public boolean hasLemma(Expr lemma)
 	{
 		assert(lemma.isFormula(ctxt));
-		assert(lemma != null);
 		
 		ListIterator i = formulas.listIterator();
 		while(i.hasNext())
@@ -66,5 +63,100 @@ public class LemmaSet {
 				return true;
 		}
 		return false;
+	}
+	
+	// Returns a new lemma set containing exactly the same set of formulas as
+	// this one.
+	public LemmaSet copy()
+	{
+		LemmaSet ret = new LemmaSet(ctxt);
+		
+		ListIterator i = formulas.listIterator();
+		while(i.hasNext())
+			ret.addLemma((Expr)i.next());
+		
+		return ret;
+	}
+	
+	public Expr simplify(Expr e)
+	{
+		Expr e_ = null;
+		
+		while (e_ != e)
+		{
+			e_ = e;
+			
+			if (e.construct == Expr.MATCH)
+			{
+				Match m = (Match)e;
+				Expr mt_ = simplify(m.t);
+				if (mt_ != m.t) {
+					e = new Match(
+						simplify(m.t),
+						m.x1,
+						m.x2,
+						m.T,
+						m.C,
+						m.consume_scrut
+					);
+				}
+			}		
+			
+			e = e.evalStep(ctxt);
+			e = rewrite(e);
+		}
+		
+		return e;
+	}
+	
+	private Expr rewrite(Expr e)
+	{
+		if (e.construct != Expr.VAR)
+			return e;
+		
+		Var v = (Var)e;
+		
+		ListIterator i = formulas.listIterator();
+		while(i.hasNext()) {
+			Expr curr = (Expr)i.next();
+			
+			if (curr.construct != Expr.ATOM)
+				continue;
+			
+			Atom a = (Atom)curr;
+			
+			if (a.equality == false)
+				continue;
+			
+			if (a.Y1 == v) {
+				if (a.Y2.construct == Expr.TERM_APP)
+				{	
+					TermApp ta = (TermApp)a.Y2;
+					
+					if (ta.head.construct == Expr.CONST && ctxt.isTermCtor((Const)ta.head))
+						return ta;
+				}
+				else if(a.Y2.construct == Expr.CONST)
+				{
+					return a.Y2;
+				}
+			}
+			
+			if (a.Y2 == v && a.Y1.construct == Expr.TERM_APP) {
+				if (a.Y1.construct == Expr.TERM_APP)
+				{	
+					TermApp ta = (TermApp)a.Y1;
+					
+					if (ta.head.construct == Expr.CONST && ctxt.isTermCtor((Const)ta.head))
+						return ta;
+				}
+				else if(a.Y1.construct == Expr.CONST)
+				{
+					return a.Y1;
+				}
+			}
+		}
+		
+		return v;
 	}
 }

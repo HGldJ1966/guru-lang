@@ -155,6 +155,26 @@ public class Var extends Expr{
                         + "1. the variable: " + toString(ctxt));
 	}
     }
+    
+    public UnjoinDeduction Unjoin(
+			Expr target, 
+			UnjoinContext uCtxt,
+			Context baseCtxt,
+			boolean eq
+	)
+    {
+    	if (baseCtxt.isMacroDefined(this))
+    	{
+    		return evalStep(baseCtxt).Unjoin(target, uCtxt, baseCtxt, eq);
+    	}
+    	else
+    	{
+    		if (target == this)
+    			return eq ? UnjoinDeduction.empty : UnjoinDeduction.contradiction;
+    		else
+    			return eq ? UnjoinDeduction.contradiction : UnjoinDeduction.empty;
+    	}
+    }
 
     public guru.carraway.Expr toCarrawayType(Context ctxt, boolean rttype) {
 	guru.carraway.Sym s = ctxt.carraway_ctxt.lookup(name);

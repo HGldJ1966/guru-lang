@@ -88,11 +88,7 @@ public class LemmaMark extends Expr {
 	}
 
 	public Expr dropAnnos(Context ctxt) {
-		//Lemma marks are specificational, so this shouldn't get called
-		//Specificational constructs shouldn't have to implement this,
-		//and they shouldn't have to implement the above two methods either.
-		assert(false);
-		return null;
+		return this;
 	}
 	
 	// Overridden from Expr.
