@@ -326,6 +326,9 @@ public class Parser extends ParserBase {
 	    case Expr.WORD_EXPR:
 		e = readWordExpr();
 		break;
+	    case Expr.UNJOIN:
+	    e = readUnjoin();
+	    break;
 	    case Expr.LAST+STRING:
 		e = readStringExpr();
 		break;
@@ -449,6 +452,43 @@ public class Parser extends ParserBase {
     }
 
 
+    protected Unjoin readUnjoin() throws IOException
+    {	
+    	if (!eat_ws())
+    	    handleError("Unexpected end of input parsing an unjoin proof.");
+    	
+    	Expr scrutinee = readProof();
+    	
+    	if (!eat_ws())
+    	    handleError("Unexpected end of input parsing an unjoin proof.");
+    	
+    	eat("by", "unjoin proof");
+    	
+    	if (!eat_ws())
+    	    handleError("Unexpected end of input parsing an unjoin proof.");
+    	
+    	//TODO: read some lemmas and add them into the lemma set using
+    	//lemma AST nodes.
+    	
+    	eat("with", "unjoin proof");
+    	
+    	if (!eat_ws())
+    	    handleError("Unexpected end of input parsing an unjoin proof.");
+    	
+    	Vector paths = new Vector();
+    	while (tryToEat("|"))
+    	{
+    		paths.add(readProof());
+    		
+        	if (!eat_ws())
+        	    handleError("Unexpected end of input parsing an unjoin proof.");
+    	}
+    	
+    	eat("end", "unjoin proof");
+    	
+    	return new Unjoin(scrutinee, paths);
+    }
+    
     protected Set readSet() throws IOException
     {
 	Set s = new Set();
@@ -2797,6 +2837,7 @@ protected TerminatesCase readTerminatesCase() throws IOException
 		keywordTree.add( "show", Expr.SHOW );
 		keywordTree.add( "contra", Expr.CONTRA );
 		keywordTree.add( "induction", Expr.INDUCTION );
+		keywordTree.add( "unjoin", Expr.UNJOIN );
 		keywordTree.add( "Forall", Expr.FORALL );
 		keywordTree.add( "Exists", Expr.EXISTS );
 		keywordTree.add( "{", Expr.ATOM );

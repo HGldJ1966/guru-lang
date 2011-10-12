@@ -158,7 +158,146 @@ public class Match extends CasesExpr{
 	    C[i].checkSpec(ctxt, in_type, pos);
 	}
     }
-
+    
+    //When we generate a new var name during unjoin, we append this integer
+    //to it to make it unique.
+    //TODO: This does not seem like an airtight method.
+    private static int varNum = 0;
+    //Override from Expr
+    public UnjoinDeduction Unjoin(
+			Expr target, 
+			UnjoinContext uCtxt,
+			Context baseCtxt,
+			boolean eq
+	)
+    {
+    	UnjoinDeduction ret = UnjoinDeduction.contradiction;
+    	
+    	Expr t_ = uCtxt.lemmaSet.simplify(t);
+    	
+    	UnjoinDeduction branch;
+    	
+    	//Set ret to the conjunction of the deductions that can be made from
+    	//each branch.
+    	for(int i = 0; i < C.length; ++i)
+    	{
+    		Case c = C[i];
+    		
+    		if (t_.construct == TERM_APP)
+    		{
+    			TermApp ta = (TermApp)t_;
+    			
+    			if (ta.head != c.c)
+    				continue;
+    		}
+    		else if (t_.construct == CONST)
+    		{
+    			if (t_ != c.c)
+    				continue;
+    		}
+    			
+    		// Prepend immediate deductions onto case body deductions -----
+	    	if (c.x.length == 0)
+	    	{	
+	        	// Make deductions from case body -----
+	    		branch = c.body.Unjoin(
+	    			target,
+	        		uCtxt,
+	        		baseCtxt,
+	        		eq
+	        	);
+	    		
+	    		if(t_.construct == VAR)
+	    		{
+		        	Atom matchEq = new Atom(true, t_, c.c);
+		        	Var matchEqVar = new Var("p" + Integer.toString(varNum++));
+		        	branch = new UnjoinIntro(matchEqVar, matchEq, branch);
+	    		}
+	    	} 
+	    	else
+	    	{
+	    		FunType consType = (FunType)c.c.classify(baseCtxt).defExpandTop(baseCtxt);
+	        	 
+	    		// Create contstructor argument variable -----
+	    		Var[] clones = new Var[c.x.length];
+	    		Expr[] types = new Expr[c.x.length];
+	    		
+	    		// A version of body for which variables corresponding to
+	    		// match arguments are replaced with their corresponding
+	    		// unjoin introductions.
+	    		Expr body = c.body;
+	    		
+	    		int last = c.x.length-1;
+	        	for(int j = 0; j <= last; ++j)
+	        	{
+	        		
+	        		clones[j] = new Var(uCtxt.genName(c.x[j].name));
+	        		types[j] = consType.types[0];
+	        		
+	        		//TODO: This seems a bit inefficient. Could we optimize this?
+	        		body = body.subst(clones[j], c.x[j]);
+	        		
+	        		// Instantiating the last argument would result in the
+	        		// return type, which may not be a function type.
+	        		if (j != last)
+	        			consType = (FunType)consType.instantiate(clones[j]);	        		
+	        	}
+	        	
+	        	// Make deductions from case body -----
+	    		branch = body.Unjoin(
+	        			target,
+	        			uCtxt,
+	        			baseCtxt,
+	        			eq
+	        	);
+	    		
+	        	for(int j = 0; j < c.x.length; ++j)
+	        		uCtxt.removeName(clones[j].name);
+	    		
+	    		//prepend immediate deductions to case body deductions
+	    		if(t_.construct == VAR)
+	    		{
+		        	// Create match proof (i.e. { scrutinee = match case } ) -----
+		        	Atom matchEq = new Atom(true, t, new TermApp(c.c,clones));
+		        	Var matchEqVar = new Var("p" + Integer.toString(varNum++));
+		        	branch = new UnjoinIntro(matchEqVar, matchEq, branch);
+	    		}
+	    		else if (t_.construct == TERM_APP)
+	    		{
+	    			TermApp ta = (TermApp)t_;
+	    			
+	    			for (int j = 0; j < ta.X.length; ++j)
+	    			{
+	    				Atom varEq = new Atom(true, ta.X[j], clones[j]);
+	    				Var varEqProof = new Var("p" + Integer.toString(varNum++));
+	    				branch = new UnjoinIntro(varEqProof, varEq, branch);
+	    			}
+	    		}
+	    		
+	        	for (int j = c.x.length-1; j >= 0; --j)
+	        		branch = new UnjoinIntro(clones[j], types[j], branch);
+	    	}
+    		
+	    	if (t_.construct == MATCH)
+    		{
+	    		UnjoinDeduction tDeduction = t_.Unjoin(
+	    				new TermApp(c.c,c.x),
+	    				uCtxt,
+	    				baseCtxt,
+	    				true
+	    		);
+	    		
+	    		branch = UnjoinDeduction.Append(branch, tDeduction);
+    		}
+	    	
+        	//Or the current return value with the deduction for the
+        	//current branch (if ret is null, we set it to the current branch)
+        	ret = new UnjoinOr(ret, branch);
+    	}
+    	
+    	return ret;
+    }
+    
     public guru.carraway.Expr toCarraway(Context ctxt) {
 	guru.carraway.Match m = new guru.carraway.Match();
 	m.pos = pos;

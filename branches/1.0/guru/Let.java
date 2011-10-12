@@ -166,6 +166,22 @@ public class Let extends Expr{
 	t2.checkSpec(ctxt, in_type, pos);
     }
 
+    // Overloaded from Expr
+    public UnjoinDeduction Unjoin(
+			Expr target, 
+			HashSet funCalls,
+			Context ctxt,
+			boolean eq
+	)
+    {
+    	return Unjoin(
+    		t2.subst(t1, x1),
+    		funCalls,
+    		ctxt,
+    		eq
+    	);
+    }
+    
     public guru.carraway.Expr toCarraway(Context ctxt) {
 	guru.carraway.Let l = new guru.carraway.Let();
 	l.pos = pos;

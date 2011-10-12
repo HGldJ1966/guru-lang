@@ -193,6 +193,16 @@ public class FunTerm extends FunAbstraction {
     }
 
 
+    // substitutes the given expr for the first var in this abstraction.
+    // unlike the instantiate method, this does not expand fixpoints.
+    public Expr substituteForParam(Expr e)
+    {
+    	Expr ret = super.instantiate(e);
+    	if (ret.construct == ABSTRACTION) 
+    	    return new FunTerm(null, null, (FunAbstraction)ret);
+    	return ret;
+    }
+    
     // return the result of substituting the given expr for
     // the first var in this abstraction.
     public Expr instantiate(Expr e) {
@@ -300,7 +310,20 @@ public class FunTerm extends FunAbstraction {
 	
 	body.checkSpec(ctxt, in_type, pos);
     }
-
+    
+    public UnjoinDeduction Unjoin(
+			Expr target, 
+			HashSet funCalls,
+			Context ctxt,
+			boolean eq
+	)
+    {
+    	// TODO: Maybe not consistent with how other values unjoin,
+    	// but I think it would be weird to unjoin an abstraction.
+    	assert(target.construct != FUN_TERM);
+    	return UnjoinDeduction.contradiction;
+    }
+    
     // we assume r is non-null (Compile sets it if it is null).
     public guru.carraway.Expr toCarraway(Context ctxt) {
 	guru.carraway.FunTerm F = new guru.carraway.FunTerm();

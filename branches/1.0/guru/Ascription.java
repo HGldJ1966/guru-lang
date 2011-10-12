@@ -87,7 +87,7 @@ public class Ascription extends Expr {
 	// overridden from Expr
 	public Expr subst(Expr e, Expr x) {
 		
-		return new Ascription(target.subst(e,x), classifier.subst(e,x));
+		return new Ascription(classifier.subst(e,x), target.subst(e,x));
 	}
 
 	// overridden from Expr

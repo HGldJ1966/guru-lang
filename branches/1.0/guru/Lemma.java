@@ -115,8 +115,7 @@ public class Lemma extends Expr {
 	//Override from Expr
 	public Expr subst(Expr e, Expr x) {
 		//Lemmas are specificational; hence, this will not get called.
-		assert(false);
-		return null;
+		return new Lemma(lemmaProof.subst(e,x), body.subst(e,x));
 	}
 
 	public Expr dropAnnos(Context ctxt) {

@@ -123,6 +123,24 @@ public class Const extends Expr implements Comparable {
                         + "\n1. the constant: " + toString(ctxt));
 	}
     }
+    
+    public UnjoinDeduction Unjoin(
+			Expr target, 
+			UnjoinContext uCtxt,
+			Context baseCtxt,
+			boolean eq
+	)
+    {
+    	if (target.construct != CONST)
+    		return eq ? UnjoinDeduction.contradiction : UnjoinDeduction.empty;
+    	
+    	Const c = (Const)target;
+    	
+    	if (this.name == c.name)
+    		return eq ? UnjoinDeduction.empty : UnjoinDeduction.contradiction;
+    	else
+    		return eq ? UnjoinDeduction.contradiction : UnjoinDeduction.empty;
+    }
 
     public guru.carraway.Expr toCarrawayType(Context ctxt, boolean rttype) {
 	if (rttype) {
