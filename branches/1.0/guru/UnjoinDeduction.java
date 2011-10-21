@@ -14,6 +14,112 @@ public abstract class UnjoinDeduction {
 	
 	abstract public int GetDeductionType();
 	
+	static public UnjoinDeduction Simplify(UnjoinDeduction target)
+	{
+		switch (target.GetDeductionType())
+		{
+		case INTRO:
+			UnjoinIntro intro = (UnjoinIntro)target;
+			UnjoinDeduction rest = Simplify(intro.rest);
+			if (rest == contradiction)
+				return contradiction;
+			else
+				return new UnjoinIntro(
+					intro.introVar, 
+					intro.introVarType,
+					rest
+				);
+		case OR:
+			UnjoinOr or = (UnjoinOr)target;
+			if (or.d0 == contradiction && or.d1 == contradiction)
+				return contradiction;
+			else if (or.d0 == contradiction)
+				return or.d1;
+			else if (or.d1 == contradiction)
+				return or.d0;
+			else
+				return or;
+		case CONTRADICTION:
+			return contradiction;
+		case EMPTY:
+			return empty;
+		}
+		
+		assert(false);
+		return null;
+	}
+	
+	static public UnjoinDeduction FancyAppend(
+			UnjoinDeduction baseDeduction,
+			Expr startTerm,
+			Expr target,
+			UnjoinContext uCtxt,
+			Context baseCtxt,
+			boolean eq
+	)
+	{
+		switch (baseDeduction.GetDeductionType())
+		{
+		case INTRO:
+			UnjoinIntro intro = (UnjoinIntro)baseDeduction;
+			
+			//okay... basically, I need to collapse contradictory
+			//paths, as I was originally planning to do, so that
+			//I can add everything to the context here.
+			if (intro.introVarType.construct == Expr.ATOM)
+				uCtxt.lemmaSet.addLemma(intro.introVarType);
+			else if (intro.introVarType.isTypeOrKind(baseCtxt))
+				baseCtxt.setClassifier(intro.introVar, intro.introVarType);
+			
+			UnjoinDeduction ret = new UnjoinIntro(
+				intro.introVar,
+				intro.introVarType,
+				FancyAppend(
+					intro.rest,
+					startTerm,
+					target,
+					uCtxt,
+					baseCtxt,
+					eq
+				)
+			);
+			
+			if (intro.introVarType.construct == Expr.ATOM)
+				uCtxt.lemmaSet.removeLemma(intro.introVarType);
+			
+			return ret;
+		case OR:
+			UnjoinOr or = (UnjoinOr)baseDeduction;
+			
+			UnjoinDeduction d0 = FancyAppend(
+				or.d0,
+				startTerm,
+				target,
+				uCtxt,
+				baseCtxt,
+				eq
+			);
+			
+			UnjoinDeduction d1 = FancyAppend(
+				or.d1,
+				startTerm,
+				target,
+				uCtxt,
+				baseCtxt,
+				eq
+			);	
+			
+			return new UnjoinOr(d0, d1);
+		case CONTRADICTION:
+			return contradiction;
+		case EMPTY:
+			return startTerm.Unjoin(target, uCtxt, baseCtxt, eq);
+		}
+		
+		assert(false);
+		return null;	
+	}
+	
 	static public UnjoinDeduction Append(
 			UnjoinDeduction appendThis,
 			UnjoinDeduction ontoThis
@@ -22,7 +128,12 @@ public abstract class UnjoinDeduction {
 		switch (ontoThis.GetDeductionType())
 		{
 		case INTRO:
-			return Append(appendThis, ((UnjoinIntro)ontoThis).rest);
+			UnjoinIntro intro = (UnjoinIntro)ontoThis;
+			return new UnjoinIntro(
+					intro.introVar,
+					intro.introVarType,
+					Append(appendThis, ((UnjoinIntro)ontoThis).rest)
+			);
 		case OR:
 			UnjoinOr or = (UnjoinOr)ontoThis;
 			return new UnjoinOr(Append(appendThis, or.d0), Append(appendThis, or.d1));

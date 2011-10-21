@@ -452,7 +452,7 @@ public class Parser extends ParserBase {
     }
 
 
-    protected Unjoin readUnjoin() throws IOException
+    protected Expr readUnjoin() throws IOException
     {	
     	if (!eat_ws())
     	    handleError("Unexpected end of input parsing an unjoin proof.");
@@ -462,31 +462,39 @@ public class Parser extends ParserBase {
     	if (!eat_ws())
     	    handleError("Unexpected end of input parsing an unjoin proof.");
     	
-    	eat("by", "unjoin proof");
     	
-    	if (!eat_ws())
-    	    handleError("Unexpected end of input parsing an unjoin proof.");
-    	
-    	//TODO: read some lemmas and add them into the lemma set using
-    	//lemma AST nodes.
-    	
-    	eat("with", "unjoin proof");
-    	
-    	if (!eat_ws())
-    	    handleError("Unexpected end of input parsing an unjoin proof.");
-    	
-    	Vector paths = new Vector();
-    	while (tryToEat("|"))
+    	if( tryToEat("contra") )
     	{
-    		paths.add(readProof());
+    		// read contra unjoin
     		
         	if (!eat_ws())
         	    handleError("Unexpected end of input parsing an unjoin proof.");
+        	
+        	Expr conclusion = readFormula();
+        	
+        	return new UnjoinContra(scrutinee, conclusion);
     	}
-    	
-    	eat("end", "unjoin proof");
-    	
-    	return new Unjoin(scrutinee, paths);
+    	else
+    	{
+    		// read non-contra unjoin
+    		eat("with", "unjoin proof");
+    		
+        	if (!eat_ws())
+        	    handleError("Unexpected end of input parsing an unjoin proof.");
+        	
+        	Vector paths = new Vector();
+        	while (tryToEat("|"))
+        	{
+        		paths.add(readProof());
+        		
+            	if (!eat_ws())
+            	    handleError("Unexpected end of input parsing an unjoin proof.");
+        	}
+        	
+        	eat("end", "unjoin proof");
+        	
+        	return new Unjoin(scrutinee, paths);
+    	}
     }
     
     protected Set readSet() throws IOException

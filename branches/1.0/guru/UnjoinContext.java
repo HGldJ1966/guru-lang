@@ -79,12 +79,10 @@ public class UnjoinContext {
 		
 		String currentCandidate = suggestion;
 		boolean alreadyUsed = varNames.contains(currentCandidate);
-		alreadyUsed |= (baseContext.lookup(currentCandidate) != null); 
 		
 		while (alreadyUsed) {
 			currentCandidate += "'";
 			alreadyUsed = varNames.contains(currentCandidate);
-			alreadyUsed |= (baseContext.lookup(currentCandidate) != null); 
 		}
 		
 		varNames.add(currentCandidate);
