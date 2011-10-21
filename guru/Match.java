@@ -182,6 +182,7 @@ public class Match extends CasesExpr{
     	for(int i = 0; i < C.length; ++i)
     	{
     		Case c = C[i];
+    		UnjoinDeduction scrutDeduction = UnjoinDeduction.empty;
     		
     		if (t_.construct == TERM_APP)
     		{
@@ -195,12 +196,35 @@ public class Match extends CasesExpr{
     			if (t_ != c.c)
     				continue;
     		}
+    		else if (t_.construct == MATCH)
+    		{
+    			if(c.x.length == 0)
+    			{
+	    			scrutDeduction = t_.Unjoin(
+	    				c.c,
+		    			uCtxt,
+		    			baseCtxt,
+		    			true
+		    		);
+    			}
+    			else
+    			{
+	    			scrutDeduction = t_.Unjoin(
+	    				new TermApp(c.c,c.x),
+		    			uCtxt,
+		    			baseCtxt,
+		    			true
+		    		);		
+    			}
+    		}
     			
     		// Prepend immediate deductions onto case body deductions -----
 	    	if (c.x.length == 0)
 	    	{	
 	        	// Make deductions from case body -----
-	    		branch = c.body.Unjoin(
+	    		branch = UnjoinDeduction.FancyAppend(
+	    			UnjoinDeduction.Simplify(scrutDeduction),
+	    			c.body,
 	    			target,
 	        		uCtxt,
 	        		baseCtxt,
@@ -217,78 +241,82 @@ public class Match extends CasesExpr{
 	    	else
 	    	{
 	    		FunType consType = (FunType)c.c.classify(baseCtxt).defExpandTop(baseCtxt);
-	        	 
-	    		// Create contstructor argument variable -----
-	    		Var[] clones = new Var[c.x.length];
-	    		Expr[] types = new Expr[c.x.length];
-	    		
+	        	 	
 	    		// A version of body for which variables corresponding to
 	    		// match arguments are replaced with their corresponding
 	    		// unjoin introductions.
 	    		Expr body = c.body;
+	    		// Create contstructor argument variable -----
 	    		
-	    		int last = c.x.length-1;
-	        	for(int j = 0; j <= last; ++j)
+	    		
+	        	if (t_.construct == TERM_APP)
 	        	{
+	        		TermApp ta = (TermApp)t_;
+	        		Expr substitutedBody = body;
 	        		
-	        		clones[j] = new Var(uCtxt.genName(c.x[j].name));
-	        		types[j] = consType.types[0];
-	        		
-	        		//TODO: This seems a bit inefficient. Could we optimize this?
-	        		body = body.subst(clones[j], c.x[j]);
-	        		
-	        		// Instantiating the last argument would result in the
-	        		// return type, which may not be a function type.
-	        		if (j != last)
-	        			consType = (FunType)consType.instantiate(clones[j]);	        		
-	        	}
-	        	
-	        	// Make deductions from case body -----
-	    		branch = body.Unjoin(
-	        			target,
-	        			uCtxt,
-	        			baseCtxt,
-	        			eq
-	        	);
-	    		
-	        	for(int j = 0; j < c.x.length; ++j)
-	        		uCtxt.removeName(clones[j].name);
-	    		
-	    		//prepend immediate deductions to case body deductions
-	    		if(t_.construct == VAR)
-	    		{
-		        	// Create match proof (i.e. { scrutinee = match case } ) -----
-		        	Atom matchEq = new Atom(true, t, new TermApp(c.c,clones));
-		        	Var matchEqVar = new Var("p" + Integer.toString(varNum++));
-		        	branch = new UnjoinIntro(matchEqVar, matchEq, branch);
-	    		}
-	    		else if (t_.construct == TERM_APP)
-	    		{
-	    			TermApp ta = (TermApp)t_;
-	    			
 	    			for (int j = 0; j < ta.X.length; ++j)
-	    			{
-	    				Atom varEq = new Atom(true, ta.X[j], clones[j]);
-	    				Var varEqProof = new Var("p" + Integer.toString(varNum++));
-	    				branch = new UnjoinIntro(varEqProof, varEq, branch);
-	    			}
-	    		}
-	    		
-	        	for (int j = c.x.length-1; j >= 0; --j)
-	        		branch = new UnjoinIntro(clones[j], types[j], branch);
+	    				substitutedBody = substitutedBody.subst(ta.X[j], c.x[j]);
+	    			
+		    		branch = substitutedBody.Unjoin(
+		        			target,
+		        			uCtxt,
+		        			baseCtxt,
+		        			eq
+		        	);
+	        	}
+	        	else
+	        	{
+			    	
+		    		Var[] clones = new Var[c.x.length];
+		    		Expr[] types = new Expr[c.x.length];
+		    		int last = c.x.length-1;
+		    		
+		    		String prefix = ((Var)t_).name;
+		    		
+		        	for(int j = 0; j <= last; ++j)
+		        	{
+		        		clones[j] = new Var(uCtxt.genName(prefix + String.valueOf(j)));
+		        		types[j] = consType.types[j];
+		        		
+		        		//TODO: This seems a bit inefficient. Could we optimize this?
+		        		body = body.subst(clones[j], c.x[j]);
+		        		
+		        		// Instantiating the last argument would result in the
+		        		// return type, which may not be a function type.
+		        		if (j != last)
+		        			consType = (FunType)consType.instantiate(clones[j]);	        		
+		        	}
+		        	
+		        	// Make deductions from case body -----
+		    		branch = UnjoinDeduction.FancyAppend(
+		    			UnjoinDeduction.Simplify(scrutDeduction), 
+	    				body, 
+	    				target, 
+	    				uCtxt, 
+	    				baseCtxt, 
+	    				eq
+		    		);
+
+		        	
+		    		//prepend immediate deductions to case body deductions
+		    		//could this be anything other than a var?
+		    		if(t_.construct == VAR)
+		    		{
+			        	// Create match proof (i.e. { scrutinee = match case } ) -----
+			        	Atom matchEq = new Atom(true, t_, new TermApp(c.c,clones));
+			        	Var matchEqVar = new Var("p" + Integer.toString(varNum++));
+			        	branch = new UnjoinIntro(matchEqVar, matchEq, branch);
+		    		}
+		    		
+		        	for (int j = c.x.length-1; j >= 0; --j)
+		        		branch = new UnjoinIntro(clones[j], types[j], branch);
+		        	
+		        	
+		        	for(int j = 0; j < c.x.length; ++j)
+		        		uCtxt.removeName(clones[j].name);
+	        	}
+
 	    	}
-    		
-	    	if (t_.construct == MATCH)
-    		{
-	    		UnjoinDeduction tDeduction = t_.Unjoin(
-	    				new TermApp(c.c,c.x),
-	    				uCtxt,
-	    				baseCtxt,
-	    				true
-	    		);
-	    		
-	    		branch = UnjoinDeduction.Append(branch, tDeduction);
-    		}
 	    	
         	//Or the current return value with the deduction for the
         	//current branch (if ret is null, we set it to the current branch)

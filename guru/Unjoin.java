@@ -67,10 +67,10 @@ public class Unjoin extends Expr {
 		}
 		
 		UnjoinDeduction deduction = scrutinee.Y1.Unjoin(
-				scrutinee.Y2, 
-				new UnjoinContext(ctxt),
-				ctxt,
-				scrutinee.equality
+			scrutinee.Y2, 
+			new UnjoinContext(ctxt),
+			ctxt,
+			scrutinee.equality
 		);
 		
 		

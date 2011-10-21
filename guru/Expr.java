@@ -108,6 +108,7 @@ public abstract class Expr {
 	public static final int LEMMA_MARK = 91;
 	public static final int ASCRIPTION = 92;
 	public static final int UNJOIN = 93;
+	public static final int UNJOIN_CONTRA = 94;
 
 	public static final int LAST = 200;
 
