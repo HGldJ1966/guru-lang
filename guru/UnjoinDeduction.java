@@ -2,6 +2,18 @@ package guru;
 
 import java.util.*;
 
+/*
+ * A heterogenous tree containing nodes of the following types:
+ * - Introduction, which asserts the existence of a expression having a specified classifier
+ * - Or, which introduces nondeterminism
+ * - Contradiction, which asserts false
+ * - Empty, which asserts true
+ * 
+ * UnjoinDeductions are produced by Expr.Unjoin, and have the property that
+ * all of the assertions from some root-to-leaf path must hold if the some 
+ * instantiation of the expression being unjoined can join with the target under 
+ * the given context.
+ */
 public abstract class UnjoinDeduction {
 	
 	public static final int INTRO = 0;
@@ -9,9 +21,14 @@ public abstract class UnjoinDeduction {
 	public static final int EMPTY = 2;
 	public static final int CONTRADICTION = 3;
 	
+	// An UnjoinDeduction which asserts false
 	public static final UnjoinDeduction contradiction = new UnjoinContradiction();
+	
+	// An UnjoinDeduction which asserts true
 	public static final UnjoinDeduction empty = new UnjoinEmpty();
 	
+	// Returns an int identifying the type of this deduction node:
+	// INTRO, OR, EMPTY, or CONTRADICTION
 	abstract public int GetDeductionType();
 	
 	static public UnjoinDeduction Simplify(UnjoinDeduction target)
@@ -49,108 +66,12 @@ public abstract class UnjoinDeduction {
 		return null;
 	}
 	
-	static public UnjoinDeduction FancyAppend(
-			UnjoinDeduction baseDeduction,
-			Expr startTerm,
-			Expr target,
-			UnjoinContext uCtxt,
-			Context baseCtxt,
-			boolean eq
-	)
-	{
-		switch (baseDeduction.GetDeductionType())
-		{
-		case INTRO:
-			UnjoinIntro intro = (UnjoinIntro)baseDeduction;
-			
-			//okay... basically, I need to collapse contradictory
-			//paths, as I was originally planning to do, so that
-			//I can add everything to the context here.
-			if (intro.introVarType.construct == Expr.ATOM)
-				uCtxt.lemmaSet.addLemma(intro.introVarType);
-			else if (intro.introVarType.isTypeOrKind(baseCtxt))
-				baseCtxt.setClassifier(intro.introVar, intro.introVarType);
-			
-			UnjoinDeduction ret = new UnjoinIntro(
-				intro.introVar,
-				intro.introVarType,
-				FancyAppend(
-					intro.rest,
-					startTerm,
-					target,
-					uCtxt,
-					baseCtxt,
-					eq
-				)
-			);
-			
-			if (intro.introVarType.construct == Expr.ATOM)
-				uCtxt.lemmaSet.removeLemma(intro.introVarType);
-			
-			return ret;
-		case OR:
-			UnjoinOr or = (UnjoinOr)baseDeduction;
-			
-			UnjoinDeduction d0 = FancyAppend(
-				or.d0,
-				startTerm,
-				target,
-				uCtxt,
-				baseCtxt,
-				eq
-			);
-			
-			UnjoinDeduction d1 = FancyAppend(
-				or.d1,
-				startTerm,
-				target,
-				uCtxt,
-				baseCtxt,
-				eq
-			);	
-			
-			return new UnjoinOr(d0, d1);
-		case CONTRADICTION:
-			return contradiction;
-		case EMPTY:
-			return startTerm.Unjoin(target, uCtxt, baseCtxt, eq);
-		}
-		
-		assert(false);
-		return null;	
-	}
-	
-	static public UnjoinDeduction Append(
-			UnjoinDeduction appendThis,
-			UnjoinDeduction ontoThis
-	)
-	{
-		switch (ontoThis.GetDeductionType())
-		{
-		case INTRO:
-			UnjoinIntro intro = (UnjoinIntro)ontoThis;
-			return new UnjoinIntro(
-					intro.introVar,
-					intro.introVarType,
-					Append(appendThis, ((UnjoinIntro)ontoThis).rest)
-			);
-		case OR:
-			UnjoinOr or = (UnjoinOr)ontoThis;
-			return new UnjoinOr(Append(appendThis, or.d0), Append(appendThis, or.d1));
-		case CONTRADICTION:
-			return contradiction;
-		case EMPTY:
-			return appendThis;
-		}
-		
-		assert(false);
-		return null;
-	}
-	
-	static private void FlattenDfs(
+	// Backtrack through the given deduction, inserting a copy of 
+	// each root-to-leaf path into the paths vector.
+	static private void FlattenAux(
 			UnjoinDeduction currDeduction, 
 			Stack currPathDeduction, 
-			List paths
+			Vector paths
 	)
 	{	
 		switch (currDeduction.GetDeductionType())
@@ -158,13 +79,13 @@ public abstract class UnjoinDeduction {
 		case INTRO:
 			UnjoinIntro intro = (UnjoinIntro)currDeduction;
 			currPathDeduction.push(intro);
-			FlattenDfs(intro.rest, currPathDeduction, paths);
+			FlattenAux(intro.rest, currPathDeduction, paths);
 			currPathDeduction.pop();
 			return;
 		case OR:
 			UnjoinOr or = (UnjoinOr)currDeduction;
-			FlattenDfs(or.d0, currPathDeduction, paths);
-			FlattenDfs(or.d1, currPathDeduction, paths);
+			FlattenAux(or.d0, currPathDeduction, paths);
+			FlattenAux(or.d1, currPathDeduction, paths);
 			return;
 		case CONTRADICTION:
 			return;
@@ -177,13 +98,12 @@ public abstract class UnjoinDeduction {
 	// Returns a vector containing, for each evaluation path, an array of 
 	// UnjoinIntro values which describe variables deduced to exist in the case 
 	// of an execution of that path.
-	static public List Flatten(UnjoinDeduction deduction, Context ctxt)
+	static public Vector Flatten(UnjoinDeduction deduction, Context ctxt)
 	{
 		Stack deductions = new Stack();
-		List paths = new Vector();
+		Vector paths = new Vector();
 		
-		//Get a list existentially quantified variables for each eval path
-		FlattenDfs(deduction, deductions, paths);
+		FlattenAux(deduction, deductions, paths);
 		
 		return paths;
 	}

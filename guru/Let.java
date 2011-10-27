@@ -169,14 +169,14 @@ public class Let extends Expr{
     // Overloaded from Expr
     public UnjoinDeduction Unjoin(
 			Expr target, 
-			HashSet funCalls,
+			int proofCount,
 			Context ctxt,
 			boolean eq
 	)
     {
     	return Unjoin(
     		t2.subst(t1, x1),
-    		funCalls,
+    		proofCount,
     		ctxt,
     		eq
     	);

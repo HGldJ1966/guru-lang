@@ -516,129 +516,22 @@ public class TermApp extends App{
     
     public UnjoinDeduction Unjoin(
 			Expr target, 
-			UnjoinContext uCtxt,
+			int proofCount,
 			Context baseCtxt,
 			boolean eq
 	)
-    {
-    	//The head's normal form.
-    	Expr h = head;
-    	//The last form that the head takes on before normalization.
-    	Expr pre = head;
-    	
-    	do {
-			if (h.construct == VAR && uCtxt.getFuncConst((Var)h) != null)// && uCtxt.hasRecFuncVar((Var)h_))
-			{		
-				Const c = uCtxt.getFuncConst((Var)h);
-				TermApp app = new TermApp(c, X);
-				Atom introAtom = new Atom(eq, app, target);
-					
-				//since this is the final deduction, we can name it whatever we 
-				//want without introducing ambiguity.
-				Var introVar = new Var("u");
-				
-				return new UnjoinIntro(
-					introVar,
-					introAtom,
-					UnjoinDeduction.empty
-				);
-			}
+    {	
+		Atom introAtom = new Atom(eq, this, target);
 			
-			pre = h;
-			h = h.evalStep(baseCtxt);
-    	} while (h != h.evalStep(baseCtxt));
-
-    	if (h.construct != FUN_TERM && h.construct != CONST && h.construct != VAR)
-    	{
-    		handleError(head.pos,
-    				"Unjoin can't handle term applications for which the head's " +
-    				"value cannot be determined."
-    		);
-    	
-    		System.exit(0);
-    	}
-
-    	
-    	//TODO: remove this...
-    	Expr[] evaluatedArgs = new Expr[X.length];
-    	for (int i = 0; i < X.length; i++)
-    		evaluatedArgs[i] = X[i];//X[i].eval(baseCtxt);
-    	
-    	//We either have a function app or a data constructor
-    	if (h.construct == FUN_TERM) {
-    		FunTerm f = (FunTerm)h;
-    		Var rec = f.r;
-
-    		for (int i = 0; i < evaluatedArgs.length-1; ++i)
-    			f = (FunTerm)f.substituteForParam(evaluatedArgs[i]);   
-    		
-    		//We cast f to FunAbstraction in order to avoid fixpoint 
-    		//expansion.
-			Expr fullInstantiation = f.substituteForParam(evaluatedArgs[evaluatedArgs.length-1]);
-			
-			if (rec != null)
-			{
-				if (pre.construct == CONST)
-					uCtxt.setFuncConst(rec, (Const)pre);
-				
-				//TODO: this is not going to work unless we introduce the recursive
-				//function.
-				uCtxt.addRecFuncVar(rec);
-			}
-//			if (rec != null) {
-//				if (pre.construct == CONST)
-//					
-//				else
-//					// we do not handle this yet, but it should be a simple matter
-//					// of introducting a function variable followed by a proof that
-//					// the function variable is equal to its definition.
-//					assert(false);  // I was setting the entry to the function's full instantiation... does that make sense?
-//			}
-			
-    		UnjoinDeduction ret = fullInstantiation.Unjoin(
-    			target,
-    			uCtxt,
-    			baseCtxt,
-    			eq
-    		);
-    		
-    		//TODO: I think it might be easier to store funcalls
-    		//in an immutable data structure, a list or rb tree for example.
-    		if (rec != null)
-    		{
-    			if (uCtxt.getFuncConst(rec) != null)
-    				uCtxt.removeFuncConst(rec);
-    			
-    			uCtxt.removeRecFuncVar(rec);
-    		}
-    		
-    		return ret;
-    	}
-		else
-		{
-			Atom introAtom;
-
-//			if (h.construct == VAR && ) {
-//				Expr h_ = (Expr)uCtxt.hasRecFuncVar((Var)h);
-//				
-//			}
-//			else {
-				//introAtom = new Atom(eq, this, target);
-		//	}
-			
-			TermApp app = new TermApp(h, evaluatedArgs);
-			introAtom = new Atom(eq, app, target);
-				
-			//since this is the final deduction, we can name it whatever we 
-			//want without introducing ambiguity.
-			Var introVar = new Var("u");
-			
-			return new UnjoinIntro(
-				introVar,
-				introAtom,
-				UnjoinDeduction.empty
-			);
-		}
+		//since this is the final deduction, we can name it whatever we 
+		//want without introducing ambiguity.
+		Var introVar = new Var("u");
+		
+		return new UnjoinIntro(
+			introVar,
+			introAtom,
+			UnjoinDeduction.empty
+		);
     }
 
     public guru.carraway.Expr toCarraway(Context ctxt) {

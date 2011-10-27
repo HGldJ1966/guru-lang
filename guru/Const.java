@@ -126,7 +126,7 @@ public class Const extends Expr implements Comparable {
     
     public UnjoinDeduction Unjoin(
 			Expr target, 
-			UnjoinContext uCtxt,
+			int proofCount,
 			Context baseCtxt,
 			boolean eq
 	)
