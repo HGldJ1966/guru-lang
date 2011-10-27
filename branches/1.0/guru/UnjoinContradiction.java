@@ -2,6 +2,8 @@ package guru;
 
 import java.util.ArrayList;
 
+// 
+//
 public class UnjoinContradiction extends UnjoinDeduction {
 
 	public static int count = 0;

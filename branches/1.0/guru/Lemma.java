@@ -26,7 +26,7 @@ import java.io.PrintStream;
  * 
  * In the above code, div_le is instantiated using ## as its third argument.
  * Since div_le expects a proof of the formula "{ two != Z }" in that position,
- * [div_le a two ##] will only be considered well typed if an unnamed proof
+ * [div_le a two ##] will only be considered well classified if an unnamed proof
  * of formula { two != Z } is in the context that [div_le a two ##] is classified
  * under. Such a formula does exist in the context due to our use of the lemma
  * construct; hence, our proof is well classified.

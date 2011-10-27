@@ -159,126 +159,84 @@ public class Match extends CasesExpr{
 	}
     }
     
-    //When we generate a new var name during unjoin, we append this integer
-    //to it to make it unique.
-    //TODO: This does not seem like an airtight method.
-    private static int varNum = 0;
     //Override from Expr
     public UnjoinDeduction Unjoin(
 			Expr target, 
-			UnjoinContext uCtxt,
+			int proofCount,
 			Context baseCtxt,
 			boolean eq
 	)
     {
     	UnjoinDeduction ret = UnjoinDeduction.contradiction;
     	
-    	Expr t_ = uCtxt.lemmaSet.simplify(t);
-    	
-    	UnjoinDeduction branch;
-    	
-    	//Set ret to the conjunction of the deductions that can be made from
+    	Expr t_ = t;
+    	while (t_.construct != TERM_APP && t_ != t_.evalStep(baseCtxt))
+    		t_ = t_.evalStep(baseCtxt);
+    	    	
+    	//Set ret to the disjunction of the deductions that can be made from
     	//each branch.
     	for(int i = 0; i < C.length; ++i)
     	{
+        	UnjoinDeduction branch;
+        	
     		Case c = C[i];
-    		UnjoinDeduction scrutDeduction = UnjoinDeduction.empty;
     		
-    		if (t_.construct == TERM_APP)
-    		{
-    			TermApp ta = (TermApp)t_;
-    			
-    			if (ta.head != c.c)
+    		//TODO: do we really have to do this to detect term constructors?
+    		boolean isTermConstructor = t_.construct == TERM_APP && t_.evalStep(baseCtxt) == t_;
+    		if (isTermConstructor) {
+    			if (((TermApp)t_).head != c.c)
     				continue;
     		}
-    		else if (t_.construct == CONST)
-    		{
+    		else if (t_.construct == CONST) {
     			if (t_ != c.c)
     				continue;
     		}
-    		else if (t_.construct == MATCH)
-    		{
-    			if(c.x.length == 0)
-    			{
-	    			scrutDeduction = t_.Unjoin(
-	    				c.c,
-		    			uCtxt,
-		    			baseCtxt,
-		    			true
-		    		);
-    			}
-    			else
-    			{
-	    			scrutDeduction = t_.Unjoin(
-	    				new TermApp(c.c,c.x),
-		    			uCtxt,
-		    			baseCtxt,
-		    			true
-		    		);		
-    			}
-    		}
     			
     		// Prepend immediate deductions onto case body deductions -----
-	    	if (c.x.length == 0)
-	    	{	
+	    	if (c.x.length == 0) {
 	        	// Make deductions from case body -----
-	    		branch = UnjoinDeduction.FancyAppend(
-	    			UnjoinDeduction.Simplify(scrutDeduction),
-	    			c.body,
+	    		branch = c.body.Unjoin(
 	    			target,
-	        		uCtxt,
+	    			t_.construct == CONST ? proofCount : proofCount + 1,
 	        		baseCtxt,
 	        		eq
 	        	);
 	    		
-	    		if(t_.construct == VAR)
-	    		{
-		        	Atom matchEq = new Atom(true, t_, c.c);
-		        	Var matchEqVar = new Var("p" + Integer.toString(varNum++));
-		        	branch = new UnjoinIntro(matchEqVar, matchEq, branch);
+	    		if (t_.construct != CONST) {
+	    			Atom matchEq = new Atom(true, t_, c.c);
+	    			Var matchEqVar = new Var("p" + proofCount);
+	    			branch = new UnjoinIntro(matchEqVar, matchEq, branch);
 	    		}
 	    	} 
-	    	else
-	    	{
+	    	else {
 	    		FunType consType = (FunType)c.c.classify(baseCtxt).defExpandTop(baseCtxt);
 	        	 	
-	    		// A version of body for which variables corresponding to
-	    		// match arguments are replaced with their corresponding
-	    		// unjoin introductions.
 	    		Expr body = c.body;
-	    		// Create contstructor argument variable -----
 	    		
-	    		
-	        	if (t_.construct == TERM_APP)
-	        	{
+	    		// Create argument variables -----
+	        	if (t_.construct == TERM_APP) {
 	        		TermApp ta = (TermApp)t_;
-	        		Expr substitutedBody = body;
 	        		
 	    			for (int j = 0; j < ta.X.length; ++j)
-	    				substitutedBody = substitutedBody.subst(ta.X[j], c.x[j]);
+	    				body = body.subst(ta.X[j], c.x[j]);
 	    			
-		    		branch = substitutedBody.Unjoin(
-		        			target,
-		        			uCtxt,
-		        			baseCtxt,
-		        			eq
+		    		branch = body.Unjoin(
+	        			target,
+	        			proofCount,
+	        			baseCtxt,
+	        			eq
 		        	);
 	        	}
-	        	else
-	        	{
-			    	
+	        	else {
 		    		Var[] clones = new Var[c.x.length];
 		    		Expr[] types = new Expr[c.x.length];
 		    		int last = c.x.length-1;
 		    		
-		    		String prefix = ((Var)t_).name;
-		    		
 		        	for(int j = 0; j <= last; ++j)
 		        	{
-		        		clones[j] = new Var(uCtxt.genName(prefix + String.valueOf(j)));
+		        		clones[j] = new Var(((Var)t_).name + j);
 		        		types[j] = consType.types[j];
 		        		
-		        		//TODO: This seems a bit inefficient. Could we optimize this?
 		        		body = body.subst(clones[j], c.x[j]);
 		        		
 		        		// Instantiating the last argument would result in the
@@ -288,34 +246,21 @@ public class Match extends CasesExpr{
 		        	}
 		        	
 		        	// Make deductions from case body -----
-		    		branch = UnjoinDeduction.FancyAppend(
-		    			UnjoinDeduction.Simplify(scrutDeduction), 
-	    				body, 
+		    		branch = body.Unjoin( 
 	    				target, 
-	    				uCtxt, 
+	    				proofCount+1, 
 	    				baseCtxt, 
 	    				eq
 		    		);
-
 		        	
 		    		//prepend immediate deductions to case body deductions
-		    		//could this be anything other than a var?
-		    		if(t_.construct == VAR)
-		    		{
-			        	// Create match proof (i.e. { scrutinee = match case } ) -----
-			        	Atom matchEq = new Atom(true, t_, new TermApp(c.c,clones));
-			        	Var matchEqVar = new Var("p" + Integer.toString(varNum++));
-			        	branch = new UnjoinIntro(matchEqVar, matchEq, branch);
-		    		}
+		        	Atom matchEq = new Atom(true, t_, new TermApp(c.c,clones));
+		        	Var matchEqVar = new Var("p" + proofCount);
+		        	branch = new UnjoinIntro(matchEqVar, matchEq, branch);
 		    		
 		        	for (int j = c.x.length-1; j >= 0; --j)
 		        		branch = new UnjoinIntro(clones[j], types[j], branch);
-		        	
-		        	
-		        	for(int j = 0; j < c.x.length; ++j)
-		        		uCtxt.removeName(clones[j].name);
 	        	}
-
 	    	}
 	    	
         	//Or the current return value with the deduction for the

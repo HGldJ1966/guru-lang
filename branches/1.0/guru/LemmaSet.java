@@ -109,6 +109,49 @@ public class LemmaSet {
 		return e;
 	}
 	
+	
+	public Expr instantiate(Expr e)
+	{	
+		Expr ret = e;
+		
+		ListIterator i = formulas.listIterator();
+		while(i.hasNext()) {
+			Expr curr = (Expr)i.next();
+			
+			if (curr.construct != Expr.ATOM)
+				continue;
+			
+			Atom a = (Atom)curr;
+			
+			if (a.equality == false)
+				continue;
+			
+			if (a.Y1.construct == Expr.VAR) {
+				if (a.Y2.construct == Expr.TERM_APP) {	
+					TermApp ta = (TermApp)a.Y2;
+					
+					if (ta.head.construct == Expr.CONST && ctxt.isTermCtor((Const)ta.head))
+						ret = ret.subst(a.Y2, a.Y1);
+				}
+				else if(a.Y2.construct == Expr.CONST) {
+					ret = ret.subst(a.Y2, a.Y1);
+				}
+			}
+			else if (a.Y2.construct == Expr.VAR) {
+				if (a.Y1.construct == Expr.TERM_APP) {	
+					TermApp ta = (TermApp)a.Y1;
+					
+					if (ta.head.construct == Expr.CONST && ctxt.isTermCtor((Const)ta.head))
+						ret = ret.subst(a.Y1, a.Y2);
+				}
+				else if(a.Y1.construct == Expr.CONST)
+					ret = ret.subst(a.Y1, a.Y2);
+			}
+		}
+		
+		return ret;
+	}	
+	
 	private Expr rewrite(Expr e)
 	{
 		if (e.construct != Expr.VAR)
