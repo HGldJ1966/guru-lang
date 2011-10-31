@@ -521,17 +521,44 @@ public class TermApp extends App{
 			boolean eq
 	)
     {	
-		Atom introAtom = new Atom(eq, this, target);
-			
-		//since this is the final deduction, we can name it whatever we 
-		//want without introducing ambiguity.
-		Var introVar = new Var("u");
-		
-		return new UnjoinIntro(
-			introVar,
-			introAtom,
-			UnjoinDeduction.empty
-		);
+    	if (evalStep(baseCtxt) == this && !Unjoin.placeHolder(target,baseCtxt))
+    	{
+    		// A term constructor
+    		
+        	if (target.construct != TERM_APP)
+        		return eq ? UnjoinDeduction.contradiction : UnjoinDeduction.empty;
+        	else
+        	{
+        		UnjoinDeduction ret = UnjoinDeduction.empty;
+        		
+        		for (int i = 0; i < X.length; ++i)
+        		{
+            		Atom introAtom = new Atom(eq, this, target);
+            		Var introVar = new Var("u");
+            		
+            		ret = new UnjoinIntro(
+            			introVar,
+            			introAtom,
+            			ret
+            		);        			
+        		}
+        		
+        		return ret;
+        	}
+    	}
+    	else
+    	{
+    		// A function call
+    		Atom introAtom = new Atom(eq, this, target);
+    		Var introVar = new Var("u");
+    		
+    		return new UnjoinIntro(
+    			introVar,
+    			introAtom,
+    			UnjoinDeduction.empty
+    		);
+    	}
+
     }
 
     public guru.carraway.Expr toCarraway(Context ctxt) {

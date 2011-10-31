@@ -169,9 +169,11 @@ public class Match extends CasesExpr{
     {
     	UnjoinDeduction ret = UnjoinDeduction.contradiction;
     	
-    	Expr t_ = t;
-    	while (t_.construct != TERM_APP && t_ != t_.evalStep(baseCtxt))
-    		t_ = t_.evalStep(baseCtxt);
+    	Expr t_ = baseCtxt.lemmaSet.simplify(t); 
+    		
+    	//baseCtxt.lemmaSet.instantiate(t);
+    	//while (t_.construct != TERM_APP && t_ != t_.evalStep(baseCtxt))
+    	//	t_ = t_.evalStep(baseCtxt);
     	    	
     	//Set ret to the disjunction of the deductions that can be made from
     	//each branch.

@@ -163,18 +163,24 @@ public class Var extends Expr{
 			boolean eq
 	)
     {
-    	if (baseCtxt.isMacroDefined(this))
-    	{
+    	if (baseCtxt.isMacroDefined(this)) {
     		//TODO: this should be removed... abbrevs should be substituted
     		//before unjoining.
     		return evalStep(baseCtxt).Unjoin(target, proofCount, baseCtxt, eq);
     	}
-    	else
-    	{
+    	else {
     		if (target == this)
     			return eq ? UnjoinDeduction.empty : UnjoinDeduction.contradiction;
-    		else
-    			return eq ? UnjoinDeduction.contradiction : UnjoinDeduction.empty;
+    		else {
+    			Atom introAtom = new Atom(eq, this, target);
+    			Var introVar = new Var("u");
+    			
+    			return new UnjoinIntro(
+    				introVar,
+    				introAtom,
+    				UnjoinDeduction.empty
+    			);
+    		}
     	}
     }
 
