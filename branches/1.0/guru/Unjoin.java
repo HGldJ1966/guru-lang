@@ -123,6 +123,17 @@ public class Unjoin extends Expr {
 		w.print("end");
 	}
 	
+	public static boolean placeHolder(Expr e, Context ctxt)
+	{
+		if (e.construct == VAR)
+			return true;
+		
+		if (e.construct == CONST && e.evalStep(ctxt) != e)
+			return true;
+		
+		return false;
+	}
+	
 	// TODO: we need a base class for Unjoin and UnjoinContra which implements
 	// this.
 	//
@@ -155,10 +166,21 @@ public class Unjoin extends Expr {
 		TermApp ta = (TermApp)lhs;
 
 		while (true) {
-	    	//The head, normalized to a function term
 	    	Expr h = ta.head.evalStep(ctxt);
 	    	//The constant or variable initially used for the head.
 	    	Expr pre = ta.head;
+		
+			while (h != h.evalStep(ctxt));
+			{
+				if (h.construct == MATCH)
+					handleError(ctxt, 
+							"Unjoin cannot handle terms containing term apps" +
+							" whose heads evaluate to matches.");
+				
+				h = h.evalStep(ctxt);
+				
+			}
+
 	    	
 	    	//TODO: we really need to loop here, evaluating the head
 	    	//one step at a time until normalization, generating an 
@@ -202,8 +224,8 @@ public class Unjoin extends Expr {
 			if (f.r != null && pre.construct == CONST)		
 				fullInstantiation = (Expr)fullInstantiation.subst((Const)pre, f.r);
 			
-			
-			//TODO: substitute lets and abbrevs here?
+			//continue past lets and abbrevs
+			fullInstantiation = fullInstantiation.eval(ctxt);
 			
 			if (fullInstantiation.construct != TERM_APP)
 				return fullInstantiation;
@@ -284,7 +306,6 @@ public class Unjoin extends Expr {
 		
 		
 		Expr instantiated = instantiate(ctxt, scrutinee.Y1);
-		instantiated = ctxt.lemmaSet.instantiate(instantiated);
 		
 		UnjoinDeduction deduction = instantiated.Unjoin(
 			scrutinee.Y2,
@@ -298,11 +319,13 @@ public class Unjoin extends Expr {
 		if (unjoinPaths.size() != paths.size()) {
 			//TODO: spit out error message, remove assert
 			DumpUnjoinPaths(unjoinPaths, ctxt);
-			handleError(ctxt, "blaaarg!");
-			assert(false);
-			System.exit(0);
+			handleError(ctxt, "Unjoin paths do not match the computed paths" +
+					" listed above.");
 		}
 
+		if (unjoinPaths.size() == 0)
+			handleError(ctxt, "Unjoin has deduced a contradiction.");
+		
 		return classifyPaths(unjoinPaths, ctxt);
 	}
 	

@@ -174,8 +174,8 @@ public class Let extends Expr{
 			boolean eq
 	)
     {
-    	return Unjoin(
-    		t2.subst(t1, x1),
+    	return t2.subst(t1, x1).Unjoin(
+    		target,
     		proofCount,
     		ctxt,
     		eq
