@@ -169,14 +169,14 @@ public class Let extends Expr{
     // Overloaded from Expr
     public UnjoinDeduction Unjoin(
 			Expr target, 
-			int proofCount,
+			UnjoinContext uctxt,
 			Context ctxt,
 			boolean eq
 	)
     {
     	return t2.subst(t1, x1).Unjoin(
     		target,
-    		proofCount,
+    		uctxt,
     		ctxt,
     		eq
     	);

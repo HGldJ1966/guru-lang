@@ -785,7 +785,7 @@ public abstract class Expr {
 	// target term.)
 	public UnjoinDeduction Unjoin(
 			Expr target, 
-			int proofCount,
+			UnjoinContext uctxt,
 			Context baseCtxt,
 			boolean eq
 	)

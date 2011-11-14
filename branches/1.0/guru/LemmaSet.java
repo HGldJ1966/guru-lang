@@ -90,9 +90,15 @@ public class LemmaSet {
 		{
 			e_ = e;
 			
-			if (e.construct == Expr.TERM_APP)
-				break;
-			
+			if (e.construct == Expr.TERM_APP) {
+				TermApp ta = (TermApp)e;
+				
+				if (ta.head.construct == Expr.CONST) {
+					 Const c = (Const)ta.head;
+					 if (ctxt.isTermCtor(c))
+						 break;
+				}
+			}
 			if (e.construct == Expr.MATCH) {
 				Match m = (Match)e;
 				Expr mt_ = simplify(m.t);
@@ -108,8 +114,8 @@ public class LemmaSet {
 				}
 			}		
 			
-			e = e.evalStep(ctxt);
 			e = rewrite(e);
+			e = e.evalStep(ctxt);
 		}
 		
 		return e;
@@ -158,13 +164,8 @@ public class LemmaSet {
 		return ret;
 	}	
 	
-	private Expr rewrite(Expr e)
-	{
-		if (e.construct != Expr.VAR)
-			return e;
-		
-		Var v = (Var)e;
-		
+	public Expr rewrite(Expr e)
+	{	
 		ListIterator i = formulas.listIterator();
 		while(i.hasNext()) {
 			Expr curr = (Expr)i.next();
@@ -177,7 +178,7 @@ public class LemmaSet {
 			if (a.equality == false)
 				continue;
 			
-			if (a.Y1 == v) {
+			if (a.Y1.defEq(ctxt, e)) {
 				if (a.Y2.construct == Expr.TERM_APP)
 				{	
 					TermApp ta = (TermApp)a.Y2;
@@ -191,7 +192,7 @@ public class LemmaSet {
 				}
 			}
 			
-			if (a.Y2 == v && a.Y1.construct == Expr.TERM_APP) {
+			if (a.Y2.defEq(ctxt, e) && a.Y1.construct == Expr.TERM_APP) {
 				if (a.Y1.construct == Expr.TERM_APP)
 				{	
 					TermApp ta = (TermApp)a.Y1;
@@ -206,6 +207,6 @@ public class LemmaSet {
 			}
 		}
 		
-		return v;
+		return e;
 	}
 }

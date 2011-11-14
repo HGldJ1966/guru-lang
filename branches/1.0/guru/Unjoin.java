@@ -91,23 +91,20 @@ import java.util.*;
  * is needed for this, which is implemented in UnjoinContra.java. 
  * 
  */
-public class Unjoin extends Expr {
-
-	// An expression which proves the scrutinee atom.
-	public final Expr scrutineeProof;
+public class Unjoin extends UnjoinBase {
 	
-	// A list containing forall proofs which quantify over the
-	// deductions made in each unjoin path.
+	/** A list containing forall proofs which quantify over the
+	 * deductions made in each unjoin path.
+	 */
 	public final Vector paths;
 	
 	public Unjoin(Expr scrutineeProof, Vector paths)
 	{
-		super(UNJOIN);
+		super(UNJOIN, scrutineeProof);
 		
 		assert(scrutineeProof != null);
 		assert(paths != null);
 		
-		this.scrutineeProof = scrutineeProof;
 		this.paths = paths;
 	}
 	
@@ -121,117 +118,6 @@ public class Unjoin extends Expr {
 			path.do_print(w, ctxt);
 		}
 		w.print("end");
-	}
-	
-	public static boolean placeHolder(Expr e, Context ctxt)
-	{
-		if (e.construct == VAR)
-			return true;
-		
-		if (e.construct == CONST && e.evalStep(ctxt) != e)
-			return true;
-		
-		return false;
-	}
-	
-	// TODO: we need a base class for Unjoin and UnjoinContra which implements
-	// this.
-	//
-	// Converts the left hand side of the scrutinee atom into an equivalent term 
-	// from which unjoin can derive useful information. This equivalent term
-	// will either be a match, a let, or an abbrev. 
-	//
-	// The conversion process is as follows:
-	//
-	// - While t is a term app:
-	// -   if the head is a const defined to be some recursive function,
-	//       establish a correspondence between the constant and the function's
-	//       recursive variable in the unjoin context
-	// -   evaluate the head if possible
-	// -   if the resulting head is a function term, instantiate the function
-	//     in a lazy manner, substituting each actual argument for its corresponding
-	//     formal argument without evaluating the actuals.
-	//     otherwise, generate an error and halt.
-	// -   assign t to the instantiated function.
-	// - return t
-	//
-	// TODO: We might have to prove an equivalence between the strict function
-	// call semantics used by guru and the lazy approach taken by unjoin. Since
-	// guru is functional, this should work.
-	private Expr instantiate(Context ctxt, Expr lhs)
-	{	
-		if (lhs.construct != TERM_APP)
-			return lhs;
-		
-		TermApp ta = (TermApp)lhs;
-
-		while (true) {
-	    	Expr h = ta.head.evalStep(ctxt);
-	    	//The constant or variable initially used for the head.
-	    	Expr pre = ta.head;
-		
-			while (h != h.evalStep(ctxt));
-			{
-				if (h.construct == MATCH)
-					handleError(ctxt, 
-							"Unjoin cannot handle terms containing term apps" +
-							" whose heads evaluate to matches.");
-				
-				h = h.evalStep(ctxt);
-				
-			}
-
-	    	
-	    	//TODO: we really need to loop here, evaluating the head
-	    	//one step at a time until normalization, generating an 
-	    	//error message if any intermediate form is not a constant.
-	    	//We only need to establish a correspondence between the 
-	    	//initial const and the recursive variable of the normal form.
-	    	
-			// If the head does not normalize to a function, we cannot
-	    	// instantiate it, so we cannot unjoin this term app. 
-	    	if (h.construct != FUN_TERM) {
-	    		handleError(ctxt,
-					"The left hand side of an unjoin scrutinee " +
-					"evaluates to a term app whose head is not a function.\n" +
-					"1. lhs:" + lhs.toString(ctxt) + "\n" +
-					"2. evaluated lhs: " + h.toString(ctxt) + "\n"
-	    		);
-	    	}
-	    	
-	    	// The pre-instantiated value of the head.
-    		FunTerm f = (FunTerm)h;
-    		// A variable used to instantiate the head
-    		FunTerm inst = f;
-    		
-    		// Apply all arguments except last.
-    		for (int i = 0; i < ta.X.length-1; ++i)
-    			inst = (FunTerm)inst.substituteForParam(ta.X[i]);   
-    		
-    		// Apply last argument.
-    		// Instantiating a function with one argument may result in an
-    		// arbitrary term, so we need to use an Expr rather than
-    		// a FunTerm to hold the result.
-			Expr fullInstantiation = inst.substituteForParam(ta.X[ta.X.length-1]);
-    	
-    		// If we are unjoining an application of a recursive, top-level
-    		// function, we substitute the function's constant for occurrences
-    		// of the function's recursive variable in the body. 
-    		// 
-    		// This way, any facts deduced about recursive calls will mention
-    		// the constant which, unlike the recursive variable, is accessible
-    		// via the current context.
-			if (f.r != null && pre.construct == CONST)		
-				fullInstantiation = (Expr)fullInstantiation.subst((Const)pre, f.r);
-			
-			//continue past lets and abbrevs
-			fullInstantiation = fullInstantiation.eval(ctxt);
-			
-			if (fullInstantiation.construct != TERM_APP)
-				return fullInstantiation;
-			
-			ta = (TermApp)fullInstantiation;
-		}
 	}
 	
 	// Checks that each parsed path (a forall proof) can eliminate the 
@@ -305,11 +191,12 @@ public class Unjoin extends Expr {
 		}
 		
 		
-		Expr instantiated = instantiate(ctxt, scrutinee.Y1);
+		Expr instantiated = instantiate2(ctxt, scrutinee.Y1);
+		UnjoinContext uctxt = new UnjoinContext(ctxt.lemmaSet);
 		
 		UnjoinDeduction deduction = instantiated.Unjoin(
 			scrutinee.Y2,
-			0,
+			uctxt,
 			ctxt,
 			scrutinee.equality
 		);

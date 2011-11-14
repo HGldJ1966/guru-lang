@@ -18,11 +18,11 @@ public class UnjoinContext {
 	// unique.
 	public int proofCounter;
 	
-	// The recursive variable of the function being unjoined.
-	// If this is null, then we are not unjoining an application of a recursive, 
-	// top-level function, or it hasn't been set yet.
-	public Var recVar;
-
-	// The constant representing the function being unjoined. 
-	public Const recConst;
+	public final LemmaSet lemmaSet;
+	
+	public UnjoinContext(LemmaSet baseLemmaSet)
+	{
+		this.proofCounter = 0;
+		this.lemmaSet = baseLemmaSet.copy();
+	}
 }

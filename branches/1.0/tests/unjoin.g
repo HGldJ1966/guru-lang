@@ -5,6 +5,82 @@ Include "../lib/minus.g"
 Include "../lib/vec.g"
 Include "../lib/minmax.g"
 
+  
+Inductive list2 : Fun(A:type).type :=
+  | nil2 : Fun(A:type).<list2 A>
+  | cons2 : Fun(A:type)(a:A)(l:<list2 A>). <list2 A>.
+
+Define foldr2 
+  : Fun(S A : type)(acc : Fun(s : S)(a : A). S)(init : S)(l : <list2 A>). S
+:=
+  fun foldr2(S A : type)(acc : Fun(s : S)(a : A). S)(s : S)(l : <list2 A>):S.
+  match l with
+  | nil2 _ => 
+    s
+  | cons2 _ a' l' =>
+    let s' = (acc s a') in
+    (foldr2 S A acc s' l') 
+  end.
+
+Define ormap :=
+  fun(l : <list2 bool>).
+  (foldr2 bool bool or ff l).
+%-
+Define list_setmember2 
+	: Forall(A:type)(a:A)
+			  (eqA:Fun(^#owned x y: A).bool)
+			  (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+        (u:{ (eqA a a) = tt })
+        (l'' l':<list A>).
+    { (member a (append l' (cons a l'')) eqA) = tt }
+:=
+  foralli(A:type)(a:A)(eqA:Fun(^ #owned x y: A).bool)
+         (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+         (u: {(eqA a a) = tt})(l'' l':<list A>).
+  abbrev eqA = terminates eqA by eqA_total in
+  case (member A a (append A l' (cons A a l'')) eqA) by v ign with
+  | ff =>
+    lemma u in
+    unjoin v with
+    | foralli(p0 : { (append l' (cons a l'')) = nil }).
+      unjoin p0 with
+      
+      | (l'0 : type)(l'1 : l'0)(l'2 : <list l'0>)(p0 : { l' = (cons l'1 l'2) })
+        (u : { (append_h (inspect mk_append_i) l'1 (foldr (clone_owned (inspect mk_append_i)) append_h (cons a l'') l'2)) = nil }) =>
+
+
+      %-
+      %%
+      %% INTERESTING POINT - PARTIAL APPLICATION USED TO CREATE A FUNCTION
+      %% DOES NOT HANDLE WELL. NUEVAL 
+      %%
+      %%
+      | foralli(l'0 : type)(l'1 : l'0)(l'2 : <list l'0>)
+               (p0 : { l' = (cons l'1 l'2) })
+               (u : { (fun(^ #owned cookie)(^ #owned x)(l) :  !. match cookie by cookie_eq cookie_Eq return <list A> with mk_append_i => (cons (inc_owned x) l) end mk_append_i l'1 (fun foldr(^ #owned cookie)(fcn)(b)(^ #owned l) :  !. match l by l_eq l_Eq return B with nil => b | cons a' l' => (fcn cookie a' (foldr (clone_owned cookie) fcn b l')) end (clone_owned mk_append_i) fun(^ #owned cookie)(^ #owned x)(l) :  !. match cookie by cookie_eq cookie_Eq return <list A> with mk_append_i => (cons (inc_owned x) l) end (cons a l'') l'2)) = nil })
+      -%
+
+      end
+
+    | foralli(c0 : type)(c1 : c0)(c2 : <list c0>)
+             (p0 : { (append l' (cons a l'')) = (cons c1 c2) })
+             (u : { (or (eqA (clone_owned a) c1) (member a c2 eqA)) = ff }).
+      truei
+    end
+    
+  | tt =>
+    v
+  end
+-%
+
+
+Define eqnatEq3 : Forall(n:nat)(u:{(eqnat n Z) = tt}). { n = Z } :=
+  foralli(n: nat)(u:{(eqnat n Z) = tt}).
+  unjoin u with
+  | foralli(p4 : { n = Z }).
+    p4
+  end.
+
 Define letFunc :=
   fun (x : bool).
   let x = (or x x) in
@@ -103,16 +179,6 @@ Define funnyIdProof
     u
   end.
 
-Define max2 : Fun(a b:nat).nat :=
-	fun max(a b :nat) : nat.
-	match a by u u return nat with
-	Z => b
-	| S a' => match b by u u return nat with
-		Z => a
-		| S b' => (S (max a' b'))
-		end
-	end.
-
 Define matchArgs :=
   fun(x : nat)(y : nat).
   let z = 
@@ -123,13 +189,28 @@ Define matchArgs :=
       two
     end
   in
-  (max2 z y).
+  (max z y).
 
 Define matchArgsProof
-
 :=
   foralli(x y : nat)(u : { (matchArgs x y) = two }).
   unjoin u with
+  | foralli(p0 : { x = Z })(u : { (max one y) = two }).
+    lemma
+      : { (le y (max one y)) = tt }
+        [max_easy y one]
+      : { (le (max one y) two) = tt }
+        [eq_le (max one y) two u]
+    in
+    [le_trans y (max one y) two ## ##] 
+  | foralli(x0 : nat)(p0 : { x = (S x0) })(u : { (max two y) = two }).
+    lemma
+      : { (le y (max two y)) = tt }
+        [max_easy y two]
+      : { (le (max two y) two) = tt }
+        [eq_le (max two y) two u]
+    in
+    [le_trans y (max two y) two ## ##]
   end.
 
 
@@ -165,106 +246,14 @@ Define badSubProof
       end
     end
   end.
-  
+
+
+
 %
 % MOAR PROOOFS
 %
 %  
 
-%-
-Define myproof :=
-  foralli(a b : nat)(x:{ (lt a b) = tt } ).
-  unjoin x with
-    | foralli(p2 : { a = Z })(b' : nat)(p1 : { b = (S b') }).
-      trans : { b = (S b') } p1
-            : { (S b') != Z } clash (S b') Z
-    | foralli(a' : nat)(p5 : { a = (S a') })(b' : nat)(p4 : { b = (S b') })
-             (u : { (lt a' b') = tt }).
-      trans : { b = (S b') } p4
-            : { (S b') != Z } clash (S b') Z
-  end.
--%
-
-Define eqnat : Fun(n m:nat).bool :=
-  fun eqnat(n m:nat):bool.
-    match n with
-    | Z => 
-      match m with
-      | Z => tt
-      | S m' => ff
-      end
-    | S n' => 
-      match m with
-      | Z => ff
-      | S m' => (eqnat n' m')
-      end
-    end
-  end.
-
-Define eqnatEq2 : Forall(n m:nat)(u:{(eqnat n m) = tt}). { n = m } :=
-  induction(n:nat) return
-    Forall(m:nat)(u:{(eqnat n m) = tt}). { n = m } 
-  with
-  | Z =>
-    foralli(m: nat)(u : { (eqnat n m) = tt }).
-    case m with
-    | Z =>
-      transs 
-        : { m = Z } m_eq
-        : { Z = n } symm n_eq
-      end
-    | S m' =>
-      lemma 
-        : { (eqnat n m) = ff }
-          hypjoin (eqnat n m) ff by
-            : { m = (S m') } m_eq
-            : { n = Z } n_eq
-          end
-        : { tt = ff }
-          transs
-            : { tt = (eqnat n m) } symm u
-            : { (eqnat n m) = ff } ##
-          end 
-      in
-      contra
-        : { tt = ff } ##
-        { n = m } 
-    end
-  | S n' =>
-    foralli(m: nat)(u : { (eqnat n m) = tt }).
-    case m with
-    | Z => 
-      lemma 
-        : { (eqnat n m) = ff }
-          hypjoin (eqnat n m) ff by
-            : { n = (S n') } n_eq
-            : { m = Z } m_eq
-          end
-        : { tt = ff }
-          transs
-            : { tt = (eqnat n m) } symm u
-            : { (eqnat n m) = ff } ##
-          end 
-      in
-      contra
-        : { tt = ff } ##
-        { n = m } 
-    | S m' =>
-      hypjoin n m by
-        : { n' = m' } [n_IH n' m' u]
-        : { m = (S m') } m_eq
-        : { n = (S n') } n_eq
-      end
-    end
-  end.
-
-Define eqnatEq3 : Forall(n:nat)(u:{(eqnat n Z) = tt}). { n = Z } :=
-  foralli(n: nat)(u:{(eqnat n Z) = tt}).
-  unjoin u with
-  | foralli(p4 : { n = Z }).
-    p4
-  end.
-  
 Define eqnatNeq2 : Forall(n m:nat)(u:{(eqnat n m) = ff}). { n != m } :=
   induction (n:nat) return
     Forall(m:nat)(u:{(eqnat n m) = ff}). { n != m }
@@ -366,21 +355,6 @@ Define lt_Z2 : Forall(a:nat).{ (lt a Z) = ff } :=
   end.
 
  
- %-
-Define lt_leff : Forall(a b:nat)(u:{ (lt a b) = tt }).{ (le b a) = ff }
-  :=
-  induction(a b: nat) return 
-    return Forall(u:{ (lt a b) = tt }).{ (le b a) = ff }
-  with
-  | Z => 
-    foralli(u:{ (lt a b) = tt }).
-    unjoin u with
-    | contradiction.
-    end
-  | S n' =>
-  end
--%
-
 %- Define lt_ltff -- a lot like lt_leff -%
 
 %-
@@ -558,112 +532,5 @@ Define vec_vecc_shift2 :
       -%
   end.  
   -%
-
-
-  %-
-Define vec_last_eq_get_pred_n :
-  Forall(A: type)
-        (n: nat)
-        (m: nat)
-        (u: { (S m) = n })
-        (v: <vec A n>)
-        .
-        { (vec_get v m) = (vec_last v) }
-  :=
-  foralli(A: type).
-  induction(n: nat) 
-  return
-    Forall(m: nat)(u: { (S m) = n })(v: <vec A n>). { (vec_get v m) = (vec_last v) }
-  with
-    | Z =>
-      foralli(m: nat)(u: { (S m) = n })(v: <vec A n>).
-      contra
-        transs
-          symm n_eq %{ (Z = n) }
-          symm u
-          clash (S m) Z
-        end
-
-        { (vec_get v m) = (vec_last v) }
-    | S n' =>
-      foralli(m: nat)(u: { (S m) = n })(v: <vec A n>).
-      abbrev Sn'_eq_Sm =
-        trans u
-              n_eq
-      in
-      abbrev m_eq_n' = inj (S *) Sn'_eq_Sm in
-      case v with
-        | vecn _ =>
-          contra
-            transs
-              symm n_eq
-              inj <vec ** *> v_Eq
-              clash Z (S n')
-            end
-
-            { (vec_get v m) = (vec_last v) }
-        | vecc _ restLen a rest =>
-          abbrev SrestLen_eq_Sn' =
-            trans inj <vec ** *> symm v_Eq %(S restLen) = n
-                  n_eq
-          in
-          abbrev restLen_eq_n' = inj (S *) SrestLen_eq_Sn' in
-
-          case m with
-            | Z =>
-              case rest with
-                | vecn _ =>
-                  hypjoin (vec_get v m) (vec_last v) by v_eq m_eq rest_eq end
-                | vecc _ x _ _ =>
-                  contra
-                    transs
-                      symm m_eq
-                      m_eq_n'
-                      symm restLen_eq_n'
-                      inj <vec ** *> rest_Eq %<vec A restLen> = <vec A (S x)>
-                      clash (S x) Z
-                    end
-
-                    { (vec_get v m) = (vec_last v) }
-              end
-            | S m' =>
-              abbrev Sm'_eq_n' = hypjoin (S m') n' by m_eq_n' m_eq n_eq end in
-              abbrev Sm'_le_n' = [eq_le (S m') n' Sm'_eq_n'] in
-              abbrev m'_lt_Sm' = [lt_S m'] in
-              abbrev m'_lt_n' = [ltle_trans m' (S m') n' m'_lt_Sm' Sm'_le_n'] in
-              % (vec_get rest m') = (vec_last rest)
-              abbrev indStep = 
-                [n_IH 
-                  n' 
-                  m' 
-                  Sm'_eq_n' 
-                  cast rest by cong <vec A *> restLen_eq_n'
-                ]
-              in
-              abbrev n'_neq_Z =
-                trans symm Sm'_eq_n'
-                      clash (S m') Z
-              in      
-              % { (vec_last rest) = (vec_last (vecc a rest)) }
-              abbrev last_rest_eq_last_v =
-                [vec_vecc_last_invariant 
-                  A 
-                  n' 
-                  n'_neq_Z 
-                  cast rest by cong <vec A *> restLen_eq_n'
-                  a
-                ]
-              in
-              hypjoin (vec_get v m) (vec_last v) by 
-                indStep
-                last_rest_eq_last_v
-                v_eq
-                m_eq
-              end
-          end
-      end
-  end.
-
--%
 
 Classify eqnatNeq2. 
