@@ -158,7 +158,7 @@ public class Var extends Expr{
     
     public UnjoinDeduction Unjoin(
 			Expr target, 
-			int proofCount,
+			UnjoinContext uctxt,
 			Context baseCtxt,
 			boolean eq
 	)
@@ -166,7 +166,7 @@ public class Var extends Expr{
     	if (baseCtxt.isMacroDefined(this)) {
     		//TODO: this should be removed... abbrevs should be substituted
     		//before unjoining.
-    		return evalStep(baseCtxt).Unjoin(target, proofCount, baseCtxt, eq);
+    		return evalStep(baseCtxt).Unjoin(target, uctxt, baseCtxt, eq);
     	}
     	else {
     		if (target == this)

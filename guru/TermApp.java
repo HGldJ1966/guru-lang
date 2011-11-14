@@ -516,7 +516,7 @@ public class TermApp extends App{
     
     public UnjoinDeduction Unjoin(
 			Expr target, 
-			int proofCount,
+			UnjoinContext uctxt,
 			Context baseCtxt,
 			boolean eq
 	)

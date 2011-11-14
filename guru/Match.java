@@ -162,14 +162,14 @@ public class Match extends CasesExpr{
     //Override from Expr
     public UnjoinDeduction Unjoin(
 			Expr target, 
-			int proofCount,
+			UnjoinContext uctxt,
 			Context baseCtxt,
 			boolean eq
 	)
     {
     	UnjoinDeduction ret = UnjoinDeduction.contradiction;
     	
-    	Expr t_ = baseCtxt.lemmaSet.simplify(t); 
+    	Expr t_ = uctxt.lemmaSet.rewrite(t); 
     		
     	//baseCtxt.lemmaSet.instantiate(t);
     	//while (t_.construct != TERM_APP && t_ != t_.evalStep(baseCtxt))
@@ -184,8 +184,14 @@ public class Match extends CasesExpr{
     		Case c = C[i];
     		
     		//TODO: do we really have to do this to detect term constructors?
-    		boolean isTermConstructor = t_.construct == TERM_APP && t_.evalStep(baseCtxt) == t_;
-    		if (isTermConstructor) {
+    		boolean isConstructorTerm = t_.construct == TERM_APP;
+    		if (isConstructorTerm)
+    			isConstructorTerm &= ((TermApp)t_).head.construct == Expr.CONST;
+    		
+    		if (isConstructorTerm)
+    			isConstructorTerm &= baseCtxt.isTermCtor( (Const)((TermApp)t_).head ); 
+    	
+    		if (isConstructorTerm) {
     			if (((TermApp)t_).head != c.c)
     				continue;
     		}
@@ -196,27 +202,37 @@ public class Match extends CasesExpr{
     			
     		// Prepend immediate deductions onto case body deductions -----
 	    	if (c.x.length == 0) {
+	    		
+    			Atom matchEq = new Atom(true, t_, c.c);
+    			Var matchEqVar = new Var("p" + uctxt.proofCounter);
+	    		
+	    		if (t_.construct != CONST)
+	    		{
+	    			uctxt.proofCounter++;
+	    			uctxt.lemmaSet.addLemma(matchEq);
+	    		}
+	    		
 	        	// Make deductions from case body -----
 	    		branch = c.body.Unjoin(
 	    			target,
-	    			t_.construct == CONST ? proofCount : proofCount + 1,
+	    			uctxt,
 	        		baseCtxt,
 	        		eq
 	        	);
 	    		
 	    		if (t_.construct != CONST) {
-	    			Atom matchEq = new Atom(true, t_, c.c);
-	    			Var matchEqVar = new Var("p" + proofCount);
+	    			uctxt.proofCounter--;
+	    			uctxt.lemmaSet.removeLemma(matchEq);
+
 	    			branch = new UnjoinIntro(matchEqVar, matchEq, branch);
 	    		}
 	    	} 
 	    	else {
-	    		FunType consType = (FunType)c.c.classify(baseCtxt).defExpandTop(baseCtxt);
-	        	 	
+
 	    		Expr body = c.body;
 	    		
 	    		// Create argument variables -----
-	        	if (t_.construct == TERM_APP) {
+	        	if (isConstructorTerm) {
 	        		TermApp ta = (TermApp)t_;
 	        		
 	    			for (int j = 0; j < ta.X.length; ++j)
@@ -224,22 +240,44 @@ public class Match extends CasesExpr{
 	    			
 		    		branch = body.Unjoin(
 	        			target,
-	        			proofCount,
+	        			uctxt,
 	        			baseCtxt,
 	        			eq
 		        	);
 	        	}
 	        	else {
-		    		Var[] clones = new Var[c.x.length];
-		    		Expr[] types = new Expr[c.x.length];
-		    		int last = c.x.length-1;
+		    		FunType consType = (FunType)c.c.classify(baseCtxt).defExpandTop(baseCtxt);
+	        	 	
+		    		Var[] clones = new Var[consType.vars.length];
+		    		Var[] nonSpecificationalClones = new Var[c.x.length];
+		    		Expr[] types = new Expr[consType.vars.length];
+		    		int last = consType.vars.length-1;
 		    		
-		        	for(int j = 0; j <= last; ++j)
+		    		//index into non-specificational args
+		    		int uInd = 0;
+		    		
+		        	for(int j = 0; j < clones.length; ++j)
 		        	{
-		        		clones[j] = new Var(((Var)t_).name + j);
-		        		types[j] = consType.types[j];
+		        		String name;
+		        		if (t_.construct == VAR)
+		        			name = ((Var)t_).name + j;
+		        		else
+		        			name = "c" + j;
 		        		
-		        		body = body.subst(clones[j], c.x[j]);
+		        		clones[j] = new Var(name);
+		        		types[j] = consType.types[0];
+		        		baseCtxt.setClassifier(clones[j], types[j]);
+		        		
+		        		int spec = (consType.owned[0].status & Ownership.SPEC);
+		        		
+		        		if (!(clones[j].isTypeOrKind(baseCtxt) || 
+		        			  clones[j].isProof(baseCtxt) ||
+		        			  spec != 0) ) {
+		        			
+		        			nonSpecificationalClones[uInd] = clones[j];
+		        			body = body.subst(clones[j], c.x[uInd]);
+		        			uInd++;
+		        		}
 		        		
 		        		// Instantiating the last argument would result in the
 		        		// return type, which may not be a function type.
@@ -247,20 +285,34 @@ public class Match extends CasesExpr{
 		        			consType = (FunType)consType.instantiate(clones[j]);	        		
 		        	}
 		        	
+		        	
+		        	Atom matchEq = new Atom(
+		        		true, 
+		        		t_, 
+		        		new TermApp(c.c,nonSpecificationalClones)
+		        	);
+		        	
+		        	Var matchEqVar = new Var("p" + uctxt.proofCounter);
+		        	baseCtxt.setClassifier(matchEqVar, matchEq);
+		        	
+		        	uctxt.proofCounter++;
+		        	uctxt.lemmaSet.addLemma(matchEq);
+		        	
 		        	// Make deductions from case body -----
 		    		branch = body.Unjoin( 
 	    				target, 
-	    				proofCount+1, 
+	    				uctxt, 
 	    				baseCtxt, 
 	    				eq
 		    		);
+		    		
+		    		uctxt.proofCounter--;
+		    		uctxt.lemmaSet.removeLemma(matchEq);
 		        	
 		    		//prepend immediate deductions to case body deductions
-		        	Atom matchEq = new Atom(true, t_, new TermApp(c.c,clones));
-		        	Var matchEqVar = new Var("p" + proofCount);
 		        	branch = new UnjoinIntro(matchEqVar, matchEq, branch);
 		    		
-		        	for (int j = c.x.length-1; j >= 0; --j)
+		        	for (int j = types.length-1; j >= 0; --j)
 		        		branch = new UnjoinIntro(clones[j], types[j], branch);
 	        	}
 	    	}
