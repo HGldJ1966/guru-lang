@@ -104,5 +104,15 @@ public class Abort extends Expr{
 	e.pos = pos;
 	return e;
     }
+    
+    public UnjoinDeduction Unjoin(
+		Expr target, 
+		UnjoinContext uctxt,
+		Context baseCtxt,
+		boolean eq
+    )
+    {
+    	return UnjoinDeduction.contradiction;
+    }
 }
 
