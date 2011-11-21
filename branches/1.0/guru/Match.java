@@ -203,6 +203,9 @@ public class Match extends CasesExpr{
     		// Prepend immediate deductions onto case body deductions -----
 	    	if (c.x.length == 0) {
 	    		
+	    		if (!UnjoinBase.plausible(t_, c.c, uctxt, baseCtxt,true))
+	    			continue;
+	    		
     			Atom matchEq = new Atom(true, t_, c.c);
     			Var matchEqVar = new Var("p" + uctxt.proofCounter);
 	    		

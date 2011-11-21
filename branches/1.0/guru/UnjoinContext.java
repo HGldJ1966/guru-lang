@@ -20,9 +20,16 @@ public class UnjoinContext {
 	
 	public final LemmaSet lemmaSet;
 	
+	//Whenever we enter recursively defined functions, testing for plausibility,
+	//we need to make sure we don't traverse recusive function calls. recVars
+	//is equal to the current recursive variable, if any, so we can use 
+	//it to check for this.
+	public Var recVar;
+	
 	public UnjoinContext(LemmaSet baseLemmaSet)
 	{
 		this.proofCounter = 0;
 		this.lemmaSet = baseLemmaSet.copy();
+		this.recVar = null;
 	}
 }

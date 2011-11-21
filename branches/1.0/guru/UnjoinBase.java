@@ -31,6 +31,287 @@ public abstract class UnjoinBase extends Expr {
 		return false;
 	}
 	
+	class VarValue
+	{
+		public final Var var;
+		public final Expr classifier;
+	
+		public VarValue(Var var, Expr classifier)
+		{
+			this.var = var;
+			this.classifier = classifier;
+		}
+	}
+	
+	public static boolean plausible(
+		Expr term,
+		Expr target,
+		UnjoinContext uCtxt,
+		Context baseCtxt,
+		boolean eq
+	)
+	{		
+		assert(eq == true);
+		
+		target = uCtxt.lemmaSet.simplify(target);
+
+		if (target.construct == Expr.VAR)
+			return true;
+		
+		switch (term.construct)
+		{
+		case Expr.TERM_APP:
+			TermApp taTerm = (TermApp)term;
+			
+			if (taTerm.head.construct == CONST && baseCtxt.isCtor((Const)taTerm.head))
+			{
+				if (target.construct != TERM_APP)
+					return false;
+				
+				TermApp taTarget = (TermApp)target;
+				
+				if (taTarget.head != taTerm.head)
+					return false;
+				
+
+				boolean ret = true;
+				for (int i = 0; i < taTerm.X.length; ++i)
+				{
+					ret = ret && plausible(
+						taTerm.X[i],
+						taTarget.X[i],
+						uCtxt,
+						baseCtxt,
+						eq
+					);
+				}
+				
+				return ret;
+			}
+			else
+			{	
+	    		if (taTerm.head.eval(baseCtxt).construct != Expr.FUN_TERM)
+	    			return true; // maybe it could be a variable
+	    		
+	    		FunTerm inst = (FunTerm)taTerm.head.eval(baseCtxt);
+	   
+	    		Var oldRec = uCtxt.recVar;
+	    		uCtxt.recVar = inst.r;
+	    		
+	    		// Apply all arguments except last.
+	    		for (int i = 0; i < taTerm.X.length-1; ++i)
+	    			inst = (FunTerm)inst.substituteForParam(taTerm.X[i]);   
+	    		
+	    		// Apply last argument.
+	    		// Instantiating a function with one argument may result in an
+	    		// arbitrary term, so we need to use an Expr rather than
+	    		// a FunTerm to hold the result.
+				Expr fullInst = inst.substituteForParam(taTerm.X[taTerm.X.length-1]);
+				
+	    		boolean ret = plausible(
+	    			fullInst,
+	    			target,
+	    			uCtxt,
+	    			baseCtxt,
+	    			eq
+	    		);		
+	    		
+	    		uCtxt.recVar = oldRec;
+	    		
+	    		return ret;
+			}
+		case Expr.FUN_TERM:
+			return target.construct == FUN_TERM;
+		case Expr.VAR:
+			return true;
+		case Expr.CONST:
+			if (term.evalStep(baseCtxt) != term) {
+				return plausible(
+					term.evalStep(baseCtxt),
+					target,
+					uCtxt,
+					baseCtxt,
+					eq
+				);
+			}
+			
+			return target == term;
+		case Expr.MATCH:
+			Match m = (Match)term;
+	    	boolean ret = false;
+	    	Expr t_ = uCtxt.lemmaSet.simplify(m.t);
+	    	boolean branchPlausible;
+	    	
+	    	Case[] C = m.C;
+	    	
+	    	for(int i = 0; i < C.length; ++i)
+	    	{
+	    		Case c = C[i];
+	    		
+	    		// We need to factor this out
+	    		boolean isScrutConstructor = t_.construct == TERM_APP;
+	    		if (isScrutConstructor)
+	    			isScrutConstructor &= ((TermApp)t_).head.construct == Expr.CONST;
+	    		
+	    		if (isScrutConstructor)
+	    			isScrutConstructor &= baseCtxt.isTermCtor( (Const)((TermApp)t_).head ); 
+	    		
+	    		// If the case is for a constructor without any arguments,
+	    		// we have this simple case involving no substitutions.
+		    	if (c.x.length == 0)
+		    	{
+    				boolean scrutPlausible = plausible(
+    					t_,
+	    				c.c,
+		    			uCtxt,
+		    			baseCtxt,
+		    			true
+		    		);
+    				
+    				if (!scrutPlausible)
+    					continue;
+        				
+		        	Atom matchEq = new Atom(true, t_, c.c);
+		        	Var matchEqVar = new Var("p");
+		        	
+		    		if (t_.construct != Expr.CONST)	
+		    			uCtxt.lemmaSet.addLemma(matchEq);
+		    		
+		        	// Make deductions from case body -----
+		    		branchPlausible = plausible(
+		    			c.body,
+		    			target,
+		    			uCtxt,
+		    			baseCtxt,
+		    			eq
+		    		);
+		    		
+		    		if (t_.construct != CONST)
+		    			uCtxt.lemmaSet.removeLemma(matchEq);
+		    	} 
+		    	// if the case is for a constructor with arguments,
+		    	// things are a bit more complicated.
+		    	else
+		    	{
+    				boolean scrutPlausible = plausible(
+    					t_,
+	    				new TermApp(c.c,c.x),
+		    			uCtxt,
+		    			baseCtxt,
+		    			true
+		    		);		
+    				
+    				if (!scrutPlausible)
+    					continue;
+        				
+		        	if (isScrutConstructor)
+		        	{
+		        		TermApp ta = (TermApp)t_;
+		        		Expr substitutedBody = c.body;
+		        		
+		    			for (int j = 0; j < ta.X.length; ++j)
+		    				substitutedBody = substitutedBody.subst(ta.X[j], c.x[j]);
+		    			
+			    		branchPlausible = plausible(
+			    			substitutedBody,
+			        		target,
+			        		uCtxt,
+			        		baseCtxt,
+			        		eq
+			        	);
+		        	}
+		        	else
+		        	{
+		        		//
+		        		Expr substitutedBody = c.body;;
+		        		
+			    		FunType consType = (FunType)c.c.classify(baseCtxt).defExpandTop(baseCtxt);
+			    		Var[] clones = new Var[consType.vars.length];
+			    		Var[] nonSpecificationalClones = new Var[c.x.length];
+			    		Expr[] types = new Expr[consType.vars.length];
+			    		
+			    		int last = consType.vars.length-1;
+			    		
+			    		//index into non-specificational args
+			    		int uInd = 0;
+			    		
+			        	for(int j = 0; j < clones.length; ++j)
+			        	{
+			        		clones[j] = new Var("z");
+			        		types[j] = consType.types[0];
+			        		baseCtxt.setClassifier(clones[j], types[j]);
+			        		
+			        		int spec = (consType.owned[0].status & Ownership.SPEC);
+			        		
+			        		if (!(clones[j].isTypeOrKind(baseCtxt) || 
+			        			  clones[j].isProof(baseCtxt) ||
+			        			  spec != 0) ) {
+			        			
+			        			nonSpecificationalClones[uInd] = clones[j];
+			        			substitutedBody = substitutedBody.subst(clones[j], c.x[uInd]);
+			        			uInd++;
+			        		}
+			        		
+			        		// Instantiating the last argument would result in the
+			        		// return type, which may not be a function type.
+			        		if (j != last)
+			        			consType = (FunType)consType.instantiate(clones[j]);	        		
+			        	}
+			        	
+			        	Atom matchEq = new Atom(
+			        		true, 
+			        		t_, 
+			        		new TermApp(c.c,nonSpecificationalClones)
+			        	);
+			        			    
+			        	uCtxt.lemmaSet.addLemma(matchEq);
+			        	
+			        	// Make deductions from case body -----
+			    		branchPlausible = plausible(
+			    			substitutedBody,
+		    				target, 
+		    				uCtxt, 
+		    				baseCtxt, 
+		    				eq
+			    		);
+			    		
+			    		uCtxt.lemmaSet.removeLemma(matchEq);
+		        	}
+		    	}
+		    	
+	        	//Or the current return value with the deduction for the
+	        	//current branch (if ret is null, we set it to the current branch)
+	        	ret = ret || branchPlausible;
+	    	}
+	    	
+	    	return ret;
+		case Expr.BANG:
+			return target.construct == Expr.BANG;
+		case Expr.DO:
+			Do d = (Do)term;
+			return plausible(
+				d.t,
+				target,
+				uCtxt,
+				baseCtxt,
+				eq
+			);
+		case Expr.VOIDI:
+			return target.construct == VOIDI;
+		case Expr.LET:
+			return plausible(
+				term.evalStep(baseCtxt),
+				target,
+				uCtxt,
+				baseCtxt,
+				eq
+			);
+		default:
+			assert(false);
+			return false;
+		}	
+	}
+	
 	//Non-unfolding evaluation step
 	public Expr nustep(Expr e, Context ctxt)
 	{
@@ -130,7 +411,7 @@ public abstract class UnjoinBase extends Expr {
     	
 		while (e2 != nustep(e2,ctxt))
 		{
-			System.out.println(e2.toString(ctxt));
+			//System.out.println(e2.toString(ctxt));
 			e2 = nustep(e2,ctxt);
 		}
 		
@@ -299,6 +580,8 @@ public abstract class UnjoinBase extends Expr {
 			}
 			
 			return null;
+		case Expr.ABORT:
+			return null;
 		default:
 			assert(false);
 			return null;
@@ -335,6 +618,8 @@ public abstract class UnjoinBase extends Expr {
 		case Expr.LET:
 			Let let = (Let)e;
 			return matchFree(let.t1) && matchFree(let.t2);
+		case Expr.ABORT:
+			return true;
 		default:
 			assert(false);
 			return false;
@@ -433,18 +718,18 @@ public abstract class UnjoinBase extends Expr {
 		Expr lhs2 = lhs;
 		
 		while (true) {
-			System.out.println("a.");
-			System.out.println(lhs2.toString(ctxt));
+			//System.out.println("a.");
+			//System.out.println(lhs2.toString(ctxt));
 			
 	    	lhs2 = nueval(lhs2, ctxt);
 	    	
-	    	System.out.println("b.");
-	    	System.out.println(lhs2.toString(ctxt));
+	    	//System.out.println("b.");
+	    	//System.out.println(lhs2.toString(ctxt));
 	    	
 	    	lhs2 = liftMatches(lhs2);
 	    	
-	    	System.out.println("c.");
-	    	System.out.println(lhs2.toString(ctxt));
+	    	//System.out.println("c.");
+	    	//System.out.println(lhs2.toString(ctxt));
 	    	
 	    	if (lhs2.construct == TERM_APP)
 	    	{

@@ -10,6 +10,132 @@ Inductive list2 : Fun(A:type).type :=
   | nil2 : Fun(A:type).<list2 A>
   | cons2 : Fun(A:type)(a:A)(l:<list2 A>). <list2 A>.
 
+Define matchArgs :=
+  fun(x : nat)(y : nat).
+  let z = 
+    match x with
+    | Z =>
+      one
+    | S x' =>
+      two
+    end
+  in
+  (max z y).
+
+Define matchArgsProof
+:=
+  foralli(x y : nat)(u : { (matchArgs x y) = two }).
+  unjoin u with
+  | foralli(p0 : { x = Z })(u : { (max one y) = two }).
+    lemma
+      : { (le y (max one y)) = tt }
+        [max_easy y one]
+      : { (le (max one y) two) = tt }
+        [eq_le (max one y) two u]
+    in
+    [le_trans y (max one y) two ## ##] 
+  | foralli(x0 : nat)(p0 : { x = (S x0) })(u : { (max two y) = two }).
+    lemma
+      : { (le y (max two y)) = tt }
+        [max_easy y two]
+      : { (le (max two y) two) = tt }
+        [eq_le (max two y) two u]
+    in
+    [le_trans y (max two y) two ## ##]
+  end.
+
+Define list_setmember2 
+	: Forall(A:type)(a:A)
+			  (eqA:Fun(^#owned x y: A).bool)
+			  (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+        (eqA_refl: Forall(a: A). { (eqA a a) = tt })
+        (l'' l':<list A>).
+    { (member a (append l' (cons a l'')) eqA) = tt }
+:=
+  foralli(A:type)(a:A)(eqA:Fun(^ #owned x y: A).bool)
+         (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
+         (eqA_refl: Forall(a: A). { (eqA a a) = tt })
+         (l'' l': <list A>).
+  [member_append_cons A a l' l'' eqA eqA_total eqA_refl].
+
+
+
+Define nth_append2 : Forall(A:type)(n:nat)(l:<list A>)(a:A)
+                          (u:{(nth n l) = a}).
+                       Exists(l1 l2:<list A>).
+                         { l = (append l1 (cons a l2)) } :=
+  foralli(A:type)(n:nat)(l:<list A>)(a:A)
+         (u:{(nth n l) = a}).
+
+  unjoin u with
+  | foralli(p0 : { n = Z })(l0 : type)(l1 : l0)(l2 : <list l0>)
+           (p1 : { l = (cons l1 l2) })(u : { l1 = a }).
+
+    %% darnit... there is no way to prove l0 = A.
+    %% I need to lookup l0 from the type of l. even though u
+    %% is unannotated, we should be able to find the type in 
+    %%
+
+    lemma
+      : { l0 = A }
+      l 
+    in
+    existsi (nil A)
+            Exists(l'' : <list l0>) 
+
+  | foralli(n0 : nat)(p0 : { n = (S n0) })(l0 : type)(l1 : l0)
+           (l2 : <list l0>)(p1 : { l = (cons l1 l2) })
+           (u : { (nth n0 l2) = a }).
+
+
+
+  end.
+
+
+Define set_nth_other : Forall(A:type)(l:<list A>)(n m:nat)(b:A)
+                             (u:{ n != m }).
+                        { (nth n (set_nth m l b)) = (nth n l) } :=
+  foralli(A:type).
+  induction(l:<list A>) 
+    return Forall(n m:nat)(b:A)
+                 (u:{ n != m }).
+            { (nth n (set_nth m l b)) = (nth n l) } with
+  | nil _ =>
+    foralli(n m:nat)(b:A)(u:{ n != m }).
+      hypjoin (nth n (set_nth m l b)) (nth n l) by l_eq end
+  | cons _ a l' =>
+    foralli(n m:nat)(b:A)(u:{ n != m }).
+      case m with
+        Z =>     
+          case n with
+            Z => contra trans m_eq
+                              trans symm n_eq u
+                   { (nth n (set_nth m l b)) = (nth n l) }
+          | S n' => 
+              hypjoin (nth n (set_nth m l b)) (nth n l)
+                by l_eq m_eq n_eq end
+          end
+      | S m' => 
+          case n with
+            Z => hypjoin (nth n (set_nth m l b)) (nth n l)
+                   by l_eq m_eq n_eq end
+          | S n' => 
+            hypjoin (nth n (set_nth m l b)) (nth n l)
+              by l_eq m_eq n_eq 
+                 [l_IH l' n' m' b 
+                    diseqi foralli(u1:{n' = m'}).
+                           contra
+                             transs cong (S *) u1
+                                    symm m_eq
+                                    symm trans symm n_eq u 
+                             end
+                           False]
+              end
+          end
+      end
+  end.
+
+
 Define foldr2 
   : Fun(S A : type)(acc : Fun(s : S)(a : A). S)(init : S)(l : <list2 A>). S
 :=
@@ -22,56 +148,35 @@ Define foldr2
     (foldr2 S A acc s' l') 
   end.
 
+Define matchLet :=
+  fun(x : nat)(y : bool).
+  match x with
+  | Z =>
+    tt
+  | S n' =>
+    let z = (and y tt) in
+    z
+  end.
+
+Define matchLetProof
+  : Forall(x : nat)(y: bool)(u1 : { (matchLet x y) = tt })
+          (x' : nat)(u2 : { x = (S x')}). { y = tt }
+:=
+  foralli(x : nat)(y: bool)(u1 : { (matchLet x y) = tt })
+         (x' : nat)(u2 : { x = (S x')}).
+  lemma u2 in
+  unjoin u1 with
+  | foralli(p0 : { (and y tt) = tt }).
+    unjoin p0 with
+    | foralli(u : {y = tt}).
+      u
+    end
+  end.
+
 Define ormap :=
   fun(l : <list2 bool>).
   (foldr2 bool bool or ff l).
-%-
-Define list_setmember2 
-	: Forall(A:type)(a:A)
-			  (eqA:Fun(^#owned x y: A).bool)
-			  (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
-        (u:{ (eqA a a) = tt })
-        (l'' l':<list A>).
-    { (member a (append l' (cons a l'')) eqA) = tt }
-:=
-  foralli(A:type)(a:A)(eqA:Fun(^ #owned x y: A).bool)
-         (eqA_total:Forall(a b: A).Exists(z:bool).{ (eqA a b) = z })
-         (u: {(eqA a a) = tt})(l'' l':<list A>).
-  abbrev eqA = terminates eqA by eqA_total in
-  case (member A a (append A l' (cons A a l'')) eqA) by v ign with
-  | ff =>
-    lemma u in
-    unjoin v with
-    | foralli(p0 : { (append l' (cons a l'')) = nil }).
-      unjoin p0 with
-      
-      | (l'0 : type)(l'1 : l'0)(l'2 : <list l'0>)(p0 : { l' = (cons l'1 l'2) })
-        (u : { (append_h (inspect mk_append_i) l'1 (foldr (clone_owned (inspect mk_append_i)) append_h (cons a l'') l'2)) = nil }) =>
 
-
-      %-
-      %%
-      %% INTERESTING POINT - PARTIAL APPLICATION USED TO CREATE A FUNCTION
-      %% DOES NOT HANDLE WELL. NUEVAL 
-      %%
-      %%
-      | foralli(l'0 : type)(l'1 : l'0)(l'2 : <list l'0>)
-               (p0 : { l' = (cons l'1 l'2) })
-               (u : { (fun(^ #owned cookie)(^ #owned x)(l) :  !. match cookie by cookie_eq cookie_Eq return <list A> with mk_append_i => (cons (inc_owned x) l) end mk_append_i l'1 (fun foldr(^ #owned cookie)(fcn)(b)(^ #owned l) :  !. match l by l_eq l_Eq return B with nil => b | cons a' l' => (fcn cookie a' (foldr (clone_owned cookie) fcn b l')) end (clone_owned mk_append_i) fun(^ #owned cookie)(^ #owned x)(l) :  !. match cookie by cookie_eq cookie_Eq return <list A> with mk_append_i => (cons (inc_owned x) l) end (cons a l'') l'2)) = nil })
-      -%
-
-      end
-
-    | foralli(c0 : type)(c1 : c0)(c2 : <list c0>)
-             (p0 : { (append l' (cons a l'')) = (cons c1 c2) })
-             (u : { (or (eqA (clone_owned a) c1) (member a c2 eqA)) = ff }).
-      truei
-    end
-    
-  | tt =>
-    v
-  end
--%
 
 
 Define eqnatEq3 : Forall(n:nat)(u:{(eqnat n Z) = tt}). { n = Z } :=
@@ -104,31 +209,6 @@ Define letIdProof
   unjoin u with
   | foralli(u : { x = tt }).
     u
-  end.
- 
-Define matchLet :=
-  fun(x : nat)(y : bool).
-  match x with
-  | Z =>
-    tt
-  | S n' =>
-    let z = (and y tt) in
-    z
-  end.
-
-Define matchLetProof
-  : Forall(x : nat)(y: bool)(u1 : { (matchLet x y) = tt })
-          (x' : nat)(u2 : { x = (S x')}). { y = tt }
-:=
-  foralli(x : nat)(y: bool)(u1 : { (matchLet x y) = tt })
-         (x' : nat)(u2 : { x = (S x')}).
-  lemma u2 in
-  unjoin u1 with
-  | foralli(p0 : { (and y tt) = tt }).
-    unjoin p0 with
-    | foralli(u : {y = tt}).
-      u
-    end
   end.
 
 Define matchAbbrev :=
@@ -179,39 +259,7 @@ Define funnyIdProof
     u
   end.
 
-Define matchArgs :=
-  fun(x : nat)(y : nat).
-  let z = 
-    match x with
-    | Z =>
-      one
-    | S x' =>
-      two
-    end
-  in
-  (max z y).
 
-Define matchArgsProof
-:=
-  foralli(x y : nat)(u : { (matchArgs x y) = two }).
-  unjoin u with
-  | foralli(p0 : { x = Z })(u : { (max one y) = two }).
-    lemma
-      : { (le y (max one y)) = tt }
-        [max_easy y one]
-      : { (le (max one y) two) = tt }
-        [eq_le (max one y) two u]
-    in
-    [le_trans y (max one y) two ## ##] 
-  | foralli(x0 : nat)(p0 : { x = (S x0) })(u : { (max two y) = two }).
-    lemma
-      : { (le y (max two y)) = tt }
-        [max_easy y two]
-      : { (le (max two y) two) = tt }
-        [eq_le (max two y) two u]
-    in
-    [le_trans y (max two y) two ## ##]
-  end.
 
 
 Define badSub :=
@@ -245,14 +293,7 @@ Define badSubProof
         : { (badSub x) = (S z) } u' 
       end
     end
-  end.
-
-
-
-%
-% MOAR PROOOFS
-%
-%  
+  end.  
 
 Define eqnatNeq2 : Forall(n m:nat)(u:{(eqnat n m) = ff}). { n != m } :=
   induction (n:nat) return
