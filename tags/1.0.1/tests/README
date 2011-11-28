@@ -1,0 +1,5 @@
+At this point, probably many of these tests are not working. 
+
+For example files which do pass the Guru type checker, see files like ../lib/nat.g.
+
+Aaron (8/27/09)
