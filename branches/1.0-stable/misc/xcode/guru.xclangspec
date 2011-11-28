@@ -1,0 +1,177 @@
+(
+// ----------------------------------------------------------------------------
+// Syntax Coloring
+
+	{
+		Identifier = "xcode.lang.guru";
+		Name = "Guru";
+		Description = "Guru Coloring";
+		BasedOn = "xcode.lang.simpleColoring";
+		IncludeInMenu = YES;
+		Syntax = {
+			Tokenizer = "xcode.lang.guru.lexer";
+			IncludeRules = (
+				"xcode.lang.guru.include",
+			);
+			Type = "xcode.syntax.plain";
+		};
+	},
+
+	// The following rule returns tokens to the other rules
+	{
+		Identifier = "xcode.lang.guru.lexer";
+		Syntax = {
+			IncludeRules = (
+				"xcode.lang.guru.comment",
+				"xcode.lang.guru.comment.singleline",
+				"xcode.lang.guru.identifier",
+				"xcode.lang.string",
+				"xcode.lang.character",
+				"xcode.lang.number",
+				//"xcode.lang.guru.operators",
+			);
+		};
+	},
+
+// ----------------------------------------------------------------------------
+// Commands
+
+	{
+			Identifier = "xcode.lang.guru.include";
+			Syntax = {
+					Tokenizer = "xcode.lang.guru.lexer";
+					Rules = (
+							"Include",
+							"trusted?",
+							"xcode.lang.string",
+							".?",
+					);
+			};
+	},
+
+// ----------------------------------------------------------------------------
+// Comments
+
+	{
+		Identifier = "xcode.lang.guru.comment";
+		Syntax = {
+			Start = "%-";
+			End = "-%";
+			Recursive = YES;
+			Foldable = YES;
+			IncludeRules = (
+				"xcode.lang.url",
+				"xcode.lang.url.mail",
+				"xcode.lang.comment.mark",
+			);
+			Type = "xcode.syntax.comment";
+		};
+	},
+
+	{
+		Identifier = "xcode.lang.guru.comment.singleline";
+		Syntax = {
+			Start = "%";
+			End = "\n";
+			IncludeRules = (
+				"xcode.lang.url",
+				"xcode.lang.url.mail",
+				"xcode.lang.comment.mark",
+			);
+			Type = "xcode.syntax.comment";
+		};
+	},
+
+// ----------------------------------------------------------------------------
+// Keywords
+
+	{
+		Identifier = "xcode.lang.guru.identifier";
+		Syntax = {
+			StartChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
+			Chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'";
+			Words = (
+				"type",
+				"type_family_abbrev",
+				"trusted",
+				"primitive",
+				"affine",
+
+				"Fun",
+				"Forall",
+				"Exists",
+				"True",
+				"False",
+
+				"void",
+				"voidi",
+				"spec",
+				"end",
+				"abbrev",
+				"eabbrev",
+				"cabbrev",
+				"in",
+				
+				"fun",
+				"let",
+				"match",
+				"by",
+				"return",
+				"with",
+				"abort",
+				"impossible",
+				"cast",
+				"do",
+				"compile",
+				//"as",
+				"terminates",
+				
+				"refl",
+				"symm",
+				"trans",
+				"transs",
+				"foralli",
+				"existsi",
+				"cinv",
+				"case",
+				"induction",
+				"cong",
+				"ncong",
+				"clash",
+				"aclash",
+				"contra",
+				"join",
+				"hypjoin",
+				"inj",
+				"terminates-case",
+				"existse",
+				"andi",
+				"truei",
+				"diseqi",
+				"eval",
+				"evalto",
+				"cind",
+				
+				"subst",
+				"show",
+				"size",
+				"cutoff",
+				
+				"Inductive",
+				"Include",
+				"Define",
+				"Total",
+				"Classify",
+				"ResourceType",
+				"Init",
+				"Compile",
+				//"to",
+				"Set",
+				"Unset",
+				"Interpret",
+			);
+			Type = "xcode.syntax.keyword";
+			AltType = "xcode.syntax.identifier";  // non-keywords are identifiers
+		};
+	},
+)

@@ -1,0 +1,93 @@
+1a. On my laptop, the gdb command
+
+        p *(gulist_gucons *)gs
+
+displays
+
+        {opval = 257, gx_16 = 0x68, gl_1 = 0x92bb028}
+
+This is sensible, for the following reasons:
+
+-- opval = 257.  In binary, this is 100000001, indicating that the reference 
+   count is 1 (the high bit) and that the operator is operator 1, which we see
+   in list.c (produced by compiling test3.w) corresponds to the construtor 
+   ucons (we have "#define op_gucons 1" in that file).
+
+-- gx_16 = 0x68.  If we display "(char)0x68", we see this is 'h'.
+
+-- gl_1.  This points to the rest of the list.
+
+
+1b. By modifying the code for inc and dec, which is emitted in unowned.c,
+    to print a "+" every time inc() is called and a "-" every time dec()
+    is, we find that inc() is called 0 times and dec() four times.
+
+    This makes sense because running 'echo "hi"' prints the two
+    characters of the word "hi", followed by a newline (contrary to
+    what I mistakenly wrote in problem 2, echo seems to tack on a
+    newline).  So there are three characters, which leads to a list of
+    length 3: 3 cons-cells and a nil-cell at the end.  Deleting that
+    list requires four decrements.
+
+1c. One way to figure this out is to run
+
+    echo "hi" | valgrind ./test3
+
+    At the end of the output it produces, valgrind lists how many bytes were allocated.
+    Then by increasing the number of letters in the string, you can see how many
+    bytes are allocated per letter.
+
+    On my laptop, 12 bytes are allocated per character.  This is because each ucons-cell
+    is 3 words long, and my machine has a word size of 32 bits, or 4 bytes.
+
+    On the lab machines, the answer should be 24 bytes, since those machines have a word
+    size of 64 bits.
+
+2a. The free list pointer in word 0 of the cell 0x996901c is 0, meaning that 0x996901c
+    is the last cell in the free list.  
+
+   free_gulist_gucons 
+     ---                   ---                  ---                    ---
+     | |----- gl_1 ------->| |------ gl_1 ----->| |--------- gl_1 ---->| |
+     | |                   | |                  | |                    | |
+     ---                   ---                  ---                    ---
+    0x996901c              0x9969010            0x9969004              0x9969000
+
+2b.
+    result of (ucons tt unil)
+    ---                    ---
+    | |------ gl_1 ------->| |
+    | |                    | |
+    ---                    ---
+   0x996901c               0x9969028
+
+
+   free_gulist_gucons
+   ---                  ---                    ---
+   | |------ gl_1 ----->| |--------- gl_1 ---->| |
+   | |                  | |                    | |
+   ---                  ---                    ---
+   0x9969010            0x9969004              0x9969000
+
+   The free list pointer from 0x9969010 is 0.
+
+3. I'll write "*" below for a dot.
+
+   1. lin(let x = let y = Z in (S y) in (S x), *)
+      a. lin(let x = let y = Z in (S y) in (S x), *, *, *)
+         i. lin(let y = Z in (S y), x, (declare x), *)
+            1. lin(Z,y,(declare x, declare y),*) = (y:=Z, (declare x, declare y), *)
+            2. lin((S y),x,(declare x, declare y), (y:=Z))
+               a. lin(y,*,(declare x, declare y), (y:=Z)) = (y,(declare x, declare y), (y:=Z))
+            = (x:=(S y),(declare x, declare y), (y:=Z))
+         ii. lin((S x),*,(declare x, declare y),(y:=Z,x:=(S y)))
+            1. lin(x,*,(declare x, declare y),(y:=Z,x:=(S y))) = (x,(declare x, declare y),(y:=Z,x:=(S y)))
+         = ((S x),(declare x, declare y),(y:=Z,x:=(S y)))
+      = ((S x),(declare x, declare y),(y:=Z,x:=(S y)))
+   = do 
+       declare x
+       declare y
+       y := Z
+       x := (S y)
+       (S x)
+     end

@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>BBEditDocumentType</key>
+	<string>CodelessLanguageModule</string>
+	<key>BBLMLanguageDisplayName</key>
+	<string>Guru</string>
+	<key>BBLMLanguageCode</key>
+	<string>Guru</string>
+	<key>BBLMColorsSyntax</key>
+	<true/>
+	<key>BBLMScansFunctions</key>
+	<true/>
+	<key>BBLMIsCaseSensitive</key>
+	<true/>
+	<key>BBLMKeywordList</key>
+	<array>
+		<string>type</string>
+		<string>type_family_abbrev</string>
+		<string>trusted</string>
+		<string>primitive</string>
+		<string>affine</string>
+		<string>Fun</string>
+		<string>Forall</string>
+		<string>Exists</string>
+		<string>True</string>
+		<string>False</string>
+		<string>void</string>
+		<string>voidi</string>
+		<string>spec</string>
+		<string>end</string>
+		<string>abbrev</string>
+		<string>eabbrev</string>
+		<string>cabbrev</string>
+		<string>in</string>
+		<string>fun</string>
+		<string>let</string>
+		<string>match</string>
+		<string>by</string>
+		<string>return</string>
+		<string>with</string>
+		<string>abort</string>
+		<string>impossible</string>
+		<string>cast</string>
+		<string>refl</string>
+		<string>symm</string>
+		<string>trans</string>
+		<string>transs</string>
+		<string>foralli</string>
+		<string>existsi</string>
+		<string>cinv</string>
+		<string>case</string>
+		<string>do</string>
+		<string>compile</string>
+		<string>induction</string>
+		<string>terminates</string>
+		<string>cong</string>
+		<string>clash</string>
+		<string>aclash</string>
+		<string>contra</string>
+		<string>join</string>
+		<string>hypjoin</string>
+		<string>inj</string>
+		<string>ncong</string>
+		<string>terminates-case</string>
+		<string>existse</string>
+		<string>andi</string>
+		<string>truei</string>
+		<string>diseqi</string>
+		<string>eval</string>
+		<string>evalto</string>
+		<string>subst</string>
+		<string>show</string>
+		<string>size</string>
+		<string>cind</string>
+		<string>cutoff</string>
+		<string>Inductive</string>
+		<string>Include</string>
+		<string>Define</string>
+		<string>Total</string>
+		<string>Classify</string>
+		<string>ResourceType</string>
+		<string>Init</string>
+		<string>Compile</string>
+		<string>Set</string>
+		<string>Unset</string>
+		<string>Interpret</string>
+	</array>
+	<key>BBLMSuffixMap</key>
+	<array>
+		<dict>
+			<key>BBLMLanguageSuffix</key>
+			<string>.g</string>
+		</dict>
+	</array>
+	<key>Language Features</key>
+	<dict>
+		<key>Identifier and Keyword Characters</key>
+		<string>ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_&apos;</string>
+		<key>Prefix for Functions</key>
+		<string>Define</string>
+		<key>Prefix for Procedures</key>
+		<string>Define</string>
+		<key>Open Parameter Lists</key>
+		<string></string>
+		<key>Close Parameter Lists</key>
+		<string></string>
+		<key>Terminator for Prototypes 1</key>
+		<string></string>
+		<key>Terminator for Prototypes 2</key>
+		<string></string>
+		<key>Open Statement Blocks</key>
+		<string></string>
+		<key>Close Statement Blocks</key>
+		<string></string>
+		<key>Open Block Comments</key>
+		<string>%-</string>
+		<key>Close Block Comments</key>
+		<string>-%</string>
+		<key>Open Line Comments</key>
+		<string>%</string>
+		<key>Open Strings 1</key>
+		<string>&quot;</string>
+		<key>Close Strings 1</key>
+		<string>&quot;</string>
+		<key>Escape Char in Strings 1</key>
+		<string></string>
+		<key>End-of-line Ends Strings 1</key>
+		<false/>
+		<key>Open Strings 2</key>
+		<string></string>
+		<key>Close Strings 2</key>
+		<string></string>
+		<key>Escape Char in Strings 2</key>
+		<string></string>
+		<key>End-of-line Ends Strings 2</key>
+		<false/>
+	</dict>
+</dict>
+</plist>
