@@ -1,20 +1,13 @@
 all: 
 	@rm -f book.aux
-	@rm -f book.dvi
-	$(MAKE) book.dvi
+	@rm -f book.out
+	latex book.tex
 #	bibtex book
-#	@rm -f book.dvi
-#	$(MAKE) book.dvi
-#	@rm -f book.dvi
-	@rm -f book.pdf
-	$(MAKE) book.pdf
+#	latex book.tex
+#	latex book.tex
+	pdflatex book.tex
 
-
-%.dvi : %.tex
-	latex $*.tex
-
-%.ps : %.dvi
-	dvips -t letter -o $*.ps $*.dvi
-
-%.pdf : %.tex
-	pdflatex $*.tex
+bib:
+	bibtex book
+	latex book.tex
+	pdflatex book.tex

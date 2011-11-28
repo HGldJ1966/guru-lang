@@ -188,7 +188,7 @@ public class CheckRefs {
 
 	    if (dbg_check_refs) {
 		ctxt.w.println("%-----------------------------------------");
-		Define D = new Define(false,false,false,false,
+		Define D = new Define(false,false,false,false,false,
 				      c,T,t,ctxt.getDefBodyNoAnnos(c));
 
 		ctxt.w.println("Reference checking "+c.name+":");
@@ -279,7 +279,7 @@ public class CheckRefs {
 	    checkConsumed(st,r,c,t.pos);
 
 	    if (dbg_check_refs) {
-		Define D = new Define(false,false,false,false,
+		Define D = new Define(false,false,false,false,false,
 				      c,T,t,ctxt.getDefBodyNoAnnos(c));
 
 		ctxt.w.println("Finished reference checking "+c.name+":");
@@ -419,7 +419,7 @@ public class CheckRefs {
 	    ref_stat.status == UNIQUE_OWNEDBY)
 	    owner = ref_stat.e;
 	if (var_owned.status == UNOWNED) 
-	    return new Ownership(OWNEDBY, owner);
+	    return new Ownership(ref_stat.status, owner);
 	if (var_owned.status == UNIQUE_UNOWNED)
 	    return new Ownership(UNIQUE_OWNEDBY, owner);
 	return var_owned;

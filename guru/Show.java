@@ -6,6 +6,8 @@ public class Show extends Expr{
     
     public Expr[] P;
     
+    protected int step;
+
     public Show() { 
 	super(SHOW);
     }
@@ -49,18 +51,39 @@ public class Show extends Expr{
 	return this;
     }
 
+    protected String show_proof(Context ctxt, Expr pf, boolean in_trans, boolean multiple_proofs) {
+	String str = (!multiple_proofs || !in_trans ? (new Integer(step++)).toString() + ". " : "   ");
+	if (pf.construct == TRANS) {
+	    Expr c1 = ((Trans)pf).P1.classify(ctxt).dropAnnos(ctxt);
+	    Atom a1 = (Atom)c1;
+	    str += a1.Y1.toString(ctxt) + " =\n\n";
+	    str += show_proof(ctxt,((Trans)pf).P2,true,multiple_proofs);
+	}
+	else if (pf.construct == TRANSS) {
+             step--;
+	     return show_proof(ctxt, ((Transs)pf).toTrans(), in_trans, multiple_proofs);
+        }
+	else {
+	    Expr F = pf.classify(ctxt).dropAnnos(ctxt);
+	    if (in_trans) {
+		Atom a = (Atom)F;
+		str += a.Y1.toString(ctxt) + (a.equality ? " =\n\n" : " !=\n\n");
+		str += (!multiple_proofs ? (new Integer(step++)).toString() + ". " : "   ");
+		str += a.Y2.toString(ctxt) + "\n\n";
+	    }
+	    else
+		str += F.toString(ctxt)+ "\n\n";
+	}
+	return str;
+    }
+
     public Expr classify(Context ctxt) {
 	ctxt.resetNotDefEq();
 	String str = "We have the following classifications:\n\n";
+	step = 1;
 	for (int i = 0, iend = P.length; i < iend; i++) {
-	    str += (new Integer(i)).toString() + ". ";
-	    str += (P[i].classify(ctxt).dropAnnos(ctxt).toString(ctxt)
-		    + "\n\n");
-	    /*
-	    str += "proved by\n\n      ");
-	    if (P[i].construct == VAR && ctxt.isSpec((Var)P[i]))
-		str += "spec ";
-		str += (P[i].toString(ctxt) + "\n\n"); */
+	    P[i].classify(ctxt);
+	    str += show_proof(ctxt,P[i],false,iend > 1);
 	}
 
 	handleError(ctxt, str);

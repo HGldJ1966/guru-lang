@@ -1,9 +1,13 @@
 %Unset "check_drop_annos_idem".
 
-Include "pow.g".
-Include "vec.g".
+%Set "trust_hypjoins".
+
+Include trusted "pow.g".
+Include trusted "vec.g".
 
 Define bv := <vec bool>.
+Define bv_head := (vec_head bool).
+Define bv_tail := (vec_tail bool).
 Define bvn := (vecn bool).
 Define bvc := (vecc bool).
 Define bv_reverse := (vec_reverse bool). 
@@ -11,12 +15,16 @@ Define bv_get := (vec_get bool).
 Define bv_append := (vec_append bool).
 Define eqbv := (eqvec bool iff).
 Define eqbv_eq := [eqvec_eq bool iff iff_eq].
+Define eqbv_neq := [eqvec_neq bool iff iff_refl].
+Define neq_bvneq := [neq_vecneq bool iff iff_eq iff_tot].
 Define eqbv_tot 
  : Forall(l:nat)(v1 v2:<bv l>). 
     Exists(b:bool). { (eqbv v1 v2) = b }
  := [eqvec_tot bool iff iff_tot].
 Total eqbv eqbv_tot.
 Define eqbv_refl := [eqvec_refl bool iff iff_refl].
+Define eqbv_symm := [eqvec_symm bool iff iff_refl iff_eq iff_tot].
+Define eqbv_trans := [eqvec_trans bool iff iff_refl iff_eq iff_tot].
 
 % the least significant bit is first.
 
@@ -66,6 +74,8 @@ Define to_nat_tot
            end
           cast a by symm inj <vec * **> vv join a a]
   end.
+
+Total to_nat to_nat_tot.
 
 Inductive to_bv_t : type :=
   mk_to_bv_t : Fun(spec l:nat)(v:<bv l>).to_bv_t.
@@ -258,9 +268,6 @@ Define to_nat_eq_Z2 : Forall(l:nat)(v:<bv l>)
      end
   end.
 
-
-Set "show_spec_args".
-
 Define to_bv_nat : Forall(l:nat)(v:<bv l>).
                    { (to_bv (to_nat v)) = (normalize v) } :=
   induction(l:nat)(v:<bv l>) 
@@ -305,7 +312,7 @@ Define to_bv_nat : Forall(l:nat)(v:<bv l>).
                                            terminates (to_nat l' cv') 
                                            by to_nat_tot]
                            trans [v_IH l' cv']
-	 		   nv'_eq
+                           nv'_eq
                    trans join match (mk_to_bv_t rv) with
                               mk_to_bv_t v => 
                                 (mk_to_bv_t (bvc (mod2 (S n)) v))
@@ -456,6 +463,17 @@ Define to_nat_inj : Forall(l:nat)(v1 v2:<bv l>)
      end
   end.
 
+Define to_nat_inj2 : Forall(l:nat)(v1 v2:<bv l>)
+                          (u:{ v1 != v2 }).
+                      { (to_nat v1) != (to_nat v2) } :=
+  foralli(l:nat)(v1 v2:<bv l>)
+         (u:{ v1 != v2 }).
+    diseqi foralli(v:{ (to_nat v1) = (to_nat v2) }).
+             contra 
+               trans [to_nat_inj l v1 v2 v]
+                     symm u
+             False.
+
 % the carry bit is set iff incrementing overflows.
 
 Inductive bv_inc_t : Fun(l:nat).type :=
@@ -519,6 +537,8 @@ Define bv_inc_tot : Forall(l:nat)(v:<bv l>).Exists(r:<bv_inc_t l>).
         end
       end
    end.
+
+Total bv_inc bv_inc_tot.
 
 Define to_nat_bv_inc : Forall(l:nat)(v:<bv l>)(v2:<bv l>)(carry:bool)
                              (u: { (bv_inc v) = (mk_bv_inc_t v2 carry) }).
@@ -668,3 +688,614 @@ Define to_nat_append
              by inj <vec ** *> v1_Eq end
      end
      l1 v1].
+
+Define to_nat_neq 
+  : Forall(l:nat)(v1:<bv l>)(v2:<bv l>)
+          (u:{ (eqnat (to_nat v1) (to_nat v2)) = ff }).
+      { (eqbv v1 v2) = ff } :=
+  foralli(l:nat)(v1:<bv l>)(v2:<bv l>)
+         (u:{ (eqnat (to_nat v1) (to_nat v2)) = ff }).
+  case (eqbv l v1 v2) by x y with
+    ff => x
+  | tt => 
+    contra
+      trans
+        trans symm u
+        trans cong (eqnat (to_nat *) (to_nat v2)) 
+                    [eqbv_eq l v1 v2 x]
+              [x_eqnat_x (to_nat l v2)]
+        clash tt ff
+      { (eqbv v1 v2) = ff }
+  end.
+
+Define to_nat_eq
+  : Forall(l:nat)(v1:<bv l>)(v2:<bv l>)
+          (u:{(eqbv v1 v2) = tt}).
+     {(eqnat (to_nat v1) (to_nat v2)) = tt} :=
+  foralli(l:nat)(v1:<bv l>)(v2:<bv l>)
+         (u:{(eqbv v1 v2) = tt}).
+  trans cong (eqnat (to_nat v1) (to_nat *)) 
+          symm [eqbv_eq l v1 v2 u]
+        [eqnat_refl (to_nat l v1)].
+   
+Define to_nat_neq1 : Forall(l:nat)(v1:<bv l>)(v2:<bv l>)
+                                   (u:{(eqbv v1 v2) = ff}).
+                               {(eqnat (to_nat v1) (to_nat v2)) = ff} := 
+  foralli(l:nat)(v1:<bv l>)(v2:<bv l>)
+         (u:{(eqbv v1 v2) = ff}).
+    [neqEqnat (to_nat l v1) (to_nat l v2)
+      [to_nat_inj2 l v1 v2
+        [eqbv_neq l v1 v2 u]]].
+
+Define bv_shift: Fun(x:nat)(spec n:nat)(l:<bv (S n)>). <bv (S n)> :=
+  fun bv_shift(x:nat)(spec n:nat)(l:<bv (S n)>): <bv (S n)>.
+  match x with
+    Z => l
+  | S x' => (bv_shift x' n cast (bv_append n (S Z) (bv_tail n l) (bvc Z ff bvn)) by
+                                cong <bv *> trans [plusS n Z] %is there an easier way?
+                                                  cong (S *) [plusZ n])
+  end.
+
+Define bv_or : Fun(spec n:nat)(l1:<bv n>)(l2:<bv n>).<bv n> :=
+  fun bv_or(spec n:nat)(l1:<bv n>)(l2:<bv n>) : <bv n>.
+  match l1 with
+    vecn _ => cast (vecn bool) by symm l1_Eq
+  | vecc _ n' b1 l1' =>
+      match l2 with
+        vecn _ => abort <bv n>
+      | vecc _ n'' b2 l2' =>
+          % have: <bv n> = <bv (S n')>
+          % have: <bv n> = <bv (S n'')>
+          abbrev p1 = inj <bv *> l1_Eq in % n = (S n')
+          abbrev p2 = inj <bv *> l2_Eq in % n = (S n'')
+          abbrev p3 = inj (S *) trans symm p2 p1 in
+          let l2'' = cast l2' by cong <bv *> p3 in
+          cast (vecc bool n' (or b1 b2) (bv_or n' l1' l2'')) by
+            cong <bv *> symm p1
+      end
+  end.
+
+Define bv_update := (vec_update bool).
+
+Define bv_clear_neq 
+  : Forall(i n:nat)(v:<bv n>)(u1:{ (lt i n) = tt })(u2:{ (eqbv (bv_update v i ff) (mkvec ff n)) = ff }).
+      { (eqbv v (mkvec ff n)) = ff } :=
+  induction(i:nat)
+  return Forall(n:nat)(v:<bv n>)(u1:{ (lt i n) = tt }) (u2:{ (eqbv (bv_update v i ff) (mkvec ff n)) = ff }).
+          { (eqbv v (mkvec ff n)) = ff } with
+    Z => 
+    foralli(n:nat)(v:<bv n>)(u1:{ (lt i n) = tt })(u2:{ (eqbv (bv_update v i ff) (mkvec ff n)) = ff }).
+    case n with
+      Z => contra
+             transs symm u1
+                    hypjoin (lt i n) ff by i_eq n_eq end
+                    clash ff tt
+             end
+           { (eqbv v (mkvec ff n)) = ff }
+    | S n' =>
+      case cast v by cong <bv *> n_eq by v_eq v_Eq with
+        vecn _ =>
+        contra
+          trans
+            inj <bv *> v_Eq
+            clash Z (S n') 
+        { (eqbv v (mkvec ff n)) = ff }
+      | vecc _ _ b v' =>
+         case b with
+           ff => 
+           symm
+           transs
+             symm u2
+             cong (eqbv * (mkvec ff n))
+               hypjoin (bv_update v i ff) v by n_eq i_eq v_eq b_eq end
+           end
+         | tt =>
+           hypjoin (eqbv v (mkvec ff n)) ff by v_eq b_eq n_eq end
+         end
+      end
+    end
+  | S i' =>
+    foralli(n:nat)(v:<bv n>)(u1:{ (lt i n) = tt })(u2:{ (eqbv (bv_update v i ff) (mkvec ff n)) = ff }).
+    case n with
+      Z => contra
+             transs symm u1
+                    hypjoin (lt i n) ff by i_eq n_eq end
+                    clash ff tt
+             end
+           { (eqbv v (mkvec ff n)) = ff }
+    | S n' =>
+      case cast v by cong <bv *> n_eq by v_eq v_Eq with
+        vecn _ =>
+        contra
+          trans
+            inj <bv *> v_Eq
+            clash Z (S n') 
+        { (eqbv v (mkvec ff n)) = ff }
+      | vecc _ _ b v' =>
+        case b with 
+          ff =>
+            hypjoin (eqbv v (mkvec ff n)) ff by v_eq b_eq n_eq 
+              [i_IH i' n' v'
+                hypjoin (lt i' n') tt by u1 i_eq n_eq end
+                symm trans 
+                       symm u2
+                       hypjoin (eqbv (bv_update v i ff) (mkvec ff n)) (eqbv (bv_update v' i' ff) (mkvec ff n')) by n_eq v_eq i_eq b_eq end]
+            end
+        | tt =>
+          hypjoin (eqbv v (mkvec ff n)) ff by v_eq b_eq n_eq end
+        end
+      end
+    end
+  end
+
+Define bv_inc_bv_full :
+  Forall(l:nat).
+    { (bv_inc (bv_full l)) = (mk_bv_inc_t (mkvec ff l) tt) } :=
+  induction(l:nat)
+    return { (bv_inc (bv_full l)) = (mk_bv_inc_t (mkvec ff l) tt) } with
+    Z =>
+      hypjoin (bv_inc (bv_full l)) (mk_bv_inc_t (mkvec ff l) tt) by l_eq end
+  | S l' => 
+      case (bv_inc l' (bv_full l')) by u _ with 
+        mk_bv_inc_t _ r carry => 
+        cabbrev P = trans symm u [l_IH l'] in
+         transs 
+              hypjoin (bv_inc (bv_full l)) (mk_bv_inc_t (bvc ff r) carry) 
+              by u l_eq end
+              cong (mk_bv_inc_t (bvc ff *) carry) inj (mk_bv_inc_t * **) P
+              cong (mk_bv_inc_t (bvc ff (mkvec ff l')) *) inj (mk_bv_inc_t ** *) P
+              cong (mk_bv_inc_t * tt) hypjoin (bvc ff (mkvec ff l')) (mkvec ff l) by l_eq end
+         end
+      end
+  end.
+      
+Define normalize_mkvec_ff :
+  Forall(l:nat). { (normalize (mkvec ff l)) = (mk_to_bv_t bvn) } :=
+  induction(l:nat)
+    return { (normalize (mkvec ff l)) = (mk_to_bv_t bvn) } with
+    Z => hypjoin (normalize (mkvec ff l)) (mk_to_bv_t bvn) by l_eq end
+  | S l' => hypjoin (normalize (mkvec ff l)) (mk_to_bv_t bvn) by l_eq [l_IH l'] end
+  end.
+
+Define to_nat_inc_bv_full :
+  Forall(l:nat). { (S (to_nat (bv_full l))) = (pow2 l) } :=
+  foralli(l:nat).
+    transs
+      [to_nat_bv_inc l (bv_full l) (mkvec bool ff l) tt [bv_inc_bv_full l]]
+      cong (condplus tt (pow2 l) *) [to_nat_eq_Z2 l (mkvec bool ff l) [normalize_mkvec_ff l]]
+      join (condplus tt (pow2 l) Z) (plus (pow2 l) Z)
+      [plusZ (pow2 l)]
+    end.
+
+%======================================================================
+% decrementing a bitvector
+%======================================================================
+
+% subtract one from a bitvector, keeping the same length.
+% The field "nonzero" is true iff the starting bitvector is greater than 0.
+
+Inductive bv_dec_t : Fun(l:nat).type :=
+  mk_bv_dec_t : Fun(spec l:nat)(nonzero:bool)(v:<bv l>).<bv_dec_t l>.
+
+Define bv_dec : Fun(spec l:nat)(v:<bv l>).<bv_dec_t l> :=
+  fun bv_dec(spec l:nat)(v:<bv l>):<bv_dec_t l>.
+    match v with
+      vecn _ => cast (mk_bv_dec_t Z ff
+                        bvn)
+                by cong <bv_dec_t *> symm inj <vec ** *> v_Eq
+    | vecc _ l' x v' => 
+      match x with
+        ff => match (bv_dec l' v') with
+                mk_bv_dec_t _ nonzero r =>
+                  cast
+                    match nonzero with
+                      ff => 
+                       (mk_bv_dec_t (S l') ff (bvc l' ff r))
+                    | tt =>
+                       (mk_bv_dec_t (S l') tt (bvc l' tt r))
+                    end
+                  by cong <bv_dec_t *> symm inj <vec ** *> v_Eq
+                end
+      | tt => (mk_bv_dec_t l tt 
+                 cast (bvc l' ff v')
+                 by cong <bv *> symm inj <vec ** *> v_Eq)
+      end
+    end.
+
+Define bv_dec_total : Forall(l:nat)(v:<bv l>).Exists(r:<bv_dec_t l>). { (bv_dec v) = r } :=
+  induction(l:nat)(v:<bv l>) return Exists(r:<bv_dec_t l>). { (bv_dec v) = r } with
+    vecn _ => existsi cast (mk_bv_dec_t Z ff
+                             bvn)
+                      by cong <bv_dec_t *> symm inj <vec ** *> v_Eq
+                { (bv_dec v) = * }
+                hypjoin (bv_dec v) (mk_bv_dec_t ff bvn)
+                by v_eq end
+  | vecc _ l' x v' => 
+    case x with
+      ff => 
+        case terminates (bv_dec l' v') by [v_IH l' v'] by call_eq _ with
+          mk_bv_dec_t _ nonzero r =>
+            case nonzero with
+              ff => 
+              existsi cast (mk_bv_dec_t (S l') ff (bvc l' ff r)) by cong <bv_dec_t *> symm inj <vec ** *> v_Eq     
+                { (bv_dec v) = * }
+                hypjoin (bv_dec v) (mk_bv_dec_t ff (bvc ff r))
+                  by v_eq x_eq nonzero_eq call_eq end
+            | tt => 
+              existsi cast (mk_bv_dec_t (S l') tt (bvc l' tt r)) by cong <bv_dec_t *> symm inj <vec ** *> v_Eq     
+                { (bv_dec v) = * }
+                hypjoin (bv_dec v) (mk_bv_dec_t tt (bvc tt r))
+                  by v_eq x_eq nonzero_eq call_eq end
+            end
+        end
+    | tt => existsi (mk_bv_dec_t l tt 
+                      cast (bvc l' ff v')
+                      by cong <bv *> symm inj <vec ** *> v_Eq)
+              { (bv_dec v) = * }
+              hypjoin (bv_dec v) (mk_bv_dec_t tt (bvc ff v'))
+                by v_eq x_eq end
+    end
+  end.
+
+Total bv_dec bv_dec_total.
+
+%Unset "trust_hypjoins".
+
+Define bv_dec_inc :
+	Forall(l:nat)(v ret:<bv l>)(u:{ (bv_dec v) = (mk_bv_dec_t tt ret) }).
+	      { (bv_inc ret) = (mk_bv_inc_t v ff) }
+	:= 
+  induction(l:nat)(v:<bv l>)
+    return Forall(ret:<bv l>)(u:{ (bv_dec v) = (mk_bv_dec_t tt ret) }).
+             { (bv_inc ret) = (mk_bv_inc_t v ff) } with
+    vecn _ =>
+    foralli(ret:<bv l>)(u:{ (bv_dec v) = (mk_bv_dec_t tt ret) }).
+      contra
+        trans
+          inj (mk_bv_dec_t * **)
+            trans symm u
+                  hypjoin (bv_dec v) (mk_bv_dec_t ff bvn)
+                  by v_eq end
+          clash ff tt
+      { (bv_inc ret) = (mk_bv_inc_t v ff) }      
+  | vecc _ l' x v' => 
+    foralli(ret:<bv l>)(u:{ (bv_dec v) = (mk_bv_dec_t tt ret) }).
+      case x with
+        ff => 
+        case (bv_dec l' v') by u2 _ with
+          mk_bv_dec_t _ nonzero r =>
+            case nonzero with
+               ff =>
+               contra
+                  trans
+                    inj (mk_bv_dec_t * **)
+                      trans symm u
+                         hypjoin (bv_dec v) (mk_bv_dec_t ff (bvc ff r))
+                         by u2 x_eq nonzero_eq v_eq end
+                    clash ff tt
+                  { (bv_inc ret) = (mk_bv_inc_t v ff) }
+            | tt => 
+              transs
+                 cong (bv_inc *)
+                     inj (mk_bv_dec_t tt *)
+                       trans symm u 
+                         hypjoin (bv_dec v) (mk_bv_dec_t tt (bvc tt r)) by v_eq x_eq u2 nonzero_eq end
+                  hypjoin (bv_inc (bvc tt r)) (mk_bv_inc_t (bvc ff v') ff) by [v_IH l' v' r trans u2 cong (mk_bv_dec_t * r) nonzero_eq] end
+                  cong (mk_bv_inc_t * ff)
+                    symm trans v_eq cong (bvc * v') x_eq
+              end
+            end
+        end
+      | tt => 
+           trans
+              cong (bv_inc *)
+                inj (mk_bv_dec_t ** *)
+                  trans symm u
+                    hypjoin (bv_dec v) (mk_bv_dec_t tt (bvc ff v')) by v_eq x_eq end 
+              hypjoin (bv_inc (bvc ff v')) (mk_bv_inc_t v ff) by v_eq x_eq end
+      end
+  end. 
+
+Define neq_bv0_implies_bv_dec_nonzero :
+  Forall(l:nat)
+        (v ret:<bv l>)
+        (nonzero:bool)
+        (u:{ (eqbv v (mkvec ff l)) = ff })
+        (u2:{ (bv_dec v) = (mk_bv_dec_t nonzero ret) }).
+    { nonzero = tt } :=
+  induction(l:nat)(v:<bv l>)
+    return Forall(ret:<bv l>)
+                  (nonzero:bool)
+                  (u:{ (eqbv v (mkvec ff l)) = ff })
+                  (u2:{ (bv_dec v) = (mk_bv_dec_t nonzero ret) }).
+              { nonzero = tt } with
+    vecn _ => 
+    foralli(ret:<bv l>)
+           (nonzero:bool)
+           (u:{ (eqbv v (mkvec ff l)) = ff })
+           (u2:{ (bv_dec v) = (mk_bv_dec_t nonzero ret) }).
+      contra
+         transs v_eq
+           hypjoin vecn (mkvec ff l) by inj <bv *> v_Eq end
+           symm [eqbv_neq l v (mkvec bool ff l) u]
+         end
+      { nonzero = tt }
+  | vecc _ l' x v' => 
+    foralli(ret:<bv l>)
+           (nonzero:bool)
+           (u:{ (eqbv v (mkvec ff l)) = ff })
+           (u2:{ (bv_dec v) = (mk_bv_dec_t nonzero ret) }).
+      case x with
+        ff => 
+        case (bv_dec l' v') by u3 _ with
+          mk_bv_dec_t _ nonzero' r =>
+             inj (mk_bv_dec_t * **)
+               trans symm u2
+                 hypjoin (bv_dec v) (mk_bv_dec_t tt (bvc tt r)) 
+                 by v_eq x_eq u3 
+                    [v_IH l' v' r nonzero'
+                       symm trans symm u
+                              hypjoin (eqbv v (mkvec ff l)) (eqbv v' (mkvec ff l')) by v_eq inj <bv *> v_Eq x_eq end
+                        u3]
+                 end
+        end
+      | tt =>
+          inj (mk_bv_dec_t * **)
+            trans symm u2
+              hypjoin (bv_dec v) (mk_bv_dec_t tt (bvc ff v')) by v_eq x_eq end
+      end
+  end.
+
+Define bv_dec_nonzero_ff_implies_eq_bv0 :
+  Forall(l:nat)
+        (v ret:<bv l>)
+        (u:{ (bv_dec v) = (mk_bv_dec_t ff ret) }).
+          { v = (mkvec ff l) } :=
+  induction(l:nat)(v:<bv l>)
+    return Forall(ret:<bv l>)
+                 (u:{ (bv_dec v) = (mk_bv_dec_t ff ret) }).
+             { v = (mkvec ff l) } with
+    vecn _ => 
+      foralli(ret:<bv l>)
+             (u:{ (bv_dec v) = (mk_bv_dec_t ff ret) }).
+        trans v_eq hypjoin vecn (mkvec ff l) by inj <vec ** *> v_Eq end
+  | vecc _ l' x v' => 
+      foralli(ret:<bv l>)
+             (u:{ (bv_dec v) = (mk_bv_dec_t ff ret) }).
+      case x with
+        ff => 
+        case (bv_dec l' v') by u2 _ with
+          mk_bv_dec_t _ nonzero r => 
+            case nonzero with
+              ff =>
+                hypjoin v (mkvec ff l) 
+                by inj <vec ** *> v_Eq 
+                   v_eq x_eq
+                   [v_IH l' v' r trans u2 cong (mk_bv_dec_t * r) nonzero_eq]
+                end
+            | tt => 
+                contra
+                  trans
+                    inj (mk_bv_dec_t * **)
+                      trans symm u
+                        hypjoin (bv_dec v) (mk_bv_dec_t tt (bvc tt r)) by v_eq u2 x_eq nonzero_eq end
+                    clash tt ff
+                { v = (mkvec ff l) }
+            end
+        end
+     | tt => 
+        contra
+           trans
+              inj (mk_bv_dec_t * **)
+                trans symm u
+                  hypjoin (bv_dec v) (mk_bv_dec_t tt (bvc ff v')) by v_eq x_eq end
+              clash tt ff
+         { v = (mkvec ff l) }
+     end
+  end.
+
+Define bv_dec_zero :
+  Forall(l:nat).{ (bv_dec (mkvec ff l)) = (mk_bv_dec_t ff (mkvec ff l)) } :=
+  induction(l:nat)
+    return { (bv_dec (mkvec ff l)) = (mk_bv_dec_t ff (mkvec ff l)) } with
+  | Z => hypjoin (bv_dec (mkvec ff l)) (mk_bv_dec_t ff (mkvec ff l)) by l_eq end
+  | S l' => hypjoin (bv_dec (mkvec ff l)) (mk_bv_dec_t ff (mkvec ff l)) by l_eq [l_IH l'] end
+  end.
+
+Define bv_tail_le :
+  Forall(n: nat)(l: <bv (S n)>).
+  { (le (to_nat (bv_tail l)) (to_nat l)) = tt }
+  :=
+  induction(n: nat)(l: <bv (S n)>)
+  return { (le (to_nat (bv_tail l)) (to_nat l)) = tt }
+  with
+    | vecn _ =>
+      contra
+        trans
+          inj <bv *> l_Eq
+          clash (S n) Z
+
+        { (le (to_nat (bv_tail l)) (to_nat l)) = tt }
+    | vecc _ n' a l' =>
+      abbrev nat_l = (to_nat (S n) l) in
+      abbrev nat_tail_l = (to_nat n (bv_tail n l)) in
+      % { (le nat_tail_l (mult2 nat_tail_l)) = tt }
+      abbrev p0 =
+        % { (le nat_tail_l (mult nat_tail_l two)) = tt }
+        abbrev p00 = 
+          [mult_le 
+            nat_tail_l
+            two
+            clash two Z
+          ]
+        in
+        % { (le (mult two nat_tail_l) (mult nat_tail_l two)) = tt }
+        abbrev p01 =
+          [eq_le
+            (mult nat_tail_l two)
+            (mult two nat_tail_l)
+            [mult_comm
+              nat_tail_l
+              two
+            ]
+          ]
+        in
+        [le_trans
+          nat_tail_l
+          (mult nat_tail_l two)
+          (mult two nat_tail_l)
+          p00
+          p01
+        ]
+      in
+      % { (le (mult2 nat_tail_l) (condS a (mult2 nat_tail_l))) = tt }
+      abbrev p1 = [condS_le a (mult2 nat_tail_l)] in
+      % { (le nat_tail_l (condS a (mult2 nat_tail_l))) = tt }
+      abbrev p2 = 
+        [le_trans
+          nat_tail_l
+          (mult2 nat_tail_l)
+          (condS a (mult2 nat_tail_l))
+          p0
+          p1
+        ]
+      in
+      % { (le (condS a (mult2 nat_tail_l)) (to_nat l)) = tt }
+      abbrev p3 =
+        abbrev p30 = 
+          hypjoin (condS a (mult2 nat_tail_l)) nat_l  by
+            l_eq
+          end
+        in
+        [eq_le
+          (condS a (mult2 nat_tail_l))
+          nat_l
+          p30
+        ]
+      in
+      [le_trans
+        nat_tail_l
+        (condS a (mult2 nat_tail_l))
+        nat_l
+        p2
+        p3
+      ]
+  end.
+
+Define bv_shift_le :
+  Forall(x n : nat)(l: <bv (S n)>). 
+  { (le (to_nat (bv_shift x l)) (to_nat l)) = tt }
+  :=
+  induction(x : nat) 
+  return 
+    Forall(n: nat)(l: <bv (S n)>). 
+    { (le (to_nat (bv_shift x l)) (to_nat l)) = tt }
+  with
+    | Z =>
+      foralli(n: nat)(l: <bv (S n)>).
+      [eq_le
+        (to_nat (S n) (bv_shift x n l))
+        (to_nat (S n) l)
+        hypjoin (to_nat (bv_shift x l)) (to_nat l) by x_eq end
+      ]
+    | S x' =>
+      foralli(n: nat)(l: <bv (S n)>).
+      case l with
+        | vecn _ =>
+          contra
+            trans
+              l_Eq
+              clash Z (S n)
+
+            { (le (to_nat (bv_shift x l)) (to_nat l)) = tt }
+        | vecc _ n' a l' =>
+          abbrev shifted_once =
+            cast
+              (bv_append 
+                n 
+                (S Z) 
+                (bv_tail n l) 
+                (bvc Z ff bvn)
+              )
+            by
+              cong <bv *>
+                    trans [plusS n Z]
+                          cong (S *) [plusZ n]
+          in
+          % { (to_nat (bv_shift x l)) = (to_nat (bv_shift x' shifted_once)) }
+          abbrev p0 =
+            abbrev so_erased = 
+              (vec_append (vec_tail l) (vecc ff vecn))
+            in
+            hypjoin 
+              (to_nat (bv_shift x l)) 
+              (to_nat (bv_shift x' so_erased)) 
+            by
+              x_eq
+            end
+          in
+          % { (le (to_nat (bv_shift x l)) (to_nat (bv_shift x' shifted_once)) = tt }
+          abbrev p1 =
+            [eq_le
+              (to_nat (S n) (bv_shift x n l))
+              (to_nat (S n) (bv_shift x' n shifted_once))
+              p0
+            ]
+          in
+          % { (le (to_nat (bv_shift x l)) (to_nat shifted_once)) = tt }
+          abbrev p2 = 
+            [le_trans
+              (to_nat (S n) (bv_shift x n l))
+              (to_nat (S n) (bv_shift x' n shifted_once))
+              (to_nat (S n) shifted_once)
+              p1
+              [x_IH x' n shifted_once]
+            ]
+          in
+          % { (to_nat shifted_once) = (plus (to_nat (bv_tail n l) (mult (pow2 n (to_nat (bvc Z ff bvn))) }
+          abbrev p3 =
+            [to_nat_append
+              n
+              one
+              (bv_tail n l)
+              (bvc Z ff bvn)
+            ]
+          in
+          % { (to_nat shifted_once) = (to_nat (bv_tail l)) }
+          abbrev p4 =
+            abbrev z = 
+              hypjoin (mult (pow2 n) (to_nat (vecc ff vecn))) Z by
+                [multZ (pow2 n)]
+              end
+            in
+            transs
+              p3
+              cong (plus (to_nat (bv_tail l)) *) z
+              [plusZ (to_nat n (bv_tail n l))]
+            end
+          in
+          % { (le (to_nat shifted_once) (to_nat l)) = tt }
+          abbrev one_shift_decreases =
+            [le_trans
+              (to_nat (S n) shifted_once)
+              (to_nat n (bv_tail n l))
+              (to_nat (S n) l)
+              [eq_le 
+                (to_nat (S n) shifted_once)
+                (to_nat n (bv_tail n l))
+                p4
+              ]
+              [bv_tail_le n l]
+            ]
+          in
+          [le_trans
+            (to_nat (S n) (bv_shift x n l))
+            (to_nat (S n) shifted_once)
+            (to_nat (S n) l)
+            p2
+            one_shift_decreases
+          ]
+      end
+  end.
+
+

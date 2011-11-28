@@ -83,7 +83,8 @@ public class Induction extends Expr{
 	int last = vl.types.length - 1;
 	Expr last_var = vl.vars[last];
 	Expr last_type = vl.types[last];
-	if (!last_type.isdtype(ctxt,true /* spec */))
+	Const head = last_type.typeGetHead(ctxt,true /* spec */);
+	if (head == null)
 	    handleError(ctxt,
 			"The last type in the quantified part of an "
 			+"induction-proof is not\n"
@@ -102,6 +103,8 @@ public class Induction extends Expr{
 	   with an expression containing one of the (other) variables. */
 	Forall renamedIH = (Forall)IH.rename(ctxt, x3.pos);
 	ctxt.setClassifier(x3, renamedIH);
+
+	Const head2 = null;
 
 	for (int i = 0, iend = C.length; i < iend; i++) {
 	    // get this first, to set the types of pattern variables.
@@ -133,6 +136,16 @@ public class Induction extends Expr{
 	    if (!C[i].refine(ctxt, last_type, NO_APPROX, true)) 
 		continue;
 
+	    if (head2 == null) {
+		head2 = ctxt.getTypeCtor(C[i].c);
+		if (!head2.defEq(ctxt,head)) 
+		    handleError(ctxt,
+				"The head of the type of the scrutinee does not match the head of the type of the cases\n"
+				+"in an induction-proof.\n\n"
+				+"1. the head of the type of the scrutinee: "+head.toString(ctxt)
+				+"\n\n2. the head of the type of the first case: "+head2.toString(ctxt));
+	    }
+
 	    Expr form = C[i].body.classify(ctxt);
 	    if (!F.defEq(ctxt, form))
 		C[i].handleError
@@ -163,8 +176,7 @@ public class Induction extends Expr{
     }
 
     public java.util.Set getDependences() {
-        java.util.Set s = getDependences();
-        s.addAll(vl.getDependences());
+        java.util.Set s = vl.getDependences();
         s.addAll(F.getDependences());
         for(int i = 0, n = C.length; i < n; ++i)
             s.addAll(C[i].getDependences());

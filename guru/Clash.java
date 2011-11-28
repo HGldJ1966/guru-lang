@@ -38,12 +38,28 @@ public class Clash extends Expr{
 	return new Bang();
     }
 
-    protected void check_not_var(Context ctxt, Expr e) {
-	if (e.construct == VAR) 
+    // we assume t1 is def-expanded.
+    protected void check_ctor_head(Context ctxt, Expr t1) {
+	if (t1.construct == CONST)
+	    return;
+	
+	boolean problem = false;
+
+	if (t1.construct == TERM_APP || t2.construct == TYPE_APP) {
+	    Expr e = ((App)t1).getHead(ctxt,true);
+	    if (e.construct != CONST)
+		problem = true;
+	    else
+		problem = !ctxt.isCtor((Const)e);
+	}
+	else
+	    problem = true;
+
+	if (problem)
 	    handleError(ctxt,
-			"One of the terms given to a clash-proof is a variable"
-			+" (which is not allowed).\n"
-			+"1. the term: "+e.toString(ctxt));
+			"One of the terms given to clash does not have a constructor at its head.\n"
+			+"1. The term: "+t1.toString(ctxt));
+	
     }
 
     public Expr classify(Context ctxt) {
@@ -53,46 +69,39 @@ public class Clash extends Expr{
 	Expr t1a = t1.dropAnnos(ctxt).defExpandTop(ctxt);
 	Expr t2a = t2.dropAnnos(ctxt).defExpandTop(ctxt);
 
-	check_not_var(ctxt,t1a);
-	check_not_var(ctxt,t2a);
+	check_ctor_head(ctxt,t1a);
+	check_ctor_head(ctxt,t2a);
 
-	if (t1a.construct == t2a.construct && t1a.construct != Expr.BANG
-            && t1a != t2a) {
-	    // this might still work out, if we have applications
-	    // of different constructors.
-	    if (t1a.construct != CONST) {
-		if (t1a.construct != TERM_APP && t1a.construct != TYPE_APP) 
-		    handleError(ctxt,
-				"Terms given to clash have same top-level"
-				+" construct (and are not applications).\n"
-				+"1. the first term (annotations dropped): "+
-				t1a.toString(ctxt)+"\n"
-				+"2. the second term (annotations dropped): "+
-				t2a.toString(ctxt));
-		
-		App a1 = (App)t1a;
-		App a2 = (App)t2a;
-		if (a1.getHead(ctxt,true) == a2.getHead(ctxt,true))
-		    handleError(ctxt,
-				"Terms given to clash are applications of the"
-				+" same term\n"
-				+"1. the first term (annotations dropped): "+
-				t1a.toString(ctxt)+"\n"
-				+"2. the second term (annotations dropped): "+
-				t2a.toString(ctxt));
-		
-		if (a1.getHead(ctxt,true).construct != CONST)
-		    handleError(ctxt,
-				"Terms given to clash are applications with"
-				+" non-constant heads\n"
-				+"1. the first term (annotations dropped): "+
-				t1a.toString(ctxt)+"\n"
-				+"2. the second term (annotations dropped): "+
-				t2a.toString(ctxt));
+	if (t1a.construct == t2a.construct) {
+	    if (t1a.construct == CONST) {
+		if (t1a.defEq(ctxt,t2a,true))
+		    handleError(ctxt,"The terms given to clash are definitionally equal, but\n"
+				+"they should be different in order to clash.\n"
+				+"1. the first term: "+t1a.toString(ctxt)
+				+"\n2. the second term: "+t2a.toString(ctxt));
+		ctxt.resetNotDefEq();
+		return new Atom(false,t1a,t2a);
 	    }
+
+	    App a1 = (App)t1a;
+	    App a2 = (App)t2a;
+
+	    if (a1.getHead(ctxt,true).defEq(ctxt,a2.getHead(ctxt,true),true))
+		handleError(ctxt,
+			    "Terms given to clash are applications of the"
+			    +" same constructor.\n"
+			    +"1. the first term: "+
+			    t1a.toString(ctxt)+"\n"
+			    +"2. the second term: "+
+			    t2a.toString(ctxt));
+	    ctxt.resetNotDefEq();
 	}
 
-	return new Atom(false, t1a, t2a);
+	/* these have ctor heads but different constructs.  The only
+	   possibilities are (CONST,TERM_APP) and (CONST,TYPE_APP),
+	   or the reverse (also (TERM_APP,TYPE_APP) is possible). */
+
+	return new Atom(false,t1a,t2a);
     }
 
     public void checkTermination(Context ctxt, Expr IH, int arg, Var[] vars)

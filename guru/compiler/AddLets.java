@@ -104,9 +104,7 @@ public class AddLets {
 	while(it.hasNext()) {
 	    Def D = (Def)it.next();
 
-	    t = new Let(D.x1, 
-			new Ownership(Ownership.UNOWNED) /* the default */,
-			D.t1, null, t);
+	    t = new Let(D.x1, new Ownership(Ownership.DEFAULT), D.t1, null, t);
 	}
 	return t;
     }
@@ -206,7 +204,7 @@ public class AddLets {
 	    Expr nt = process(i.t,defs,false);
 	    if (nt.construct != Expr.VAR)
 		nt = define(nt,defs);
-	    Expr ni = new Inc(nt);
+	    Expr ni = new Inc(nt,i.T);
 	    ni.pos = t.pos;
 	    return define(ni, defs);
 	}	    
@@ -216,7 +214,7 @@ public class AddLets {
 	    Expr nt = process(d.t,defs,return_pos);
 	    if (nI.construct != Expr.VAR)
 		nI = define(nI,defs);
-	    Expr nd = new Dec(nI,nt);
+	    Expr nd = new Dec(nI,nt,d.T);
 	    nd.pos = t.pos;
 	    if (return_pos)
 		return nd;

@@ -4,27 +4,22 @@ import java.util.*;
 
 /** The main method is readCommand().  You need to open a file and
     set a Context before reading commands. */
-public class Parser {
+public class Parser extends ParserBase {
     
     Context ctxt;
-    PushbackReader pr;
-    int linenum;
-    int column;
-    int prev_column;
-    String file;
-    File root;
     boolean trusted;
 
     protected final static int STRING = 1;
 
     boolean allow_stars, allow_type_fam_abbrev, allow_predicate, spec;
 
+    public static int num_proofs = 0;
+    public static int num_trusted = 0;
+
     protected static final boolean using_metavars = false;
 
     public Parser(boolean trusted) {
-	linenum = 1;
-	column = 1;
-	prev_column = 0;
+	super();
 	ctxt = null;
 	allow_stars = false;
 	allow_type_fam_abbrev = false;
@@ -32,38 +27,11 @@ public class Parser {
     }
     
     public void Reset() {
-	linenum = 1;
-	column = 1;
-	prev_column = 0;
+	super.Reset();
 	allow_stars = false;
 	ctxt = null;
 	allow_type_fam_abbrev = false;
     }	
-
-    protected int getc() throws IOException {
-	int c = pr.read();
-	if ((char)c == '\n') {
-	    prev_column = column;
-	    linenum++;
-	    column=0;
-	}
-	else
-	    column++;
-	return c;
-    }
-
-    protected void ungetc(int c) throws IOException {
-	if (c == -1)
-	    // it seems pushing back -1 causes problems
-	    return;
-	if ((char)c == '\n') {
-	    column=prev_column;
-	    linenum--;
-	}
-	else
-	    column--;
-  	pr.unread(c);
-    }
 
     protected boolean isTerm(int construct) {
 	switch(construct) {
@@ -78,6 +46,10 @@ public class Parser {
 		return true;
 	    }
 	    return false;
+	case Expr.WORD_EXPR:
+	    return true;
+	case Expr.CHAR_EXPR:
+	    return true;
 	case Expr.LAST+STRING:
 	    return true;
 	}
@@ -138,39 +110,16 @@ public class Parser {
 		isFormula(construct));
     }
 
-    public void openFile(String fn)
-	throws IOException
-    {
-	FileReader fr = new FileReader(fn);
-	BufferedReader br = new BufferedReader(fr);
-	pr = new PushbackReader(br, 20);
-	file = fn;
-	root = new File(file).getCanonicalFile().getParentFile();
-    }
-
     public void setContext(Context ctxt)
     {
        this.ctxt = ctxt;
     }
 
-    protected void handleError(String msg)
-    {
-	handleError(new Position(linenum, column, file), msg);
-    }
-
-    protected void handleError(Position pos, String msg)
-    {
-	pos.print(System.out);
-        System.out.println(": parse error.\n"+msg);
-        System.exit(1);
-    }
-
     public Expr readAny() throws IOException {
-	return readAny(eatKeyword());
-    }
-
-    protected Position getPos() {
-	return new Position(linenum,column,file);
+    int construct = eatKeyword();
+    if (construct == Expr.INVALID)
+    	handleError("Unexpected end of file.");
+	return readAny(construct);
     }
 
     // call with value from eatKeyword() 
@@ -194,8 +143,14 @@ public class Parser {
 	    case Expr.FUN_TERM:
 		e = readFunTerm();
 		break;
+	    case Expr.DO:
+		e = readDo();
+		break;
 	    case Expr.CAST:
 		e = readCast();
+		break;
+	    case Expr.COMPILE_AS:
+		e = readCompileAs();
 		break;
 	    case Expr.TERMINATES:
 		e = readTerminates();
@@ -210,24 +165,26 @@ public class Parser {
 		e = readLet();
 		break;
 	    case Expr.ABBREV:
+	    	e = readAbbrev( Abbrev.fAbbrevNone );
+	    	break;
 	    case Expr.EABBREV:
-	    	e = readAbbrev(construct == Expr.EABBREV);
- 		break;
+	    	e = readAbbrev( Abbrev.fAbbrevEvaluate);
+	    	break;
+	    case Expr.CABBREV:
+	    	e = readAbbrev( Abbrev.fAbbrevClassify);
+	    	break;
 	    case Expr.MATCH:
 		e = readMatch();
 		break;
 	    case Expr.FUN_TYPE:
 		e = readFunType();
 		break;
-	    case Expr.INC:
-		e = readInc();
-		break;
-	    case Expr.DEC:
-		e = readDec();
-		break;
 	    case Expr.TYPE:
 		e = ctxt.type;
 		break;
+		/*	    case Expr.FORMULA:
+		e = ctxt.formula;
+		break; */
 	    case Expr.TYPE_APP:
 		e = readTypeApp();
 		break;
@@ -242,6 +199,9 @@ public class Parser {
 		break;
 	    case Expr.CASE_PROOF:
 		e = readCaseProof();
+		break;
+	    case Expr.TERM_CASE:		
+		e = readTerminatesCase();
 		break;
 	    case Expr.EXISTSI:
 		e = readExistsi();
@@ -273,6 +233,9 @@ public class Parser {
 	    case Expr.SYMM:
 		e = readSymm();
 		break;
+            case Expr.TRANSS:
+                e = readTranss();
+                break;
 	    case Expr.TRANS:
 		e = readTrans();
 		break;
@@ -315,14 +278,17 @@ public class Parser {
 	    case Expr.ATOM:
 		e = readAtom();
 		break;
-	    case Expr.METAVAR:
-		e = readMetaVar();
-		break;
 	    case Expr.TRUE:
 	    	e = readTrue();
 		break;
 	    case Expr.FALSE:
 	    	e = readFalse();
+		break;
+	    case Expr.VOID:
+	    	e = new Void();
+		break;
+	    case Expr.VOIDI:
+	    	e = new Voidi();
 		break;
 	    case Expr.TRUEI:
 	    	e = readTruei();
@@ -342,11 +308,20 @@ public class Parser {
 	    case Expr.SIZE:
 		e = readSize();
 		break;
+	    case Expr.COMPRESS:
+		e = readCompress();
+		break;
+	    case Expr.CHAR_EXPR:
+		e = readCharExpr();
+		break;
+	    case Expr.WORD_EXPR:
+		e = readWordExpr();
+		break;
 	    case Expr.LAST+STRING:
 		e = readStringExpr();
 		break;
 	    default:
-		handleError("Internal error: missing case for construct");
+		handleError("Internal error: Parser is missing case for construct");
             }
 	if (e.pos == null)
 	    e.pos = pos;
@@ -359,7 +334,7 @@ public class Parser {
 	allow_stars = false;
 	if (!eat_ws())
 	    return null;
-	Position pos = new Position(linenum, column, file);
+	Position pos = getPos(); 
 	Command c = null;
 	if (tryToEat("Define")) 
 	    c = readDefine();
@@ -377,17 +352,93 @@ public class Parser {
 	    c = readCompile();
 	else if (tryToEat("Interpret")) 
 	    c = readInterpret();
+	else if (tryToEat("Classify")) 
+	    c = readClassifyCmd();
 	else if (tryToEat("Untracked")) 
 	    c = readUntracked();
         else if (tryToEat("DumpDependence"))
             c = readDumpDependence();
         else if (tryToEat("Total"))
             c = readTotal();
+        else if (tryToEat("Echo"))
+            c = readEcho();
+	else if (tryToEat("ResourceType")) 
+	    c = readResourceType();
+	else if (tryToEat("Init"))
+	    c = readInit();
 	else
 	    handleError("Unexpected start of a command.");
 	c.pos = pos;
 	return c;
     }
+
+    protected ResourceType readResourceType() throws IOException {
+	ResourceType a = new ResourceType();
+	if (!eat_ws())
+	    handleError("Unexpected end of input reading a ResourceType-command.");
+
+	a.s = readBindingConst();
+	
+	ctxt.addResourceType(a.s);
+	
+	eat_ws();
+
+	if (tryToEat("affine")) {
+	    a.drop = null;
+	    eatDelim(".", "ResourceType");
+	}
+	else {
+	    eat("with", "ResourceType");
+	    if (!eat_ws())
+		handleError("Unexpected end of input reading a ResourceType-command.");
+	    eat("Define", "ResourceType");
+	    a.drop = readDefine();
+	}
+	return a;
+    }
+
+    protected Init readInit() throws IOException {
+	Init a = new Init();
+	while(true) {
+	    eat_ws();
+	    if (tryToEat("must_consume_scrutinee")) 
+		a.must_consume_scrut = true;
+	    else if (tryToEat("take_pointer")) 
+		a.take_pointer = true;
+	    else 
+		break;
+	}
+
+	a.s = readBindingConst();
+
+	eat("(","Init");
+	eat("#","Init");
+	a.T1 = new Ownership(Ownership.RESOURCE, readConst());
+	eat_ws();
+	a.v1 = (Var)readIdentifier(true);
+	eat(")","Init");
+	ctxt.pushVar(a.v1);
+
+	eat("(","Init");
+	eat("#","Init");
+	a.T2 = new Ownership(Ownership.RESOURCE, readConst());
+	eat_ws();
+	a.v2 = (Var)readIdentifier(true);
+	eat(")","Init");
+	eat(".","Init");
+	ctxt.pushVar(a.v2);
+
+	a.T3 = readAnno();
+	ctxt.popVar(a.v1);
+	ctxt.popVar(a.v2);
+
+	eat("<<","Init");
+	a.delim = readID();
+	a.code = read_until_newline_delim(a.delim);
+	eatDelim(".","Init");
+	return a;
+    }
+
 
     protected Set readSet() throws IOException
     {
@@ -397,7 +448,7 @@ public class Parser {
 
 	s.flag = readString();
 
-	eat(".", "Set");
+	eatDelim(".", "Set");
 
 	return s;
     }
@@ -414,7 +465,7 @@ public class Parser {
 	    handleError("Unexpected end of input reading a Total-command.");
 	s.P = readProof();
 
-	eat(".", "Total");
+	eatDelim(".", "Total");
 
 	return s;
     }
@@ -447,7 +498,7 @@ public class Parser {
 
 	s.flag = readString();
 
-	eat(".", "Unset");
+	eatDelim(".", "Unset");
 
 	return s;
     }
@@ -462,9 +513,14 @@ public class Parser {
 	    handleError("Unexpected end of input parsing a Define.");
 
 	cmd.spec = false;
-	cmd.trusted = trusted;
+	cmd.primitive = false;
+	cmd.trusted = trusted && !ctxt.getFlag("ignore_trusted_flag_for_includes");
 	cmd.type_family_abbrev = false;
 	cmd.predicate = false;
+	cmd.abbrev = false;
+
+
+	boolean cmd_trusted = false;
 
 	// read the various flags that can be given to Define.
 	while (true) {
@@ -473,8 +529,12 @@ public class Parser {
 		cmd.spec = true;
 		spec = true;
 	    }
+	    else if (tryToEat("primitive")) {
+		cmd.primitive = true;
+		spec = true;
+	    }
 	    else if (tryToEat("trusted"))
-		cmd.trusted = true;
+		cmd.trusted = cmd_trusted = true;
 	    else if (tryToEat("type_family_abbrev")) {
 		cmd.type_family_abbrev = true;
 		allow_type_fam_abbrev = true;
@@ -483,38 +543,80 @@ public class Parser {
 		cmd.predicate = true;
 		allow_predicate = true;
 	    }
+	    else if (tryToEat("abbrev")) {
+		cmd.abbrev = true;
+	    }
 	    else
 		break; // out of while loop
-	    
-	    if (!eat_ws())
-		handleError("Unexpected end of input parsing a Define.");
-	}
 
-	cmd.c = readBindingConst();
-	
-	if (!tryToEat(":="))
-	{
-	    eat(":", "Define");
 	    if (!eat_ws())
 		handleError("Unexpected end of input parsing a Define.");
-	    cmd.A = readA();
-	    eat(":=", "Define"); 
 	}
-	
-	if (!eat_ws())
-	    handleError("Unexpected end of input parsing a Define.");
 
 	if (allow_type_fam_abbrev && allow_predicate) 
 	    handleError("A defined constant cannot be both a type family\n"
 			+"abbreviation and a predicate.");
 
-	cmd.G = readAny();
+	cmd.c = readBindingConst();
+
+	if (!eat_ws())
+	    handleError("Unexpected end of input parsing a Define.");
+
+	while(true) {
+	    if (tryToEat(":=")) {
+		cmd.G = readAny();
+		break;
+	    }
+	    else {
+		if (tryToEat(":")) {
+		    if (cmd.A != null)
+			handleError("Multiple types declared (following \":\") in a Define.");
+		    if (cmd.primitive) {
+			eat_ws();
+			cmd.o = readAnno();
+			eat_ws();
+		    }
+		    cmd.A = readA();
+		    eat_ws();
+		}
+		else
+		    break;
+	    }
+	}
+
+	if (cmd.o == null)
+	    cmd.o = new Ownership(Ownership.DEFAULT);
+
+	if (cmd.primitive) {
+	    eat("<<","Primitive");
+	    if (cmd.G == null) {
+		// this is a primitive without a functional model
+		if (cmd.A == null) 
+		    handleError("A primitive definition without a functional model is given without a type.");
+		if (!cmd.A.isTypeOrKind(ctxt))
+		    handleError("A primitive definition without a functional model is given with a classifier\n"
+				+"which is not a type or a kind.\n\n");
+
+		Var v = new Var(cmd.c.name);
+		cmd.G = v;
+		ctxt.setClassifier(v,cmd.A);
+	    }
+	    
+	    cmd.delim = readID();
+	    cmd.code = read_until_newline_delim(cmd.delim);
+	}
 
 	allow_type_fam_abbrev = false;
 	allow_predicate = false;
 	spec = false;
 
-	eat(".", "Define");
+	eatDelim(".", "Define");
+
+	if (ctxt.getFlag("count_proofs") && cmd.G.isProof(ctxt)) {
+	    num_proofs++;
+	    if (cmd_trusted)
+		num_trusted++;
+	}
 
 	return cmd;
     }
@@ -525,17 +627,28 @@ public class Parser {
     	Interpret cmd = new Interpret();
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing an Interpret.");
-	cmd.c = readConst();
-	eat(".", "Interpret");
+	cmd.t = readTerm();
+	eatDelim(".", "Interpret");
     	return cmd;
     }
+
+    protected ClassifyCmd readClassifyCmd() throws IOException
+    {
+    	ClassifyCmd cmd = new ClassifyCmd();
+	if (!eat_ws())
+	    handleError("Unexpected end of input parsing an Interpret.");
+	cmd.G = readAny();
+	eatDelim(".", "Classify");
+    	return cmd;
+    }
+
     protected Untracked readUntracked() throws IOException
     {
     	Untracked cmd = new Untracked();
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing an Untracked.");
 	cmd.d = readConst();
-	eat(".", "Untracked");
+	eatDelim(".", "Untracked");
     	return cmd;
     }
     protected DumpDependence readDumpDependence() throws IOException
@@ -557,7 +670,7 @@ public class Parser {
                 if (c == '"') {
                     cmd.trackFile(root, readString());
                 } else {
-                    cmd.trackID(readID());
+                    cmd.trackID(readConst());
                 }
                 if (!eat_ws())
                     handleError("Unexpected end of input parsing a DumpDependence `track' clause.");
@@ -584,7 +697,7 @@ public class Parser {
             if (!eat_ws())
                 handleError("Unexpected end of input parsing a DumpDependence.");
         }
-        eat(".", "DumpDependence");
+        eatDelim(".", "DumpDependence");
         return cmd;
     }
     protected Compile readCompile() throws IOException
@@ -598,7 +711,7 @@ public class Parser {
 	eat("to ","Compile");
 	c.f = new File(readString());
 	c.root = root;
-	eat(".", "Compile");
+	eatDelim(".", "Compile");
 	return c;
     
     }
@@ -607,21 +720,39 @@ public class Parser {
 	ungetc('\"');
 	return new StringExpr(readString());
     }
- 
+
+    protected Expr readCharExpr() throws IOException {
+	ungetc('\'');
+	return new CharExpr(readString(new Character('\'')));
+    }
+
+    protected Expr readWordExpr() throws IOException {
+	return new WordExpr(readHex());
+    }
+
     protected Include readInclude() throws IOException
     {
-	Include cmd = new Include();
-	cmd.trusted = trusted;
+	boolean t = trusted;
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing a Include.");
 	if (tryToEat("trusted")) {
-	    cmd.trusted = true;
+	    t = true;
 	    if (!eat_ws())
 		handleError("Unexpected end of input parsing a Include.");
 	}
-	cmd.f = new File(readString());
-	cmd.root = root;
-	eat(".", "Include");
+	Include cmd = new Include(new File(readString()), root);
+	cmd.trusted = t;
+	eatDelim(".", "Include");
+	return cmd;
+    }
+
+    protected Echo readEcho() throws IOException
+    {
+	Echo cmd = new Echo();
+	if (!eat_ws())
+	    handleError("Unexpected end of input parsing a Include.");
+	cmd.s = readString();
+	eatDelim(".", "Echo");
 	return cmd;
     }
     
@@ -641,29 +772,41 @@ public class Parser {
 	eat(":=", "Inductive");
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing an Inductive");
-	int c = getc();
+
 	ArrayList cs = new ArrayList();
 	ArrayList Ds = new ArrayList();
-	while ((char)c != '.') {
-	    ungetc(c);
+	Ownership ret_stat = null;
+	tryToEat("|");	// Duckki: first bar is now optional (like Coq)
+	while (true) {
+	    if (!eat_ws())
+			handleError("Unexpected end of input parsing an Inductive");
             Const cst = readBindingConst();
 	    cs.add(cst);
 	    eat(":", "Inductive");
+	    Ownership ret_stat_cur = readAnno();
 	    p = getPos();
 	    Expr D = readD(cmd.d);
 	    D.pos = p;
+	    if (D.construct == Expr.FUN_TYPE) 
+		ret_stat_cur = ((FunType)D).ret_stat;
+	    if (ret_stat == null)
+		ret_stat = ret_stat_cur;
+	    else
+		if (!ret_stat_cur.equalOwnership(ret_stat))
+		    handleError("The return type for a term constructor has a different resource type specification"
+				+"\nthan that of the previous term constructors."
+				+"\n\n1. the term constructor: "+cst.toString(ctxt)
+				+"\n\n2. its resource type: "+ret_stat_cur.toString(ctxt)
+				+"\n\n3. the previous constructors' resource type: "+ret_stat.toString(ctxt));
 	    Ds.add(D);
 	    if (!eat_ws())
-		handleError("Unexpected end of input parsing an Inductive");
-	    if (!tryToEat("|")) {
-		eat(".", "Inductive");
+		break;
+	    if (!tryToEat("|"))
 		break; // out of while 
-	    }
-	    if (!eat_ws())
-		handleError("Unexpected end of input parsing an Inductive");
-	    c = getc();
 	}
+	eatDelim(".", "Inductive");
 
+	cmd.ret_stat = ret_stat;
 	cmd.c = toConstArray(cs);
 	cmd.D = toExprArray(Ds);
 
@@ -675,7 +818,7 @@ public class Parser {
     {
 	Expr ee = readType();
 	
-	Expr ret = null;
+	Expr ran = null;
 	if (ee.construct == Expr.FUN_TYPE) {
 	    FunType e = (FunType)ee;
 
@@ -684,11 +827,6 @@ public class Parser {
 		if (!isAminus(T))
 		    handleError("Expected an A- expression in the type of a "
 				+"term constructor");
-		if (e.owned[i].status == Ownership.OWNEDBY)
-		    handleError("A term constructor is being declared with"
-				+" a type\nusing an \"owned\" annotation.\n"
-				+"1. the type: "+e.toString(ctxt));
-
 		if (T.isdtype(ctxt,true))
 		    continue;
 
@@ -698,11 +836,11 @@ public class Parser {
 				+" disallowed way:"
 				+"\n1. the type: "+T.toString(ctxt));
 	    }
-	    ret = e.body;
+	    ran = e.body;
 	}
 	else
-	    ret = ee;
-	if (!isdtypeRestricted(ret,d))
+	    ran = ee;
+	if (!isdtypeRestricted(ran,d))
 	    handleError("The return type of a term constructor is not a \""+
 			d.name+"\"-type.");
         return ee;
@@ -994,11 +1132,14 @@ public class Parser {
 	readVarListExpr(e, false);
 	int iend = e.vars.length;
 	e.owned = new Ownership[e.vars.length];
-	for (int i = 0; i < iend; i++)
-	    e.owned[i] = new Ownership(Ownership.NOT_TRACKED);
+	e.consumps = new int[e.vars.length];
+	for (int i = 0; i < iend; i++) {
+	    e.owned[i] = new Ownership(Ownership.DEFAULT);
+	    e.consumps[i] = FunAbstraction.NOT_CONSUMED;
+	}
         eat(".", "kind");
         e.body = readKind();
-	e.ret_stat = new Ownership(Ownership.NOT_TRACKED);
+	e.ret_stat = new Ownership(Ownership.DEFAULT);
 	popVars(e);
 
 	for (int i = 0; i < iend; i++)
@@ -1041,22 +1182,6 @@ public class Parser {
 	return v;
     }
 
-    static public int[] toIntArray(ArrayList a) {
-	int iend = a.size();
-	int[] v = new int[iend];
-	for (int i = 0; i < iend; i++)
-	    v[i] = ((Integer)a.get(i)).intValue();
-	return v;
-    }
-
-    static public boolean[] toBooleanArray(ArrayList a) {
-	int iend = a.size();
-	boolean[] v = new boolean[iend];
-	for (int i = 0; i < iend; i++)
-	    v[i] = ((Boolean)a.get(i)).booleanValue();
-	return v;
-    }
-
     static public Ownership[] toOwnershipArray(ArrayList a) {
 	int iend = a.size();
 	Ownership[] v = new Ownership[iend];
@@ -1068,9 +1193,9 @@ public class Parser {
     protected Case readCase(boolean in_match) throws IOException
     {
         Case e = new Case();
-	e.pos = new Position(linenum, column, file);
+	e.pos = getPos();
         
-	String errm = ("Pattern in match does not begin with a"
+	String errm = ("Pattern in case does not begin with a"
 		       +" known constant.");
 	try {
 	    e.c = readConst();
@@ -1164,9 +1289,15 @@ public class Parser {
 		handleError("Unexpected end of input parsing a type"
 			    +" application.");
         }
-        
+
         e.X = toExprArray(xList);
         
+	if (e.X.length == 0) {
+	    String headstr = e.head.toString(ctxt);
+	    handleError("A type application is used without any arguments to the head \""
+			+headstr+"\".\n\nThe correct notation is just \""+headstr+"\", not \"<"+headstr+">\".");
+	}
+
         return e;
     }
 
@@ -1261,6 +1392,9 @@ public class Parser {
     {
         Match e = new Match();
 
+	eat_ws();
+	e.consume_scrut = !tryToEat("!");
+
         e.t = readTerm();
         
 	readAssumpVars(e);
@@ -1302,14 +1436,14 @@ public class Parser {
 	    if (!eat_ws())
 		handleError("Unexpected end of input parsing a match term.");
 	    
-	    Position p = new Position(linenum, column, file);
+	    Position p = getPos();
 	    e.x1 = readBindingVar();
 	    e.x1.pos = p;
 	    
 	    if (!eat_ws())
 		handleError("Unexpected end of input parsing a match term.");
 	    
-	    p = new Position(linenum, column, file);
+	    p = getPos();
 	    e.x2 = readBindingVar();
 	    e.x1.pos = p;
 
@@ -1323,7 +1457,7 @@ public class Parser {
 		     : ((Const)e.t).name);
 		e.x1 = new Var(n+"_eq");
 		e.x2 = new Var(n+"_Eq");
-		Position p = new Position(linenum, column, file);
+		Position p = getPos();
 		e.x1.pos = p;
 		e.x2.pos = p;
 	    }
@@ -1414,6 +1548,79 @@ public class Parser {
 
 	return e;
     }
+
+protected TerminatesCase readTerminatesCase() throws IOException
+    {
+        TerminatesCase e = new TerminatesCase();
+
+        e.t = readTerm();
+        
+	e.u = null;
+
+	String errstr = "Unexpected end of input parsing assumption var.";
+
+	if (!eat_ws())
+	    handleError(errstr);
+
+	if (tryToEat("by")) {
+	    if (!eat_ws())
+		handleError(errstr);
+	    
+	    Position p = getPos();
+	    e.u = readBindingVar();
+	    e.u.pos = p;
+
+	    if (!eat_ws())
+		handleError(errstr);
+	}
+	else {
+	    if (e.t.construct == Expr.VAR || e.t.construct == Expr.CONST) {
+		String n = 
+		    (e.t.construct == Expr.VAR ? ((Var)e.t).name
+		     : ((Const)e.t).name);
+		e.u = new Var(n+"_eq");
+		Position p = getPos();
+		e.u.pos = p;
+	    }
+	}
+
+	if (e.u == null) 
+	    handleError("A terminates-case proof lacks a \"by\" clause, and we"
+			+" cannot automatically declare\n"
+			+"its variable, since the scrutinee is not"
+			+" a variable.");
+
+	ctxt.pushVar(e.u);
+
+	
+	eat("with", "case-terminates proof");
+	// put an error message here if no with?
+
+        eat_ws();
+	e.x = readBindingVar();
+        ctxt.pushVar(e.x);
+
+	eat("=>", "case-terminates proof");
+
+	e.p1 = readProof();
+        ctxt.popVar(e.x);
+
+	eat("|", "case-terminates proof");
+	eat("abort", "case-terminates proof");
+	//put in an error if abort isn't the second case
+
+	eat("=>", "case-terminates proof");
+	e.p2 = readProof();
+	eat("end", "case-terminates proof");
+		
+	
+	ctxt.popVar(e.u);
+
+        return e;
+
+
+    }
+
     
     // read a list of cases, and check that the constructors are
     // the ones for a single datatype, in that order.
@@ -1428,6 +1635,10 @@ public class Parser {
 
 	Expr adefault = null;
 	Const tp = null;
+	
+	tryToEat("|");	// Duckki: first bar is optional
+	if (!eat_ws())
+	    handleError("Unexpected end of input parsing "+where+".");
 	
 	boolean first = true;
 	if (tryToEat("default")) {
@@ -1575,8 +1786,7 @@ public class Parser {
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing a let term.");
 
-	e.x1_stat = readAnno(false /* we do not allow owned here, for
-				      soundness */);
+	e.x1_stat = readAnno();
 
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing a let term.");
@@ -1599,13 +1809,13 @@ public class Parser {
         }
 	else {
 	    e.x2 = new Var(e.x1.name+"_eq");
-	    e.x2.pos = new Position(linenum, column, file);
+	    e.x2.pos = getPos();
 	}
+
+	eatDelim("in", "let term");
 
 	ctxt.pushVar(e.x2);
 
-	eat("in", "let term");
-        
 	ctxt.pushVar(e.x1);
 
         e.t2 = readTerm();
@@ -1617,11 +1827,11 @@ public class Parser {
         return e;
     }
 
-    protected Abbrev readAbbrev (boolean eabbrev) throws IOException
+    protected Abbrev readAbbrev(int flags) throws IOException
     {
 	Var x;
 	Expr U, G;
-        Position pos = new Position(linenum, column, file);
+        Position pos = getPos();
 
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing a abbrev term.");
@@ -1632,7 +1842,7 @@ public class Parser {
 	    
 	U = readAny();
         
-	eat("in", "abbrev term");
+	eatDelim("in", "abbrev term");
         
 	ctxt.pushVar(x);
 	
@@ -1643,38 +1853,42 @@ public class Parser {
 	
 	ctxt.popVar(x);
 	
-        Abbrev ret = new Abbrev(eabbrev, x,U,G);
+        Abbrev ret = new Abbrev(flags,x,U,G);
 	ret.pos = pos;
 	return ret;
     }
     
-    protected Const readBindingConst () throws IOException
+    protected Const readBindingConst() throws IOException
     {
 	Var v = (Var)readIdentifier(true);
-	if (ctxt.lookup(v.name) != null) 
+	Expr e = ctxt.lookup(v.name);
+	if (e != null) 
 	    handleError("A previous definition or "
-			+"declaration is being shadowed.");
+			+"declaration is being shadowed:"
+			+"\n\n1. the defined constant: "+v.toString(ctxt)
+			+(e.pos != null ?
+			  "\n\n2. previously defined at: "+e.pos.toString()
+			  : ""));
 	Const c = new Const(v.name);
 
 	c.pos = v.pos;
 	return c;
     }
 
-    protected Const readConst () throws IOException
+    protected Const readConst() throws IOException
     {
-	return (Const)readIdentifier(false);
+	Expr e = readIdentifier(false);
+	if (e.construct != Expr.CONST)
+	    handleError("Expected a constant, but found: \""+e.toString(ctxt)+"\".");
+	return (Const)e;
     }
 
-    /** this is expecting it can definitely read a metavar at this 
-	point.  Otherwise, it will throw a class cast exception. */
-    protected MetaVar readMetaVar () throws IOException
-    {
-	return (MetaVar)readIdentifier(false);
-    }
-    
     protected Var readVar () throws IOException
     {
-	return (Var)readIdentifier(false);
+	Expr e = readIdentifier(false);
+	if (e.construct != Expr.VAR)
+	    handleError("Expected a variable, but found: \""+e.toString(ctxt)+"\".");
+	return (Var)e;
     }
 
     protected Var readBindingVar () throws IOException
@@ -1682,42 +1896,17 @@ public class Parser {
 	return (Var)readIdentifier(true);
     }
 
-    protected String readID ()
-        throws IOException
-    {
-        int c;
-        char ch;
-        StringBuffer theID = new StringBuffer();
-
-        do{
-            c=getc();
-            ch=(char) c;
-	    if (c == -1 || Character.isWhitespace(ch) || !LegalVarChar(ch))
-            {
-                if(!LegalVarChar(ch))
-                    ungetc(c);
-		break;
-            }
-            theID.append(ch);
-        } while(true);
-
-	if (theID.length() == 0)
-	    handleError("Expected an identifier.");
-
-        return theID.toString();
-    }
-
-    /** reads an identifier.  */
-    protected Expr readIdentifier (boolean binding_occurrence) 
+    protected Expr readIdentifier(boolean binding_occurrence) 
 	throws IOException
     {
-        Position pos = new Position(linenum, column, file);
+        Position pos = getPos();
         String theVarName = readID();
 
-	if (theVarName.charAt(0) == '_' && using_metavars) 
-	    return new MetaVar(theVarName);
-
 	Expr e = ctxt.lookup(theVarName);	
+	/*
+	ctxt.w.println("theVarName = "+theVarName+", binding_occurrence = "+(new Boolean(binding_occurrence)).toString());
+	ctxt.w.flush();
+	*/
 	if (!binding_occurrence) {
 	    if (e != null)
 		return e;
@@ -1729,49 +1918,34 @@ public class Parser {
 	return v;
     }
      
-    protected String readString() throws IOException
-    {
-        int c;
-        String s="";
-	c=getc();
-
-	if ((char)c != '"')
-	    handleError("Expecting a double quotation mark (\") to start a"
-			+" string.");
-        do{
-	    c=getc();
-	    if (c == -1 || (char)c == '"') {
-		break; 
-            }
-            s+=(char)c;
-        } while(true);
-        
-	return s;
+    protected Ownership readAnno() throws IOException {
+	if (tryToEat("#<")) {
+	    Const c = readConst();
+	    if (!eat_ws())
+		handleError("Unexpected end of input reading a resource tracking annotation.");
+	    Var v = readVar();
+	    Ownership o = new Ownership(Ownership.PINNED,c,v);
+	    eat(">", "resource type");
+	    return o;
+	}
+	if (tryToEat("spec"))
+	    return new Ownership(Ownership.SPEC);
+	if (tryToEat("#untracked"))
+	    return new Ownership(Ownership.UNTRACKED);
+	if (tryToEat("#abort"))
+	    return new Ownership(Ownership.ABORT);
+	if (tryToEat("#",true))
+	    return new Ownership(Ownership.RESOURCE, readConst());
+	return new Ownership(Ownership.DEFAULT);
     }
-    
+
     protected class VarList {
 	public Ownership anno;
+	public int consump;
 	public Var[] vars;
 	public Expr type;
     }
 
-    protected Ownership readAnno(boolean allow_owned) throws IOException {
-	if (allow_owned && tryToEat("owned"))
-	    return new Ownership(Ownership.OWNEDBY);
-	if (tryToEat("owned_by"))
-	    return new Ownership(Ownership.OWNEDBY,readVar());
-	if (allow_owned && tryToEat("unique_owned"))
-	    return new Ownership(Ownership.UNIQUE_OWNEDBY);
-	if (tryToEat("unique_owned_by"))
-	    return new Ownership(Ownership.UNIQUE_OWNEDBY,readVar());
-	if (tryToEat("unique"))
-	    return new Ownership(Ownership.UNIQUE);
-	if (tryToEat("new"))
-	    return new Ownership(Ownership.NEW);
-	if (tryToEat("spec"))
-	    return new Ownership(Ownership.SPEC);
-	return new Ownership(Ownership.UNOWNED);
-    }
 
     // if allow_annos is true, we allow certain types of annotations
     // to qualify the vars.
@@ -1784,9 +1958,19 @@ public class Parser {
             
 	if (!eat_ws())
 	    handleError("Unexpected end of input reading a variable list.");
-	Ownership anno = new Ownership(Ownership.UNOWNED);
+	Ownership anno = new Ownership(Ownership.DEFAULT);
+	int consump = FunAbstraction.CONSUMED_RET_OK;
 	if (allow_annos) {
-	    anno = readAnno(true /* allow_owned */);
+	    if (tryToEat("!"))
+		consump = FunAbstraction.NOT_CONSUMED;
+	    else if (tryToEat("^"))
+		consump = FunAbstraction.CONSUMED_NO_RET;
+	    if (!eat_ws())
+		handleError("Unexpected end of input reading a variable list.");
+	    anno = readAnno();
+	    if ((anno.status == Ownership.SPEC || anno.status == Ownership.UNTRACKED) 
+		&& consump != FunAbstraction.CONSUMED_RET_OK) 
+		handleError("An untracked or specificational argument is labeled with either \"^\" or \"!\".");
 	    if (!eat_ws())
 		handleError("Unexpected end of input reading a variable"
 			    +" list.");
@@ -1794,7 +1978,13 @@ public class Parser {
 		
         do
         {        
-            varList.add(readBindingVar());
+	    Var v = readBindingVar();
+	    if (ctxt.isResourceType(v.name))
+		handleError("A variable is shadowing a resource type.  Perhaps you are missing the leading \"#\"?"
+			    +"\n\n1. the variable: "+v.toString(ctxt)
+			    +"\n\n2. should maybe be: #"+v.toString(ctxt));
+		
+            varList.add(v);
 
             if (!eat_ws())
 		handleError("Unexpected end of input reading a variable"
@@ -1814,6 +2004,9 @@ public class Parser {
 
 	if (type == null) {
 	    type = readA();
+	    if (type.construct == Expr.CONST && ctxt.isUntracked((Const)type)
+	    	&& anno.status == Ownership.DEFAULT)
+	       anno = new Ownership(Ownership.UNTRACKED);
 
 	    if (!eat_ws() || !tryToEat(")"))
 		handleError("Unexpected end of input reading a variable list.");
@@ -1823,6 +2016,7 @@ public class Parser {
         vl.vars = toVarArray(varList);
 	vl.type = type;
 	vl.anno = anno;
+	vl.consump = consump;
 	
 	for (int i = 0, iend = vl.vars.length; i < iend; i++)
 	    ctxt.pushVar(vl.vars[i]);
@@ -1840,6 +2034,7 @@ public class Parser {
         ArrayList varList = new ArrayList();
         ArrayList uList = new ArrayList();
         ArrayList annoList = new ArrayList();
+        ArrayList consumpList = new ArrayList();
 
         int c;
         char ch;
@@ -1854,13 +2049,14 @@ public class Parser {
         {
 	    ungetc(c);
             VarList vl = readVarList(allow_annos);
-            for(int i=0; i<vl.vars.length;i++)
+            for(int i=0; i<vl.vars.length;i++) {
                 varList.add(vl.vars[i]);
-            for(int i=0; i<vl.vars.length;i++)
                 uList.add(vl.type);
-	    if (allow_annos)
-		for(int i=0; i<vl.vars.length;i++)
+		if (allow_annos) {
+		    consumpList.add(new Integer(vl.consump));
 		    annoList.add(vl.anno);
+		}
+	    }
         
 	    if (!eat_ws())
 		handleError("Unexpected end of input parsing a variable"
@@ -1876,6 +2072,7 @@ public class Parser {
 	if (allow_annos) {
 	    FunAbstraction a = (FunAbstraction)e;
 	    a.owned = toOwnershipArray(annoList);
+	    a.consumps = toIntArray(consumpList);
 	}
     }
 
@@ -1904,18 +2101,15 @@ public class Parser {
 
 	readVarListExpr(e, true);
 
-	if (e.r != null || tryToEat(":")) {
-	    if (e.r != null)
-		eat(":", "fun term");
-     
+	if (tryToEat(":")) {
 	    // need to read the return type of the recursive function
 	    if (!eat_ws())
 		handleError("Unexpected end of input parsing a fun term.");
-	    e.ret_stat = readAnno(false /* allow_owned */);
+	    e.ret_stat = readAnno();
 	    e.T = readType();
 	}
 	else {
-	    e.ret_stat = new Ownership(Ownership.UNOWNED);
+	    e.ret_stat = new Ownership(Ownership.DEFAULT);
 	    e.T = null;
 	}
 
@@ -1941,7 +2135,7 @@ public class Parser {
 	eat(".", "Fun type");
 	if (!eat_ws())
 	    handleError("Unexpected end of input parsing a Fun-type.");
-	e.ret_stat = readAnno(false /* allow_owned */);
+	e.ret_stat = readAnno();
         e.body = readType();
                 
 	popVars(e);
@@ -2095,6 +2289,55 @@ public class Parser {
 	}
 
         e.P = toExprArray(proofs);
+
+	if (e.P.length == 0)
+	  handleError("Show-proof contains no content.");
+
+        return e;
+    }
+    
+
+    protected Transs readTranss() throws IOException
+    {              
+    	Transs e = new Transs();
+        
+        ArrayList proofs = new ArrayList();
+
+	while (!tryToEat("end")) {
+	    proofs.add(readProof());
+	    
+	    if (!eat_ws())
+		handleError("Unexpected end of input parsing a transs proof.");
+	}
+
+        e.P = toExprArray(proofs);
+	
+	if (e.P.length == 0)
+	  handleError("Transs-proof contains no content.");
+
+        return e;
+    }
+
+    protected Do readDo() throws IOException
+    {              
+    	Do e = new Do();
+        
+        ArrayList terms = new ArrayList();
+
+	while (!tryToEat("end")) {
+	    terms.add(readAny());
+	    
+	    if (!eat_ws())
+		handleError("Unexpected end of input parsing a show proof.");
+	}
+
+	int sz = terms.size();
+	if (sz <= 1)
+	    handleError("A do-term is used with fewer than 2 subterms.");
+
+	e.t = (Expr)terms.get(sz-1);
+	terms.remove(sz-1);
+        e.ts = toExprArray(terms);
 
         return e;
     }
@@ -2382,6 +2625,32 @@ public class Parser {
         return e;
     }
 
+    protected CompileAs readCompileAs() throws IOException
+    {
+        CompileAs e = new CompileAs();
+
+        e.t1 = readTerm();
+
+        eat("as", "compiles-as term");
+
+        e.t2 = readTerm();
+
+        eat("by", "compiles-as term");
+
+        e.P = readProof();
+
+        return e;
+    }
+
+    protected Compress readCompress() throws IOException
+    {
+        Compress e = new Compress();
+
+        e.t = readTerm();
+
+        return e;
+    }
+
     protected Cutoff readCutoff() throws IOException
     {
         Cutoff e = new Cutoff();
@@ -2409,275 +2678,151 @@ public class Parser {
         e.P = readProof();
         return e;
     }
-    
-    protected Inc readInc() throws IOException
-    {
-        Inc e = new Inc();
-        
-        e.t = readTerm();
-        
-        return e;
-    }
-    
-    protected Dec readDec() throws IOException
-    {
-        Dec e = new Dec();
-        
-        e.I = readI();
-
-	if (!eat_ws())
-	    handleError("Unexpected end of input parsing a dec-term.");
-
-        e.t = readTerm();
-        
-        return e;
-    }
-
-    protected void eat(String kw, String parsing_what) throws IOException {
-	if (!eat_ws())
-	    handleError("Unexpected end of input parsing "+parsing_what);
-	if (!tryToEat(kw))
-	    handleError("Expected \""+kw+"\" parsing "+parsing_what);
-    }
-
-    protected boolean tryToEat(String kw) 
-	throws IOException 
-    {
-	return tryToEat(kw.toCharArray());
-    }
-
-    protected boolean tryToEat(char[] kw) 
-	throws IOException 
-    {
-	int c;
-	int cur = 0;
 	
-	c = getc();
-	while (c != -1 && cur < kw.length) {
-	    char b = kw[cur++];
-	    if ((char)c != b) {
-		ungetc(c);
-		for (int j = cur-2; j >= 0; j--)
-			ungetc(kw[j]);
-			
-		
-		return false;
-	    }
-	    c = getc();
+	protected static DiscriminationTree	keywordTree;
+	
+	static {
+		keywordTree = new DiscriminationTree();
+		keywordTree.add( "**", Expr.STARSTAR );
+		keywordTree.add( "*", Expr.STAR );
+		keywordTree.add( "do", Expr.DO );
+		keywordTree.add( "fun", Expr.FUN_TERM );
+		keywordTree.add( "cast", Expr.CAST );
+		keywordTree.add( "compile", Expr.COMPILE_AS );
+		keywordTree.add( "terminates", Expr.TERMINATES );
+		keywordTree.add( "(", Expr.TERM_APP );
+		keywordTree.add( "abort", Expr.ABORT );
+		keywordTree.add( "let", Expr.LET );
+		keywordTree.add( "abbrev", Expr.ABBREV );
+		keywordTree.add( "eabbrev", Expr.EABBREV );
+		keywordTree.add( "cabbrev", Expr.CABBREV );
+		keywordTree.add( "match", Expr.MATCH );
+		keywordTree.add( "Fun", Expr.FUN_TYPE );
+		keywordTree.add( "type", Expr.TYPE );
+		keywordTree.add( "<", Expr.TYPE_APP );
+		keywordTree.add( "@<", Expr.PRED_APP );
+		keywordTree.add( "@", Expr.COMPRESS );	// prefix!
+		keywordTree.add( "foralli", Expr.FORALLI );
+		keywordTree.add( "[", Expr.PROOF_APP );
+		keywordTree.add( "case", Expr.CASE_PROOF );
+		keywordTree.add( "terminates-case", Expr.TERM_CASE ); 
+		keywordTree.add( "!", Expr.BANG );
+		keywordTree.add( "existsi", Expr.EXISTSI );
+		keywordTree.add( "andi", Expr.ANDI );
+		keywordTree.add( "existse_term", Expr.EXISTSE_TERM );
+		keywordTree.add( "existse", Expr.EXISTSE );
+		keywordTree.add( "truei", Expr.TRUEI );
+		keywordTree.add( "diseqi", Expr.DISEQI );
+		keywordTree.add( "True", Expr.TRUE );
+		keywordTree.add( "False", Expr.FALSE );
+		keywordTree.add( "voidi", Expr.VOIDI );
+		keywordTree.add( "void", Expr.VOID );
+		keywordTree.add( "join", Expr.JOIN );
+		keywordTree.add( "evalto", Expr.EVALTO );
+		keywordTree.add( "eval", Expr.EVAL );
+		keywordTree.add( "hypjoin", Expr.HYPJOIN );
+		keywordTree.add( "refl", Expr.REFL );
+		keywordTree.add( "symm", Expr.SYMM );
+		keywordTree.add( "transs", Expr.TRANSS );
+		keywordTree.add( "trans", Expr.TRANS );
+		keywordTree.add( "cong", Expr.CONG );
+		keywordTree.add( "ncong", Expr.NCONG );
+		keywordTree.add( "inj", Expr.INJ );
+		keywordTree.add( "clash", Expr.CLASH );
+		keywordTree.add( "aclash", Expr.ACLASH );
+		keywordTree.add( "cinv", Expr.INV );
+		keywordTree.add( "subst", Expr.SUBST );
+		keywordTree.add( "show", Expr.SHOW );
+		keywordTree.add( "contra", Expr.CONTRA );
+		keywordTree.add( "induction", Expr.INDUCTION );
+		keywordTree.add( "Forall", Expr.FORALL );
+		keywordTree.add( "Exists", Expr.EXISTS );
+		keywordTree.add( "{", Expr.ATOM );
+		keywordTree.add( "cutoff", Expr.CUTOFF );
+		keywordTree.add( "cind", Expr.CIND );
+		keywordTree.add( "impossible", Expr.IMPOSSIBLE );
+		keywordTree.add( "size", Expr.SIZE );
+		keywordTree.add( "0x", Expr.WORD_EXPR );
+		keywordTree.add( "\'", Expr.CHAR_EXPR );
+		keywordTree.add( "\"", Expr.LAST + STRING );
+
+		keywordTree.add( ")", Expr.INVALID );
+		keywordTree.add( "]", Expr.INVALID );
+		keywordTree.add( ">", Expr.INVALID );
+		keywordTree.add( ".", Expr.INVALID );
+		keywordTree.add( "=", Expr.INVALID );
+		keywordTree.add( "|", Expr.INVALID );
 	}
-	int j = kw.length - 1;
-	ungetc(c);
-	if (Character.isLetterOrDigit(kw[j]))
-	    if (!Character.isWhitespace((char)c) && LegalVarChar((char)c)) {
-		// a keyword ending in a letter or number is being
-		// followed by a character allowed for variables, thus
-		// yielding an identifier, not a keyword.
-		for ( ; j>=0; j--)
-		    ungetc(kw[j]);
-		return false;
-	    }
-	return true;
-    }
+
+	static char[]	keywordBuf = new char[100];	// WARNING: assuming maximum length of keyword
+
+	protected int tryToEatKeyword()  throws IOException
+	{
+		char[]	buf = keywordBuf;
+		int		cur = 0;
+		int		final_end = -1;	// end position of the longest keyword
+		Integer	keyword_val = null;	// value for the longest keyword
+		
+		DiscriminationTree.Iterator	it = keywordTree.begin();
+		for( ; ; )
+		{
+			int c = getc();
+			//System.out.println( "keyword getc: " + String.valueOf((char)c) );
+			if( c < 0 )
+				break;
+			buf[cur++] = (char)c;
+			
+			it.next( c );
+			if( !it.isValid() )
+				break;
+			if( it.isFinal() ) {	// wait for the longest keyword
+				//System.out.println( "keyword matched" );
+				final_end = cur;
+				keyword_val = it.value;
+			}
+		}
+		
+		// see if not starting with a valid keyword
+		if( final_end == -1 )
+		{
+			// rollback all
+			for( int j=cur-1; j>=0; j-- )
+				ungetc( buf[j] );
+			return -1;
+		}
+		
+		// see if a legal id character is following a non-punctuation-keyword
+		if( Character.isLetter(buf[0])	// not a punctuator
+		 && cur != final_end	// there is a character after keyword
+		 && !Character.isWhitespace(buf[final_end])
+		 && LegalIdChar(buf[final_end])	// which is a legal id character
+		  ) {
+			// rollback all
+			for( int j=cur-1; j>=0; j-- )
+				ungetc( buf[j] );
+			return -1;
+		}
+		// now, we got a keyword
+		
+		// but, some puctuation keyword is not allowed here.
+		if( keyword_val.intValue() == Expr.INVALID )
+			handleError("Unexpected punctuation." );
+			
+		// rollback tail
+		for( int j=cur-1; j>=final_end; j-- )
+			ungetc( buf[j] );
+
+		return keyword_val.intValue();
+	}
 
     protected int eatKeyword() throws IOException
     {
         if (!eat_ws())
 	    return Expr.INVALID;
-        
-	if (tryToEat("**"))
-	    return Expr.STARSTAR;
-	if (tryToEat("*"))
-	    return Expr.STAR;
-	if (tryToEat("fun"))
-	    return Expr.FUN_TERM;
-	if (tryToEat("cast"))
-	    return Expr.CAST;
-	if (tryToEat("terminates"))
-	    return Expr.TERMINATES;
-	if (tryToEat("("))
-	    return Expr.TERM_APP;
-	if (tryToEat("abort"))
-	    return Expr.ABORT;
-	if (tryToEat("let")) 
-	    return Expr.LET;
-	if (tryToEat("abbrev"))
-	    return Expr.ABBREV;
-	if (tryToEat("eabbrev"))
-	    return Expr.EABBREV;
-	if (tryToEat("match"))
-	    return Expr.MATCH;
-	if (tryToEat("Fun"))
-	    return Expr.FUN_TYPE;
-	if (tryToEat("type"))
-	    return Expr.TYPE;
-	if (tryToEat("<"))
-	    return Expr.TYPE_APP;
-	if (tryToEat("@<"))
-	    return Expr.PRED_APP;
-	if (tryToEat("dec"))
-	    return Expr.DEC;
-	if (tryToEat("inc"))
-	    return Expr.INC;
-	if (tryToEat("foralli"))
-	    return Expr.FORALLI;
-	if (tryToEat("["))
-	    return Expr.PROOF_APP;
-	if (tryToEat("case"))
-	    return Expr.CASE_PROOF;
-	if (tryToEat("!"))
-	    return Expr.BANG;
-	if (tryToEat("existsi"))
-	    return Expr.EXISTSI;
-	if (tryToEat("andi"))
-	    return Expr.ANDI;
-	if (tryToEat("existse_term"))
-	    return Expr.EXISTSE_TERM;
-	if (tryToEat("existse"))
-	    return Expr.EXISTSE;
-	if (tryToEat("truei"))
-	    return Expr.TRUEI;
-	if (tryToEat("diseqi"))
-	    return Expr.DISEQI;
-	if (tryToEat("True"))
-	    return Expr.TRUE;
-	if (tryToEat("False"))
-	    return Expr.FALSE;
-	if (tryToEat("join"))
-	    return Expr.JOIN;
-	if (tryToEat("evalto"))
-	    return Expr.EVALTO;
-	if (tryToEat("eval"))
-	    return Expr.EVAL;
-	if (tryToEat("hypjoin"))
-	    return Expr.HYPJOIN;
-	if (tryToEat("refl"))
-	    return Expr.REFL;
-	if (tryToEat("symm"))
-	    return Expr.SYMM;
-	if (tryToEat("trans"))
-	    return Expr.TRANS;
-	if (tryToEat("cong"))
-	    return Expr.CONG;
-	if (tryToEat("ncong"))
-	    return Expr.NCONG;
-	if (tryToEat("inj"))
-	    return Expr.INJ;
-	if (tryToEat("clash"))
-	    return Expr.CLASH;
-	if (tryToEat("aclash"))
-	    return Expr.ACLASH;
-	if (tryToEat("cinv"))
-	    return Expr.INV;
-	if (tryToEat("subst"))
-	    return Expr.SUBST;
-	if (tryToEat("show"))
-	    return Expr.SHOW;
-	if (tryToEat("contra"))
-	    return Expr.CONTRA;
-	if (tryToEat("induction"))
-	    return Expr.INDUCTION;
-	if (tryToEat("Forall"))
-	    return Expr.FORALL;
-	if (tryToEat("Exists"))
-	    return Expr.EXISTS;
-	if (tryToEat("{"))
-	    return Expr.ATOM;
-	if (tryToEat("cutoff"))
-	    return Expr.CUTOFF;
-	if (tryToEat("cind"))
-	    return Expr.CIND;
-	if (tryToEat("impossible"))
-	    return Expr.IMPOSSIBLE;
-	if (tryToEat("size"))
-	    return Expr.SIZE;
-	if (tryToEat("\""))
-	    return Expr.LAST + STRING;
-                    
-	if (tryToEat(")") ||
-	    tryToEat("]") ||
-	    tryToEat(">") ||
-	    tryToEat(".") ||
-	    tryToEat("=") ||
-	    tryToEat("|"))
-	    handleError("Unexpected punctuation.");
-
-        return Expr.VAR;
+	int	val = tryToEatKeyword();
+	//System.out.println( "tryToEatKeyword: " + String.valueOf(val) );
+	if( val < 0 )
+		return Expr.VAR;
+	return val;
     }
-
-    protected char [] addStrMatch(char [] strMatch, char [] ch, int lastChar)
-    {
-        int i=0;
-        while(i<strMatch.length)
-        {            
-            ch[lastChar+i] = strMatch[i];
-            i++;
-        }
-        
-        return ch;
-    }    
-    
-    // return false if we encounter end of file, true otherwise
-    protected boolean eat_ws() throws java.io.IOException {
-	int i;
-	int comment_level = 0; // how far are we nested in comments
-	boolean in_single_line_comment = false;
-
-	while ((i = getc()) != -1) {
-	    char c = (char)i;
-	    if (Character.isWhitespace(c)) {
-		if (c == '\n') {
-		    if (in_single_line_comment) {
-			comment_level--;
-			in_single_line_comment = false;
-		    }
-		}
-		continue; // with while loop
-	    }
-	    else if (c == '%') {
-		// check if this starting a new nested comment
-		int j = getc();
-		if (j == -1)
-		    return false;
-		if ((char)j == '-') 
-		    // yes, this is a new nested comment
-		    comment_level++;
-		else 
-		    // this % is starting a single line comment
-		    if (comment_level == 0 && !in_single_line_comment) {
-			in_single_line_comment = true;
-			comment_level++;
-		    }
-	    }
-	    else if (c == '-') {
-		// we are expecting this will end a nested comment
-		int j = getc();
-		if ((char)j == '%') {
-		    if (comment_level == 0)
-			handleError("A comment is being closed with \"-%\" "
-				    +"where\nthe parser does not find a"
-				    +" matching \"%-\"\n"
-				    +"to start the comment.");
-		    comment_level--;
-		}
-	    }
-	    else if (comment_level == 0) {
-		// we have encountered a non-whitespace character that
-		// is not starting a comment, and we are not already inside
-		// a comment
-		ungetc(i);
-		return true;
-	    }
-	}
-	return false; // we encountered EOF
-    }
-
-    
-   protected boolean LegalVarChar(char ch)
-   {
-       if("<>|(){}[]=%:.-\"".indexOf(ch)>=0)
-            return false;
-       else
-           return true;             
-   }
 }
-

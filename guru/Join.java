@@ -42,12 +42,22 @@ public class Join extends Expr{
 	t1 = t1.dropAnnos(ctxt);
 	t2 = t2.dropAnnos(ctxt);
 
+	if (ctxt.getFlag("debug_join")) {
+	    ctxt.w.println("About to join: "+t1.toString(ctxt) + "  and  " + t2.toString(ctxt) + " {");
+	    ctxt.w.flush();
+	}
 	
 	Expr t1a = t1.eval(ctxt);
 	
 
 	Expr t2a = t2.eval(ctxt);
 	ctxt.resetNotDefEq();
+
+	if (ctxt.getFlag("debug_join")) {
+	    ctxt.w.println("} Done evaluating: "+t1.toString(ctxt) + "  and  " + t2.toString(ctxt));
+	    ctxt.w.flush();
+	}
+
 	if (t1a.defEq(ctxt,t2a)) 
 	    return new Atom(true,t1,t2);
 

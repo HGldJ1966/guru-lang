@@ -43,7 +43,9 @@ public class StringExpr extends Expr {
 	    args[j] = toBitExpr(ctxt, c & mask);
 	    mask = mask * 2;
 	}
-	return new TermApp(_const(ctxt,"mkchar"),args);
+	Expr ret = new TermApp(_const(ctxt,"mkchar"),args);
+	ret.pos = pos;
+	return ret;
     }
 
 
@@ -59,6 +61,7 @@ public class StringExpr extends Expr {
 	l.add(_const(ctxt,"mkchar"));
 	l.add(_const(ctxt,"tt"));
 	l.add(_const(ctxt,"ff"));
+	l.add(_const(ctxt,"inc"));
 	return l;
     }
 
@@ -68,10 +71,36 @@ public class StringExpr extends Expr {
 
     public Expr expand(Context ctxt) {
 	char[] a = val.toCharArray();
-	Expr ret = new Inc(_const(ctxt,"stringn"));
-	for (int i = a.length - 1, iend = 0; i >= iend; i--) 
-	    ret = new TermApp(_const(ctxt,"stringc"), 
+	Expr ret = new TermApp(_const(ctxt,"inc"), // _const(ctxt,"string"), 
+			       _const(ctxt,"stringn"));
+	ret.pos = pos;
+	String s = "";
+	for (int i = 0; i < a.length; i++) {
+	    if (a[i] == '\\') {
+		if (a[++i] == -1)
+			break;
+		switch(a[i]) {
+		    case '\\': s += '\\'; break;
+		    case '\'': s += '\''; break;
+		    case '\"': s += '\"'; break;
+		    case '0' : s += '\0'; break;
+		    case 'b' : s += '\b'; break;
+		    case 't' : s += '\t'; break;
+		    case 'n' : s += '\n'; break;
+		    case 'f' : s += '\f'; break;
+		    case 'r' : s += '\r'; break;
+		    default  : s += a[i]; break;
+		}
+	    } else
+		s += a[i];
+	}
+
+	a = s.toCharArray();
+	for (int i = a.length - 1, iend = 0; i >= iend; i--) {
+	    ret = new TermApp(_const(ctxt,"stringc"),
 			      toCharExpr(ctxt,a[i]), ret);
+	    ret.pos = pos;
+	}
 	return ret;
     }
 
@@ -87,7 +116,10 @@ public class StringExpr extends Expr {
     public void checkTermination(Context ctxt) {
     }
 
-    public void checkSpec(Context ctxt, boolean in_type){
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
     }
 
+    public guru.carraway.Expr toCarraway(Context ctxt) {
+	return expand(ctxt).toCarraway(ctxt);
+    }
 }

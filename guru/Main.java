@@ -16,6 +16,7 @@ public class Main {
     {
 	Context ctxt = new Context();
 	ctxt.setFlag("check_drop_annos_idem"); // see Define.java
+	ctxt.setFlag("check_spec_terminates"); // see TermApp.java
 	for (int i = 0; i < args.length; i++) 
 	    if (args[i].equals("--help")) {
 		System.out.println("Guru [input files].");
@@ -25,30 +26,39 @@ public class Main {
 		Include cmd = new Include(args[i]);
 		cmd.process(ctxt);
 	    }
+	if (ctxt.getFlag("count_proofs")) 
+	    ctxt.w.println("Counted "+(new Integer(Parser.num_proofs)).toString()+" proofs, of which "
+			   +(new Integer(Parser.num_trusted)).toString()+" are trusted.");
+
 	java.util.Collection trusted = ctxt.getTrustedDefs();
 	if (trusted.size() > 0) {
-	    ctxt.w.println("Trusting "+(new Integer(trusted.size())).toString()
-			   +":\n");
-	    java.util.Iterator it = trusted.iterator();
-	    if (ctxt.getFlag("print_trusted_details")) {
-		boolean first = true;
-		while(it.hasNext()) {
-		    Const c = (Const)it.next();
-		    if (first)
-			first = false;
-		    else
-			ctxt.w.println("");
-		    ctxt.w.print(c.name + " : ");
-		    ctxt.getClassifier(c).print(ctxt.w,ctxt);
-		    ctxt.w.println(".");
-		}
-	    }
+	    ctxt.w.print("Trusting "+(new Integer(trusted.size())).toString());
+	    if (!ctxt.getFlag("print_trusted"))
+		ctxt.w.println(" theorems total.\n");
 	    else {
-		while(it.hasNext()) {
-		    Const c = (Const)it.next();
-		    ctxt.w.print(" "+c.name);
+		ctxt.w.println(":\n");
+	    
+		java.util.Iterator it = trusted.iterator();
+		if (ctxt.getFlag("print_trusted_details")) {
+		    boolean first = true;
+		    while(it.hasNext()) {
+			Const c = (Const)it.next();
+			if (first)
+			    first = false;
+			else
+			    ctxt.w.println("");
+			ctxt.w.print(c.name + " : ");
+			ctxt.getClassifier(c).print(ctxt.w,ctxt);
+			ctxt.w.println(".");
+		    }
 		}
-		ctxt.w.println("");
+		else {
+		    while(it.hasNext()) {
+			Const c = (Const)it.next();
+			ctxt.w.print(" "+c.name);
+		    }
+		    ctxt.w.println("");
+		}
 	    }
 	    ctxt.w.flush();
 	}

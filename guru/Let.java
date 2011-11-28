@@ -25,10 +25,14 @@ public class Let extends Expr{
 	this.t2 = t2;
     }
     
+    public int hashCode_h(Context ctxt) {
+	return t1.hashCode_h(ctxt) + t2.hashCode_h(ctxt);
+    }
+
     public void do_print(java.io.PrintStream w, Context ctxt) 
     {
 	w.print("let ");
-	if (x1_stat.shouldPrint(ctxt)) {
+	if (x1_stat.status != Ownership.DEFAULT) {
 	    w.print(x1_stat.toString(ctxt));
 	    w.print(" ");
 	}
@@ -135,7 +139,8 @@ public class Let extends Expr{
 	if (et1 != t1)
 	    return new Let(x1, x1_stat, et1,x2,t2);
 	if (t1.construct == ABORT)
-	    return ctxt.abort;
+	    //return ctxt.abort;
+		return t1;
 	return t2.subst(t1, x1);
     }
     
@@ -156,8 +161,21 @@ public class Let extends Expr{
         return s;
     }
 
-    public void checkSpec(Context ctxt, boolean in_type){
-	t1.checkSpec(ctxt, in_type);
-	t2.checkSpec(ctxt, in_type);
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
+	t1.checkSpec(ctxt, in_type, pos);
+	t2.checkSpec(ctxt, in_type, pos);
     }
+
+    public guru.carraway.Expr toCarraway(Context ctxt) {
+	guru.carraway.Let l = new guru.carraway.Let();
+	l.pos = pos;
+	guru.carraway.Context cctxt = ctxt.carraway_ctxt;
+	l.x = cctxt.newSym(x1.name,x1.pos, false);
+	l.t1 = t1.toCarraway(ctxt);
+	cctxt.pushVar(l.x);
+	l.t2 = t2.toCarraway(ctxt);
+	cctxt.popVar(l.x);
+	return l;
+    }
+	
 }

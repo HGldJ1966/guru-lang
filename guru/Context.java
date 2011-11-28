@@ -3,11 +3,11 @@ import java.util.*;
 import java.io.*;
 
 
-public class Context {
+public class Context extends FlagManager {
 
-    protected HashMap flags;
     protected HashMap typeCtors;
     protected HashMap typeCtorsKind;
+    protected HashMap typeCtorsRetStat;
     protected HashMap typeCtorsTermCtors;
     protected HashSet typeFamAbbrev;
     protected HashSet preds;
@@ -21,27 +21,39 @@ public class Context {
     protected HashMap totalityThms;
     protected HashMap defs;
     protected HashMap defsBody;
+    protected HashMap defsOwn;
     protected HashMap defsBodyNoAnnos;
     protected HashMap defsClassifier;
+    protected HashMap defsDelim;
+    protected HashMap defsCode;
     protected Vector defsVec;
     protected HashMap localVars;
     protected HashMap localVarsClassifier;
     protected HashSet trustedDefs;
     protected HashMap specData;
+    protected HashMap resource_types;
+    protected Vector resource_types_vec;
+    protected HashMap resource_type_to_drop_func;
+    protected HashMap drop_func_defs;
+    protected HashMap deps_to_name;
 
-    public PrintStream w;
+    public Vector initCmds;
+    public guru.carraway.Context carraway_ctxt;
 
-    public Expr star, starstar, type, tkind, fkind, formula, abort;
+    public Expr star, starstar, type, tkind, fkind, formula, abort, voidt;
     public Var tmpvar;
 
     public boolean eval;
 
     public Expr noteq1, noteq2;
 
+    public int next_var_hash_code;
+    public HashMap var_hash_codes;
+
     public Context() {
-	flags = new HashMap(256);
 	typeCtors = new HashMap(256);
 	typeCtorsKind = new HashMap(256);
+	typeCtorsRetStat = new HashMap(256);
 	typeCtorsTermCtors = new HashMap(256);
 	typeFamAbbrev = new HashSet(256);
 	preds = new HashSet(256);
@@ -55,14 +67,22 @@ public class Context {
 	totalityThms = new HashMap(256);
 	defs = new HashMap(2048);
 	defsBody = new HashMap(2048);
+	defsOwn = new HashMap(2048);
 	defsBodyNoAnnos = new HashMap(2048);
 	defsClassifier = new HashMap(2048);
+	defsDelim = new HashMap(2048);
+	defsCode = new HashMap(2048);
 	defsVec = new Vector();
 	localVars = new HashMap(2048);
 	localVarsClassifier = new HashMap(2048);
 	specData = new HashMap(256);
 	trustedDefs = new HashSet();
-	
+	resource_types = new HashMap(256);
+	resource_types_vec = new Vector();
+	resource_type_to_drop_func = new HashMap(256);
+	drop_func_defs = new HashMap(256);
+        deps_to_name = new HashMap(1024);
+
 	star = new Star();
 	starstar = new StarStar();
 	type = new Type();
@@ -71,71 +91,15 @@ public class Context {
 	formula = new Formula();
 	abort = new Abort(new Bang());
 	tmpvar = new Var("tmp");
-	w = new PrintStream(new BufferedOutputStream(System.out));
+	voidt = new Void();
 	
 	eval = true;
-    }
 
-    // create a copy of the given context
-    public Context(Context prev) {
-	flags = prev.flags;
-	w = prev.w;
-	typeCtors = prev.typeCtors;
-	typeCtorsKind = prev.typeCtorsKind;
-	typeCtorsTermCtors = prev.typeCtorsTermCtors;
-	typeFamAbbrev = prev.typeFamAbbrev;
-	preds = prev.preds;
-	opaque = prev.opaque;
-	untracked = prev.untracked;
-	typeCtorsVec = prev.typeCtorsVec;
-	termCtors = prev.termCtors;
-	termCtorsType = new HashMap(prev.termCtorsType);
-	termCtorsWhich = prev.termCtorsWhich;
-	termCtorsTypeCtor = prev.termCtorsTypeCtor;
-	totalityThms = prev.totalityThms;
-	star = prev.star;
-	starstar = prev.starstar;
-	type = prev.type;
-	tkind = prev.tkind;
-	fkind = prev.fkind;
-	formula = prev.formula;
-	tmpvar = prev.tmpvar;
-	defs = new HashMap(prev.defs);
-	defsBody = new HashMap(prev.defsBody);
-	defsBodyNoAnnos = new HashMap(prev.defsBodyNoAnnos);
-	defsClassifier = new HashMap(prev.defsClassifier);
-	defsVec = new Vector(prev.defsVec);
-	localVars = prev.localVars;
-	specData = prev.specData;
-	localVarsClassifier = new HashMap(prev.localVarsClassifier);
-	eval = prev.eval;
-	trustedDefs = prev.trustedDefs;
-    }
+	next_var_hash_code = 0;
+	var_hash_codes = new HashMap();
 
-    // clear global and local definitions
-    public void clearDefs() {
-	defs = new HashMap(2048);
-	defsBody = new HashMap(2048);
-	defsBodyNoAnnos = new HashMap(2048);
-	defsClassifier = new HashMap(2048);
-	defsVec = new Vector();
-	specData = new HashMap(256);
-	typeFamAbbrev = new HashSet(256);
-	preds = new HashSet(256);
-	/*localVars = new HashMap(2048);
-	  localVarsClassifier = new HashMap(2048);*/
-	trustedDefs = new HashSet();
-    }
-
-    public void clearCtors() {
-	typeCtors = new HashMap(256);
-	typeCtorsKind = new HashMap(256);
-	typeCtorsTermCtors = new HashMap(256);
-	typeCtorsVec = new Vector();
-	termCtors = new HashMap(1024);
-	termCtorsType = new HashMap(1024);
-	termCtorsWhich = new HashMap(1024);
-	termCtorsTypeCtor = new HashMap(1024);
+	initCmds = new Vector();
+	carraway_ctxt = null;
     }
 
     public void notDefEq(Expr noteq1, Expr noteq2) {
@@ -146,6 +110,17 @@ public class Context {
     public void resetNotDefEq() {
 	this.noteq1 = null;
 	this.noteq2 = null;
+    }
+
+    public int varHashCode(Var x) {
+	if (var_hash_codes.containsKey(x))
+	    return ((Integer)var_hash_codes.get(x)).intValue();
+	else
+	    return x.hashCode();
+    }
+
+    public void setVarHashCode(Var x) {
+	var_hash_codes.put(x,new Integer(next_var_hash_code++));
     }
 
     public boolean isTrusted(Const c) {
@@ -176,11 +151,59 @@ public class Context {
 	return preds.contains(c);
     }
 
+    // for c a resource type
+    public void setDropFunc(Const c, Define drop) {
+	resource_type_to_drop_func.put(c,drop.c);
+	drop_func_defs.put(drop.c,drop);
+    }
+
+    // c a resource type
+    public Const getDropFunc(Const c) {
+	return (Const)resource_type_to_drop_func.get(c);
+    }
+
+    // c a drop func
+    public Define getDropFuncDef(Const c) {
+	return (Define)drop_func_defs.get(c);
+    }
+
+    public boolean isDropFunc(Const c) {
+	return drop_func_defs.containsKey(c);
+    }
+
+    public void addResourceType(Const c) {
+	resource_types.put(c.name, c);
+	resource_types_vec.add(c);
+    }
+
+    public boolean isResourceType(Const c) {
+	return resource_types.containsKey(c.name);
+    }
+
+    public boolean isResourceType(String name) {
+	return resource_types.containsKey(name);
+    }
+
+    public Collection getResourceTypes() {
+	return resource_types_vec;
+    }
+
     public void addTypeCtor(Const c, Expr kind) {
 	typeCtors.put(c.name, c);
 	typeCtorsKind.put(c, kind);
 	typeCtorsTermCtors.put(c, new ArrayList());
 	typeCtorsVec.add(c);
+    }
+
+    /* set the return ownership status for all term ctors of this type
+       ctor.  The purpose of this is to keep track of return status
+       for 0-ary ctors. */
+    public void setTypeCtorRetStat(Const d, Ownership ret_stat) {
+	typeCtorsRetStat.put(d,ret_stat);
+    }
+
+    public Ownership getTypeCtorRetStat(Const d) {
+	return (Ownership)typeCtorsRetStat.get(d);
     }
 
     // record that a given type ctor is opaque (no matching allowed on it)
@@ -286,24 +309,32 @@ public class Context {
     // like define(Const,...), except that we create a new Const with a 
     // name like basename but not shared by any other Const.  We return
     // the new Const.
-    public Const define(String basename,
-			Expr classifier, Expr body, Expr bodyNoAnnos) {
+    public Const define(String basename, Ownership o,
+			Expr classifier, Expr body, Expr bodyNoAnnos,
+			String delim, String code) {
 	String name = basename;
 	int tick = 2;
 	
 	while (defs.containsKey(name))
 	    name = basename+(new Integer(tick++)).toString();
 	Const c = new Const(name);
-	define(c, classifier, body, bodyNoAnnos);
+	define(c, o, classifier, body, bodyNoAnnos, delim, code);
 	return c;
     }
 
-    public void define(Const c, Expr classifier, Expr body, Expr bodyNoAnnos) {
+    // delim and code are null unless this is a primitive definition.
+    public void define(Const c, Ownership o,
+		       Expr classifier, Expr body, Expr bodyNoAnnos,
+		       String delim, String code) {
 	defs.put(c.name, c);
+	defsOwn.put(c, o);
 	defsBody.put(c, body);
 	defsBodyNoAnnos.put(c, bodyNoAnnos);
 	defsClassifier.put(c, classifier);
+	defsDelim.put(c,delim);
+	defsCode.put(c,code);
 	defsVec.add(c);
+        addDeps_to_Name(c,classifier);                   // <--------- John added here
     }
 
     public void macroDefine(Var v, Expr body) {
@@ -314,8 +345,20 @@ public class Context {
 	return (Expr)defsBody.get(c);
     }
     
+    public Ownership getDefOwnership(Const c) {
+	return (Ownership)defsOwn.get(c);
+    }
+    
     public Expr getDefBodyNoAnnos(Const c) {
 	return (Expr)defsBodyNoAnnos.get(c);
+    }
+
+    public String getDefDelim(Const c) {
+	return (String)defsDelim.get(c);
+    }
+
+    public String getDefCode(Const c) {
+	return (String)defsCode.get(c);
     }
 
     public Expr getDefBody(Var v) {
@@ -447,7 +490,7 @@ public class Context {
 	if (s != null && !s.empty())
 	    return (Var)s.peek();
 
-	Expr d = (Expr)defs.get(name);
+	Expr d = (Const)defs.get(name);
 	if (d != null)
 	    return d;
 
@@ -456,6 +499,10 @@ public class Context {
 	    return d;
 
 	d = (Const)termCtors.get(name);
+	if (d != null)
+	    return d;
+
+	d = (Const)resource_types.get(name);
 	if (d != null)
 	    return d;
 
@@ -492,21 +539,6 @@ public class Context {
 	return cc.isFormula(this);
     }
 
-    public void setFlag(String flag) {
-	flags.put(flag, new Boolean(true));
-    }
-
-    public void unsetFlag(String flag) {
-	flags.put(flag, new Boolean(false));
-    }
-
-    public boolean getFlag(String flag) {
-	Boolean b = (Boolean)flags.get(flag);
-	if (b == null)
-	    return false;
-	return b.booleanValue();
-    }
-
     // get all the Consts for type ctors, in the order they were added
     public Collection getTypeCtors() {
 	return typeCtorsVec;
@@ -519,5 +551,25 @@ public class Context {
 
     public Collection getTrustedDefs() {
 	return trustedDefs;
+    }
+
+    public void addDeps_to_Name(Const c, Expr classifier) {              // <-------- John added here
+         Collection clist = classifier.getDependences();
+         Iterator i = clist.iterator();
+         while (i.hasNext()){
+            Const x = (Const)i.next();
+            if (deps_to_name.containsKey(x)){
+               Vector v = (Vector)deps_to_name.get(x);
+               v.add(c);
+            } else {
+               Vector v = new Vector();
+               v.add(c);
+               deps_to_name.put(x, v);
+            }
+          }
+    }
+
+    public Collection getUsingDefs(Const c){
+         return (Collection)deps_to_name.get(c);
     }
 }

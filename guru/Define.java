@@ -4,38 +4,54 @@ import java.util.Iterator;
 
 public class Define extends Command {
     public boolean spec;
+    public boolean primitive;
     public boolean trusted;
     public boolean type_family_abbrev;
     public boolean predicate;
+    public boolean abbrev;
 
     public Const c;
+    public Ownership o;
     public Expr A;
     public Expr G;
     public Expr G_no_annos;
+
+    public String delim, code; // if primitive
 
     public Define() {
 	super(DEFINE);
     }
 
-    public Define(boolean spec, boolean trusted, boolean type_family_abbrev,
-		  boolean predicate, 
-		  Const c, Expr A, Expr G, Expr G_no_annos) {
+    public Define(boolean spec, boolean primitive, boolean trusted, boolean type_family_abbrev,
+		  boolean predicate, boolean abbrev,
+		  Const c, Ownership o, Expr A, Expr G, Expr G_no_annos, String delim, String code) {
 	super(DEFINE);
 	this.spec = spec;
+	this.primitive = primitive;
 	this.c = c;
+	this.o = o;
 	this.A = A;
 	this.G = G;
 	this.G_no_annos = G_no_annos;
 	this.trusted = trusted;
 	this.type_family_abbrev = type_family_abbrev;
 	this.predicate = predicate;
+	this.abbrev = abbrev;
+	this.delim = delim;
+	this.code = code;
     }
 
     public void process(Context ctxt) {
 
-	boolean spec_mode = G.isProof(ctxt) || spec || predicate;
+	if (spec && primitive) 
+	    handleError(ctxt,
+			"A Define-command is labeled as both \"spec\" and \"primitive\"."
+			+"\n\n1. the defined constant: "+c.toString(ctxt));
 
-	boolean dont_classify = trusted && (A != null) && G.isProof(ctxt);
+	boolean spec_mode = G.isProof(ctxt) || spec || primitive || predicate || abbrev;
+
+	boolean dont_classify = 
+	    abbrev || (trusted && (A != null) && G.isProof(ctxt));
 
 	Expr cG = null;
 	if (dont_classify) 
@@ -46,7 +62,7 @@ public class Define extends Command {
 		ctxt.w.println("Define about to classify "+G.toString(ctxt));
 		ctxt.w.flush();
 	    }
-	    cG = G.classify(ctxt, Expr.NO_APPROX, spec); 
+	    cG = G.classify(ctxt, Expr.NO_APPROX, spec_mode); 
 	}
 	    
 	if (A == null)
@@ -68,20 +84,12 @@ public class Define extends Command {
 	}
 
 	if (!spec_mode)
-	    G.checkSpec(ctxt, false /* in_type */);
+	    G.checkSpec(ctxt, false /* in_type */, c.pos);
 
-	if (spec) {
+	if (spec) 
 	    ctxt.markSpec(c); 
-	    ctxt.makeOpaque(c); // so the compiler knows to stub this out
-	    if (ctxt.isTypeCtor(c)) {
-		// and tell the compiler to stub out its term ctors
-		Iterator it = ctxt.getTermCtors(c).iterator();
-		while (it.hasNext()) {
-		    Const c2 = (Const)it.next();
-		    ctxt.makeOpaque(c2);
-		}
-	    }
-	}
+	if (primitive)
+	    ctxt.makeOpaque(c);
 
 	if (type_family_abbrev) {
 	    /* check that G satisfies the syntactic requirements for
@@ -95,10 +103,10 @@ public class Define extends Command {
 	   FunTerm f = (FunTerm)G;
 	   f = (FunTerm)f.coalesce(ctxt, spec);
 
-	   if (f.body.construct != Expr.TYPE_APP)
+	   if (f.body.construct != Expr.CONST && f.body.construct != Expr.TYPE_APP)
 		handleError(ctxt,
 			    "The body of a type family abbreviation is not"
-			    +" a type-level application.\n"
+			    +" a constant or a type-level application.\n"
 			    +"1. the body: "+f.body.toString(ctxt));
 	    
 	    ctxt.markTypeFamilyAbbrev(c);
@@ -152,7 +160,7 @@ public class Define extends Command {
 			+tmp.toString(ctxt));
 	}
 
-	ctxt.define(c, A, G, G_no_annos);
+	ctxt.define(c, o, A, G, G_no_annos, delim, code);
 
 	if(trusted)
 	    ctxt.markTrusted(c);
@@ -165,6 +173,8 @@ public class Define extends Command {
 	    w.print("trusted ");
 	if (spec)
 	    w.print("spec ");
+	if (code != null)
+	    w.print("primitive ");
 	if (type_family_abbrev)
 	    w.print("type_family_abbrev ");
 
@@ -182,6 +192,12 @@ public class Define extends Command {
 	    tmp = G_no_annos;
 	tmp.print(w, ctxt);
 
+	if (delim != null) {
+	    w.print("<<"+delim);
+	    w.println(code);
+	    w.println(delim);
+	}
+
 	w.println(".");
 	w.flush();
     }
@@ -190,5 +206,20 @@ public class Define extends Command {
         java.util.Set s = A.getDependences();
         s.addAll(G.getDependences());
         return s;
+    }
+
+    // this is just used for definitions of primitives.
+    public guru.carraway.Primitive toCarraway(Context ctxt) {
+	if (!primitive)
+	    handleError(ctxt,"Internal error: toCarraway() function called on a non-primitive definition.");
+	guru.carraway.Primitive P = new guru.carraway.Primitive();
+
+	guru.carraway.Context cctxt = ctxt.carraway_ctxt;
+
+	P.s = cctxt.newSym(c.name,c.pos,true);
+	P.T = A.toCarrawayType(ctxt,false);
+	P.delim = delim;
+	P.code = code;
+	return P;
     }
 }

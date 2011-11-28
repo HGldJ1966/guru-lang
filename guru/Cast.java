@@ -113,8 +113,8 @@ public class Cast extends Expr{
         return s;
     }
 
-    public void checkSpec(Context ctxt, boolean in_type){
-	t.checkSpec(ctxt, in_type);
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
+	t.checkSpec(ctxt, in_type, pos);
     }
 
     public void getFreeVarsComputational(Context ctxt, 
@@ -122,4 +122,18 @@ public class Cast extends Expr{
 	t.getFreeVarsComputational(ctxt,vars);
     }
 
+    public guru.carraway.Expr toCarraway(Context ctxt) {
+	Expr T1 = classify(ctxt,APPROX_TRIVIAL,false);
+	if (T1.construct != T.construct ||
+	    T1.construct == VAR || T.construct == VAR) {
+	    // these should be the cases we need to include a Carraway cast for
+	    guru.carraway.Cast C = new guru.carraway.Cast();
+	    C.pos = pos;
+	    C.T = T.toCarrawayType(ctxt,false);
+	    C.t = t.toCarraway(ctxt);
+	    return C;
+	}
+
+	return t.toCarraway(ctxt);
+    }
 }

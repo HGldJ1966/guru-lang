@@ -140,7 +140,8 @@ public class CasesExpr extends Expr {
 
     public Expr classify(Context ctxt, int approx, boolean spec) {
 	Expr clt = t.classify(ctxt,approx,spec).defExpandTop(ctxt,false,spec);
-	if (!clt.isdtype(ctxt, spec))
+	Const head = clt.typeGetHead(ctxt,spec);
+	if (approx != APPROX_TRIVIAL && head == null)
 	    handleError(ctxt,
 			"The scrutinee's type in a match-term is not"
 			+" an inductive type (or is opaque).\n"
@@ -154,6 +155,9 @@ public class CasesExpr extends Expr {
 			   +t.toString(ctxt));
 	    ctxt.w.flush();
 	}
+
+	Const head2 = null;
+
 	for (i = 0, iend = C.length; i < iend; i++) {
 
 	    Expr pat = C[i].getPattern();
@@ -187,10 +191,27 @@ public class CasesExpr extends Expr {
 		ctxt.setClassifier(x2, assump2);
 	    }
 
-	    if (!C[i].refine(ctxt, clt1, approx, spec)) 
+	    if (!C[i].refine(ctxt, clt1, approx, spec)) {
+		if (ctxt.getFlag("debug_refine_cases")) {
+		    ctxt.w.println("Impossible case in match (so not checking body): "+pat.toString(ctxt));
+		    ctxt.w.flush();
+		}
+		C[i].clearDefs(ctxt);
 		continue;
+	    }
+
+	    if (approx != APPROX_TRIVIAL && head2 == null) {
+		head2 = ctxt.getTypeCtor(C[i].c);
+		if (!head2.defEq(ctxt,head,approx,spec)) 
+		    handleError(ctxt,
+				"The head of the type of the scrutinee does not match the head of the type of the cases.\n\n"
+				+"1. the head of the type of the scrutinee: "+head.toString(ctxt)
+				+"\n\n2. the head of the type of the first case: "+head2.toString(ctxt));
+	    }
 
 	    Expr tp = C[i].body.classify(ctxt,approx,spec);
+
+	    C[i].impossible = C[i].impossible || (C[i].body.construct == IMPOSSIBLE);
 
 	    if (retT == null) {
 		int freevars = 0;
@@ -215,13 +236,15 @@ public class CasesExpr extends Expr {
 			    +"\n"
 			    +"2. computed: "+tp.toString(ctxt)+"\n"
 			    +"3. expected: "+retT.toString(ctxt));
+
+	    //C[i].clearDefs(ctxt);
 	}
 		
 	if (retT == null) {
 	    if (iend > 0)
 		handleError(ctxt, "Could not compute the "
 			    +"return type for a match, since no cases\n"
-			    +"were checked.");
+			    +"were checked.  Check that the pattern's term constructors are from\nthe same type as the scrutinee.");
 	    handleError(ctxt, "No return type is stated for a match term,"
 			+ " but the match has no cases, so no return type\n"
 			+ "could be computed.\n");

@@ -24,6 +24,13 @@ public class Case extends Expr{
 	this.impossible = impossible;
     }
 
+    public int hashCode_h(Context ctxt) {
+	int h = c.hashCode_h(ctxt);
+	for (int i = 0, iend = x.length; i < iend; i++)
+	    ctxt.setVarHashCode(x[i]);
+	return h+body.hashCode_h(ctxt);
+    }
+
     public void print_pattern_var_types_if(java.io.PrintStream w, 
 					   Context ctxt) {
 	if (ctxt.getFlag("print_pattern_var_types")) {
@@ -290,7 +297,7 @@ public class Case extends Expr{
 	}
     }
 
-    public void checkSpec(Context ctxt, boolean in_type) {
+    public void checkSpec(Context ctxt, boolean in_type, Position p) {
 	
 	Expr e = ctxt.getClassifier(c);
 	
@@ -303,10 +310,18 @@ public class Case extends Expr{
 		    ctxt.markSpec(x[i]);
 	}
 
-	body.checkSpec(ctxt, in_type);
+	body.checkSpec(ctxt, in_type, pos);
     }
 
-    // return true iff we could refine the pattern's type with the scrutinee's.
+    public void clearDefs(Context ctxt) {
+	for (int j = 0, jend = x.length; j < jend; j++) {
+	    if (ctxt.isMacroDefined(x[j]))
+		ctxt.macroDefine(x[j],null);
+	}
+    }
+
+    /* return true iff we could refine the pattern's type with the scrutinee's, or 
+       couldn't tell if a refinement is possible. */
     public boolean refine(Context ctxt, Expr scruttp,
 			  int approx, boolean spec) {
 	Expr pat = getPattern();
@@ -318,9 +333,10 @@ public class Case extends Expr{
 	
 
 	if (ctxt.getFlag("debug_refine_cases")) {
-	    ctxt.w.println("About to refine "
+	    ctxt.w.println("(About to refine "
 			   +pattp.toString(ctxt)+" with "
 			   +scruttp.toString(ctxt));
+	    ctxt.w.println("Location: "+(pos == null ? "unknown" : this.pos.toString()));
 	    ctxt.w.println("The pattern is: "+pat.toString(ctxt));
 	    ctxt.w.flush();
 	}
@@ -334,11 +350,11 @@ public class Case extends Expr{
 
 	if (ctxt.getFlag("debug_refine_cases")) {
 	    if (ret)
-		ctxt.w.println("Successfully refined "
+		ctxt.w.println(") Successfully refined "
 			       +pattp.toString(ctxt)+" with "
 			       +scruttp.toString(ctxt));
 	    else
-		ctxt.w.println("Could not refine "
+		ctxt.w.println(") Could not refine "
 			       +pattp.toString(ctxt)+" with "
 			       +scruttp.toString(ctxt));
 	    ctxt.w.flush();
@@ -352,14 +368,13 @@ public class Case extends Expr{
 
     protected boolean refine(Context ctxt, Expr pattp, Expr scruttp,
 			     int approx, boolean spec, Vector vars) {
+	pattp = pattp.defExpandTop(ctxt,true,spec);
+	scruttp = scruttp.defExpandTop(ctxt,true,spec);
 	if (ctxt.getFlag("debug_refine_cases")) {
 	    ctxt.w.println("Refining "+pattp.toString(ctxt)+" with "
 			   +scruttp.toString(ctxt));
 	    ctxt.w.flush();
 	}
-
-	pattp = pattp.defExpandTop(ctxt,true,spec);
-	scruttp = scruttp.defExpandTop(ctxt,true,spec);
 	if (pattp.construct == VAR) {
 	    if (!pattp.defEqNoAnno(ctxt,scruttp,spec)) {
 		Var v = (Var)pattp;
@@ -378,14 +393,16 @@ public class Case extends Expr{
 	case CONST: {
 	    if (scruttp.construct == VAR)
 		return true;
-	    if (scruttp.construct == CONST ||
-		scruttp.construct == TYPE_APP)
+	    if (scruttp.construct == CONST)
 		return pattp.defEq(ctxt,scruttp,spec);
+	    if (scruttp.construct == TYPE_APP)
+		return false; 
 	    if (scruttp.construct == TERM_APP) {
 		TermApp scruttp1 = (TermApp)(((TermApp)scruttp)
 					     .spineForm(ctxt,true,spec,true));
 		if (scruttp1.head.construct == CONST
-		    && ctxt.isTermCtor((Const)scruttp1.head))
+		    && ctxt.isTermCtor((Const)scruttp1.head)
+		    && ctxt.isTermCtor((Const)pattp))
 		    // different constructors
 		    return false;
 	    }
@@ -415,9 +432,15 @@ public class Case extends Expr{
 	case TERM_APP: {
 	    TermApp pattp1 = (TermApp)(((TermApp)pattp)
 				       .spineForm(ctxt,true,spec,true));
-	    if (pattp1.head.construct == CONST 
-		&& ctxt.isTermCtor((Const)pattp1.head)
-		&& scruttp.construct == CONST)
+	    if (pattp1.head.construct != CONST 
+		|| !ctxt.isTermCtor((Const)pattp1.head))
+		// pattern is not a constructor application -- no hope of ruling anything out
+		return true;
+
+	    // pattern is a constructor application
+
+	    if (scruttp.construct == CONST
+		&& ctxt.isTermCtor((Const)scruttp))
 		// different constructors
 		return false;
 
@@ -427,7 +450,14 @@ public class Case extends Expr{
 
 	    TermApp scruttp1 = (TermApp)(((TermApp)scruttp)
 					 .spineForm(ctxt,true,spec,true));
+
+	    if (scruttp1.head.construct != CONST || 
+		!ctxt.isTermCtor((Const)scruttp1.head))
+		// head of scrutinee is not a constructor, so must stop
+		return true;
+
 	    if (!pattp1.head.defEq(ctxt,scruttp1.head,spec))
+		// different constructor applications
 		return false;
 	    
 	    for (int i = 0, iend = scruttp1.X.length; i < iend; i++)
@@ -443,6 +473,21 @@ public class Case extends Expr{
 	}	
     }
 
-
+    public guru.carraway.Expr toCarraway(Context ctxt) {
+	guru.carraway.Case C = new guru.carraway.Case();
+	C.pos = pos;
+	C.c = (guru.carraway.Sym)c.toCarraway(ctxt);
+	int iend = x.length;
+	guru.carraway.Sym[] nvars = new guru.carraway.Sym[iend];
+	for (int i = 0; i < iend; i++) {
+	    nvars[i] = ctxt.carraway_ctxt.newSym(x[i].name,x[i].pos,false);
+	    ctxt.carraway_ctxt.pushVar(nvars[i]);
+	}
+	C.vars = nvars;
+	C.body = body.toCarraway(ctxt);
+	for (int i = 0; i < iend; i++) 
+	    ctxt.carraway_ctxt.popVar(nvars[i]);
+	return C;
+    }
 
 }

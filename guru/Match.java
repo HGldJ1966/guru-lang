@@ -5,42 +5,42 @@ import java.io.*;
 
 public class Match extends CasesExpr{
     public Expr T;
+    public boolean consume_scrut;
     
-    // set in the compiler during refcount checking
-    public Ownership scrut_stat;
-
     public Match() {
 	super(MATCH);
-	scrut_stat = new Ownership(Ownership.UNOWNED);
     }
 
-    public Match(CasesExpr a, Expr T, Ownership scrut_stat) {
+    public Match(CasesExpr a, Expr T, boolean consume_scrut) {
 	super(MATCH, a);
 	this.T = T;
-	this.scrut_stat = scrut_stat;
+	this.consume_scrut = consume_scrut;
     }
 
-    public Match(Expr t, Var x1, Var x2, Expr T, Case[] C, 
-		 Ownership scrut_stat) {
+    public Match(Expr t, Var x1, Var x2, Expr T, Case[] C, boolean consume_scrut) {
 	super(MATCH, t, x1, x2, C);
 	this.T = T;
-	this.scrut_stat = scrut_stat;
+	this.consume_scrut = consume_scrut;
     }
 
     public void do_print(java.io.PrintStream w, 
 			 Context ctxt) {
 	w.print("match ");
-
-	if (scrut_stat.status != Ownership.UNOWNED
-	    && ctxt.getFlag("print_ownership_annos")) 
-	    w.print("%- "+scrut_stat.toString(ctxt)+" -% ");
-
+	if (!consume_scrut)
+	    w.print("! ");
 	do_print1(w,ctxt);
 	if (T != null) {
 	    w.print(" return ");
 	    T.print(w,ctxt);
 	}
 	do_print2(w,ctxt);
+    }
+
+    public int hashCode_h(Context ctxt) {
+	int h = t.hashCode_h(ctxt);
+	for (int i = 0, iend = C.length; i < iend; i++) 
+	    h += C[i].hashCode_h(ctxt);
+	return h;
     }
 
     public int numOccInCases(Expr e) {
@@ -58,7 +58,7 @@ public class Match extends CasesExpr{
 	Expr nT = (T == null ? null : T.subst(e,x));
 	CasesExpr nC = (CasesExpr)super.subst(e,x);
 	if (nT != T || nC != this)
-	    return new Match(nC, nT, scrut_stat);
+	    return new Match(nC, nT, consume_scrut);
 	return this;
     }
     
@@ -66,7 +66,7 @@ public class Match extends CasesExpr{
 	Expr nT = T;
 	CasesExpr nC = (CasesExpr)super.do_rewrite(ctxt,e,x,boundVars);
 	if (nT != T || nC != this)
-	    return new Match(nC, nT, scrut_stat);
+	    return new Match(nC, nT, consume_scrut);
 	return this;
     }
 
@@ -100,7 +100,7 @@ public class Match extends CasesExpr{
     public Expr dropAnnos(Context ctxt) {
 	Expr r = super.dropAnnos(ctxt);
 	if (r != this)
-	    return new Match((CasesExpr)r,T,scrut_stat);
+	    return new Match((CasesExpr)r,T,consume_scrut);
 	return this;
     }
 
@@ -108,12 +108,13 @@ public class Match extends CasesExpr{
     public Expr evalStep(Context ctxt) {
 	Expr e = t.evalStep(ctxt);
 	if (e != t)
-	    return new Match(e,x1,x2,T,C,scrut_stat);
+	    return new Match(e,x1,x2,T,C,consume_scrut);
 	if (t.construct == ABORT)
-	    return ctxt.abort;
+	    //return ctxt.abort;
+		return t;
 	
 	Expr ret = instantiate(ctxt, e);
-	if (ret == null)
+	if (ret == null) 
 	    return this;
 	return ret;
     }
@@ -151,10 +152,26 @@ public class Match extends CasesExpr{
     }
 
 
-    public void checkSpec(Context ctxt, boolean in_type){
-	t.checkSpec(ctxt, in_type);
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
+	t.checkSpec(ctxt, in_type, pos);
 	for (int i = 0; i < C.length; i++){
-	    C[i].checkSpec(ctxt, in_type);
+	    C[i].checkSpec(ctxt, in_type, pos);
 	}
+    }
+
+    public guru.carraway.Expr toCarraway(Context ctxt) {
+	guru.carraway.Match m = new guru.carraway.Match();
+	m.pos = pos;
+	m.consume_scrut = consume_scrut;
+	m.t = t.toCarraway(ctxt);
+	int iend = C.length;
+	ArrayList a = new ArrayList();
+	for (int i = 0; i < iend; i++)
+	    if (!C[i].impossible)
+		a.add((guru.carraway.Case)C[i].toCarraway(ctxt));
+	
+	m.C = guru.carraway.Parser.toCaseArray(a);
+	m.consume_scrut = consume_scrut;
+	return m;
     }
 }

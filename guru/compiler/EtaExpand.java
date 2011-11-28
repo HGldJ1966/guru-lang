@@ -12,6 +12,9 @@ public class EtaExpand {
 
     protected Position last_pos;
 
+    public Vector all_consts;
+    public HashSet in_all_consts;
+
     public void handleError(Position pos, String msg) {
 	if (pos != null) {
 	    pos.print(System.out);
@@ -26,6 +29,19 @@ public class EtaExpand {
 	this.dst = dst;
 	last_pos = null;
 	expanding_c = null;
+	all_consts = new Vector();
+	in_all_consts = new HashSet();
+    }
+
+    protected void all_consts_add(Const c) {
+	if (!in_all_consts.contains(c)) {
+	    if (src.getFlag("debug_eta_expand")) {
+		src.w.println("Adding constant "+c.toString(src));
+		src.w.flush();
+	    }
+	    all_consts.add(c);
+	    in_all_consts.add(c);
+	}
     }
 
     /* orig is the original term (from src).  _T is the type to use,
@@ -34,16 +50,16 @@ public class EtaExpand {
 	Const c = d;
 	Expr T = _T;
 	if (T == null) {
-	    if (src.getFlag("debug_eta_expand")) {
-		src.w.print("Classifying (addDef) ");
-		e.print(src.w,src);
-		src.w.println("");
-		src.w.flush();
+	    if (dst.getFlag("debug_eta_expand")) {
+		dst.w.print("Classifying [ctxt is "+dst.toString()+"] (addDef) ");
+		e.print(dst.w,src);
+		dst.w.println("");
+		dst.w.flush();
 	    }
 	    T = e.classify(dst,Expr.APPROX_TRIVIAL,false);
-	    if (src.getFlag("debug_eta_expand")) {
-		src.w.println("done.");
-		src.w.flush();
+	    if (dst.getFlag("debug_eta_expand")) {
+		dst.w.println("done.");
+		dst.w.flush();
 	    }
 	}
 
@@ -54,15 +70,16 @@ public class EtaExpand {
 		return c;
 
 	    if (dst.getFlag("debug_eta_expand")) {
-		src.w.print("Defining "+c.name+" : ");
-		T.print(src.w, src);
-		src.w.print(" := ");
-		e.print(src.w,src);
-		src.w.println("");
-		src.w.flush();
+		dst.w.print("Defining "+c.name+" : ");
+		T.print(dst.w, src);
+		dst.w.print(" := ");
+		e.print(dst.w,src);
+		dst.w.println("");
+		dst.w.flush();
 	    }
-	    
-	    dst.define(c, T, e, e2);
+	    all_consts_add(c);
+	    dst.define(c, src.getDefOwnership(c), T, e, e2,
+		       src.getDefDelim(c), src.getDefCode(c));
 	    return c;
 	}
 	// come up with a reasonable const to use.
@@ -82,7 +99,9 @@ public class EtaExpand {
 	if (basename == null)
 	    basename = "anon";
 	
-	Const c2 = dst.define(basename, T, e, e2);
+	Const c2 = dst.define(basename, src.getDefOwnership(c), 
+			      T, e, e2, src.getDefDelim(c), src.getDefCode(c));
+	all_consts_add(c2);
 
 	if (dst.getFlag("debug_eta_expand")) {
 	    src.w.print("Defining "+c2.name+" : ");
@@ -105,10 +124,49 @@ public class EtaExpand {
     // 3. coalesce nested fun-terms.
     // 4. put all maximal application terms into spine form.
     // 5. drop non-computational arguments and inputs everywhere
-    // 6. pull in all needed term and type ctors.
+    // 6. pull in all needed term and type ctors, and resource types.
+    // 7. replace type applications with their heads.
     //
     public Expr expand(Expr e) {
+
+	// pull in all resource types
+
+	Iterator it = src.getResourceTypes().iterator();
+	while (it.hasNext()) {
+	    Const c = (Const)it.next();
+	    Define drop = src.getDropFuncDef(src.getDropFunc(c));
+	    dst.addResourceType(c);
+	    all_consts_add(c);
+	    if (drop != null) {
+		dst.setDropFunc(c,drop);
+		all_consts_add(drop.c);
+	    }
+	}
+
 	return expand(e, false, null);
+    }
+
+    protected Ownership expand(Ownership o) {
+	Ownership ret = null;
+	switch (o.status) {
+	case Ownership.DEFAULT:
+	    ret = o;
+	    break;
+	case Ownership.PINNED: 
+	     ret = new Ownership(Ownership.PINNED, (Const)expand(o.e1,false,null),
+					  (Var)expand(o.e2,false,null));
+	     break;
+	case Ownership.SPEC:
+	case Ownership.UNTRACKED:
+    case Ownership.ABORT:
+	    ret = o;
+	    break;
+
+	case Ownership.RESOURCE:
+	    ret = new Ownership(Ownership.RESOURCE,(Const)expand(o.e1,false,null));
+	    break;
+	}
+	return ret;
     }
 
     // from_fun is true iff the immediately surrounding term is a fun-term.
@@ -126,20 +184,26 @@ public class EtaExpand {
 	    return expand(((Abbrev)e).subst(),from_fun,from_const);
 	case Expr.CONST: {
 	    Const c = (Const)e;
-	    if (dst.isDefined(c) || dst.isCtor(c) 
+	    if (dst.isDefined(c) || dst.isCtor(c) || dst.isResourceType(c)
 		|| dst.getClassifier(c) != null /* this last is crude,
 						   but we must add
 						   type ctors after
-						   processing its term
+						   processing their term
 						   ctors args */)
 		return c;
 
 	    if (!src.isDefined(c)) {
-		/* must be a constructor.  Add all the type and related
-		   term ctors to dst. */
+		/* must be a constructor or a resource type.  Add all
+		   the type and related term ctors to dst. */
+
+		if (src.isResourceType(c)) 
+		    // already pulled in, in expand(Expr) above
+		    return c;
+
 		Const d = c;
 		if (src.isTermCtor(c)) 
 		    d = (Const)src.getTypeCtor(c);
+
 		Expr dT = expand(src.getClassifier(d),false,null);
 
 		dst.setClassifier(d,dT); // add as a type ctor below
@@ -154,6 +218,8 @@ public class EtaExpand {
 		}
 
 		dst.addTypeCtor(d,dT);
+		dst.setTypeCtorRetStat(d,src.getTypeCtorRetStat(d));
+		all_consts_add(d);
 
 		// 2. now add the term ctors to dst
 		it = src.getTermCtors(d).iterator();
@@ -161,6 +227,7 @@ public class EtaExpand {
 		while(it.hasNext()) {
 		    Const c1 = (Const)it.next();
 		    dst.addTermCtor(c1,d,(Expr)it2.next());
+		    all_consts_add(c1);
 		}
 
 		return c;
@@ -172,11 +239,34 @@ public class EtaExpand {
 	    if (src.isTypeFamilyAbbrev(c))
 		dst.markTypeFamilyAbbrev(c);
 
+	    if (src.isSpec(c))
+		dst.markSpec(c);
+
 	    Expr cT = expand(src.getClassifier(c),false,null);
 
-	    if (src.isOpaque(c)) { // should be a defined term, not type
+	    if (src.isOpaque(c) && src.isDefined(c)) {
 		Expr t = src.getDefBody(c);
-		dst.define(c, cT, t, src.getDefBodyNoAnnos(c));
+		if (t.construct == Expr.VAR) {
+		    /* we handle one corner case here, where this is a
+		       variable introduced by the Parser for the body
+		       of a primitive definition without a functional
+		       model.  We just need to map over the type from
+		       src to dst in that case. */
+		    Var v = (Var)t;
+		    if (dst.getClassifier(v) == null)
+			/* this is in case we have a global Var (for a primitive
+			   definition without a functional model).  We will not
+			   otherwise set its type in dst. */
+			dst.setClassifier(v,src.getClassifier(v));
+		}
+
+		if (c.isTypeOrKind(src)) 
+		    /* so that we recognize later that c is a type 
+		       or kind (by looking at its definition) */
+		    t = expand(t.defExpandTop(src),false,c);
+		all_consts_add(c);
+		dst.define(c, src.getDefOwnership(c), cT, t,
+			   src.getDefBodyNoAnnos(c), src.getDefDelim(c), src.getDefCode(c));
 		dst.makeOpaque(c);
 		return c;
 	    }
@@ -210,7 +300,8 @@ public class EtaExpand {
 		// a corner case where c is defined to be a term
 		// constructor d.  Then, we should not replace
 		// c with d, because they behave differently with
-		// respect to reference counting.
+		// respect to reference counting (0-ary ctors construct
+		// data, 0-ary definitions do not).
 		return addDef(e2,orig,c,cT);
 
 	    return e2;
@@ -221,17 +312,30 @@ public class EtaExpand {
 	    if (tmp.construct != Expr.FUN_TERM)
 		return expand(tmp,from_fun,from_const);
 
-	    f = (FunTerm)tmp;
+	    /* we need to set classifiers of non-computational inputs,
+	       which might be mentioned in types of later inputs. */
 
 	    int iend = f.vars.length;
+	    for (int i = 0; i < iend; i++) 
+		dst.setClassifier(f.vars[i],expand(f.types[i],false,null));
+
+	    f = (FunTerm)tmp;
+	    
+	    iend = f.vars.length;
 	    Expr[] ntypes = new Expr[iend];
-	    for (int i = 0; i < iend; i++)
-		ntypes[i] = expand(f.types[i],false,null);
+	    Ownership[] nowned = new Ownership[iend];
+	    for (int i = 0; i < iend; i++) {
+		nowned[i] = expand(f.owned[i]);
+		// we already expanded the type for f.vars[i] above
+		ntypes[i] = expand(dst.getClassifier(f.vars[i]),false,null);
+	    }
 
 	    Expr b = f.body;
+
 	    Expr nT = expand(f.T,false,null);
-	    f = new FunTerm(f.r, nT, f.vars, ntypes, f.owned, 
-			    f.ret_stat, b);
+	    Ownership nret_stat = expand(f.ret_stat);
+	    f = new FunTerm(f.r, nT, f.vars, ntypes, nowned, f.consumps,
+			    nret_stat, b);
 	    f.setClassifiers(dst); // to set the vars to have the new types
 
 	    f.body = expand(b,true,null); // expand the body
@@ -246,11 +350,27 @@ public class EtaExpand {
 	    Iterator it = ((StringExpr)e).getConstsUsed(src).iterator();
 	    while(it.hasNext()) {
 		Const c = (Const)it.next();
-		expand(c,from_fun,from_const);
+		expand(c,from_fun,null);
 	    }
 	    return e;
 	}
-	case Expr.VAR:
+	case Expr.CHAR_EXPR: {
+	    Iterator it = ((CharExpr)e).getConstsUsed(src).iterator();
+	    while(it.hasNext()) {
+		Const c = (Const)it.next();
+		expand(c,from_fun,null);
+	    }
+	    return e;
+	}
+	case Expr.WORD_EXPR: {
+	    Iterator it = ( (WordExpr)e).getConstsUsed(src).iterator();
+	    while (it.hasNext()) {
+		Const c = (Const)it.next();
+		expand(c,from_fun,null);
+	    }
+	    return e;
+	}
+	case Expr.VAR: 
 	    return e;
 	case Expr.ABORT:
 	    return e;
@@ -267,6 +387,23 @@ public class EtaExpand {
 	    nl.pos = e.pos;
 	    return nl;
 	}
+	case Expr.DO: {
+	    Do d = (Do)e;
+	    boolean changed = false;
+	    int iend = d.ts.length;
+	    Expr[] nts = new Expr[iend];
+	    for (int i = 0; i < iend; i++) {
+		nts[i] = expand(d.ts[i],false,null);
+		changed = changed || (nts[i] != d.ts[i]);
+	    }
+	    Expr nt = expand(d.t,false,null);
+	    if (changed || nt != d.t) {
+		Expr ret = new Do(nts,nt);
+		ret.pos = d.pos;
+		return ret;
+	    }
+	    return e;
+	}
 	case Expr.EXISTSE_TERM: {
 	    ExistseTerm c = (ExistseTerm)e;
 	    return expand(c.t,false,null);
@@ -281,28 +418,27 @@ public class EtaExpand {
 	    ret.pos = e.pos;
 	    return ret;
 	}
+	case Expr.COMPILE_AS: {
+	    CompileAs c = (CompileAs)e;
+
+	    /* at this point we just switch to the second child of the compile-as
+	       term, as it is not necessary to retain the compile-as term at
+	       this point in the compilation. */
+
+	    return expand(c.t2,false,null);
+	}
+	case Expr.COMPRESS: {
+	    Compress c = (Compress)e;
+	    Expr nt = expand(c.t,false,null);
+	    if (c.t == nt)
+		return e;
+	    Expr ret = new Compress(nt);
+	    ret.pos = e.pos;
+	    return ret;
+	}
 	case Expr.TERMINATES: {
 	    Terminates c = (Terminates)e;
 	    return expand(c.t,false,null);
-	}
-	case Expr.INC: {
-	    Inc i = (Inc)e;
-	    Expr nt = expand(i.t,false,null);
-	    if (nt == i.t)
-		return e;
-	    Expr ret = new Inc(nt);
-	    ret.pos = e.pos;
-	    return ret;
-	}
-	case Expr.DEC: {
-	    Dec d = (Dec)e;
-	    Expr nI = expand(d.I,false,null);
-	    Expr nt = expand(d.t,false,null);
-	    if (nI == d.I && nt == d.t)
-		return e;
-	    Expr ret = new Dec(nI,nt);
-	    ret.pos = e.pos;
-	    return ret;
 	}
 	case Expr.MATCH: {
 	    Match m = (Match)e;
@@ -322,7 +458,15 @@ public class EtaExpand {
 		}
 		expand(c.c,false,null); // we might need to add c.c to dst
 		c.setPatternVarTypes(dst, false); 
+		if (src.getFlag("debug_eta_expand")) {
+		    src.w.println("Eta-expand about to refine pattern type [ctxt is "+dst.toString()+"] (");
+		    src.w.flush();
+		}
 		c.refine(dst,scruttp,Expr.APPROX_TRIVIAL,false);
+		if (src.getFlag("debug_eta_expand")) {
+		    src.w.println(") eta-expand done refining pattern type.");
+		    src.w.flush();
+		}
 
 		Expr nbody = expand(c.body,false,null);
 		if (nbody == c.body && c.x == m.C[i].x) 
@@ -339,7 +483,7 @@ public class EtaExpand {
 	    }
 	    if (!chg)
 		return e;
-	    Expr ret = new Match(nt,m.x1,m.x2,m.T,nC,m.scrut_stat);
+	    Expr ret = new Match(nt,m.x1,m.x2,m.T,nC,m.consume_scrut);
 	    ret.pos = e.pos;
 	    return ret;
 	}
@@ -401,7 +545,7 @@ public class EtaExpand {
 		nX[i] = s.X[i];
 	    for (int i = 0; i < iend; i++) 
 		nX[i+num_old_args] = vars[i];
-	    FunTerm f = new FunTerm(null, null, F.vars, F.types, F.owned,
+	    FunTerm f = new FunTerm(null, null, F.vars, F.types, F.owned, F.consumps,
 				    F.ret_stat, new TermApp(s.head,nX));
 	    f.setClassifiers(dst);// to recompute ownerships
 	    f.pos = e.pos;
@@ -412,27 +556,44 @@ public class EtaExpand {
 
 	case Expr.FUN_TYPE: {
 	    FunType F = (FunType)((FunType)e).coalesce(src,false);
+
+	    // set classifiers, even for spec variables.
+	    for (int j = 0, jend = F.vars.length; j < jend; j++) 
+		dst.setClassifier(F.vars[j],expand(F.types[j],false,null));
+
 	    Expr tmp = F.dropNoncompInputs(src);
 	    if (tmp != F)
 		return expand(tmp,from_fun,from_const);
 	    F = (FunType)tmp;
 	    int iend = F.vars.length;
 	    Expr[] ntypes = new Expr[iend];
-	    for (int i = 0; i < iend; i++) 
-		ntypes[i] = expand(F.types[i],false,null);
+	    Ownership[] nowned = new Ownership[iend];
+	    for (int i = 0; i < iend; i++) {
+		ntypes[i] = dst.getClassifier(F.vars[i]);
+		nowned[i] = expand(F.owned[i]);
+	    }
 	    Expr nb = expand(F.body,false,null);
-	    Expr ret = new FunType(F.vars,ntypes,F.owned,F.ret_stat,nb);
+	    Ownership nret_stat = expand(F.ret_stat);
+	    Expr ret = new FunType(F.vars,ntypes,nowned,F.consumps,nret_stat,nb);
 	    ret.pos = e.pos;
 	    return ret;
 	}
 	case Expr.TYPE_APP: {
 	    TypeApp T = (TypeApp)e;
+	    /*	    return expand(T.head,false,null); */
+
 	    Expr nhead = expand(T.head,false,null);
 	    int iend = T.X.length;
 	    Expr[] nX = new Expr[iend];
-	    for (int i = 0; i < iend; i++) 
-		nX[i] = expand(T.X[i],false,null);
-	    return new TypeApp(nhead,nX);
+	    for (int i = 0; i < iend; i++) {
+		if (T.X[i].isTypeOrKind(src))
+		    nX[i] = expand(T.X[i],false,null);
+		else
+		    nX[i] = T.X[i]; // basically, we want this to be ignored later
+	    }
+	    Expr ret = new TypeApp(nhead,nX); 
+	    ret.pos = e.pos;
+	    return ret;
 	}
 
 	default:

@@ -1,0 +1,12 @@
+cache_alignment	: 64
+address sizes	: 36 bits physical, 48 bits virtual
+power management: [8]
+
+processor	: 7
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 26
+model name	: Intel(R) Xeon(R) CPU           W3520  @ 2.67GHz
+stepping	: 5
+cpu MHz		: 2666.748
+cache size	: 8192 KB

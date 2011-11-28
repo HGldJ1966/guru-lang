@@ -36,11 +36,13 @@ Define pow_total : Forall(b e : nat).Exists(z:nat).{(pow b e) = z} :=
 		u'
 	end.
 
+Total pow pow_total.
+
 
 Define pow_not_zero : Forall(b e : nat)(u:{ b != Z }).{(pow b e) != Z} :=
 	foralli(b:nat).induction(e:nat) by x1 x2 IH return Forall(u:{ b != Z }).{(pow b e) != Z} with
 	Z => 	foralli(u:{ b != Z }).
-		trans cong (pow b *) x1
+		trans cong (pow b *) x1 
 		trans join (pow b Z) one
 		clash one Z
 	| S e' => foralli(u:{ b != Z }). 
@@ -98,15 +100,13 @@ Define pow2_add : Forall (e : nat).{(plus (pow2 e) (pow2 e)) = (pow2 (S e))} :=
 		cong (pow two (S *)) [plusZ e]
 	end.
 
+
 % return ff if even, tt if odd.
 Define mod2 :=
   fun mod2(n:nat):bool. 
     match n with
       Z => ff
-    | S n' => match n' with 
-                Z => tt
-              | S n'' => (mod2 n'')
-              end
+    | S n' => (not (mod2 n'))
     end.
 
 Define mod2_total_h : Forall(x y:nat)(u:{(le y x) = tt}). 
@@ -143,17 +143,31 @@ Define mod2_total_h : Forall(x y:nat)(u:{(le y x) = tt}).
                              trans cong (le (S (S y'')) *) ux 
                                    [S_le_S (S y'') x1 ]]]
             foralli(r1:bool)(ur1:{ (mod2 y'') = r1}).
-            existsi r1 { (mod2 y) = * }
+            existsi (not (not r1)) { (mod2 y) = * }
               trans cong (mod2 *) uy
               trans cong (mod2 (S *)) trans uy' ux''
-              trans join (mod2 (S (S y''))) (mod2 y'')
-                    ur1
-          end y' join y' y']
+              trans join (mod2 (S (S y''))) (not (not (mod2 y'')))
+                    cong (not (not *)) ur1
+          end y' refl y']
        end
    end.
 
 Define mod2_total : Forall(x:nat). Exists(r:bool). {(mod2 x) = r} :=
   foralli(x:nat).[mod2_total_h x x [x_le_x x]].
+
+Total mod2 mod2_total.
+
+Define mod2_SS : Forall(n:nat). { (mod2 (S (S n))) = (mod2 n) } :=
+  foralli(n:nat). 
+  case n with
+    Z => trans cong (mod2 (S (S *))) n_eq
+         trans join (mod2 (S (S Z))) (mod2 Z)
+               symm cong (mod2 *) n_eq
+  | S n' => trans cong (mod2 (S (S *))) n_eq
+            trans join (mod2 (S (S (S n')))) (not (not (mod2 (S n'))))
+            trans [not_not (mod2 (S n'))]
+                  symm cong (mod2 *) n_eq
+  end.
 
 Define div2 :=
   fun div2(x:nat):nat.
@@ -353,6 +367,33 @@ Define condS_tot :=
               hypjoin (condS b n) (S n) by ub end
   end.
 
+Total condS condS_tot.
+
+Define condS_le :
+  Forall(b: bool)(n: nat). { (le n (condS b n)) = tt }
+  :=
+  foralli(b: bool)(n: nat).
+  case b with
+    | ff =>
+      [eq_le
+        n
+        (condS b n)
+        hypjoin n (condS b n) by b_eq end
+      ]
+    | tt =>
+      [le_trans
+        n
+        (S n)
+        (condS b n)
+        [le_S n]
+        [eq_le
+          (S n)
+          (condS b n)
+          hypjoin (S n) (condS b n) by b_eq end
+        ]
+      ]
+  end.
+
 Define condS_Z1 : Forall(b:bool)(n:nat)(u:{(condS b n) = Z}).{b = ff} :=
   induction(b:bool) by ub ign ign 
   return Forall(n:nat)(u:{(condS b n) = Z}).{b = ff} with
@@ -459,7 +500,8 @@ Define mod2_mult2 : Forall(b:bool)(n:nat). { (mod2 (condS b (mult2 n))) = b} :=
                          hypjoin (condS b (S (S q))) (S (S (condS b q)))
                          by trans ub ub' end
                  end b join b b]
-        trans join (mod2 (S (S (condS b q)))) (mod2 (condS b q))
+        trans join (mod2 (S (S (condS b q)))) (not (not (mod2 (condS b q))))
+        trans [not_not (mod2 (condS b q))]
               [IH n' b]
     end n b].
   
@@ -504,3 +546,70 @@ Define condplusff : Forall(n m:nat). { (condplus ff n m) = m } :=
  foralli(n m:nat). 
    join (condplus ff n m) m.
 
+Define pow_gt_zero : Forall(b e : nat)(u:{ b != Z }).
+  {(lt Z (pow b e)) = tt} :=
+  foralli(b e:nat)(u:{ b != Z }).
+    [not_zero_implies_lt (pow b e) [pow_not_zero b e u]].
+
+Define pow_lt : Forall(b e:nat)(u: {(lt one b) = tt}).
+  {(lt (pow b e) (pow b (S e))) = tt} :=
+  foralli(b:nat).induction(e:nat) by x1 x2 IH return Forall(u:{(lt one b) = tt}).{(lt (pow b e) (pow b (S e))) = tt} with
+    Z => foralli(u: {(lt one b) = tt}).
+         abbrev p1 = trans cong (pow b *) x1 % b^e = 0
+	             join (pow b Z) one in 
+         abbrev p2 = trans cong (pow b (S *)) x1 % b^(e+1) = b
+	             [first_power b] in
+         hypjoin (lt (pow b e) (pow b (S e))) tt by p1 p2 u end
+  | S e' => foralli(u: {(lt one b) = tt}).
+ 
+	    existse [not_zero_implies_S b [lt_implies_not_zero one b u]] foralli(b':nat)(v:{(S b') = b}).
+            abbrev p1 = [mult_lt b' (pow b e') (pow b (S e')) [IH e' u]] in % (S b')*b^e' < (S b')*b^(S e')
+
+	    abbrev p2 = trans cong (mult * (pow b e'))  v
+	                trans join (mult b (pow b e')) (pow b (S e'))
+			cong (pow b *) symm x1 in % (S b')*b^e' = b^e
+
+	    abbrev p3 = trans cong (mult * (pow b (S e'))) v
+	                trans join (mult b (pow b (S e'))) (pow b (S (S e')))
+			cong (pow b (S *)) symm x1 in % (S b')*b^(S e') = b^*(S e)
+
+	    hypjoin (lt (pow b e) (pow b (S e))) tt by p1 p2 p3 end
+  end.
+
+Define pow_lt2 : Forall(b e:nat)(u: {e !=  Z}).{ (le b (pow b e)) = tt } :=
+	foralli(b:nat).
+	induction(e:nat) return Forall(u: {e !=  Z}).{ (le b (pow b e)) = tt }
+	with
+		Z =>
+			foralli(u:{ e !=  Z }).
+			contra
+			trans symm e_eq
+						u
+			{ (le b (pow b e)) = tt }
+	| S e' =>
+			foralli(u:{ e !=  Z }).
+			case b with
+				Z =>
+					abbrev p1 = [mult_comm Z (pow Z e')] in
+					abbrev p2 = [multZ (pow Z e')] in
+					abbrev p3 = hypjoin (pow b e) Z by b_eq e_eq p1 p2 end in
+					hypjoin (le b (pow b e)) tt by b_eq p3 end
+			| S b' =>
+					case e' with
+						Z =>
+							abbrev p1 = [mult_comm b (S Z)] in
+							abbrev p2 = [plus_comm b Z] in
+							abbrev p3 = hypjoin (pow b e) b by e_eq e'_eq p1 p2 end in
+							abbrev p4 = [le_refl b] in
+							hypjoin (le b (pow b e)) tt by p3 p4 end
+					| S e'' =>
+							% ih: (le b (pow b e')) = tt
+							abbrev u' = trans e'_eq [S_not_zero e''] in
+							abbrev ih = [e_IH e' u'] in
+							abbrev p1_1 = hypjoin (pow b e) (plus (pow b e') (mult b' (pow b e'))) by b_eq e_eq end in
+							abbrev p1_2 = [plus_implies_le (pow b e') (mult b' (pow b e'))] in
+							abbrev p1 = hypjoin (le (pow b e') (pow b e)) tt by p1_2 p1_1 end in
+							[le_trans b (pow b e') (pow b e) ih p1]
+					end
+			end
+	end.

@@ -42,12 +42,14 @@ public class ReducibleApp extends App{
 	return this;
     }
     
-    public App spineForm(Context ctxt, boolean drop_annos, boolean spec,
+    public Expr spineForm(Context ctxt, boolean drop_annos, boolean spec,
 			 boolean expand_defs) {
-	App s = (App)super.spineForm(ctxt, drop_annos, spec, expand_defs);
-	if (s != this)
-	    return new ReducibleApp(construct,s);
-	return this;
+	Expr s = super.spineForm(ctxt, drop_annos, spec, expand_defs);
+	if (s == this)
+	    return this;
+	if (s.construct == CONST)
+	    return s;
+	return new ReducibleApp(construct,(App)s);
     }
 
     protected boolean headBetaOk(Context ctxt, boolean spec) {
@@ -56,20 +58,46 @@ public class ReducibleApp extends App{
 
     protected Expr doBeta(Context ctxt, boolean drop_annos, boolean spec,
 			  boolean expand_defs) {
-	if (head.construct != CONST)
+	if (ctxt.getFlag("debug_spine_form")) {
+	    ctxt.w.println("doBeta "+toString(ctxt)
+			   +"(drop_annos = "+(new Boolean(drop_annos)).toString()
+			   +", spec = "+(new Boolean(spec)).toString()
+			   +", expand_defs = "+(new Boolean(expand_defs)).toString()
+			   +") ( ");
+	    ctxt.w.flush();
+	}
+
+	if (head.construct != CONST) {
+	    if (ctxt.getFlag("debug_spine_form")) {
+		ctxt.w.println(") doBeta1 = "+toString(ctxt));
+		ctxt.w.flush();
+	    }
 	    return this;
-	
+	}
 	Const c = (Const)head;
 
-	if (!headBetaOk(ctxt,spec))
+	if (!headBetaOk(ctxt,spec)) {
+	    if (ctxt.getFlag("debug_spine_form")) {
+		ctxt.w.println(") doBeta2 = "+toString(ctxt));
+		ctxt.w.flush();
+	    }
 	    return this;
+	}
 
 	Expr nhead = drop_annos ? ctxt.getDefBodyNoAnnos(c) : ctxt.getDefBody(c);
+	if (nhead.construct != FUN_TERM)
+	    return nhead;
+
 	FunTerm f = (FunTerm)nhead;
 
-	if (f.vars.length > X.length)
+	if (f.vars.length > X.length) {
 	    // we do not beta-reduce until we have all arguments
+	    if (ctxt.getFlag("debug_spine_form")) {
+		ctxt.w.println(") doBeta3 = "+toString(ctxt));
+		ctxt.w.flush();
+	    }
 	    return this;
+	}
 
 	int i = 0;
 	while (nhead.construct == FUN_TERM) {
@@ -79,14 +107,33 @@ public class ReducibleApp extends App{
 
 	int iend = X.length, start = i;
 
-	if (start == iend)
+	if (start == iend) {
+	    if (nhead.construct == construct) {
+		// should put in spine form in case there are further
+		// beta reductions to do.
+		if (ctxt.getFlag("debug_spine_form")) {
+		    ctxt.w.println(") doBeta4 = "+nhead.toString(ctxt));
+		    ctxt.w.flush();
+		}
+		return ((App)nhead).spineForm(ctxt,drop_annos,spec,expand_defs);
+	    }
+	    if (ctxt.getFlag("debug_spine_form")) {
+		ctxt.w.println(") doBeta5 = "+nhead.toString(ctxt));
+		ctxt.w.flush();
+	    }
 	    return nhead;
+	}
 	Expr[] nX = new Expr[iend - start];
 	for (; i < iend; i++)
 	    nX[i-start] = X[i];
 
-	return ((new ReducibleApp(construct, nhead,nX))
-		.spineForm(ctxt, drop_annos, spec, expand_defs));
+	Expr ret = ((new ReducibleApp(construct, nhead,nX))
+		    .spineForm(ctxt, drop_annos, spec, expand_defs));
+	if (ctxt.getFlag("debug_spine_form")) {
+	    ctxt.w.println(") doBeta6 = "+ret.toString(ctxt));
+	    ctxt.w.flush();
+	}
+	return ret;
     }
 
     protected boolean defEqNoAnnoApprox(Context ctxt, Expr ee, boolean spec) {
@@ -106,6 +153,14 @@ public class ReducibleApp extends App{
 	    ctxt.w.flush();
 	}
 
+	Expr e1 = spineForm(ctxt, true, spec, true);
+
+	if (e1 != this) {
+	    if (approx)
+		return e1.defEqNoAnnoApprox(ctxt,ee,spec);
+	    return e1.defEqNoAnno(ctxt,ee,spec);
+	}
+
 	ee = ee.defExpandTop(ctxt,true,spec);
 	
 	if (ee.construct != construct) {
@@ -113,8 +168,7 @@ public class ReducibleApp extends App{
 	    return false;
 	}
 	
-	App e1 = spineForm(ctxt, true, spec, true);
-	App e2 = ((App)ee).spineForm(ctxt, true, spec, true);
+	Expr e2 = ((App)ee).spineForm(ctxt, true, spec, true);
 
 	if (ctxt.getFlag("debug_type_app_def_eq")) {
 	    ctxt.w.println("Spine forms:"
@@ -123,22 +177,30 @@ public class ReducibleApp extends App{
 	    ctxt.w.flush();
 	}
 
-	int iend = e1.X.length;
+	if (e2.construct == CONST) {
+	    ctxt.notDefEq(e1,e2);
+	    return false;
+	}
+    
+	App a1 = (App)e1;
+	App a2 = (App)e2;
+
+	int iend = a1.X.length;
 
 	if (approx)
-	    return e1.head.defEqNoAnnoApprox(ctxt, e2.head, spec);
+	    return a1.head.defEqNoAnnoApprox(ctxt, a2.head, spec);
 
-	if (iend != e2.X.length) {
+	if (iend != a2.X.length) {
 	    ctxt.notDefEq(this,ee);
 	    return false;
 	}
 
 	for (int i = 0; i < iend; i++) {
-	    if (!e1.X[i].defEqNoAnno(ctxt, e2.X[i], spec)){
+	    if (!a1.X[i].defEqNoAnno(ctxt, a2.X[i], spec)){
 		return false;
 	    }
 	}
-	return e1.head.defEqNoAnno(ctxt, e2.head, spec);
+	return a1.head.defEqNoAnno(ctxt, a2.head, spec);
     }
 
     public Expr do_rewrite(Context ctxt, Expr e, Expr x, Stack boundVars)
@@ -163,12 +225,11 @@ public class ReducibleApp extends App{
 	return this;
     }
 
-    public void checkSpec(Context ctxt, boolean in_type){
-	head.checkSpec(ctxt, in_type);
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
+	head.checkSpec(ctxt, in_type, pos);
 	for (int i = 0; i < X.length; i++)
-	    X[i].checkSpec(ctxt, true /* here we finally cross from
-					 types or formulas possibly to
-					 terms */);
+	    X[i].checkSpec(ctxt, true /* here we cross to types or formulas */,
+			   pos);
     }
 
     /* a type application is compiled to the head of its spine form,
