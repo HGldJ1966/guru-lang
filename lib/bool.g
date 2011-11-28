@@ -3,7 +3,7 @@ Inductive bool : type :=
 | tt : bool.
 
 Define or :=
-	fun(x y :bool).
+    fun(x y :bool).
 	match x return bool with
 	ff => y
 	| tt => tt
@@ -22,7 +22,7 @@ Define and3 :=
 
 Define not :=
   fun(x:bool).
-    match x return bool with
+    match x with
       ff => tt
     | tt => ff
     end.
@@ -34,138 +34,14 @@ Define xor :=
 	| tt => (not y)
 	end.
 
-Define eqbool :=
-  fun(x y:bool).
-  match x return bool with
-    ff => (not y)
-  | tt => y
-  end.
-
-Define eqboolEq : Forall(x y:bool)(u:{ (eqbool x y) = tt }).{ x = y } :=
-  induction(x:bool) by xp xt IHx return Forall(y:bool)(u:{ (eqbool x y) = tt }).{ x = y } with
-    ff =>
-      induction(y:bool) by yp yt IHy return Forall(u:{ (eqbool x y) = tt }).{ x = y } with
-        ff =>
-          foralli(u:{ (eqbool x y) = tt }).
-            trans xp symm yp
-      | tt =>
-          foralli(u:{ (eqbool x y) = tt }).
-            contra trans symm u
-                   trans hypjoin (eqbool x y) ff by xp yp end
-                         clash ff tt
-              { x = y }
-      end
-  | tt =>
-      induction(y:bool) by yp yt IHy return Forall(u:{ (eqbool x y) = tt }).{ x = y } with
-        ff =>
-          foralli(u:{ (eqbool x y) = tt }).
-            contra trans symm u
-                   trans hypjoin (eqbool x y) ff by xp yp end
-                         clash ff tt
-              { x = y }
-      | tt =>
-          foralli(u:{ (eqbool x y) = tt }).
-            trans xp symm yp
-      end
-  end.
-
-Define eqboolNeq : Forall(x y:bool)(u:{ (eqbool x y) = ff }).{ x != y } :=
-  induction(x:bool) by xp xt IHx return Forall(y:bool)(u:{ (eqbool x y) = ff }).{ x != y } with
-    ff =>
-      induction(y:bool) by yp yt IHy return Forall(u:{ (eqbool x y) = ff }).{ x != y } with
-        ff =>
-          foralli(u:{ (eqbool x y) = ff }).
-            contra trans symm u
-                   trans hypjoin (eqbool x y) tt by xp yp end
-                         clash tt ff
-              { x != y }
-      | tt =>
-          foralli(u:{ (eqbool x y) = ff }).
-            trans xp
-                  symm trans yp
-                             clash tt ff
-      end
-  | tt =>
-      induction(y:bool) by yp yt IHy return Forall(u:{ (eqbool x y) = ff }).{ x != y } with
-        ff =>
-          foralli(u:{ (eqbool x y) = ff }).
-            trans xp
-                  symm trans yp
-                             clash ff tt
-      | tt =>
-          foralli(u:{ (eqbool x y) = ff }).
-            contra trans symm u
-                   trans hypjoin (eqbool x y) tt by xp yp end
-                         clash tt ff
-              { x != y }
-      end
-  end.
-
-Define eqEqbool : Forall(x y:bool)(u:{ x = y }).{ (eqbool x y) = tt } :=
-  induction(x:bool) by xp xt IHx return Forall(y:bool)(u:{ x = y }).{ (eqbool x y) = tt } with
-    ff =>
-      induction(y:bool) by yp yt IHy return Forall(u:{ x = y }).{ (eqbool x y) = tt } with
-        ff =>
-          foralli(u:{ x = y }).
-            hypjoin (eqbool x y) tt by xp yp end
-      | tt =>
-          foralli(u:{ x = y }).
-            contra trans symm xp
-                   trans u
-                   trans yp
-                         clash tt ff
-              { (eqbool x y) = tt }
-      end
-  | tt =>
-      induction(y:bool) by yp yt IHy return Forall(u:{ x = y }).{ (eqbool x y) = tt } with
-        ff =>
-          foralli(u:{ x = y }).
-            contra trans symm xp
-                   trans u
-                   trans yp
-                         clash ff tt
-              { (eqbool x y) = tt }
-      | tt =>
-          foralli(u:{ x = y }).
-            hypjoin (eqbool x y) tt by xp yp end
-      end
-  end.
-
-Define neqEqbool : Forall(x y:bool)(u:{ x != y }).{ (eqbool x y) = ff } :=
-  induction(x:bool) by xp xt IHx return Forall(y:bool)(u:{ x != y }).{ (eqbool x y) = ff } with
-    ff =>
-      induction(y:bool) by yp yt IHy return Forall(u:{ x != y }).{ (eqbool x y) = ff } with
-        ff =>
-          foralli(u:{ x != y }).
-            contra trans xp
-                   trans symm yp
-                         symm u
-              { (eqbool x y) = ff }
-      | tt =>
-          foralli(u:{ x != y }).
-            hypjoin (eqbool x y) ff by xp yp end
-      end
-  | tt =>
-      induction(y:bool) by yp yt IHy return Forall(u:{ x != y }).{ (eqbool x y) = ff } with
-        ff =>
-          foralli(u:{ x != y }).
-            hypjoin (eqbool x y) ff by xp yp end
-      | tt =>
-          foralli(u:{ x != y }).
-            contra trans xp
-                   trans symm yp
-                         symm u
-              { (eqbool x y) = ff }
-      end
-  end.
-
 Define not_total : Forall(x:bool).Exists(z:bool).{ (not x) = z } :=
-  induction(x:bool) by xp xt IHx return Exists(z:bool).{ (not x) = z } with
+  foralli(x:bool).
+    case x with
     ff => existsi tt { (not x) = * }
-                  trans cong (not *) xp
+                  trans cong (not *) x_eq
                         join (not ff) tt
   | tt => existsi ff { (not x) = * }
-                  trans cong (not *) xp
+                  trans cong (not *) x_eq
                         join (not tt) ff
   end.
 
@@ -179,6 +55,21 @@ Define and_tot : Forall(x y:bool).Exists(z:bool). {(and x y) = z} :=
   end.
     
 Total and and_tot.
+
+Define and_symm : Forall(a b:bool). { (and a b) = (and b a) } :=
+  foralli(a b:bool).
+    case a with
+      ff =>
+        case b with
+          ff => hypjoin (and a b) (and b a) by a_eq b_eq end
+        | tt => hypjoin (and a b) (and b a) by a_eq b_eq end
+        end
+    | tt =>
+        case b with
+          ff => hypjoin (and a b) (and b a) by a_eq b_eq end
+        | tt => hypjoin (and a b) (and b a) by a_eq b_eq end
+        end
+    end.
 
 Define andtt_e1 : Forall(x y:bool)(u:{ (and x y) = tt }).{ x = tt } :=
   induction(x:bool) by xp xt IHx return Forall(y:bool)(u:{ (and x y) = tt }).{ x = tt } with
@@ -218,6 +109,20 @@ Define andtt_e2 : Forall(x y:bool)(u:{ (and x y) = tt }).{ y = tt } :=
             yp
       end
   end.
+
+Define andtt_ande2e1:  Forall(x y:bool)(u:{(and x y) = tt}).{(and y x) = tt} :=
+   induction(x:bool) return Forall(y:bool)(u:{(and x y) = tt }).{(and y x) = tt} with
+     ff =>  foralli(y:bool)(u:{(and x y) = tt}).
+            contra trans symm u
+                   trans cong (and * y) x_eq
+                   trans join (and ff y) ff
+                         clash ff tt
+             {(and y x) = tt}
+   | tt =>  foralli(y:bool)(u:{(and x y) = tt }).
+                   trans cong (and * x) [andtt_e2 x y u]
+                   trans cong (and tt *) x_eq 
+                         join (and tt tt) tt
+   end.
 
 Define andff_i1 : Forall(x y:bool)(u:{ x = ff }).{ (and x y) = ff } :=
   foralli(x y:bool)(u:{ x = ff }).
@@ -298,6 +203,8 @@ Define iff :=
       ff => (not b)
     | tt => b
     end.
+    
+Define eqbool := iff.
 
 Define or_total : Forall(x y:bool).Exists(z:bool).{(or x y) = z} :=
 	induction(x:bool) by x1 x2 IH return Forall(y:bool).Exists(z:bool).{(or x y) = z} with
@@ -311,11 +218,26 @@ Define or_total : Forall(x y:bool).Exists(z:bool).{(or x y) = z} :=
 		join (or tt y) tt
 	end.
 
+Total or or_total.
+
 Define not_tot :=
   induction(x:bool) by a b IH return Exists(y:bool).{(not x) = y} with
     ff => existsi tt {(not x) = *} hypjoin (not x) tt by a end
   | tt => existsi ff {(not x) = *} hypjoin (not x) ff by a end
   end.
+
+Total not not_tot.
+
+Define not_not : Forall(b:bool). { (not (not b)) = b } :=
+  foralli(b:bool).
+    case b with
+      ff => trans cong (not (not *)) b_eq
+            trans join (not (not ff)) ff
+                  symm b_eq
+    | tt => trans cong (not (not *)) b_eq
+            trans join (not (not tt)) tt
+                  symm b_eq           
+    end.
 
 Define iff_tot : Forall(x y:bool).Exists(z:bool). {(iff x y) = z} :=
   induction(x:bool) by ux ign ign 
@@ -331,6 +253,8 @@ Define iff_tot : Forall(x y:bool).Exists(z:bool). {(iff x y) = z} :=
           existsi y {(iff x y) = *} hypjoin (iff x y) y by ux end
   end.
 
+Total iff iff_tot.  
+
 Define not_tt : Forall(x:bool)(u:{(not x) = tt}). {x = ff} :=
   induction(x:bool) by ux ign ign
   return Forall(u:{(not x) = tt}). {x = ff} with
@@ -344,7 +268,11 @@ Define not_tt : Forall(x:bool)(u:{(not x) = tt}). {x = ff} :=
               clash ff tt
           { x = ff }
   end.
-            
+
+Define not_injective : Forall(x y: bool)(u: { (not x) = (not y) }). { x = y } :=
+  foralli(x y: bool)(u: { (not x) = (not y) }).
+  hypjoin x y by [not_not x] [not_not y] u end.   
+
 Define iff_eq : Forall(x y : bool)(u:{(iff x y) = tt}). { x = y } :=
   induction(x:bool) by ux ign ign 
   return Forall(y : bool)(u:{(iff x y) = tt}). { x = y } with
@@ -364,6 +292,118 @@ Define iff_refl : Forall(x:bool). {(iff x x) = tt} :=
   case x with
     default bool => hypjoin (iff x x) tt by x_eq end
   end.
+
+Define iff_symm : Forall(x y:bool). {(iff x y) = (iff y x)} :=
+  foralli(x:bool).
+  case x with
+    default bool => foralli(y:bool).
+      case y with
+        default bool => hypjoin (iff x y) (iff y x) by x_eq y_eq end
+      end
+  end.
+
+Define iff_trans :
+  Forall(x y z:bool)
+        (u1: { (iff x y) = tt })
+	(u2: { (iff y z) = tt }).
+  {(iff x z) = tt} :=
+  foralli(x:bool).
+    case x with
+      ff => foralli(y:bool).
+        case y with
+	  ff => foralli(z:bool).
+	    case z with
+	      ff => foralli(u1: { (iff x y) = tt })(u2: { (iff y z) = tt }).
+	        hypjoin (iff x z) tt by x_eq z_eq end
+	    | tt => foralli(u1: { (iff x y) = tt })(u2: { (iff y z) = tt }).
+		contra trans symm u2
+                       trans hypjoin (iff y z) ff by y_eq z_eq end
+		       clash ff tt
+		{ (iff x z) = tt}
+	    end
+	| tt => foralli(z:bool)(u1: { (iff x y) = tt })(u2: { (iff y z) = tt }).
+            contra trans symm u1
+                   trans hypjoin (iff x y) ff by x_eq y_eq end
+		   clash ff tt
+            { (iff x z) = tt}
+	end
+    | tt => foralli(y:bool).
+        case y with
+	  ff => foralli(z:bool)(u1: { (iff x y) = tt })(u2: { (iff y z) = tt }).
+            contra trans symm u1
+                   trans hypjoin (iff x y) ff by x_eq y_eq end
+		   clash ff tt
+            { (iff x z) = tt}
+	| tt => foralli(z:bool).
+	    case z with
+	      ff => foralli(u1: { (iff x y) = tt })(u2: { (iff y z) = tt }).
+		contra trans symm u2
+                       trans hypjoin (iff y z) ff by y_eq z_eq end
+		       clash ff tt
+		{ (iff x z) = tt}
+	    | tt => foralli(u1: { (iff x y) = tt })(u2: { (iff y z) = tt }).
+	        hypjoin (iff x z) tt by x_eq z_eq end
+	    end
+	 end
+     end.
+     
+
+Define neq_iff : Forall(x y : bool)(u: { x != y}).{ (iff x y) = ff} :=
+   foralli(x:bool).
+      case x with
+	  ff => foralli(y:bool).
+   	          case y with 
+		    ff => foralli(u:{ x != y}).
+			contra  trans x_eq
+				trans symm y_eq
+				      symm u
+			   { (iff x y) = ff}
+		  | tt => foralli(u:{x != y}).
+			   hypjoin (iff x y) ff by x_eq y_eq end
+		end
+	| tt => foralli(y:bool).
+	          case y with
+		    ff => foralli(u:{x != y}).
+			  hypjoin (iff x y) ff by x_eq y_eq end
+		  | tt => foralli(u:{x != y}).
+			  contra trans x_eq
+				 trans symm y_eq
+				       symm u
+			    { (iff x y) = ff}
+		  end
+	end.
+
+
+
+
+Define iff_neq : Forall(x y:bool)(u:{ (iff x y) = ff }).{ x != y } :=
+  foralli(x:bool).
+     case x with
+       ff => foralli(y:bool).
+	       case y with
+		   ff => foralli(u:{ (iff x y) = ff }).
+			    contra trans symm u
+				   trans hypjoin (iff x y) tt by x_eq y_eq end
+					 clash tt ff
+			   { x != y}
+		 | tt => foralli(u:{ (iff x y) = ff }).
+			   trans x_eq
+				symm trans y_eq
+			 	    clash tt ff
+		  end
+     | tt => foralli(y:bool).
+	       case y with
+		  ff => foralli(u:{ (iff x y) = ff }).
+			   trans x_eq	
+				 symm trans y_eq
+				      clash ff tt
+		| tt => foralli(u:{ (iff x y) = ff }).
+			  contra trans symm u
+				 trans hypjoin (iff x y) tt by x_eq y_eq end
+				       clash tt ff
+			  { x !=y}
+		end
+     end.
 
 Define and_eq_tt1 : Forall(x y:bool)(u:{(and x y) = tt}).{x = tt} :=
   induction(x:bool) by ux ign ign 

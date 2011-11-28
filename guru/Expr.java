@@ -17,8 +17,8 @@ public abstract class Expr {
     public static final int BANG = 7;
     
     // terms
-    public static final int INC = 9;
-    public static final int DEC = 10;
+    //    public static final int INC = 9;
+    //    public static final int DEC = 10;
 
     public static final int FUN_TERM = 11;
 
@@ -68,6 +68,7 @@ public abstract class Expr {
     
     public static final int ABBREV = 53;
     public static final int EABBREV = 54;
+    public static final int CABBREV = 56;	// Duckki: abbrev with classification
     
     public static final int TRUE = 55;
 
@@ -91,19 +92,31 @@ public abstract class Expr {
     public static final int PRED_APP = 80; //formula
     public static final int FALSE = 81; // formula
 
+    public static final int VOID = 82; // type
+    public static final int VOIDI = 83; // term
+    public static final int DO = 84; // term
+    public static final int TRANSS = 85; //proof
+    public static final int COMPRESS = 86; // term
+
+    public static final int CHAR_EXPR = 87; // term
+    public static final int WORD_EXPR = 88; // term
+    public static final int TERM_CASE = 89; // proof
+
+    public static final int COMPILE_AS = 90; // term
+
     public static final int LAST = 200;
 
     public int construct;
     boolean result; /* true iff we reached this Expr as the result
 		       of (partial) evaluation */
     public Position pos;
-    
+
     public Expr(int construct) {
 	this.construct = construct;
 	this.result = false;
 	this.pos = null;
     }
-    
+
     // subclasses for each construct must override to define printing 
     // for that construct.
     abstract protected void do_print(java.io.PrintStream w, Context ctxt);
@@ -143,6 +156,18 @@ public abstract class Expr {
 	return s.toString();
     }
 
+    // intended only for unannotated terms -- others may fail.
+    public final int hashCode(Context ctxt) {
+	ctxt.next_var_hash_code = 0;
+	return hashCode_h(ctxt);
+    }
+
+    public int hashCode_h(Context ctxt) {
+	handleError(ctxt,"Internal error: hashCode() function not implemented for"
+		    +" construct "+(new Integer(construct)).toString()+".");
+	return 0;
+    }
+
     // count free occurrences of e.
     abstract public int numOcc(Expr e);
 
@@ -178,13 +203,13 @@ public abstract class Expr {
     	
     	return returnValue;
     }
-    
+
     // substitute e for x in this Expr.  x may be an arbitrary ground
     //	term, and any sub term of this which is definitionally equal
     //  to x will be replaced with e. 
     final public Expr rewrite(Context ctxt, Expr e, Expr x, Stack boundVars)
     {
-    	if(defEq(ctxt, x, 0, true) && 
+    	if(defEq(ctxt, x, NO_APPROX, true) && 
     	   !x.containsVars(boundVars) && 
     	   !e.containsVars(boundVars))
     	{
@@ -196,7 +221,7 @@ public abstract class Expr {
 		    return do_rewrite(ctxt, e, x, boundVars);
     	}
     }
-    
+
     public Expr do_rewrite(Context ctxt, Expr e, Expr x, Stack boundVars)
     {
     	handleError(ctxt, "Internal error: do_rewrite called on an inappropriate expression in: "+this.getClass().toString());
@@ -205,7 +230,7 @@ public abstract class Expr {
     }
 
     public Expr classify(Context ctxt, int approx, boolean spec) {
-	if (approx > 0) {
+	if (approx > NO_APPROX) {
 	    System.out.println("Approximate classification for this construct "
 			       +"unimplemented: "
 			       +(new Integer(construct)));
@@ -213,14 +238,14 @@ public abstract class Expr {
 	}
 	return classify(ctxt);
     }
-    
+
     /* subclasses should override one or the other classify method, or expect
        a stack overflow.  We will treat this as specificational (use the
        other classify() method to specify non-specificational). */
     public Expr classify(Context ctxt) {
-	return classify(ctxt,0,true);
+	return classify(ctxt,NO_APPROX,true);
     }
-    
+
     // is e definitionally equal to this expr in the given ctxt.
     protected boolean defEqNoAnno(Context ctxt, Expr e, boolean spec) {
 	System.out.println("Definitional equality for this construct"
@@ -239,12 +264,12 @@ public abstract class Expr {
     }
 
     final public boolean defEq(Context ctxt, Expr e, boolean spec) {
-	return defEq(ctxt,e,0,spec);
+	return defEq(ctxt,e,NO_APPROX,spec);
     }
 
     // specificational by default
     final public boolean defEq(Context ctxt, Expr e) {
-	return defEq(ctxt,e,0,true);
+	return defEq(ctxt,e,NO_APPROX,true);
     }
 
     /* approx level 2 means all types are considered equal; 1 means we
@@ -256,6 +281,9 @@ public abstract class Expr {
 
     final public boolean defEq(Context ctxt, Expr e, int approx,
 			       boolean spec) {
+	if (approx == 2)
+	    return true;
+
 	if (ctxt.getFlag("debug_def_eq")) {
 	    ctxt.w.println("--------------------------------------------------");
 	    ctxt.w.println("Testing definitional equality (spec = "
@@ -280,14 +308,14 @@ public abstract class Expr {
 	    ctxt.w.println("");
 	    ctxt.w.flush();
 	}	    
-	if (approx == 2)
-	    return true;
-	else if (approx == 1)
+	if (approx == APPROX_NO_INDICES)
 	    return e1.defEqNoAnnoApprox(ctxt,e2,spec);
 	return e1.defEqNoAnno(ctxt,e2,spec);
     }
 
     // do not drop annotations, treat as specificational
+    //
+    // type family abbrev's are not expanded.
     public Expr defExpandTop(Context ctxt) {
 	return defExpandTop(ctxt, false, true);
     }
@@ -320,7 +348,7 @@ public abstract class Expr {
 		return (drop_annos ? ctxt.getDefBodyNoAnnos(c) 
 			: ctxt.getDefBody(c));
 	}
-	else if (construct == ABBREV || construct == EABBREV) 
+	else if (construct == ABBREV) 
 	    return ((Abbrev)this).subst();
 	else if (construct == CUTOFF) {
 	    return ((Cutoff)this).get_nat_t(ctxt,spec);
@@ -331,12 +359,26 @@ public abstract class Expr {
 	return this;
     }
 
-    public void handleError(Context ctxt, String msg) {
-	if (pos != null) {
-	    pos.print(System.out);
+    public static void handleError(Position p, String msg) {
+	if (p != null) {
+	    p.print(System.out);
 	    System.out.print(": ");
 	}
-	System.out.println("classification error.\n"+msg);
+	System.out.println("");
+	System.out.println(msg);
+	System.exit(2);
+    }
+
+    public void handleError(Context ctxt, String msg) {
+	handleError(ctxt,pos,msg);
+    }
+
+    public void handleError(Context ctxt, Position p, String msg) {
+	if (p != null) {
+	    p.print(System.out);
+	    System.out.print(": ");
+	}
+	System.out.println("classification error.\n\n"+msg);
 	ctxt.printDefEqErrorIf();
 	System.exit(2);
     }
@@ -353,19 +395,41 @@ public abstract class Expr {
 	return false;
     }
 
-    // we assume this is a type, and return true iff it is an inductive
-    // type that is not opaque.
-    boolean isdtype(Context ctxt, boolean spec) {
+    // if this is a dtype, return its head (i.e., c if this is c or <c Y1 ... Yn>);
+    // otherwise return null.
+    Const typeGetHead(Context ctxt, boolean spec) {
 	if (construct == CONST) {
 	    Const c = (Const)this;
 	    boolean not_opaque_if = spec || !ctxt.isOpaque(c);
-	    if (ctxt.isDefined(c) && not_opaque_if)
-		return c.defExpandTop(ctxt).isdtype(ctxt, spec);
-	    return (ctxt.isTypeCtor((Const)this) && not_opaque_if);
+	    if (ctxt.isDefined(c) && not_opaque_if) {
+		if (ctxt.getFlag("debug_typeGetHead")) {
+		    ctxt.w.println("typeGetHead() called on: "+toString(ctxt)
+				   +", with spec="+(new Boolean(spec)).toString()
+				   +", opaque="+(new Boolean(ctxt.isOpaque(c))).toString());
+		    ctxt.w.flush();
+		}
+		/* if c is coming from a type of the form <d xs> where d is a
+		   type family abbrev and xs is an incomplete argument list,
+		   then we will get an infinite loop without the following check. */
+		Expr cc = c.defExpandTop(ctxt,false,true);
+		if (cc == c)
+		    return null;
+		return cc.typeGetHead(ctxt, spec);
+	    }
+	    if (ctxt.isTypeCtor((Const)this) && not_opaque_if)
+		return (Const)this;
+	    return null;
 	}
 	if (construct != TYPE_APP)
-	    return false;
-	return ((TypeApp)this).getHead(ctxt,spec).isdtype(ctxt, spec);
+	    return null;
+	return ((TypeApp)this).getHead(ctxt,spec).typeGetHead(ctxt, spec);
+    }
+
+    // we assume this is a type, and return true iff it is an inductive
+    // type that is not opaque.
+    boolean isdtype(Context ctxt, boolean spec) {
+	Const head = typeGetHead(ctxt,spec);
+	return (head != null); 
     }
 
     /* assuming this is a type, is it one corresponding to tracked references?
@@ -413,6 +477,7 @@ public abstract class Expr {
 	case FORALL:
 	case EXISTS:
 	case EABBREV:
+	case CABBREV:
 	case ABBREV:
 	case ATOM:
 	case PRED_APP:
@@ -435,6 +500,7 @@ public abstract class Expr {
 	case ANDI:
 	case EXISTSE:
 	case EABBREV:
+	case CABBREV:
 	case ABBREV:
 	case JOIN:
 	case EVAL:
@@ -444,6 +510,7 @@ public abstract class Expr {
 	case REFL:
 	case SYMM:
 	case TRANS:
+        case TRANSS:
 	case CONG:
 	case NCONG:
 	case INJ:
@@ -456,6 +523,7 @@ public abstract class Expr {
 	case TRUEI:
 	case DISEQI:
 	case CIND:
+        case TERM_CASE:
 	    return true;
 	}
 	return false;
@@ -465,16 +533,19 @@ public abstract class Expr {
 	switch(construct) {
 	case VAR:
 	case CONST:
-	case INC:
-	case DEC:
+	case VOIDI:
+	case DO:
+	case COMPRESS:
 	case FUN_TERM:
 	case CAST:
+	case COMPILE_AS:
 	case TERMINATES:
 	case TERM_APP:
 	case ABORT:
 	case LET:
 	case ABBREV:
 	case EABBREV:
+	case CABBREV:
 	case MATCH:
 	case CUTOFF:
 	case IMPOSSIBLE:
@@ -491,12 +562,14 @@ public abstract class Expr {
 	switch(construct) {
 	case VAR:
 	case CONST:
+	case VOID:
 	case BANG:
 	case ABBREV:
 	case EABBREV:
+	case CABBREV:
 	case FUN_TYPE:
 	case TYPE_APP:
-	    // shouldn't TYPE be here, too?
+	case TYPE:
 	    return true;
 	}
 	return false;
@@ -514,13 +587,15 @@ public abstract class Expr {
 
     public boolean isTypeOrKind(Context ctxt) {
 	Expr tmp = defExpandTop(ctxt);
+
 	if (tmp.construct == VAR) {
-            if(ctxt.getClassifier((Var)tmp) == null)
-                System.err.println("NULL classifier for: "+tmp.toString(ctxt));
-	    return ctxt.getClassifier((Var)tmp).construct == TYPE;
+	    Expr c = ctxt.getClassifier((Var)tmp);
+            if (c == null) 
+                System.err.println("Internal error. Null classifier for: "+tmp.toString(ctxt));
+	    return c.construct == TYPE;
         }
 	if (tmp.construct == CONST) 
-	    return ctxt.isTypeCtor((Const)tmp);
+	    return ctxt.isTypeCtor((Const)tmp) || ctxt.isTypeFamilyAbbrev((Const)tmp);
 	
 	return isTypeOrKind(tmp.construct);
     }
@@ -678,14 +753,36 @@ public abstract class Expr {
     }
 
 
-    public void checkSpec(Context ctxt, boolean in_type) {
+    public void checkSpec(Context ctxt, boolean in_type, Position p) {
 	handleError(ctxt, "Internal error: checkSpec() is "
 		    + "unimplemented for construct "
 		    + (new Integer(construct)));
     }
     
 
+    // get all the constants in this Expr.
     public java.util.Set getDependences() {
         return new TreeSet();
+    }
+
+    /* get all the constants in this Expr or in any Expr reachable by
+       a definition from it.
+    public java.util.Set getAllDependences(ctxt) {
+	
+    }
+    */
+
+    // if dtype is true, compute the carraway datatype (aka runtime type), 
+    // if dtype is false, compute the carraway resource type.
+    public guru.carraway.Expr toCarrawayType(Context ctxt, boolean dtype) {
+	handleError(ctxt, "Internal error: toCarraway() or toCarrawayType() is "
+		    + "unimplemented for construct "
+		    + (new Integer(construct)));
+	return null;
+    }
+
+    // by default, we assume this is a type
+    public guru.carraway.Expr toCarraway(Context ctxt) {
+	return toCarrawayType(ctxt, true);
     }
 }

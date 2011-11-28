@@ -5,6 +5,7 @@ public class Inductive extends Command {
     public Expr K;
     public Const[] c;
     public Expr[] D;
+    public Ownership ret_stat; // ownership of output of all the term ctors. 
 
     public Inductive() {
 	super(INDUCTIVE);
@@ -27,6 +28,8 @@ public class Inductive extends Command {
 	 * during step (2), because we have to set ownership status
 	 * on the constructor's arguments.
 	 */
+
+	ctxt.setTypeCtorRetStat(d,ret_stat);
 
 	// step (1)
 	for (int i = 0; i < iend; i++){

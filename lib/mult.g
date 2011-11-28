@@ -1,4 +1,5 @@
 Include "plus.g".
+Include "minus.g".
 
 Define mult :=
    fun mult(n m : nat) : nat.
@@ -25,6 +26,8 @@ Define mult_total : Forall (x y :nat).Exists(z:nat).{(mult x y) = z} :=
 		existsi z {(mult x y) = *} 
 		  hypjoin (mult x y) z by x1 u u' end
 	end.
+
+Total mult mult_total.
 
 Define multS : Forall (m n : nat). { (mult m (S n)) = (plus m (mult m n)) } :=
 	induction(m:nat) by x1 x2 IH 
@@ -194,14 +197,13 @@ Define mult_eq_Z : Forall(x y:nat)(u:{(mult (S x) y) = Z}). { y = Z } :=
               trans cong (mult (S *) y) ux
                  [multOne2 y]
   | S x' => foralli(y:nat)(u:{(mult (S x) y) = Z}).
-            [plus_eq_Z1 y terminates (mult (S x') y) by mult_total 
+            [plus_eq_Z1 y (mult (S x') y) 
               symm
                 trans symm u
                 trans cong (mult (S *) y) ux
                    join (mult (S (S x')) y) (plus y (mult (S x') y))]
   end.
 
-% simpler version than that in tests/tree.g
 Define mult_dist : Forall(x y z:nat).{ (mult x (plus y z)) = (plus (mult x y) (mult x z)) } :=
   foralli(x y z:nat).
     existse [plus_total y z]
@@ -222,14 +224,18 @@ Define mult_distr : Forall(x y z:nat).{ (mult (plus x y) z) = (plus (mult x z) (
           cong (plus (mult x z) *)
                [mult_comm z y].
 
+Define trusted mult_dist_minus : Forall(x y z:nat).
+  { (mult x (minus y z)) = (minus (mult x y) (mult x z)) } :=
+  truei.
+  
 Define mult_foil : Forall(a b c d:nat).{ (mult (plus a b) (plus c d)) = (plus (plus (plus (mult a c) (mult a d)) (mult b c)) (mult b d)) } :=
   foralli(a b c d:nat).
     trans [mult_dist terminates (plus a b) by plus_total c d]
     trans cong (plus * (mult (plus a b) d))
-               trans [mult_comm terminates (plus a b) by plus_total c]
+               trans [mult_comm (plus a b) c]
                      [mult_dist c a b]
     trans cong (plus (plus (mult c a) (mult c b)) *)
-               trans [mult_comm terminates (plus a b) by plus_total d]
+               trans [mult_comm (plus a b) d]
                      [mult_dist d a b]
     trans cong (plus (plus * (mult c b)) (plus (mult d a) (mult d b)))
                [mult_comm c a]
@@ -239,21 +245,21 @@ Define mult_foil : Forall(a b c d:nat).{ (mult (plus a b) (plus c d)) = (plus (p
                [mult_comm d a]
     trans cong (plus (plus (mult a c) (mult b c)) (plus (mult a d) *))
                [mult_comm d b]
-    trans symm [plus_assoc terminates (plus terminates (mult a c) by mult_total terminates (mult b c) by mult_total) by plus_total
-                           terminates (mult a d) by mult_total
-                           terminates (mult b d) by mult_total]
+    trans symm [plus_assoc (plus (mult a c) (mult b c))
+                           (mult a d)
+                           (mult b d)]
     trans cong (plus * (mult b d))
-               [plus_assoc terminates (mult a c) by mult_total
-                           terminates (mult b c) by mult_total
-                           terminates (mult a d) by mult_total]
+               [plus_assoc  (mult a c)
+                            (mult b c)
+                            (mult a d)]
     trans cong (plus (plus (mult a c) *) (mult b d))
-               [plus_comm terminates (mult b c) by mult_total
-                          terminates (mult a d) by mult_total]
+               [plus_comm (mult b c)
+                          (mult a d)]
           cong (plus * (mult b d))
-               symm [plus_assoc terminates (mult a c) by mult_total
-                                terminates (mult a d) by mult_total
-                                terminates (mult b c) by mult_total].
-
+               symm [plus_assoc (mult a c)
+                                (mult a d)
+                                (mult b c)].
+  
 Define mult_lt : Forall(x y z : nat)(u: { (lt y z) = tt}).
                  { (lt (mult (S x) y) (mult (S x) z)) = tt } :=
   foralli(x y z : nat)(u: { (lt y z) = tt}).
@@ -267,9 +273,25 @@ Define mult_lt : Forall(x y z : nat)(u: { (lt y z) = tt}).
      trans cong (lt (mult (S *) y) (mult (S *) z)) x_eq
      trans join (lt (mult (S (S x')) y) (mult (S (S x')) z)) 
                 (lt (plus y (mult (S x') y)) (plus z (mult (S x') z)))
-           [plus_lt_both y z
-              terminates (mult (S x') y) by mult_total
-              terminates (mult (S x') z) by mult_total
-              u
-              [x_IH x']]
+           [plus_lt_both y z (mult (S x') y) (mult (S x') z) u [x_IH x']]
   end x].
+
+Define mult_le : Forall(x y:nat)(u:{ y != Z }).{ (le x (mult x y)) = tt } :=
+  foralli(x y:nat)(u:{ y != Z }).
+    existse [not_zero_implies_S y u] foralli(y':nat)(v:{(S y') = y}).
+    abbrev p1 =
+      trans join (plus x (mult y' x)) (mult (S y') x)
+      [mult_comm (S y') x] in
+      
+    symm trans symm [plus_implies_le x (mult y' x)]
+    trans cong (le x *) p1
+    cong (le x (mult x *)) v.
+
+Define trusted mult_lt2 : Forall(x y : nat)(u1:{ x != Z })(u2: { (lt one y) = tt}).
+  { (lt x (mult y x))  = tt } := truei.
+
+
+
+
+
+

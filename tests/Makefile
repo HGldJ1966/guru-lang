@@ -1,4 +1,161 @@
-go:	wordhist
+test_ref:	test_ref.g ../guru/Main.class Makefile
+	../bin/guru test_ref.g
+	gcc -O0 -ggdb -w -o test_ref test_ref.c
+	valgrind ./test_ref
+
+compile_as:	compile_as.g ../guru/Main.class Makefile
+	../bin/guru compile_as.g
+	gcc -O0 -ggdb -w -o compile_as compile_as.c
+	valgrind ./compile_as
+
+
+test-pb_stdio:	test-pb_stdio.g Makefile
+	../bin/guru test-pb_stdio.g
+	gcc -O2 -w -o test-pb_stdio test-pb_stdio.c
+
+
+monad-example:
+	../bin/guru monad-example.g
+
+bug:
+	../bin/guru bug.g
+
+test-trie:	test-trie.g Makefile
+	../bin/guru test-trie.g
+	gcc -O2 -w -o test-trie test-trie.c
+
+test-queue:	test-queue.c
+	gcc -O2 -w -o test-queue test-queue.c
+	time ./test-queue < war-and-peace.txt || echo "problem"
+
+test-queue.c:	test-queue.g ../lib/queue.g Makefile
+	../bin/guru test-queue.g
+
+spec-test: spec-test.g
+	../bin/guru spec-test.g
+
+Qp:	test-queue.c
+	gcc -O0 -ggdb -p -w -o test-queue-gprof test-queue.c
+	time ./test-queue-gprof < war-and-peace.txt || echo "problem"
+
+Qd:	test-queue.c
+	gcc -O0 -ggdb -w -o test-queue-debug test-queue.c
+	time ./test-queue-debug < war-and-peace.txt || echo "problem"
+
+test-queue1:	test-queue1.c
+	gcc -O2 -w -o test-queue1 test-queue1.c
+	time ./test-queue1 < war-and-peace.txt || echo "problem"
+
+test-queue1.c:	test-queue1.g Makefile
+	../bin/guru test-queue1.g
+
+Q1p:	test-queue1.c
+	gcc -O0 -ggdb -p -w -o test-queue1-gprof test-queue1.c
+	time cat war-and-peace.txt | ./test-queue1-gprof || echo "problem"
+
+Q1d:	test-queue1.c
+	gcc -O0 -ggdb -w -o test-queue1-debug test-queue1.c
+
+test_list2:	test_list2.g
+	../bin/guru test_list2.g
+	gcc -O2 -w -o test_list2 test_list2.c
+
+test_queuec:	test_queuec.ml Makefile
+	ocamlopt test_queuec.ml -o test_queuec
+
+test-queuec1:	test-queuec1.ml Makefile
+	ocamlopt test-queuec1.ml -o test-queuec1
+
+test-queue2:	test-queue2.hs Makefile
+	ghc -O2 -o test-queue2 --make test-queue2.hs
+
+test-queue3:	test-queue.hs Makefile
+	ghc -O2 -o test-queue3 --make test-queue.hs
+
+test-warray1a:	test-warray.g Makefile
+	../bin/guru test-warray.g
+	gcc -O2 -w -o test-warray1a test-warray.c
+	./test-warray1a
+
+test-warray2a:	test-warray2.g Makefile
+	../bin/guru test-warray2.g
+	gcc -O2 -w -o test-warray2a test-warray2.c
+	./test-warray2a
+
+test-warray-min:   test-warray-min.g
+	../bin/guru test-warray-min.g
+	gcc -O2 -w -o test-warray-min test-warray-min.c
+	./test-warray-min
+
+test-warray1b:   test-warray.hs Makefile
+	ghc -O2 -o test-warray1b --make test-warray.hs
+
+test-warray2b:	test-warray2.hs Makefile
+	ghc -O2 -o test-warray2b --make test-warray2.hs
+
+cinv_example: cinv_example.g
+	../bin/guru cinv_example.g
+
+test-uwarray:	test-uwarray.g Makefile
+	../bin/guru test-uwarray.g
+	gcc -O2 -w -o test-uwarray test-uwarray.c
+	valgrind ./test-uwarray
+
+test-charray:	test-charray.g Makefile
+	../bin/guru test-charray.g
+	$(MAKE) test-charray-C
+
+test-qcharray:	test-qcharray.g Makefile
+	../bin/guru test-qcharray.g
+	gcc -O0 -ggdb -w -o test-qcharray test-qcharray.c
+	valgrind ./test-qcharray
+
+test-charray-C:
+	gcc -O0 -ggdb -w -o test-charray test-charray.c
+	valgrind ./test-charray
+
+test-unique-owned:	test-unique-owned.g Makefile
+	../bin/guru test-unique-owned.g
+	gcc -O0 -ggdb -w -o test-unique-owned test-unique-owned.c
+	valgrind ./test-unique-owned
+
+
+hello-world:	hello-world.g Makefile
+	../bin/guru hello-world.g
+	gcc -O0 -ggdb -w -o hello-world hello-world.c
+	echo "c" | valgrind ./hello-world
+	@echo ""
+	@./hello-world 
+
+compiletest:	compiletest.g ../guru/Main.class Makefile
+	../bin/guru compiletest.g
+	$(MAKE) c
+
+test-stdio:	test-stdio.g
+	../bin/guru test-stdio.g
+	gcc -O0 -ggdb -w -o test-stdio test-stdio.c
+	echo "c" | valgrind ./test-stdio
+
+test-word:	test-word.g
+	../bin/guru test-word.g
+	gcc -O0 -ggdb -w -o test-word test-word.c
+	echo "c" | valgrind ./test-word
+
+c:
+	gcc -O0 -ggdb -w -o compiletest compiletest.c
+	valgrind ./compiletest 
+
+go:	test_cell
+
+test_cell: test_cell.g
+	../bin/guru cell.g test_cell.g
+
+T:	
+	gcc -O0 -ggdb -c test_cell.c
+	gcc -O0 -ggdb -o test_cell test_cell.o
+
+vec_test:
+	java -cp .. guru.Main vec_test.g
 
 strange_vec:	
 	java -cp .. guru.Main strange_vec.g
@@ -11,15 +168,6 @@ llambda:
 
 append:
 	java -cp .. guru.Main append.g
-
-compiletest:	compiletest.g ../guru/Main.class
-	java -cp .. guru.Main compiletest.g
-	$(MAKE) c
-
-c:
-	gcc -O0 -ggdb -c compiletest.c
-	gcc -O0 -ggdb -o compiletest compiletest.o
-	./compiletest < compiletest-data
 
 foo:	foo.c
 	gcc -O0 -ggdb -c foo.c
@@ -91,7 +239,7 @@ hist-test2h:	hist-test2h.hs
 
 W:	
 #	gcc -O0 -pg -ggdb wordhist.c -o wordhist
-	gcc -O4 wordhist.c -o wordhist
+	gcc -O4 -w wordhist.c -o wordhist
 #	gcc -O0 -ggdb wordhist.c -o wordhist
 
 wordhist:	wordhist.g
@@ -177,3 +325,17 @@ xmlcr:	xmlcr.g
 
 X:
 	gcc -O0 -ggdb -o xmlcr xmlcr.c
+
+test_qlist: test_qlist.g
+	guru test_qlist.g
+	gcc -m32 -DDEBUG=1 -w -o test_qlist test_qlist.c
+
+test_qappend: test_qappend.g
+	guru $<
+	gcc -m32 -DDEBUG=1 -w -o $@ test_qappend.c
+
+test-qwarray: test-qwarray.g
+	guru $<
+	gcc -m32 -DDEBUG=1 -w -o $@ test-qwarray.c
+	./test-qwarray
+

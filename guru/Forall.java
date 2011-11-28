@@ -31,6 +31,13 @@ public class Forall extends Abstraction {
 	return new Forall(super.rename(ctxt,p));
     }
 
+    public Abstraction coalesce(Context ctxt, boolean spec) {
+	Abstraction tmp = super.coalesce(ctxt,spec);
+	if (tmp == this)
+	    return this;
+	return new Forall(tmp);
+    }
+
     public Expr classify(Context ctxt, int approx, boolean spec) {
 	if (ctxt.getFlag("debug_classify_forall")) {
 	    ctxt.w.println("Classifying Forall-formula: "+toString(ctxt));

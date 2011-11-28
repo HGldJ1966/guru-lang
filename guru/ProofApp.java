@@ -34,14 +34,10 @@ public class ProofApp extends App{
     public Expr classify(Context ctxt) {
 	Expr cl = head.classify(ctxt);
 
-	/* check argument types first, before calling termTerminates,
-	   since we want to insert any spec annotations on TermApps
-	   first (this is done by classification). */
 	Expr ret = apply_classifier(FORALL, 0, true, ctxt, cl, 0);
 
-	App e = spineForm(ctxt, false, true, false);
-        for (int i = 0, iend = e.X.length; i < iend; i++) 
-            e.X[i].checkTermination(ctxt);
+        for (int i = 0, iend = X.length; i < iend; i++) 
+            X[i].checkTermination(ctxt);
 	return ret;
     }
 
@@ -54,8 +50,8 @@ public class ProofApp extends App{
     }
 
     public void checkTermination(Context ctxt, Expr IH, int arg, Var[] vars) {
-	App e = spineForm(ctxt, false, true,
-			  false /* no need to expand defs */);
+	App e = (App)spineForm(ctxt, false, true,
+			       false /* no need to expand defs */);
 	int iend = e.X.length;
 	if (e.head == IH) {
 	    if (arg >= iend)

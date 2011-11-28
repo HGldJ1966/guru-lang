@@ -50,6 +50,10 @@ public class Size extends Expr {
 	return this;
     }
 
+    public int hashCode_h(Context ctxt) {
+	return t.hashCode_h(ctxt) + 11;
+    }
+
     public boolean defEqNoAnno(Context ctxt, Expr ee, boolean spec) {
 	ee = ee.defExpandTop(ctxt,true,spec);
 	if (ee.construct != construct) {
@@ -71,26 +75,32 @@ public class Size extends Expr {
 	if (nt != t)
 	    return new Size(nt);
 	if (t.construct == ABORT)
-	    return ctxt.abort;
+	    //return ctxt.abort;
+		return t;
 	
 	if (t.construct == FUN_TERM)
 	    return _const(ctxt,"Z");
-	if (t.construct == CONST)
-	    return new TermApp(_const(ctxt,"S"), _const(ctxt,"Z"));
+	if (t.construct == CONST) {
+	    Expr ret = new TermApp(_const(ctxt,"S"), _const(ctxt,"Z"));
+	    ret.pos = pos;
+	    return ret;
+	}
 	if (t.construct == TERM_APP) {
 	    TermApp a = (TermApp)((TermApp)t).spineForm(ctxt,true,true,true);
 	    Expr ret = _const(ctxt,"Z");
 	    Expr plus = _const(ctxt,"plus");
 	    for (int i = 0, iend = a.X.length; i < iend; i++)
 		ret = new TermApp(plus,ret,new Size(a.X[i]));
-	    return new TermApp(_const(ctxt,"S"), ret);
+	    ret = new TermApp(_const(ctxt,"S"), ret);
+	    ret.pos = pos;
+	    return ret;
 	}
 
 	// this could happen if t is a stuck term
 	return this;
     }
 
-    public void checkSpec(Context ctxt, boolean in_type){
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
 	handleError(ctxt, "A size-term is being" 
 		    + " used in a non-specificational location.\n"
 		    + "1. the size-term: " + toString(ctxt));

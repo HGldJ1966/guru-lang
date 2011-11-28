@@ -22,6 +22,10 @@ public class Const extends Expr implements Comparable {
 	return (this == e) ? 1 : 0;
     }
 
+    public int hashCode_h(Context ctxt) {
+	return name.hashCode();
+    }
+
     public Expr subst(Expr e, Expr x) {
 	return this;
     }
@@ -55,6 +59,14 @@ public class Const extends Expr implements Comparable {
 
 	    return n.defEqNoAnno(ctxt, e, spec);
 	}
+	if (e.construct == TYPE_APP) {
+	    // might beta reduce to this.
+	    
+	    Expr ep = ((App)e).spineForm(ctxt,false,spec,true);
+	    if (ep.construct == CONST)
+		return defEqNoAnno(ctxt,ep,spec);
+	}
+
 	Expr tmp = e.defExpandTop(ctxt,true,spec);
 	boolean ret = (this == tmp);
 	if (!ret)
@@ -104,7 +116,37 @@ public class Const extends Expr implements Comparable {
         return name.compareTo(((Const)o).name);
     }
 
-    public void checkSpec(Context ctxt, boolean in_type){
+    public void checkSpec(Context ctxt, boolean in_type, Position p) {
+	if (ctxt.isSpec(this) && !in_type) {
+	    handleError(ctxt, p, "Specificational constant used in" 
+			+ " non-specificational location.\n"
+                        + "\n1. the constant: " + toString(ctxt));
+	}
     }
 
+    public guru.carraway.Expr toCarrawayType(Context ctxt, boolean rttype) {
+	if (rttype) {
+	    guru.carraway.Sym s = ctxt.carraway_ctxt.lookup(name);
+	    if (s == null)
+		handleError(ctxt, "Internal error: Carraway declaration missing for \""+toString(ctxt)+"\".");
+	    return s;
+	}
+	// we are getting the resource type here
+
+	if (isTrackedType(ctxt)) {
+	    guru.carraway.Sym s = ctxt.carraway_ctxt.lookup("unowned");
+	    if (s == null)
+		handleError(ctxt, "Internal error: Carraway declaration missing for \"unowned\".\n\n");
+	    return s;
+	}
+	else 
+	    return new guru.carraway.Untracked();
+    }
+
+    public guru.carraway.Expr toCarraway(Context ctxt) {
+	guru.carraway.Sym s = ctxt.carraway_ctxt.lookup(name);
+	if (s == null)
+	    handleError(ctxt, "Internal error: Carraway declaration missing for \""+toString(ctxt)+"\".");
+	return s;
+    }
 }

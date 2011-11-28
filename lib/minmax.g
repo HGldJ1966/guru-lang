@@ -45,6 +45,8 @@ Define min_total : Forall(a b : nat).Exists(c:nat).{(min a b) = c} :=
 			end b join b b]	
 	end.
 
+Total min min_total.
+
 Define max_total : Forall(a b : nat).Exists(c:nat).{(max a b) = c} :=
 	induction(a : nat) by x1 x2 IH return Forall(b:nat).Exists(c:nat).{ (max a b) = c} with	
 	Z => foralli(b:nat).
@@ -68,6 +70,7 @@ Define max_total : Forall(a b : nat).Exists(c:nat).{(max a b) = c} :=
 			end b join b b]	
 	end.	
 	
+Total max max_total.
 
 Define min_le_lemma : Forall(a b:nat).{ (le (min a b) a) = tt } :=
 	induction(a:nat) by x1 x2 IH return Forall(b:nat).{ (le (min a b) a) = tt } with
@@ -281,7 +284,7 @@ Define max_easy : Forall(a b :nat).{(le a (max b a)) = tt} :=
 	
 	end.			
 			
-Define maxs_lemma : Forall(a b c:nat)(u:{(le a b) = tt}). { (le (max a c) (max b c)) = tt } :=
+Define max_mono1 : Forall(a b c:nat)(u:{(le a b) = tt}). { (le (max a c) (max b c)) = tt } :=
 	induction(a:nat) by x1 x2 IH return Forall (b c:nat)(u:{(le a b) = tt}). { (le (max a c) (max b c)) = tt } with
 	Z => induction(b:nat) by y1 y2 IH2 return Forall(c:nat)(u:{(le a b) = tt}). { (le (max a c) (max b c)) = tt } with
 		Z => foralli(c:nat)(u:{(le a b) = tt}).
@@ -339,7 +342,33 @@ Define maxs_lemma : Forall(a b c:nat)(u:{(le a b) = tt}). { (le (max a c) (max b
 	
 	end.
 	
-Define mins_lemma : Forall(a b c:nat)(u:{(le a b) = tt}). { (le (min a c) (min b c)) = tt } :=
+Define max_mono2 : Forall(a b c:nat)(u:{(le b c) = tt}). { (le (max a b) (max a c)) = tt } :=
+  foralli(a b c:nat)(u:{(le b c) = tt}). 
+    trans cong (le * (max a c)) [max_comm a b]
+    trans cong (le (max b a) *) [max_comm a c]
+          [max_mono1 b c a u].
+
+Define max_self : Forall(x:nat). { (max x x) = x } :=
+  induction(x:nat) return { (max x x) = x } with
+    Z => hypjoin (max x x) x by x_eq end
+  | S x' => hypjoin (max x x) x by x_eq [x_IH x'] end
+  end.
+
+Define max_bound : Forall(a b c:nat)(u1:{(le a c) = tt})(u2:{(le b c) = tt}). {(le (max a b) c) = tt} :=
+  foralli(a b c:nat)(u1:{(le a c) = tt})(u2:{(le b c) = tt}).
+    trans cong (le (max a b) *) symm [max_self c]
+          [le_trans (max a b) (max c b) (max c c)
+             [max_mono1 a c b u1]
+             [max_mono2 c b c u2]].
+
+Define max_bound2 : Forall(a b c:nat)(u1:{(le a b) = tt})(u2:{(le a c) = tt}). {(le a (max b c)) = tt} :=
+  foralli(a b c:nat)(u1:{(le a b) = tt})(u2:{(le a c) = tt}).
+    trans cong (le * (max b c)) symm [max_self a]
+          [le_trans (max a a) (max b a) (max b c)
+             [max_mono1 a b a u1]
+             [max_mono2 b a c u2]].
+
+Define min_mono1 : Forall(a b c:nat)(u:{(le a b) = tt}). { (le (min a c) (min b c)) = tt } :=
 	induction(a:nat) by x1 x2 IH return Forall (b c:nat)(u:{(le a b) = tt}). { (le (min a c) (min b c)) = tt } with
 	Z => foralli(b c:nat)(u:{(le a b) = tt}).
 		trans cong (le (min * c) (min b c)) x1
@@ -379,78 +408,36 @@ Define mins_lemma : Forall(a b c:nat)(u:{(le a b) = tt}). { (le (min a c) (min b
 	
 	end.	
 	
-Define le_min_lemma : Forall(a b c:nat)(u:{ (le a b) = tt })(v:{(le a c) = tt}).{ (le a (min b c)) =tt} :=
-	induction(a:nat) by x1 x2 IH return Forall(b c:nat)(u:{ (le a b) = tt })(v:{(le a c) = tt}).{ (le a (min b c)) =tt} with
-	Z => foralli(b c:nat)(u:{ (le a b) = tt })(v:{(le a c) = tt}).
-		trans cong (le * (min b c)) x1
-		existse [min_total b c] foralli(z:nat)(z':{(min b c) = z}).
-		trans cong (le Z *) z'
-		[Z_le z]
+Define min_mono2 : Forall(a b c:nat)(u:{(le b c) = tt}). { (le (min a b) (min a c)) = tt } :=
+  foralli(a b c:nat)(u:{(le b c) = tt}). 
+    trans cong (le * (min a c)) [min_comm a b]
+    trans cong (le (min b a) *) [min_comm a c]
+          [min_mono1 b c a u].
+
+Define min_self : Forall(x:nat). { (min x x) = x } :=
+  induction(x:nat) return { (min x x) = x } with
+    Z => hypjoin (min x x) x by x_eq end
+  | S x' => hypjoin (min x x) x by x_eq [x_IH x'] end
+  end.
+
+Define min_bound : Forall(a b c:nat)(u1:{(le a b) = tt})(u2:{(le a c) = tt}). {(le a (min b c)) = tt} :=
+  foralli(a b c:nat)(u1:{(le a b) = tt})(u2:{(le a c) = tt}).
+    trans cong (le * (min b c)) symm [min_self a]
+          [le_trans (min a a) (min b a) (min b c)
+             [min_mono1 a b a u1]
+             [min_mono2 b a c u2]].
+
+Define min_bound2 : Forall(a b c:nat)(u1:{(le a c) = tt})(u2:{(le b c) = tt}). {(le (min a b) c) = tt} :=
+  foralli(a b c:nat)(u1:{(le a c) = tt})(u2:{(le b c) = tt}).
+    trans cong (le (min a b) *) symm [min_self c]
+          [le_trans (min a b) (min c b) (min c c)
+             [min_mono1 a c b u1]
+             [min_mono2 c b c u2]].
+
+
+Define le_min_lemma : Forall(a b c:nat)(u:{ (le a b) = tt })(v:{(le a c) = tt}).{ (le a (min b c)) =tt} := min_bound.
 	
-	|S a' => induction(b:nat) by y1 y2 IH2 return Forall(c:nat)(u:{ (le a b) = tt })(v:{(le a c) = tt}).{ (le a (min b c)) =tt} with
-		Z=> foralli( c:nat)(u:{ (le a b) = tt })(v:{(le a c) = tt}).
-			contra trans symm u trans cong (le * b) x1 trans cong (le (S a') *) y1 trans join (le (S a') Z) ff clash ff tt
-				{ (le a (min b c)) =tt}
-		| S b'=> induction(c:nat) by z1 z2 IH3 return Forall(u:{ (le a b) = tt })(v:{(le a c) = tt}).{ (le a (min b c)) =tt} with
-			Z=> foralli(u:{ (le a b) = tt })(v:{(le a c) = tt}).
-				contra trans symm v trans cong (le * c) x1 trans cong (le (S a') *) z1 trans join (le (S a') Z) ff clash ff tt
-				{ (le a (min b c)) =tt}
-			| S c'=>  foralli(u:{ (le a b) = tt })(v:{(le a c) = tt}).
-				trans cong (le * (min b c)) x1
-				trans cong (le (S a') (min * c)) y1
-				trans cong (le (S a') (min (S b') *)) z1
-				trans join (le (S a') (min (S b') (S c'))) (le (S a') (S (min b' c')))
-				existse [min_total b' c'] foralli(q:nat)(q':{(min b' c') = q}).
-				trans cong (le (S a') (S *)) q'
-				trans join (le (S a') (S q)) (le a' q)
-				trans cong (le a' *) symm q'
-				[IH a' b' c' 
-				trans join  (le a' b') (le (S a') (S b')) trans cong (le * (S b')) symm x1 trans cong (le a *) symm y1 u 
-				trans join  (le a' c') (le (S a') (S c')) trans cong (le * (S c')) symm x1 trans cong (le a *) symm z1 v 
-				]
-			end
-		
-		end
-	end.
-	
-Define le_max_lemma : Forall(a b c:nat)(u:{ (le a c) = tt})(v:{(le b c) = tt}).{(le (max a b) c) = tt} :=
-	induction(a:nat) by x1 x2 IH return Forall(b c:nat)(u:{ (le a c) = tt})(v:{(le b c) = tt}).{(le (max a b) c) = tt} with
-	Z => foralli(b c:nat)(u:{ (le a c) = tt})(v:{(le b c) = tt}).
-		trans cong (le (max * b) c) x1
-		trans join (le (max Z b) c) (le b c)
-		v
-	| S a' =>foralli(b c:nat)(u:{ (le a c) = tt})(v:{(le b c) = tt}).
-		[induction(d:nat) by y1 y2 IH2 return Forall(q:{d=b}).{(le (max a d) c) = tt} with
-			Z=> foralli(q:{d=b}).
-				trans cong (le (max a *) c) y1
-				trans cong (le * c) [max_comm a Z]
-				trans cong (le * c) join (max Z a) a
-				u
-			| S d' => foralli(q:{d=b}).
-				[induction(e:nat) by z1 z2 IH3 return Forall(r:{e=c}).{(le (max a d) c) = tt} with
-					Z=> foralli(r:{e=c}).
-						contra trans symm u trans cong (le a *) trans symm r z1 trans cong (le * Z) x1
-						trans join (le (S a') Z) ff clash ff tt 
-							{(le (max a d) c) = tt}
-					|S e' =>foralli(r:{e=c}).
-						existse [max_total a' d'] foralli(f:nat)(f':{(max a' d') = f}).
-						trans cong (le (max a *) c) q
-						trans cong (le (max * b) c) x1
-						trans cong (le (max (S a') *) c) trans symm q y1
-						trans join (le (max (S a') (S d')) c) (le (S (max a' d')) c)
-						trans cong (le (S *) c) f'
-						trans cong (le (S f) *) trans symm r z1
-						trans join (le (S f) (S e')) (le f e')
-						trans cong (le * e') symm f'
-						[IH a' d' e'
-							symm trans symm u trans cong (le * c) x1 trans cong (le (S a') *) trans symm r z1
-								 join (le (S a') (S e')) (le a' e')
-							symm trans symm v trans cong (le * c) trans symm q y1 trans cong (le (S d') *) trans symm r z1
-								join (le (S d') (S e')) (le d' e')
-						]
-				end c join c c]
-		end b join b b]
-	end.
+Define le_max_lemma : Forall(a b c:nat)(u:{ (le a c) = tt})(v:{(le b c) = tt}).{(le (max a b) c) = tt} := max_bound.
 
 Define min_plus : Forall(x y z:nat).
                   { (min (plus x y) (plus x z)) = (plus x (min y z))} :=

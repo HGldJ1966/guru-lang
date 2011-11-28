@@ -22,6 +22,10 @@ public class Abort extends Expr{
 	return this;
     }
 
+    public int hashCode_h(Context ctxt) {
+	return 17;
+    }
+
     public void do_print(java.io.PrintStream w, 
 		      Context ctxt) {
 	w.print("abort ");
@@ -41,8 +45,11 @@ public class Abort extends Expr{
     }
 
     public Expr dropAnnos(Context ctxt) {
-	if (T.construct != BANG)
-	    return new Abort(new Bang());
+	if (T.construct != BANG) {
+		Expr ret = new Abort(new Bang());
+		ret.pos = pos;
+	    return ret;
+	}
 	return this;
     }
 
@@ -89,8 +96,13 @@ public class Abort extends Expr{
         return T.getDependences();
     }
 
-    public void checkSpec(Context ctxt, boolean in_type){
+    public void checkSpec(Context ctxt, boolean in_type, Position p){
+    }
 
+    public guru.carraway.Expr toCarraway(Context ctxt) {
+	guru.carraway.Expr e = new guru.carraway.Abort();
+	e.pos = pos;
+	return e;
     }
 }
 

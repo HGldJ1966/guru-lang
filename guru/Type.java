@@ -36,5 +36,12 @@ public class Type extends Expr{
     public void getFreeVarsComputational(Context ctxt,
 					 java.util.Collection vars) { }
 
-    public void checkSpec(Context ctxt, boolean in_type) { }
+    public void checkSpec(Context ctxt, boolean in_type, Position p) { }
+
+    public guru.carraway.Expr toCarrawayType(Context ctxt, boolean dtype) {
+	if (dtype)
+	    return new guru.carraway.Untracked();
+	else
+	    return new guru.carraway.Type();
+    }
 }
