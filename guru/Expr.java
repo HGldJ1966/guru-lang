@@ -1,7 +1,9 @@
 package guru;
 
-import java.util.*;
-import java.io.*;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.Stack;
+import java.util.TreeSet;
 
 public abstract class Expr {
 

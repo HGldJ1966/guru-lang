@@ -191,22 +191,13 @@ public class Match extends CasesExpr{
     		if (isConstructorTerm)
     			isConstructorTerm &= baseCtxt.isTermCtor( (Const)((TermApp)t_).head ); 
     	
-    		if (isConstructorTerm) {
-    			if (((TermApp)t_).head != c.c)
-    				continue;
-    		}
-    		else if (t_.construct == CONST) {
-    			if (t_ != c.c)
-    				continue;
-    		}
-    			
     		// Prepend immediate deductions onto case body deductions -----
 	    	if (c.x.length == 0) {
-	    		
+	    	
 	    		if (!UnjoinBase.plausible(t_, c.c, uctxt, baseCtxt,true))
 	    			continue;
 	    		
-    			Atom matchEq = new Atom(true, t_, c.c);
+    			Expr matchEq = (new Atom(true, t_, c.c)).dropAnnos(baseCtxt);
     			Var matchEqVar = new Var("p" + uctxt.proofCounter);
 	    		
 	    		if (t_.construct != CONST)
@@ -232,6 +223,9 @@ public class Match extends CasesExpr{
 	    	} 
 	    	else {
 
+	    		if (!UnjoinBase.plausible(t_, new TermApp(c.c,c.x), uctxt, baseCtxt,true))
+	    			continue;
+	    		
 	    		Expr body = c.body;
 	    		
 	    		// Create argument variables -----
@@ -249,28 +243,46 @@ public class Match extends CasesExpr{
 		        	);
 	        	}
 	        	else {
-		    		FunType consType = (FunType)c.c.classify(baseCtxt).defExpandTop(baseCtxt);
-	        	 	
-		    		Var[] clones = new Var[consType.vars.length];
-		    		Var[] nonSpecificationalClones = new Var[c.x.length];
+		    		FunType consType = (FunType)c.c.classify(baseCtxt);//.defExpandTop(baseCtxt);
+		    		Expr scrutType = t_.classify(baseCtxt);
+		    		
+		    		assert(consType.vars.length == c.x.length);
+		    		
+		    		Expr[] clones = new Expr[consType.vars.length];
+		    		boolean[] isConcrete = new boolean[consType.vars.length];
 		    		Expr[] types = new Expr[consType.vars.length];
 		    		int last = consType.vars.length-1;
 		    		
 		    		//index into non-specificational args
 		    		int uInd = 0;
 		    		
+		        	HashMap varMap = new HashMap();
+		    		UnjoinBase.InferVars(varMap, consType.body, scrutType);
+		    		
 		        	for(int j = 0; j < clones.length; ++j)
-		        	{
-		        		String name;
-		        		if (t_.construct == VAR)
-		        			name = ((Var)t_).name + j;
+		        	{		        		
+		        		if (varMap.containsKey(consType.vars[0]))
+		        		{
+		        			clones[j] = (Expr)varMap.get(consType.vars[0]);
+		        			types[j] = clones[j].classify(baseCtxt);
+		        			isConcrete[j] = true;
+		        		}
 		        		else
-		        			name = "c" + j;
+		        		{
+			        		String name;
+			        		if (t_.construct == VAR)
+			        			name = ((Var)t_).name + j;
+			        		else
+			        			name = "c" + j;
+			        		
+		        			clones[j] = new Var(name);
+		        			types[j] = consType.types[0];
+		        			isConcrete[j] = false;
+		        		}
 		        		
-		        		clones[j] = new Var(name);
-		        		types[j] = consType.types[0];
-		        		baseCtxt.setClassifier(clones[j], types[j]);
+		        		baseCtxt.setClassifier((Var)clones[j], types[j]);
 		        		
+		        		/*
 		        		int spec = (consType.owned[0].status & Ownership.SPEC);
 		        		
 		        		if (!(clones[j].isTypeOrKind(baseCtxt) || 
@@ -281,23 +293,31 @@ public class Match extends CasesExpr{
 		        			body = body.subst(clones[j], c.x[uInd]);
 		        			uInd++;
 		        		}
-		        		
+		        		*/
+
 		        		// Instantiating the last argument would result in the
 		        		// return type, which may not be a function type.
+		        		// we're doing something similar in lemma set, 
+		        		// should we factor this out?
 		        		if (j != last)
 		        			consType = (FunType)consType.instantiate(clones[j]);	        		
 		        	}
 		        	
+		        	Expr consTypeResult = consType.instantiate(clones[clones.length-1]);
+
+		        	for (int j = clones.length-1; j >= 0; --j)
+		        		body = body.subst(clones[j], c.x[j]);
 		        	
-		        	Atom matchEq = new Atom(
+		        	Expr matchEq = new Atom(
 		        		true, 
 		        		t_, 
-		        		new TermApp(c.c,nonSpecificationalClones)
-		        	);
+		        		new TermApp(c.c,clones)
+		        	).dropAnnos(baseCtxt);
 		        	
 		        	Var matchEqVar = new Var("p" + uctxt.proofCounter);
 		        	baseCtxt.setClassifier(matchEqVar, matchEq);
 		        	
+
 		        	uctxt.proofCounter++;
 		        	uctxt.lemmaSet.addLemma(matchEq);
 		        	
@@ -313,10 +333,13 @@ public class Match extends CasesExpr{
 		    		uctxt.lemmaSet.removeLemma(matchEq);
 		        	
 		    		//prepend immediate deductions to case body deductions
-		        	branch = new UnjoinIntro(matchEqVar, matchEq, branch);
+		        	branch = new UnjoinIntro(matchEqVar, matchEq.dropAnnos(baseCtxt), branch);
 		    		
-		        	for (int j = types.length-1; j >= 0; --j)
-		        		branch = new UnjoinIntro(clones[j], types[j], branch);
+		        	for (int j = clones.length-1; j >= 0; --j)
+		        	{
+		        		if (!isConcrete[j])	
+		        			branch = new UnjoinIntro((Var)clones[j], types[j], branch);
+		        	}
 	        	}
 	    	}
 	    	

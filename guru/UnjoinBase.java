@@ -4,6 +4,9 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.Stack;
 import java.util.Vector;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.HashMap;
 
 public abstract class UnjoinBase extends Expr {
 
@@ -34,14 +37,415 @@ public abstract class UnjoinBase extends Expr {
 	class VarValue
 	{
 		public final Var var;
-		public final Expr classifier;
+		public final Expr value;
 	
-		public VarValue(Var var, Expr classifier)
+		public VarValue(Var var, Expr value)
 		{
 			this.var = var;
-			this.classifier = classifier;
+			this.value = value;
 		}
 	}
+	
+	// Not sure how robust this is... might have to revisit it.
+	static public void InferVars(HashMap varMap, Expr abstr, Expr concrete)
+	{
+		switch (abstr.construct)
+		{
+		case TYPE_APP:
+			assert(concrete.construct == TYPE_APP);
+			TypeApp taAbstr = (TypeApp)abstr;
+			TypeApp taConcrete = (TypeApp)concrete;
+			assert(taAbstr.X.length == taConcrete.X.length);
+			
+			for (int i = 0; i < taAbstr.X.length; ++i)
+				InferVars(varMap, taAbstr.X[i], taConcrete.X[i]);
+			
+			break;
+		case TERM_APP:
+			assert(concrete.construct == TERM_APP);
+			TermApp termAppAbstr = (TermApp)abstr;
+			TermApp termAppConcrete = (TermApp)concrete;
+			
+			assert(termAppAbstr.X.length == termAppConcrete.X.length);
+			assert(termAppAbstr.head == termAppConcrete.head);
+			
+			for (int i = 0; i < termAppAbstr.X.length; ++i)
+				InferVars(varMap, termAppAbstr.X[i], termAppConcrete.X[i]);
+			
+			break;
+		case VAR:
+			if (abstr != concrete)
+				varMap.put(abstr, concrete);
+			break;
+		case CONST:
+			break;
+		case FUN_TYPE:
+			assert(concrete.construct == FUN_TYPE);
+			FunType ftAbstr = (FunType)abstr;
+			FunType ftConcrete = (FunType)concrete;
+			
+			assert(ftAbstr.vars.length == ftConcrete.vars.length);
+			
+			for(int i = 0; i < ftAbstr.vars.length; ++i)
+			{
+				InferVars(varMap, ftAbstr.vars[0], ftConcrete.vars[0]);
+				
+				if (i != (ftAbstr.vars.length-1))
+				{
+					//maybe I should instantiate these with null instead.
+					//this is closely coupled with the case for Var.
+					ftAbstr = (FunType)ftAbstr.instantiate(ftConcrete.vars[0]);
+					ftConcrete = (FunType)ftConcrete.instantiate(ftConcrete.vars[0]);
+				}
+			}
+			
+			Expr instAbstr = ftAbstr.instantiate(ftConcrete.vars[0]);
+			Expr instConcrete = ftConcrete.instantiate(ftConcrete.vars[0]);
+			
+			InferVars(varMap, instAbstr,instConcrete);
+			
+			break;
+		default:
+			// I think you are allowed to have any terms in type apps,
+			// but I have only seen those listed above.
+			assert(false);
+		}
+	}
+	
+	public Expr InferType(Expr t, Context ctxt)
+	{
+		switch (t.construct)
+		{
+		case Expr.TERM_APP:
+			Expr annotatedApp = RebuildAnnotations((TermApp)t, ctxt);
+			return annotatedApp.classify(ctxt);
+		case Expr.VAR:
+			return ctxt.getClassifier((Var)t);
+		case Expr.CONST:
+			return ctxt.getClassifier((Const)t);
+		default:
+			// A precondition for this function is that t is a term
+			// containing only the above constructs.
+			assert(false);
+			return null;
+		}
+	}
+	
+	public static Expr RebuildAnnotations(
+			Expr uTerm,
+			Context ctxt
+		)
+	{
+		HashMap varMap = new HashMap();
+		Expr rebuilt = RebuildAnnotationsAux(varMap, uTerm, ctxt);
+		rebuilt = substitute(varMap, rebuilt);
+		return rebuilt;
+	}
+	
+	public static Expr RebuildAnnotationsAux(HashMap varMap, Expr uTerm, Context ctxt)
+	{
+		if (uTerm.construct == TERM_APP) {
+			TermApp ta = (TermApp)uTerm;
+			
+			FunType ty = (FunType)ta.head.classify(ctxt);
+			
+			return RebuildAnnotationsTargetedAux(varMap, uTerm, ty.body, ctxt);			
+		}
+		else if (uTerm.construct == CONST) {
+			Const c = (Const)uTerm;
+			
+			if(!ctxt.isCtor(c))
+				return c;
+			
+			Expr termTy = c.classify(ctxt); 
+			if(termTy.construct != Expr.FUN_TYPE)
+				return c;
+			
+			FunType ty = (FunType)termTy;
+			return RebuildAnnotationsTargetedAux(varMap, uTerm, ty.body, ctxt);
+		}
+		else if (uTerm.construct == VAR) {
+			return uTerm;
+		}
+		else {
+			// A precondition to this function is that the term
+			// consists solely of TermApps, Consts, and Vars
+			assert(false);
+			return null;
+		}
+	}
+	
+	public static Expr substitute(HashMap subs, Expr target)
+	{
+		if (target.construct == TERM_APP) {
+			TermApp ta = (TermApp)target;
+			
+			Expr[] X = new Expr[ta.X.length];
+			for (int i = 0; i < ta.X.length; ++i)
+				X[i] = substitute(subs, ta.X[i]);
+			
+			return new TermApp(ta.head, X);
+		}
+		else if (target.construct == CONST) {
+			return target;
+		}
+		else if (target.construct == VAR) {
+			Expr sub = (Expr)subs.get(target);
+			return (sub != null) ? sub : target;
+		}
+		else {
+			// A precondition to this function is that the term
+			// consists solely of TermApps, Consts, and Vars
+			assert(false);
+			return null;
+		}			
+	}
+	
+	public static Expr RebuildAnnotationsTargeted(
+		Expr uTerm,
+		Expr targetTy,
+		Context ctxt
+	)
+	{
+		HashMap varMap = new HashMap();
+		Expr rebuilt = RebuildAnnotationsTargetedAux(varMap, uTerm, targetTy, ctxt);
+		rebuilt = substitute(varMap, rebuilt);
+		return rebuilt;
+	}
+	
+	//
+	//
+	public static Expr RebuildAnnotationsTargetedAux(
+		HashMap varMap, 
+		Expr uTerm, 
+		Expr targetTy,
+		Context ctxt
+	)
+	{
+		if (uTerm.construct == TERM_APP) {
+			TermApp ta = (TermApp)uTerm;
+			
+			// TODO: One more case I really think this strategy is going to work...
+			// keep at it!
+			//
+			FunType ftHead = (FunType)ta.head.classify(ctxt);
+			
+			HashMap subs = new HashMap();
+			InferVars(subs, ftHead.body, targetTy);
+			
+			FunType ftHead2 = ftHead;
+			
+			Var[] vars2 = new Var[ftHead.vars.length];
+			for (int i = 0; i < vars2.length; ++i)
+			{
+				Expr sub = (Expr)subs.get(ftHead2.vars[i]);
+				
+				//TODO: the var classifiers aren't going to match the types.
+				//but does it matter? They should match (look at VarListExp.subst)
+				if (sub != null)
+					ftHead2 = (FunType)ftHead2.subst(sub, ftHead.vars[i]);
+			}
+			
+			Expr[] X = new Expr[ftHead2.vars.length];
+			int uInd = 0;
+			for(int i = 0; i < ftHead2.vars.length; ++i)
+			{
+				boolean spec;
+				spec = ftHead2.owned[i].status == Ownership.SPEC;
+				
+	    		if (!(ftHead2.vars[i].isTypeOrKind(ctxt) || 
+	    			  ftHead2.vars[i].isProof(ctxt) ||
+	        		  spec) ) {
+	    		
+	    			X[i] = RebuildAnnotationsTargetedAux(
+	    				varMap, 
+	    				ta.X[uInd], 
+	    				ftHead2.types[i], 
+	    				ctxt
+	    			);
+	    			
+	    			uInd++;
+	    		}
+	    		else
+	    		{
+	    			X[i] = ftHead2.vars[i];
+	    		}
+			}
+			
+			return new TermApp(ta.head, X);		
+		}
+		else if (uTerm.construct == CONST) {
+			Const c = (Const)uTerm;
+			
+			if(!ctxt.isCtor(c))
+			{
+				InferVars(varMap, targetTy, c.classify(ctxt));
+				return c;
+			}
+			
+			Expr headTy = c.classify(ctxt); 
+			if(headTy.construct != Expr.FUN_TYPE)
+			{
+				InferVars(varMap, targetTy, c.classify(ctxt));
+				return c;
+			}
+			
+			FunType ft = (FunType)headTy;
+			HashMap subs = new HashMap();
+			InferVars(subs, ft.body, targetTy);
+			
+			Var[] vars = new Var[ft.vars.length];
+			
+			// Inherited specificational vars are used rather than those from
+			// the constructor type so that we keep track of as few vars as possible.
+			for (int i = 0; i < ft.vars.length; ++i)
+			{
+				vars[i] = (Var)subs.get(ft.vars[i]);
+				assert(vars[i] != null);
+			}
+			
+			return new TermApp(c, vars);
+		}
+		else if (uTerm.construct == VAR) {
+			Expr varTy = uTerm.classify(ctxt);
+			InferVars(varMap, varTy, targetTy);
+			return uTerm;
+		}
+		else {
+			// A precondition to this function is that the term
+			// consists solely of TermApps, Consts, and Vars
+			assert(false);
+			return null;
+		}		
+	}
+	
+	/*
+	public Expr RebuildAnnotations(HashMap varMap, Expr uTerm, Context ctxt)
+	{
+		if (uTerm.construct == FUN_TERM) {
+			TermApp uApp = (TermApp)uTerm;
+			FunType ft = (FunType)uApp.head.classify(ctxt);
+			
+			Expr[] X = uApp.X;
+			int uInd = 0;
+			
+			Vector values = new Vector();
+			
+			for (int i = 0; i < ft.vars.length; ++i) {
+				boolean spec = (ft.owned[i].status & (1<<Ownership.SPEC)) != 0;
+				
+	    		if (!(ft.vars[i].isTypeOrKind(ctxt) || 
+	      			  ft.vars[i].isProof(ctxt) ||
+	      			  spec) ) {
+	      			
+	    			
+	    			assert(uApp.X[uInd].construct == TERM_APP ||
+	    					uApp.X[uInd].construct == VAR ||
+	    					uApp.X[uInd].construct == CONST);
+
+	    			// Rebuilding to the best of our abilities at this point
+	    			// may leave out items which are deduced from other
+	    			// arguments, but it is done for the purpose of extracting all
+	    			// of the useful data we need. A full rebuild happens later.
+	      			Expr rebuiltArg;
+	      			if (uApp.X[uInd].construct == TERM_APP)
+	      				rebuiltArg = RebuildAnnotations(varMap, (TermApp)uApp.X[uInd], ctxt);
+	      			else
+	      				rebuiltArg = uApp.X[uInd];
+	      			
+	      			varMap.put(ft.vars[i], rebuiltArg);
+	      			InferVars(varMap, ft.types[i], rebuiltArg.classify(ctxt));
+	      			
+	      			uInd++;
+	      		}
+			}
+			
+			Expr[] retArgs = new Expr[ft.vars.length];
+			
+			for(int i = 0; i < retArgs.length; ++i) {
+				retArgs[i] = RebuildAnnotations(
+					varMap,
+					(Expr)varMap.get(ft.vars[i]),
+					ctxt
+				);
+			}
+			
+			return new TermApp(uApp.head, retArgs);			
+		}
+		else if (uTerm.construct == CONST)
+		{
+			Expr termTy = uTerm.classify(ctxt); 
+			if(termTy.construct != Expr.FUN_TYPE)
+				return uTerm;
+			
+			UnjoinBase.InferVars(varMap, ((FunType)termTy).body, targetTy);
+			
+			FunType ftTermTy = (FunType)termTy;
+			
+			retArgs = new Expr[ftTermTy.vars.length];
+			
+			for(int i = 0; i < retArgs.length; ++i) {
+				retArgs[i] = (Expr)varMap.get(ftTermTy.vars[i]);
+				assert(retArgs[i] != null);
+			}
+			
+			return new TermApp(uterm, retArgs);			
+		}
+		else if (uTerm.construct == VAR)
+		{
+			
+		}
+		else
+		{
+			assert(false);
+			return null;
+		}
+	}
+	
+	public static Expr RebuildAnnotations(TermApp uApp, Expr targetTy, Context ctxt)
+	{
+		FunType ft = (FunType)uApp.head.classify(ctxt);
+		
+		Expr[] X = uApp.X;
+		int uInd = 0;
+		
+		Vector values = new Vector();
+		HashMap varMap = new HashMap();
+		
+		for (int i = 0; i < ft.vars.length; ++i) {
+			boolean spec = (ft.owned[i].status & (1<<Ownership.SPEC)) != 0;
+			
+    		if (!(ft.vars[i].isTypeOrKind(ctxt) || 
+      			  ft.vars[i].isProof(ctxt) ||
+      			  spec) ) {
+      			
+    			
+    			assert(uApp.X[uInd].construct == TERM_APP ||
+    					uApp.X[uInd].construct == VAR ||
+    					uApp.X[uInd].construct == CONST);
+
+      			Expr rebuiltArg;
+      			if (uApp.X[uInd].construct == TERM_APP)
+      				rebuiltArg = RebuildAnnotations((TermApp)uApp.X[uInd], ctxt);
+      			else
+      				rebuiltArg = uApp.X[uInd];
+      			
+      			varMap.put(ft.vars[i], rebuiltArg);
+      			InferVars(varMap, ft.types[i], rebuiltArg.classify(ctxt));
+      			
+      			uInd++;
+      		}
+		}
+		
+		Expr[] retArgs = new Expr[ft.vars.length];
+		
+		for(int i = 0; i < retArgs.length; ++i) {
+			retArgs[i] = (Expr)varMap.get(ft.vars[i]);
+		}
+		
+		return new TermApp(uApp.head, retArgs);
+	}
+	*/
 	
 	public static boolean plausible(
 		Expr term,
@@ -93,7 +497,7 @@ public abstract class UnjoinBase extends Expr {
 	    		if (taTerm.head.eval(baseCtxt).construct != Expr.FUN_TERM)
 	    			return true; // maybe it could be a variable
 	    		
-	    		FunTerm inst = (FunTerm)taTerm.head.eval(baseCtxt);
+	    		FunTerm inst = (FunTerm)taTerm.head.defExpandTop(baseCtxt,false,true);
 	   
 	    		Var oldRec = uCtxt.recVar;
 	    		uCtxt.recVar = inst.r;
@@ -171,7 +575,7 @@ public abstract class UnjoinBase extends Expr {
     				if (!scrutPlausible)
     					continue;
         				
-		        	Atom matchEq = new Atom(true, t_, c.c);
+		        	Expr matchEq = (new Atom(true, t_, c.c)).dropAnnos(baseCtxt);
 		        	Var matchEqVar = new Var("p");
 		        	
 		    		if (t_.construct != Expr.CONST)	
@@ -203,7 +607,9 @@ public abstract class UnjoinBase extends Expr {
     				
     				if (!scrutPlausible)
     					continue;
-        				
+        			
+    				
+    				
 		        	if (isScrutConstructor)
 		        	{
 		        		TermApp ta = (TermApp)t_;
@@ -225,7 +631,26 @@ public abstract class UnjoinBase extends Expr {
 		        		//
 		        		Expr substitutedBody = c.body;;
 		        		
+		        		Expr scrutClassifier = t_.classify(baseCtxt);
 			    		FunType consType = (FunType)c.c.classify(baseCtxt).defExpandTop(baseCtxt);
+			    		
+			    		HashMap varMap = new HashMap();
+			    		//TODO: I can't remember why I did this. Is this necessary
+			    		//for plausibility?
+			    		InferVars(varMap, consType.body, scrutClassifier);
+			    		
+			    		for (int j = 0; j < consType.vars.length; ++j)
+			    		{
+			    			Expr sub = (Expr)varMap.get(consType.vars[j]);
+			    			if (sub != null)
+			    			{
+			    				Var newVar = new Var(c.x[j].name);
+			    				baseCtxt.setClassifier(newVar, sub);
+			    				
+			    				substitutedBody = substitutedBody.subst(newVar, c.x[j]);
+			    			}
+			    		}
+			    		
 			    		Var[] clones = new Var[consType.vars.length];
 			    		Var[] nonSpecificationalClones = new Var[c.x.length];
 			    		Expr[] types = new Expr[consType.vars.length];
@@ -241,11 +666,11 @@ public abstract class UnjoinBase extends Expr {
 			        		types[j] = consType.types[0];
 			        		baseCtxt.setClassifier(clones[j], types[j]);
 			        		
-			        		int spec = (consType.owned[0].status & Ownership.SPEC);
+			        		boolean spec = (consType.owned[0].status == Ownership.SPEC);
 			        		
 			        		if (!(clones[j].isTypeOrKind(baseCtxt) || 
 			        			  clones[j].isProof(baseCtxt) ||
-			        			  spec != 0) ) {
+			        			  spec) ) {
 			        			
 			        			nonSpecificationalClones[uInd] = clones[j];
 			        			substitutedBody = substitutedBody.subst(clones[j], c.x[uInd]);
@@ -257,12 +682,12 @@ public abstract class UnjoinBase extends Expr {
 			        		if (j != last)
 			        			consType = (FunType)consType.instantiate(clones[j]);	        		
 			        	}
-			        	
-			        	Atom matchEq = new Atom(
+			        
+			        	Expr matchEq = new Atom(
 			        		true, 
 			        		t_, 
-			        		new TermApp(c.c,nonSpecificationalClones)
-			        	);
+			        		new TermApp(c.c,clones)
+			        	).dropAnnos(baseCtxt);
 			        			    
 			        	uCtxt.lemmaSet.addLemma(matchEq);
 			        	
@@ -582,6 +1007,41 @@ public abstract class UnjoinBase extends Expr {
 			return null;
 		case Expr.ABORT:
 			return null;
+		case Expr.ABBREV:
+			Abbrev a = (Abbrev)e;
+			lift = liftSingleMatch(a.U);
+			
+			if (lift != null) {
+				return new LiftedMatch(
+					lift.scrut,
+					lift.hole,
+					lift.cases,
+					new Abbrev(
+						a.flags,
+						a.x,
+						lift.context,
+						a.G
+					)
+				);
+			}
+			
+			lift = liftSingleMatch(a.U);
+			
+			if (lift != null) {
+				return new LiftedMatch(
+					lift.scrut,
+					lift.hole,
+					lift.cases,
+					new Abbrev(
+						a.flags,
+						a.x,
+						a.U,
+						lift.context
+					)
+				);
+			}
+			
+			return null;
 		default:
 			assert(false);
 			return null;
@@ -620,6 +1080,9 @@ public abstract class UnjoinBase extends Expr {
 			return matchFree(let.t1) && matchFree(let.t2);
 		case Expr.ABORT:
 			return true;
+		case Expr.ABBREV:
+			Abbrev a = (Abbrev)e;
+			return matchFree(a.G) && matchFree(a.U); 
 		default:
 			assert(false);
 			return false;
@@ -715,7 +1178,10 @@ public abstract class UnjoinBase extends Expr {
 		if (lhs.construct != TERM_APP)
 			return lhs;
 		
-		Expr lhs2 = lhs;
+		//TODO: generate an error if lhs has anything other than
+		//term apps, variables, and constants.
+		
+		Expr lhs2 = RebuildAnnotations((TermApp)lhs, ctxt);
 		
 		while (true) {
 			//System.out.println("a.");
@@ -741,17 +1207,17 @@ public abstract class UnjoinBase extends Expr {
 		    	// The pre-instantiated value of the head.
 	    		Const c = (Const)ta.head;
 	    		
-	    		// A variable used to instantiate the head
-	    		Expr ev = c.eval(ctxt);
+	    		// Def expand the head without dropping annotations.
+	    		Expr ev = c.defExpandTop(ctxt, false, true);
 	    		
 	    		if (ev.construct != FUN_TERM)
 	    		{
 		    		handleError(ctxt,
-							"The left hand side of an unjoin scrutinee " +
-							"evaluates to a term app whose head is not a function.\n" +
-							"1. lhs:" + lhs.toString(ctxt) + "\n" +
-							"2. evaluated lhs: " + ev.toString(ctxt) + "\n"
-			    		);
+						"The left hand side of an unjoin scrutinee " +
+						"evaluates to a term app whose head is not a function.\n" +
+						"1. lhs:" + lhs.toString(ctxt) + "\n" +
+						"2. evaluated head: " + ev.toString(ctxt) + "\n"
+			    	);
 	    		}
 	    		
 	    		FunTerm inst = (FunTerm)ev;
