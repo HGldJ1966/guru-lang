@@ -4,11 +4,48 @@ Include "../lib/bool.g"
 Include "../lib/minus.g"
 Include "../lib/vec.g"
 Include "../lib/minmax.g"
-
+Include "../../versat/src/lib_includes.g"
+Include "../../versat/src/cnf-lemma.g"
   
+Define matchLet :=
+  fun(x : nat)(y : bool).
+  match x with
+  | Z =>
+    tt
+  | S n' =>
+    let z = (and y tt) in
+    z
+  end.
+
+Define matchLetProof
+  : Forall(x : nat)(y: bool)(u1 : { (matchLet x y) = tt })
+          (x' : nat)(u2 : { x = (S x')}). { y = tt }
+:=
+  foralli(x : nat)(y: bool)(u1 : { (matchLet x y) = tt })
+         (x' : nat)(u2 : { x = (S x')}).
+  lemma u2 in
+  unjoin u1 with
+  | foralli(p0 : { (and y tt) = tt }).
+    unjoin p0 with
+    | foralli(u : {y = tt}).
+      u
+    end
+  end.
+
 Inductive list2 : Fun(A:type).type :=
   | nil2 : Fun(A:type).<list2 A>
   | cons2 : Fun(A:type)(a:A)(l:<list2 A>). <list2 A>.
+
+Define length_eq_Z2
+  : Forall(A:type)(l:<list A>)
+          (u:{ (length l) = Z}).
+     { l = nil } :=
+  foralli(A:type)(l:<list A>)
+         (u:{ (length l) = Z}).
+  unjoin u with
+  | foralli(p0 : { l = nil }).
+    p0
+  end.
 
 Define matchArgs :=
   fun(x : nat)(y : nat).
@@ -60,39 +97,148 @@ Define list_setmember2
 
 
 
+
+Define eqlistEq2 : Forall(A:type)
+                        (l1 l2:<list A>)
+                        (eqA:Fun(x1 x2:A).bool)
+                        (eqA_total:Forall(x1 x2:A).Exists(o:bool).{ (eqA x1 x2) = o })
+                        (eqA_eq:Forall(x1 x2:A)(u:{ (eqA x1 x2) = tt }).{ x1 = x2 })
+                        (u:{ (eqlist eqA l1 l2) = tt }). { l1 = l2 } := 
+
+  foralli(A:type).
+  induction(l1:<list A>) by l1_eq l1_Eq IHl1 
+    return Forall(l2:<list A>)
+                 (eqA:Fun(x1 x2:A).bool)
+                 (eqA_total:Forall(x1 x2:A).Exists(o:bool).{ (eqA x1 x2) = o })
+                 (eqA_eq:Forall(x1 x2:A)(u:{ (eqA x1 x2) = tt }).{ x1 = x2 })
+                 (u:{ (eqlist eqA l1 l2) = tt }).
+                 { l1 = l2 } 
+  with
+  | nil _ =>
+    foralli(l2 : <list A>)(eqA:Fun(x1 x2:A).bool)
+            (eqA_total:Forall(x1 x2:A).Exists(o:bool).{ (eqA x1 x2) = o })
+            (eqA_eq:Forall(x1 x2:A)(u:{ (eqA x1 x2) = tt }).{ x1 = x2 })
+            (u:{ (eqlist eqA l1 l2) = tt }).
+
+    lemma l1_eq in
+    unjoin u with
+    | foralli(p0 : { l2 = nil }).
+      hypjoin l1 l2 by l1_eq p0 end
+    end
+  | cons _ h1 t1 =>
+    foralli(l2 : <list A>)(eqA:Fun(x1 x2:A).bool)
+            (eqA_total:Forall(x1 x2:A).Exists(o:bool).{ (eqA x1 x2) = o })
+            (eqA_eq:Forall(x1 x2:A)(u:{ (eqA x1 x2) = tt }).{ x1 = x2 })
+            (u:{ (eqlist eqA l1 l2) = tt }).
+    lemma l1_eq in
+    unjoin u with
+    | foralli(l21 : A)(l22 : <list A>)
+             (p0 : { l2 = (cons l21 l22) })
+             (u : { (and (eqA h1 l21) (eqlist eqA t1 l22)) = tt }).
+      lemma
+        : { (eqlist eqA t1 l22) = tt }
+          [and_eq_tt2 
+            terminates (eqA h1 l21) by eqA_total
+            terminates (eqlist A eqA t1 l22) by [eqlist_total A eqA eqA_total t1 l22]
+            u
+          ]
+
+        : { (eqA h1 l21) = tt }
+          [and_eq_tt1 
+            terminates (eqA h1 l21) by eqA_total 
+            terminates (eqlist A eqA t1 l22) by [eqlist_total A eqA eqA_total t1 l22] 
+            u
+          ]        
+      in 
+      hypjoin l1 l2 by
+        : { h1 = l21 } [eqA_eq h1 l21 ##]
+        : { t1 = l22 } [IHl1 t1 l22 eqA eqA_total eqA_eq ##]
+        : { l2 = (cons l21 l22) } p0
+        : { l1 = (cons h1 t1) } l1_eq
+      end
+    end
+  end.
+
+
 Define nth_append2 : Forall(A:type)(n:nat)(l:<list A>)(a:A)
                           (u:{(nth n l) = a}).
                        Exists(l1 l2:<list A>).
                          { l = (append l1 (cons a l2)) } :=
-  foralli(A:type)(n:nat)(l:<list A>)(a:A)
-         (u:{(nth n l) = a}).
+  foralli(A:type).
+  induction (n: nat) 
+    return Forall(l:<list A>)(a:A)(u:{(nth n l) = a}).
+      Exists(l1 l2:<list A>). { l = (append l1 (cons a l2)) } 
+  with
+  | Z =>
+    foralli(l:<list A>)(a:A)(u:{(nth n l) = a}).
+    lemma n_eq in
+    unjoin u with
+    | foralli(l1 : A)(l2 : <list A>)(p0 : { l = (cons l1 l2) })
+              (u : { l1 = a }).
 
-  unjoin u with
-  | foralli(p0 : { n = Z })(l0 : type)(l1 : l0)(l2 : <list l0>)
-           (p1 : { l = (cons l1 l2) })(u : { l1 = a }).
+      existsi (nil A) 
+              Exists(e2 : <list A>). { l = (append * (cons a e2)) }
+              existsi l2
+                      { l = (append nil (cons a *)) }
+                      hypjoin l (append nil (cons a l2)) by
+                        : { l = (cons l1 l2) } p0
+                        : { l1 = a } u
+                      end
+    end
+  | S n' =>
+    foralli(l:<list A>)(a:A)(u:{(nth n l) = a}).
+    lemma n_eq in
+    unjoin u with
+    | foralli(l1 : A)(l2 : <list A>)(p0 : { l = (cons l1 l2) })
+             (u : { (nth A n' l2) = a }).
+      abbrev q0 =
+      : Exists(l21 l22: <list A>). { l2 = (append l21 (cons a l22)) }
+        [n_IH n' l2 a u]
+      in
 
-    %% darnit... there is no way to prove l0 = A.
-    %% I need to lookup l0 from the type of l. even though u
-    %% is unannotated, we should be able to find the type in 
-    %%
-
-    lemma
-      : { l0 = A }
-      l 
-    in
-    existsi (nil A)
-            Exists(l'' : <list l0>) 
-
-  | foralli(n0 : nat)(p0 : { n = (S n0) })(l0 : type)(l1 : l0)
-           (l2 : <list l0>)(p1 : { l = (cons l1 l2) })
-           (u : { (nth n0 l2) = a }).
-
-
-
+      abbrev q1 = 
+      : Forall(l21 l22: <list A>)(u : { l2 = (append l21 (cons a l22)) }).
+      Exists(v1 v2 : <list A>). { l = (append v1 (cons a v2)) }
+        foralli(l21 l22: <list A>)(u : { l2 = (append l21 (cons a l22)) }).
+        existsi (cons A l1 l21)
+                Exists(v2 : <list A>). { l = (append * (cons a v2)) }
+                existsi l22
+                        { l = (append (cons l1 l21) (cons a *)) }
+                        hypjoin l (append (cons l1 l21) (cons a l22)) by
+                          : { l = (cons l1 l2) } p0
+                          : { l2 = (append l21 (cons a l22)) } u
+                        end
+      in
+      
+      existse q0
+              q1
+    end
   end.
 
 
-Define set_nth_other : Forall(A:type)(l:<list A>)(n m:nat)(b:A)
+%-
+  unjoin u with
+  | foralli(p0 : { n = Z })(l1 : A)(l2 : <list A>)
+           (p1 : { l = (cons l1 l2) })(u : { l1 = a }).
+
+    existsi (nil A) 
+            Exists(e2 : <list A>). { l = (append * (cons a e2)) }
+            existsi l2
+                    { l = (append nil (cons a *)) }
+                    hypjoin l (append nil (cons a l2)) by
+                      : { l = (cons l1 l2) } p1
+                      : { l1 = a } u
+                    end
+
+  | foralli(n0 : nat)(p0 : { n = (S n0) })(l1 : A)(l2 : <list A>)
+           (p1 : { l = (cons l1 l2) })(u : { (nth A n0 l2) = a }).
+    lemma
+      : Exists(l2' : <list A>). { l = (append 
+    in
+  end.
+
+-%
+Define set_nth_other2 : Forall(A:type)(l:<list A>)(n m:nat)(b:A)
                              (u:{ n != m }).
                         { (nth n (set_nth m l b)) = (nth n l) } :=
   foralli(A:type).
@@ -135,7 +281,6 @@ Define set_nth_other : Forall(A:type)(l:<list A>)(n m:nat)(b:A)
       end
   end.
 
-
 Define foldr2 
   : Fun(S A : type)(acc : Fun(s : S)(a : A). S)(init : S)(l : <list2 A>). S
 :=
@@ -148,36 +293,9 @@ Define foldr2
     (foldr2 S A acc s' l') 
   end.
 
-Define matchLet :=
-  fun(x : nat)(y : bool).
-  match x with
-  | Z =>
-    tt
-  | S n' =>
-    let z = (and y tt) in
-    z
-  end.
-
-Define matchLetProof
-  : Forall(x : nat)(y: bool)(u1 : { (matchLet x y) = tt })
-          (x' : nat)(u2 : { x = (S x')}). { y = tt }
-:=
-  foralli(x : nat)(y: bool)(u1 : { (matchLet x y) = tt })
-         (x' : nat)(u2 : { x = (S x')}).
-  lemma u2 in
-  unjoin u1 with
-  | foralli(p0 : { (and y tt) = tt }).
-    unjoin p0 with
-    | foralli(u : {y = tt}).
-      u
-    end
-  end.
-
 Define ormap :=
   fun(l : <list2 bool>).
   (foldr2 bool bool or ff l).
-
-
 
 Define eqnatEq3 : Forall(n:nat)(u:{(eqnat n Z) = tt}). { n = Z } :=
   foralli(n: nat)(u:{(eqnat n Z) = tt}).
@@ -259,9 +377,6 @@ Define funnyIdProof
     u
   end.
 
-
-
-
 Define badSub :=
   fun(x : nat).
   x.
@@ -334,19 +449,6 @@ Define eqnatNeq2 : Forall(n m:nat)(u:{(eqnat n m) = ff}). { n != m } :=
     end
   end
   
-
-%- this doesn't work because we are not (yet) able to use inequalities as lemmas.
-
-Define neqEqnat2 : Forall(n m : nat)(u:{n != m}).{ (eqnat n m) = ff } :=
-  foralli(n m : nat)(u:{n != m}).
-  case (eqnat n m) by v ign with
-  | ff =>
-    v
-  | tt =>
-    lemma u in
-    unjoin v contra { (eqnat n m) = ff } 
-  end.
--%
 
 %- unjoin wouldn't help here... it could enable us to avoid induction,
    but I think induction is more straightforward and compact.
@@ -426,100 +528,6 @@ Define lt_lt_impliesEq2: Forall(x y:nat)(u: {(lt x y) = ff})(v:{(lt y x) = ff}).
 -%
 
 
-%-
-Define vec_vecc_shift2 : 
-  Forall(A: type)
-        (n: nat)
-        (v: <vec A n>)
-        (m: nat)
-        (u: { (lt m n) = tt } )
-        (a: A)
-        .
-        { (vec_get v m) = (vec_get (vecc a v) (S m)) }
-  :=   
-  foralli(A: type)(n: nat)(v: <vec A n>)(m: nat)(u: { (lt m n) = tt } )
-         (a: A).
-
-    lemma
-
-
-    unjoin u with
-    | foralli(p10 : { m = Z })(b' : nat)(p9 : { n = (S b') }).
-      
-    | foralli(a' : nat)(p13 : { m = (S a') })(b' : nat)
-             (p12 : { n = (S b') })(u : { (lt a' b') = tt }).
-    end.
-
--%
-%-
-Define minus_lt2 : Forall
-	(a b:nat)(u1:{ (le b a) = tt })(u2:{ (lt Z b) = tt }).{ (lt (minus a b) a) = tt }
-	:=
-  foralli(a: nat).
-  induction (b:nat) return
-    Forall(u1:{ (le b a) = tt })(u2:{ (lt Z b) = tt }).{ (lt (minus a b) a) = tt }
-  with
-    | Z =>
-      foralli(u1:{ (le b a) = tt })(u2:{ (lt Z b) = tt }).
-      lemma b_eq in
-      unjoin u2 contra { (lt (minus a b) a) = tt }
-    | S b' =>
-      foralli(u1:{ (le b a) = tt })(u2:{ (lt Z b) = tt }).
-      lemma b_eq in
-      unjoin u1 with
-      %-
-      | foralli(p0 : { (lt b a) = ff })(u : { (eqnat b a) = tt }).
-        hypjoin (lt (minus a b) a) tt by
-          : { b = a } [eqnatEq b a u]
-          : { (minus b b) = Z } [x_minus_x b]
-          : { b = (S b') } b_eq
-        end
-      | foralli(p1 : { (lt b a) = tt }).
-
-        % yeah -- this doesn't seem to help. I blame the lack
-        % of theorems in the minus library.
-        lemma
-          : { (lt b' a) = tt }
-             [ltlt_trans b' b a b'_lt_b p1]
-          
-          : { (le b' a) = tt }   
-            [lt_implies_le b' a ##]
-
-          : { (lt (S (minus a (S b'))) a) = tt }
-            hypjoin (lt (minus a b) a) tt by
-              : { (minus a b') = (S (minus a (S b'))) } [minusS2 b' a ##]
-              : { b = (S b') } ##
-              : { (lt (minus a b') a) = tt } [b_IH b' b'_le_a z_lt_b']
-        in
-        -%
-      end %u1
-  end %ind
--%
-
-Define vec_append_assoc2 : Forall(A:type)(n1 : nat)(l1 : <vec A n1>)
-                      (n2 n3 : nat)(l2 : <vec A n2>)(l3 : <vec A n3>).
-                      { (vec_append (vec_append l1 l2) l3) =
-                        (vec_append l1 (vec_append l2 l3)) } :=
-  foralli(A:type).
-  induction(n1:nat)(l1:<vec A n1>) return 
-    Forall(n2 n3 : nat)(l2 : <vec A n2>)(l3 : <vec A n3>).
-    { (vec_append (vec_append l1 l2) l3) = (vec_append l1 (vec_append l2 l3)) } 
-  with
-   | vecn A' => 
-     foralli(n2 n3 : nat)(l2 : <vec A n2>)(l3 : <vec A n3>). 
-     hypjoin (vec_append (vec_append l1 l2) l3) (vec_append l1 (vec_append l2 l3)) by
-       : { l1 = (vecn A') } l1_eq
-     end
-   | vecc A' n1' x' l1' => 
-     foralli(n2 n3 : nat)(l2 : <vec A n2>)(l3 : <vec A n3>).
-     hypjoin (vec_append (vec_append l1 l2) l3) (vec_append l1 (vec_append l2 l3)) by
-      : { (vec_append (vec_append l1' l2) l3) = (vec_append l1' (vec_append l2 l3)) }
-        [l1_IH n1' l1' n2 n3 l2 l3]
-      : { l1 = (vecc x' l1') }
-        l1_eq
-     end
-  end.
-
 %- well... it helped with the first case at least.
 and only a case split on the vector was necessary here.
 Define vec_vecc_shift2 : 
@@ -552,26 +560,24 @@ Define vec_vecc_shift2 :
       | foralli(m0 : nat)(p3 : { m = (S m0) })(u : { (lt m0 n') = tt }).
         [n_IH n' 
       end
-
-
-      %-
-      case v with
-        | vecn _ =>
-          abbrev Z_neq_n =
-            trans clash Z (S n') 
-                  symm n_eq
-          in
-
-          contra
-            trans inj <vec ** *> v_Eq
-                  Z_neq_n
-
-            { (vec_get v m) = (vec_get v' (S m)) }
-        | vecc _ restLen x rest =>
-          hypjoin (vec_get v m) (vec_get v' (S m)) by v_eq end
-      end
-      -%
   end.  
   -%
+
+Define null_terminated_nth_tail_implies_lt2 :
+  Forall(n:nat)(c:<vec ulit n>)
+				(i:nat)
+				(u:{ (null_terminated (vec_nth_tail c i)) = tt })
+    .{ (lt i n) = tt }
+  :=
+	foralli(n:nat)(c:<vec ulit n>)
+				 (i:nat)
+				 (u:{ (null_terminated (vec_nth_tail c i)) = tt })
+	.
+	case (lt i n) by q1 _ with
+    | ff =>
+			lemma q1 in
+      unjoin u contra { (lt i n) = tt }
+	| tt => q1
+	end.
 
 Classify eqnatNeq2. 

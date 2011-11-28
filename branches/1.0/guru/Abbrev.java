@@ -134,6 +134,16 @@ public class Abbrev extends Expr{
         return s;
     }
     
+	public UnjoinDeduction Unjoin(
+			Expr target, 
+			UnjoinContext uctxt,
+			Context baseCtxt,
+			boolean eq
+	)
+	{
+		return evalStep(baseCtxt).Unjoin(target, uctxt, baseCtxt, eq);
+	}
+	
     
     public Expr do_rewrite(Context ctxt, Expr e, Expr x, Stack boundVars) {
     	return subst().do_rewrite(ctxt, e, x, boundVars);
